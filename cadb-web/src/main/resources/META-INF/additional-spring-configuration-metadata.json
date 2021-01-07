@@ -1,0 +1,5 @@
+{"properties": [{
+  "name": "cadb.maxresults",
+  "type": "java.lang.Integer",
+  "description": "The maximum number of results returned for any barrier search"
+}]}
