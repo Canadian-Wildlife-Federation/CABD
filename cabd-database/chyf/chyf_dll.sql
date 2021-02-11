@@ -1,5 +1,12 @@
 CREATE SCHEMA chyf;
 
+CREATE TABLE chyf.working_limit (
+	region_id varchar(23) not null,
+	geometry geometry(POLYGON, 4326) not NULL,
+	primary key (region_id)
+);
+CREATE INDEX working_limit_geometry_idx ON chyf.working_limit USING gist (geometry);
+
 CREATE TABLE chyf.elementary_catchment (
 	region_id varchar(32) not null,
 	area float8 NOT NULL,
@@ -48,10 +55,7 @@ ALTER TABLE chyf.waterbody ADD FOREIGN KEY (region_id)references chyf.working_li
 
 COMMENT ON COLUMN chyf.waterbody.definition IS 'Classifies the waterbody into subtype.  Valid values (4-Lake, 9-Pond, 6-River, 1-Canal, -1-Unknown)';
 
+drop table chyf.vector_tile_cache;
+create table chyf.vector_tile_cache(key varchar(32), tile bytea, primary key(key));
 
-CREATE TABLE chyf.working_limit (
-	region_id varchar(23) not null
-	geometry geometry(POLYGON, 4326) not NULL,
-	primary key (region_id);
-);
-CREATE INDEX working_limit_geometry_idx ON chyf.working_limit USING gist (geometry);
+
