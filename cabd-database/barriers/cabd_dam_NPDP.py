@@ -10,12 +10,6 @@ dbName = "cabd"
 dbUser = "XXXX@cabd-postgres-dev"
 dbPassword = "XXXX"
 
-dbHost = "localhost"
-dbPort = "8448"
-dbName = "cabd"
-dbUser = "cabd@cabd-postgres-dev"
-dbPassword = "s#ZAf*mUU8?wHb8e"
-
 #this is the temporary table the data is loaded into
 workingSchema = "load"
 workingTableRaw = "npdpdams"
