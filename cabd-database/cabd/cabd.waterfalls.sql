@@ -20,6 +20,7 @@ CREATE TABLE waterfalls.waterfalls (
 	waterbody_name_fr varchar(512) NULL, -- French name of waterbody in which the waterfall is recorded.
 	watershed_group_code varchar(32) NULL,
 	province_territory_code varchar(2) NOT NULL,
+	nhn_workunit_id varchar(7) NULL,
 	nearest_municipality varchar(512) NULL, -- Name of nearest municipality (i.e., a city or town that has corporate status and local government).
 	fall_height_m float4 NULL, -- Height of the waterfall in meters.
 	capture_date date NULL, -- The capture date for a structure as documented in the original dataset, if provided.
@@ -71,6 +72,7 @@ AS SELECT w.cabd_id,
     w.waterbody_name_fr,
     w.watershed_group_code,
     wg.name AS watershed_group_name,
+    w.nhn_workunit_id,
     w.province_territory_code,
     pt.name AS province_territory,
     w.nearest_municipality,
@@ -88,7 +90,6 @@ AS SELECT w.cabd_id,
      LEFT JOIN waterfalls.waterfall_complete_level_codes cl ON cl.code = w.complete_level_code
      LEFT JOIN cabd.watershed_groups wg ON wg.code::text = w.watershed_group_code::text;
      
-     
 
 DELETE FROM cabd.feature_types where type = 'waterfalls';
 DELETE FROM cabd.feature_type_metadata where view_name = 'cabd.waterfalls_view';
@@ -105,6 +106,7 @@ INSERT INTO cabd.feature_type_metadata (view_name,field_name,"name",description,
 	 ('cabd.waterfalls_view','waterbody_name_fr','Waterbody Name (French)','French name of waterbody in which the waterfall is recorded.',false),
 	 ('cabd.waterfalls_view','watershed_group_code','Watershed Group Code',NULL,false),
 	 ('cabd.waterfalls_view','watershed_group_name','Watershed Group Name',NULL,false),
+	 ('cabd.waterfalls_view','nhn_workunit_id','NHN Work Unit',NULL,false),
 	 ('cabd.waterfalls_view','province_territory_code','Province/Territory Code',NULL,false),
 	 ('cabd.waterfalls_view','province_territory','Province/Territory Name',NULL,false),
 	 ('cabd.waterfalls_view','fall_height_m','Fall Height (m)','Height of the waterfall in meters.',false),

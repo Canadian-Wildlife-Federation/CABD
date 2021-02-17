@@ -9,8 +9,9 @@
 		<version>2.4.0</version>
 		<relativePath /> <!-- lookup parent from repository -->
 	</parent>
+	
 	<groupId>org.refractions.cabd</groupId>
-	<artifactId>cabd-web</artifactId>
+	<artifactId>cabd-web-api</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>CABD Web Services</name>
 	<description>Canadian Aquatic Barriers Database Web Services Project</description>
@@ -75,7 +76,6 @@
 
 	<build>
 		<finalName>${project.artifactId}-${project.version}-${timestamp}</finalName>
-
 		<plugins>
 			<plugin>
 				<groupId>org.springframework.boot</groupId>

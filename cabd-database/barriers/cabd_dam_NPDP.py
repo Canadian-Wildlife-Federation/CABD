@@ -73,6 +73,7 @@ alter table {workingTable} add column waterbody_name_fr varchar(512);
 alter table {workingTable} add column reservoir_name_en varchar(512);
 alter table {workingTable} add column reservoir_name_fr varchar(512);
 alter table {workingTable} add column watershed_group_code varchar(32);
+alter table {workingTable} add column nhn_workunit_id varchar(7);
 alter table {workingTable} add column  province_territory_code varchar(2);
 alter table {workingTable} add column nearest_municipality varchar(512);
 alter table {workingTable} add column "owner" varchar(512);
@@ -288,6 +289,7 @@ select cabd.snap_to_network('{workingSchema}', '{workingTableRaw}', 'original_po
 update {workingTable} set snapped_point = original_point where snapped_point is null;
 
 update {workingTable} set province_territory_code = a.code from cabd.province_territory_codes a where st_contains(a.geometry, original_point) and province_territory_code is null;
+update {workingTable} set nhn_workunit_id = a.id from cabd.nhn_workunit a where st_contains(a.polygon, original_point) and nhn_workunit_id is null;
     """
 
 with conn.cursor() as cursor:

@@ -121,6 +121,8 @@ alter table {workingTable} add column snapped_point geometry(POINT, 4326);
 
 update {workingTable} set latitude = cast("gps decimal latitude" as double precision);
 update {workingTable} set longitude = cast("gps decimal longitude" as double precision);
+update {workingTable} set longitude = null, latitude = null where longitude = 0 and latitude = 0;
+
 update {workingTable} set dam_name_en =  "name of dam/barrier";
 
 update {workingTable} set province_territory_code =
@@ -328,6 +330,7 @@ update {workingTable} set snapped_point = original_point where snapped_point is 
 select cabd.snap_to_network('{workingSchema}', '{workingTableRaw}', 'original_point', 'snapped_point', {snappingDistance});
 
 update {workingTable} set province_territory_code = a.code from cabd.province_territory_codes a where st_contains(a.geometry, original_point) and province_territory_code is null;
+update {workingTable} set nhn_workunit_id = a.id from cabd.nhn_workunit a where st_contains(a.polygon, original_point) and nhn_workunit_id is null;
 
 --compute dam_id based on 100m buffer
 update {workingTable} set dam_id = foo.dam_id

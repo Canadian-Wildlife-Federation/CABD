@@ -147,6 +147,7 @@ CREATE TABLE dams.dams_medium_large (
 	reservoir_name_en varchar(512) NULL, -- Name of the reservoir or controlled lake (i.e., impounded waterbody), English.
 	reservoir_name_fr varchar(512) NULL, -- Name of the reservoir or controlled lake (i.e., impounded waterbody), French.
 	watershed_group_code varchar(32) NULL,
+	nhn_workunit_id varchar(7) NULL,
 	province_territory_code varchar(2) NOT NULL,
 	nearest_municipality varchar(512) NULL, -- Name of nearest municipality.
 	"owner" varchar(512) NULL, -- Person, company, organization, government unit, public utility, corporation or other entity which either holds a water license to operate a dam or retains the legal property title on the dam site.
@@ -399,6 +400,7 @@ AS SELECT d.cabd_id,
     d.reservoir_name_fr,
     d.watershed_group_code,
     wg.name AS watershed_group_name,
+    d.nhn_workunit_id,
     d.province_territory_code,
     pt.name AS province_territory,
     d.owner,
@@ -534,6 +536,7 @@ INSERT INTO cabd.feature_type_metadata (view_name,field_name,"name",description,
 	 ('cabd.dams_medium_large_view','reservoir_name_en','Reservoir Name (English)','Name of the reservoir or controlled lake (i.e., impounded waterbody), English.',false),
 	 ('cabd.dams_medium_large_view','reservoir_name_fr','Reservoir Name (French)','Name of the reservoir or controlled lake (i.e., impounded waterbody), French.',false),
 	 ('cabd.dams_medium_large_view','watershed_group_name','Watershed Group Name',NULL,false),
+	 ('cabd.dams_medium_large_View', 'nhn_workunit_id', 'NHN Work Unit', NULL, false),
 	 ('cabd.dams_medium_large_view','province_territory_code','Province/Territory Code',NULL,false),
 	 ('cabd.dams_medium_large_view','province_territory','Province/Territory Name',NULL,false),
 	 ('cabd.dams_medium_large_view','nearest_municipality','Nearest Municipality','Name of nearest municipality.',false),

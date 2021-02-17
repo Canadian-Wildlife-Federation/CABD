@@ -53,6 +53,14 @@ CREATE TABLE cabd.watershed_groups (
 );
 CREATE INDEX watershed_groups_polygon_idx ON cabd.watershed_groups USING gist (polygon);
 
+CREATE TABLE cabd.nhn_workunit (
+	id varchar(7) NOT NULL,
+	polygon geometry(POLYGON, 4326) NULL,
+	PRIMARY KEY (id)
+);
+
+CREATE INDEX nhn_workunit_polygon_idx ON cabd.nhn_workunit USING gist (polygon);
+
 
 -- Barrier type configurations
 CREATE TABLE cabd.feature_type_metadata (

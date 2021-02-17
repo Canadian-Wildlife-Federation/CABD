@@ -2,10 +2,11 @@ create extension postgis;
 create extension "uuid-ossp";
 create extension postgres_fdw;
 
+drop server chyf_server cascade;
 CREATE SERVER chyf_server
         FOREIGN DATA WRAPPER postgres_fdw
         OPTIONS (host 'cabd-postgres-dev.postgres.database.azure.com', 
-        port '5432', dbname 'chyf', sslmode 'require');
+        port '5432', dbname 'chyf', sslmode 'require', extensions 'postgis');
         
 CREATE USER MAPPING FOR public
         SERVER chyf_server
@@ -26,30 +27,22 @@ OPTIONS (schema_name 'chyf', table_name 'flowpath');
 grant select on chyf_flowpath to public;
 
 CREATE OR REPLACE FUNCTION cabd.snap_to_network(src_schema varchar, src_table varchar, raw_geom varchar, snapped_geom varchar, max_distance_m double precision) RETURNS VOID AS $$
+DECLARE
+  pnt_rec RECORD;
+  fp_rec RECORD;
 BEGIN
- EXECUTE 'UPDATE ' || src_schema || '.' || src_table || ' SET ' || snapped_geom || ' =  foo.snapped
- FROM
-(
-  SELECT DISTINCT ON (cabd_id)
-      cabd_id,
-      ST_LineInterpolatePoint(fp_geometry, ST_LineLocatePoint(fp_geometry, pnt_geometry) ) as snapped
-  FROM
-(
-      SELECT
-          pnts.cabd_id as cabd_id,
-          fp.geometry as fp_geometry,
-          pnts.' || raw_geom || ' as pnt_geometry,
-          ST_Distance(fp.geometry, pnts.' || raw_geom || ') AS distance
-      FROM
-        ' || src_schema || '.' || src_table || ' pnts,
-          chyf_flowpath fp
-      WHERE
-		pnts.original_point is not null and 
-		st_expand(pnts.original_point, 0.01) && fp.geometry
-      ORDER BY cabd_id, distance
-  ) AS subquery
- ) as foo where foo.cabd_id = ' || src_schema || '.' || src_table || '.cabd_id
-  AND st_distance(foo.snapped::geography, ' || src_schema || '.' || src_table || '.' || raw_geom || '::geography) < ' || max_distance_m;
+
+	FOR pnt_rec IN EXECUTE format('SELECT cabd_id, %I as rawg FROM %I.%I WHERE %I is not null', raw_geom, src_schema, src_table,raw_geom) 
+	LOOP 
+		--RAISE NOTICE '%s: %s', pnt_rec.cabd_id, pnt_rec.rawg;
+		FOR fp_rec IN EXECUTE format ('SELECT fp.geometry as geometry, st_distance(%L::geometry::geography, fp.geometry::geography) AS distance FROM chyf_flowpath fp WHERE st_expand(%L::geometry, 0.01) && fp.geometry and st_distance(%L::geometry::geography, fp.geometry::geography) < 50 ORDER BY distance ', pnt_rec.rawg, pnt_rec.rawg, pnt_rec.rawg)
+		LOOP
+			EXECUTE format('UPDATE %I.%I SET %I = ST_LineInterpolatePoint(%L::geometry, ST_LineLocatePoint(%L::geometry, %L::geometry) ) WHERE cabd_id = %L', src_schema, src_table, snapped_geom,fp_rec.geometry, fp_rec.geometry, pnt_rec.rawg, pnt_rec.cabd_id);
+			--RAISE NOTICE '%s', fp_rec.distance;	
+			EXIT;
+		
+		END LOOP;
+	END LOOP;
 END;
 $$ LANGUAGE plpgsql; 
 
