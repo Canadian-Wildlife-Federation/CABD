@@ -14,9 +14,9 @@ import org.springframework.context.annotation.ComponentScan;
 public class CabdApplication extends SpringBootServletInitializer {
 
 	//database connection variables
-	private static final String DB_URL_ENV = "CHYF_DB_URL";
-	private static final String DB_USER_ENV = "CHYF_DB_USER";
-	private static final String DB_PASS_ENV = "CHYF_DB_PASSWORD";
+	private static final String DB_URL_ENV = "CABD_DB_URL";
+	private static final String DB_USER_ENV = "CABD_DB_USER";
+	private static final String DB_PASS_ENV = "CABD_DB_PASSWORD";
 	
 	public static void main(String[] args) {
 		SpringApplication.run(CabdApplication.class, args);
