@@ -2,6 +2,7 @@ delete from cabd.feature_type_metadata where view_name = 'cabd.all_features_view
 
 	 
 INSERT INTO cabd.feature_type_metadata (view_name,field_name,"name",description,is_link) VALUES
+	 ('cabd.all_features_view','geometry','Location',NULL,false),
 	 ('cabd.all_features_view','feature_type','Feature Type',NULL,false),
 	 ('cabd.all_features_view','province_territory','Province/Territory Name',NULL,false),
 	 ('cabd.all_features_view','province_territory_code','Province/Territory Code',NULL,false),
@@ -13,7 +14,6 @@ INSERT INTO cabd.feature_type_metadata (view_name,field_name,"name",description,
 	 ('cabd.all_features_view','waterbody_name_fr','Waterbody Name (French)','French name of waterbody in which the barrier is recorded.',false),
 	 ('cabd.all_features_view','reservoir_name_en','Reservoir Name (English)','English name of reservoir in which the barrier is recorded.',false),
 	 ('cabd.all_features_view','reservoir_name_fr','Reservoir Name (French)','French name of reservoir in which the barrier is recorded.',false),
-	 ('cabd.all_features_view','point','Location',NULL,false),
 	 ('cabd.all_features_view','name_en','Feature Name (English)','English given or known name of the feature',false),
 	 ('cabd.all_features_view','name_fr','Feature Name (French)','French given or known name of the feature.',false),
 	 ('cabd.all_features_view','cabd_id','Feature Identifier','Unique identifier for each feature.',false);
@@ -34,7 +34,7 @@ AS SELECT barriers.cabd_id,
     barriers.waterbody_name_fr,
     barriers.reservoir_name_en,
     barriers.reservoir_name_fr,
-    barriers.snapped_point
+    barriers.snapped_point as geometry
    FROM ( SELECT dams_medium_large.cabd_id,
             'dams_medium_large'::text AS barrier_type,
             dams_medium_large.dam_name_en AS name_en,

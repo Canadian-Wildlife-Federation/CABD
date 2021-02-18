@@ -232,8 +232,8 @@ INSERT INTO cabd.feature_type_metadata (view_name,field_name,"name",description,
 ('cabd.fishways_view','modification_purpose','Modification Purpose',NULL,false), 
 ('cabd.fishways_view','year_constructed','Year Constructed',NULL,false), 	 
 ('cabd.fishways_view','operation_period','Operation Period',NULL,false),
-('cabd.fishways_view','has_evaluating_studies','Has Evaluating Studies',NULL,false),	 	 
-('cabd.fishways_view','nature_of_evaluating_studies','Nature of Evaluating Studies',NULL,false),
+('cabd.fishways_view','has_evaluating_studies','Has Evaluating Studies',NULL,false),
+('cabd.fishways_view','nature_of_evaluation_studies','Nature of Evaluation Studies',NULL,false),
 ('cabd.fishways_view','engineering_notes','Engineering Nodes',NULL,false),
 ('cabd.fishways_view','operating_notes','Operation Nodes',NULL,false),	 	 
 ('cabd.fishways_view','mean_fishway_velocity_ms','Average Velocity of Water Flow (ms)',NULL,false),
@@ -246,6 +246,7 @@ INSERT INTO cabd.feature_type_metadata (view_name,field_name,"name",description,
 ('cabd.fishways_view','complete_level_code','Completeness Level Code',NULL,false),
 ('cabd.fishways_view','complete_level','Completeness Level',NULL,false),
 ('cabd.fishways_view','known_use','Species Known To Use',NULL,false),
-('cabd.fishways_view','known_notuse','Species Known To Not Use',NULL,false);
+('cabd.fishways_view','known_notuse','Species Known To Not Use',NULL,false),
+('cabd.fishways_view','geometry','Location',NULL,false);
 	 
 	 

@@ -84,7 +84,7 @@ AS SELECT w.cabd_id,
     cl.name AS complete_level,
     w.data_source_id,
     w.data_source,
-    w.snapped_point
+    w.snapped_point as geometry
    FROM waterfalls.waterfalls w
      JOIN cabd.province_territory_codes pt ON w.province_territory_code::text = pt.code::text
      LEFT JOIN waterfalls.waterfall_complete_level_codes cl ON cl.code = w.complete_level_code
@@ -98,6 +98,7 @@ INSERT INTO cabd.feature_types ("type",data_view) VALUES
 	 ('waterfalls','cabd.waterfalls_view');
 	 
 INSERT INTO cabd.feature_type_metadata (view_name,field_name,"name",description,is_link) VALUES
+	 ('cabd.waterfalls_view','geometry','Location',NULL,false),
 	 ('cabd.waterfalls_view','fall_name_en','Fall Name (English)','English given or known name of the waterfall.',false),
 	 ('cabd.waterfalls_view','latitude','Latitude','Latitude of point location of the waterfall in decimal degrees; the point location is only an approximation of the actual waterfall location.',false),
 	 ('cabd.waterfalls_view','longitude','Longitude','Longitude of point location of the waterfall in decimal degrees; the point location is only an approximation of the actual waterfall location.',false),
