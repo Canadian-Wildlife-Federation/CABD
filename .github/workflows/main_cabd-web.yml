@@ -30,4 +30,4 @@ jobs:
         app-name: 'cabd-web'
         slot-name: 'production'
         publish-profile: ${{ secrets.AzureAppService_PublishProfile_ea098b9ab23a4a8aa37c0fc647e2d55b }}
-        package: '${{ github.workspace }}/target/*.war'
+        package: '${{ github.workspace }}/cabd-web/target/*.war'
