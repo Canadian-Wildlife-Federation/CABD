@@ -82,3 +82,5 @@ AS SELECT barriers.cabd_id,
           ) barriers
      JOIN cabd.province_territory_codes pt ON barriers.province_territory_code::text = pt.code::text
      LEFT JOIN cabd.watershed_groups wg ON wg.code::text = barriers.watershed_group_code::text;
+     
+grant all privileges on cabd.all_features_view to cabd;

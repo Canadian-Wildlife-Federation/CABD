@@ -90,6 +90,7 @@ AS SELECT w.cabd_id,
      LEFT JOIN waterfalls.waterfall_complete_level_codes cl ON cl.code = w.complete_level_code
      LEFT JOIN cabd.watershed_groups wg ON wg.code::text = w.watershed_group_code::text;
      
+grant all privileges on cabd.waterfalls_view to cabd;
 
 DELETE FROM cabd.feature_types where type = 'waterfalls';
 DELETE FROM cabd.feature_type_metadata where view_name = 'cabd.waterfalls_view';

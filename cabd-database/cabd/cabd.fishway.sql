@@ -185,6 +185,7 @@ FROM fishways.fishways d
           GROUP BY a.fishway_id) sp2 ON sp2.fishway_id = d.cabd_id;
 
 
+grant all privileges on cabd.fishways_view to cabd;
 
 DELETE FROM cabd.feature_types where type = 'fishways';
 DELETE FROM cabd.feature_type_metadata where view_name = 'cabd.fishways_view';

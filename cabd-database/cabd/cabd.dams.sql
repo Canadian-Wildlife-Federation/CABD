@@ -510,6 +510,8 @@ AS SELECT d.cabd_id,
      LEFT JOIN dams.lake_control_codes lk ON lk.code = d.lake_control_code
      LEFT JOIN cabd.watershed_groups wg ON wg.code::text = d.watershed_group_code::text;
 
+grant all privileges on cabd.dams_medium_large_view to cabd;
+     
 DELETE FROM cabd.feature_types where type = 'dams_medium_large';
 DELETE FROM cabd.feature_type_metadata where view_name = 'cabd.dams_medium_large_view';
 
