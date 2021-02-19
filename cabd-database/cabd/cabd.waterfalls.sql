@@ -118,7 +118,6 @@ INSERT INTO cabd.feature_type_metadata (view_name,field_name,"name",description,
 	 ('cabd.waterfalls_view','complete_level','Completeness Level Name','Level of information available for the barrier structure.',false),
 	 ('cabd.waterfalls_view','data_source_id','Data Source Identifier',NULL,false),
 	 ('cabd.waterfalls_view','data_source','Data Source',NULL,false),
-	 ('cabd.waterfalls_view','point','Location',NULL,false),
 	 ('cabd.waterfalls_view','nearest_municipality','Nearest Municipality','Name of nearest municipality (i.e., a city or town that has corporate status and local government).',false),
 	 ('cabd.waterfalls_view','feature_type','Feature Type',NULL,false),
 	 ('cabd.waterfalls_view','cabd_id','Barrier Identifier','Unique identifier for waterfall',false);     
