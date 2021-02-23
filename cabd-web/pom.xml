@@ -11,9 +11,9 @@
 	</parent>
 	
 	<groupId>org.refractions.cabd</groupId>
-	<artifactId>cabd-web-api</artifactId>
+	<artifactId>cabd-api</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>CABD Web Services</name>
+	<name>CABD Web Services API</name>
 	<description>Canadian Aquatic Barriers Database Web Services Project</description>
 	<packaging>war</packaging>
 
@@ -76,7 +76,7 @@
 	</dependencies>
 
 	<build>
-		<finalName>${project.artifactId}-${project.version}-${timestamp}</finalName>
+		<finalName>${project.artifactId}</finalName>
 		<plugins>
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
