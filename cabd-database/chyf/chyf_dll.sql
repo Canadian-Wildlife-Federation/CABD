@@ -56,6 +56,9 @@ ALTER TABLE chyf.waterbody ADD FOREIGN KEY (region_id)references chyf.working_li
 COMMENT ON COLUMN chyf.waterbody.definition IS 'Classifies the waterbody into subtype.  Valid values (4-Lake, 9-Pond, 6-River, 1-Canal, -1-Unknown)';
 
 drop table chyf.vector_tile_cache;
-create table chyf.vector_tile_cache(key varchar(32), tile bytea, primary key(key));
-
+CREATE TABLE chyf.vector_tile_cache (
+	"key" varchar(32) NOT NULL,
+	tile bytea NULL,
+	CONSTRAINT vector_tile_cache_pkey PRIMARY KEY (key)
+);
 
