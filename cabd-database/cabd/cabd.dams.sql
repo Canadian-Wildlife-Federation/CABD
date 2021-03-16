@@ -136,6 +136,15 @@ COMMENT ON TABLE dams.use_codes IS 'Reference table for use fields of barriers. 
 COMMENT ON COLUMN dams.use_codes.code IS 'Code referencing the amount of use';
 COMMENT ON COLUMN dams.use_codes."name" IS 'Amount of use.';
 
+CREATE TABLE dams.passability_status_codes(
+	code int2 NOT NULL,
+	"name" varchar(32) NOT NULL,
+	description text NULL,
+	CONSTRAINT passability_sutatus_codes_pk PRIMARY KEY (code);
+);
+COMMENT ON TABLE dams.passability_status_codes IS 'Reference table for the degree to which the structure acts as a barrier to fish in the upstream direction.';
+COMMENT ON COLUMN dams.passability_status_codes.code IS 'Code referencing the degree to which the structure acts as a barrier to fish in the upstream direction.';
+COMMENT ON COLUMN dams.passability_status_codes."name" IS 'The degree to which the structure acts as a barrier to fish in the upstream direction';
 
 
 CREATE TABLE dams.dams_medium_large (
@@ -152,8 +161,6 @@ CREATE TABLE dams.dams_medium_large (
 	nearest_municipality varchar(512) NULL, -- Name of nearest municipality.
 	"owner" varchar(512) NULL, -- Person, company, organization, government unit, public utility, corporation or other entity which either holds a water license to operate a dam or retains the legal property title on the dam site.
 	ownership_type_code int2 NULL,
-	province_reg_body varchar(512) NULL, -- The public or government agency responsible for regulation, licensing, compliance and enforcement at the provincial level.
-	federal_reg_body varchar(512) NULL, -- The public or government agency responsible for regulation, licensing, compliance and enforcement at the federal level.
 	province_compliance_status varchar(64) NULL, -- The status of regulatory compliance with provincial licensing body.
 	federal_compliance_status varchar(64) NULL, -- The status of regulatory compliance with the federal licensing body.
 	operating_note text NULL, -- Unstructured comments on important operation considerations for the dam structure.
@@ -171,7 +178,6 @@ CREATE TABLE dams.dams_medium_large (
 	use_other_code int2 NULL, -- Indicates the dam is used for “other” purposes, and the extent to which it is a planned use (i.e., Main use, major use, or secondary use).
 	lake_control_code int2 NULL, -- Indicates whether a reservoir has been built at the location of an existing natural lake using a lake control structure; currently this column only contains limited entries; “Yes” = lake control structure raises original lake level; “Enlarged” = lake control structure enlarged the original lake surface area; “Maybe” = not sure, but data seems to indicate a lake control structure.
 	construction_year numeric NULL, -- Year in which the dam was built (not further specified: year of construction; year of completion; year of commissioning; year of refurbishment/update; etc.)
-	removed_year numeric NULL, -- Year in which the dam was decommissioned, removed, replaced, subsumed, or destroyed.
 	assess_schedule varchar(100) NULL, -- Frequency at which the dam structure is assessed by ownership party or regulatory body.
 	expected_life int2 NULL, -- Number of years the dam structure is expected to last.
 	maintenance_last date NULL, -- Date of last maintenance or renovation work performed on the barrier.
@@ -193,12 +199,15 @@ CREATE TABLE dams.dams_medium_large (
 	provincial_flow_req float8 NULL, -- Legislated flow requirements for the dam structure in cubic meters per second regulated by the provincial licensing body.
 	federal_flow_req float8 NULL, -- Minimum flow recommendations for the dam structure in cubic meters per second. Based on assessments by Fisheries and Oceans Canada for the protection of fish and fish habitat.
 	catchment_area_skm float8 NULL, -- Area of upstream catchment draining into the reservoir in square kilometers. The area of upstream catchment is defined by “Elementary Catchment” units in the National Hydrography Network.
+	upstream_linear_km float8 NULL, --The amount of unobstructed linear kilometers upstream of the barrier that would become avaliable to aquatic species if the barrier were to be remediated.
 	hydro_peaking_system bool NULL, -- Indicates if the dam employs a hydro peaking system.
 	generating_capacity_mwh float8 NULL, -- The amount of electricity the hydroelectric facility can produce in megawatt hours.
 	turbine_number int2 NULL, -- The number of turbines in the dam structure.
 	turbine_type_code int2 NULL,
 	up_passage_type_code int2 NULL,
 	down_passage_route_code int2 NULL,
+	passability_status_code int2 NULL, --Code referencing the degree to which the structure acts as a barrier to fish in the upstream direction
+	passability_status_note text NULL, -- Unstructrued notes to provide a context for the assigned passability status code (e.g., species restrictions)
 	capture_date date NULL, -- The capture date for a structure as documented in the original dataset, if provided.
 	last_update date NULL, -- Most recent date of the data source used to create, revise or confirm the dam record.
 	data_source_id varchar(256) NULL, -- The unique id assigned to the dam record in the original data source.
@@ -220,8 +229,6 @@ COMMENT ON COLUMN dams.dams_medium_large.reservoir_name_en IS 'Name of the reser
 COMMENT ON COLUMN dams.dams_medium_large.reservoir_name_fr IS 'Name of the reservoir or controlled lake (i.e., impounded waterbody), French.';
 COMMENT ON COLUMN dams.dams_medium_large.nearest_municipality IS 'Name of nearest municipality.';
 COMMENT ON COLUMN dams.dams_medium_large."owner" IS 'Person, company, organization, government unit, public utility, corporation or other entity which either holds a water license to operate a dam or retains the legal property title on the dam site.';
-COMMENT ON COLUMN dams.dams_medium_large.province_reg_body IS 'The public or government agency responsible for regulation, licensing, compliance and enforcement at the provincial level.';
-COMMENT ON COLUMN dams.dams_medium_large.federal_reg_body IS 'The public or government agency responsible for regulation, licensing, compliance and enforcement at the federal level.';
 COMMENT ON COLUMN dams.dams_medium_large.province_compliance_status IS 'The status of regulatory compliance with provincial licensing body.';
 COMMENT ON COLUMN dams.dams_medium_large.federal_compliance_status IS 'The status of regulatory compliance with the federal licensing body.';
 COMMENT ON COLUMN dams.dams_medium_large.operating_note IS 'Unstructured comments on important operation considerations for the dam structure.';
@@ -234,10 +241,9 @@ COMMENT ON COLUMN dams.dams_medium_large.use_navigation_code IS 'Indicates the d
 COMMENT ON COLUMN dams.dams_medium_large.use_fish_code IS 'Indicates the dam is used for fisheries purposes, and the extent to which fisheries are a planned use (i.e., main use, major use, or secondary use).';
 COMMENT ON COLUMN dams.dams_medium_large.use_pollution_code IS 'Indicates the dam is used for pollution control purposes, and the extent to which pollution control is a planned use (i.e., main use, major use, or secondary use).';
 COMMENT ON COLUMN dams.dams_medium_large.use_invasivespecies_code IS 'Indicates the dam is used in control invasive species and the extent to which invasive species control is a planned use (i.e., Main use, major use, or secondary use).';
-COMMENT ON COLUMN dams.dams_medium_large.use_other_code IS 'Indicates the dam is used for “other” purposes, and the extent to which it is a planned use (i.e., Main use, major use, or secondary use).';
-COMMENT ON COLUMN dams.dams_medium_large.lake_control_code IS 'Indicates whether a reservoir has been built at the location of an existing natural lake using a lake control structure; currently this column only contains limited entries; “Yes” = lake control structure raises original lake level; “Enlarged” = lake control structure enlarged the original lake surface area; “Maybe” = not sure, but data seems to indicate a lake control structure.';
+COMMENT ON COLUMN dams.dams_medium_large.use_other_code IS 'Indicates the dam is used for "other" purposes, and the extent to which it is a planned use (i.e., Main use, major use, or secondary use).';
+COMMENT ON COLUMN dams.dams_medium_large.lake_control_code IS 'Indicates whether a reservoir has been built at the location of an existing natural lake using a lake control structure; currently this column only contains limited entries; "Yes" = lake control structure raises original lake level; "Enlarged" = lake control structure enlarged the original lake surface area; "Maybe" = not sure, but data seems to indicate a lake control structure.';
 COMMENT ON COLUMN dams.dams_medium_large.construction_year IS 'Year in which the dam was built (not further specified: year of construction; year of completion; year of commissioning; year of refurbishment/update; etc.)';
-COMMENT ON COLUMN dams.dams_medium_large.removed_year IS 'Year in which the dam was decommissioned, removed, replaced, subsumed, or destroyed.';
 COMMENT ON COLUMN dams.dams_medium_large.assess_schedule IS 'Frequency at which the dam structure is assessed by ownership party or regulatory body.';
 COMMENT ON COLUMN dams.dams_medium_large.expected_life IS 'Number of years the dam structure is expected to last.';
 COMMENT ON COLUMN dams.dams_medium_large.maintenance_last IS 'Date of last maintenance or renovation work performed on the barrier.';
@@ -251,11 +257,12 @@ COMMENT ON COLUMN dams.dams_medium_large.reservoir_area_skm IS 'Representative s
 COMMENT ON COLUMN dams.dams_medium_large.reservoir_depth_m IS 'Average depth of reservoir in meters.';
 COMMENT ON COLUMN dams.dams_medium_large.storage_capacity_mcm IS 'Storage capacity of reservoir in million cubic meters.';
 COMMENT ON COLUMN dams.dams_medium_large.avg_rate_of_discharge_ls IS 'Average rate of discharge at dam location in liters per second.';
-COMMENT ON COLUMN dams.dams_medium_large.degree_of_regulation_pc IS 'Degree of Regulation (DOR) in percent; equivalent to “residence time” of water in the reservoir; calculated as ratio between storage capacity (‘Cap_mcm’) and total annual flow (derived from ‘Dis_avg_ls’); values capped at 10,000 indicate exceedingly high values, which may be due to inconsistencies in the data and/or incorrect allocation to the river network and the associated discharges.';
+COMMENT ON COLUMN dams.dams_medium_large.degree_of_regulation_pc IS 'Degree of Regulation (DOR) in percent; equivalent to "residence time" of water in the reservoir; calculated as ratio between storage capacity (‘Cap_mcm’) and total annual flow (derived from ‘Dis_avg_ls’); values capped at 10,000 indicate exceedingly high values, which may be due to inconsistencies in the data and/or incorrect allocation to the river network and the associated discharges.';
 COMMENT ON COLUMN dams.dams_medium_large.provincial_flow_req IS 'Legislated flow requirements for the dam structure in cubic meters per second regulated by the provincial licensing body.';
 COMMENT ON COLUMN dams.dams_medium_large.federal_flow_req IS 'Minimum flow recommendations for the dam structure in cubic meters per second. Based on assessments by Fisheries and Oceans Canada for the protection of fish and fish habitat.';
-COMMENT ON COLUMN dams.dams_medium_large.catchment_area_skm IS 'Area of upstream catchment draining into the reservoir in square kilometers. The area of upstream catchment is defined by “Elementary Catchment” units in the National Hydrography Network.';
+COMMENT ON COLUMN dams.dams_medium_large.catchment_area_skm IS 'Area of upstream catchment draining into the reservoir in square kilometers. The area of upstream catchment is defined by "Elementary Catchment" units in the National Hydrography Network.';
 COMMENT ON COLUMN dams.dams_medium_large.hydro_peaking_system IS 'Indicates if the dam employs a hydro peaking system.';
+COMMENT ON COLUMN dams.dams_medium_large.upstream_linear_km IS 'The amount of unobstructed linear kilometers upstream of the barrier that would become available to aquatic species if the barrier were to be remediated.' 
 COMMENT ON COLUMN dams.dams_medium_large.generating_capacity_mwh IS 'The amount of electricity the hydroelectric facility can produce in megawatt hours.';
 COMMENT ON COLUMN dams.dams_medium_large.turbine_number IS 'The number of turbines in the dam structure.';
 COMMENT ON COLUMN dams.dams_medium_large.capture_date IS 'The capture date for a structure as documented in the original dataset, if provided.';
@@ -263,6 +270,8 @@ COMMENT ON COLUMN dams.dams_medium_large.last_update IS 'Most recent date of the
 COMMENT ON COLUMN dams.dams_medium_large.data_source_id IS 'The unique id assigned to the dam record in the original data source.';
 COMMENT ON COLUMN dams.dams_medium_large.data_source IS 'The original data source from which the dam record was obtained.';
 COMMENT ON COLUMN dams.dams_medium_large."comments" IS 'Unstructured comments about the dam.';
+COMMENT ON COLUMN dams.dams_medium_large.passability_status_code IS 'Code referencing the degree to which the structure acts as a barrier to fish in the upstream direction';
+COMMENT ON COLUMN dams.dams_medium_large.passability_status_note IS 'Unstructured notes to provide context for the assigned passability status code (e.g., species restrictions).';
 
 
 -- dams.dams_medium_large foreign keys
@@ -291,6 +300,7 @@ ALTER TABLE dams.dams_medium_large ADD CONSTRAINT dams_medium_large_fk_6 FOREIGN
 ALTER TABLE dams.dams_medium_large ADD CONSTRAINT dams_medium_large_fk_7 FOREIGN KEY (use_supply_code) REFERENCES dams.use_codes(code);
 ALTER TABLE dams.dams_medium_large ADD CONSTRAINT dams_medium_large_fk_8 FOREIGN KEY (use_floodcontrol_code) REFERENCES dams.use_codes(code);
 ALTER TABLE dams.dams_medium_large ADD CONSTRAINT dams_medium_large_fk_9 FOREIGN KEY (use_recreation_code) REFERENCES dams.use_codes(code);
+ALTER TABLE dams.dams_medium_large ADD CONSTRAINT dams_medium_large_fk_26 FOREIGN KEY (passability_status_code) REFERENCES dams.passability_status_codes(code);
 
 
 INSERT INTO dams.operating_status_codes (code,"name",description) VALUES
@@ -385,6 +395,10 @@ INSERT INTO dams.use_codes (code,"name",description) VALUES
 	 (2,'Major',NULL),
 	 (3,'Secondary',NULL);
 	 
+INSERT INTO dams.passability_status_codes (code, "name", description) VALUES
+	 (1, 'Impassable', 'The structure acts as a hard barrier to all aquatic species.'),
+	 (2, 'Potentially', 'The structure may act as a barrier to some aquatic species but may also be passable to others.'),
+	 (3, 'Passable', 'The structure does not act as a barrier to aquatic species.');
 
 	 
 CREATE OR REPLACE VIEW cabd.dams_medium_large_view
@@ -407,8 +421,6 @@ AS SELECT d.cabd_id,
     d.ownership_type_code,
     ow.name AS ownership_type,
     d.nearest_municipality,
-    d.province_reg_body,
-    d.federal_reg_body,
     d.province_compliance_status,
     d.federal_compliance_status,
     d.operating_note,
@@ -439,7 +451,6 @@ AS SELECT d.cabd_id,
     d.lake_control_code,
     lk.name AS lake_control,
     d.construction_year,
-    d.removed_year,
     d.assess_schedule,
     d.expected_life,
     d.maintenance_last,
@@ -467,6 +478,7 @@ AS SELECT d.cabd_id,
     d.federal_flow_req,
     d.catchment_area_skm,
     d.hydro_peaking_system,
+    d.upstream_linear_km,
     d.generating_capacity_mwh,
     d.turbine_number,
     d.turbine_type_code,
@@ -480,6 +492,9 @@ AS SELECT d.cabd_id,
     d.data_source_id,
     d.data_source,
     d.comments,
+    d.passability_status_code,
+    ps.name as passability_status,
+    d.passability_status_note,
     d.complete_level_code,
     cl.name AS complete_level,
     d.snapped_point AS geometry
@@ -508,9 +523,10 @@ AS SELECT d.cabd_id,
      LEFT JOIN dams.downstream_passage_route_codes down ON down.code = d.down_passage_route_code
      LEFT JOIN dams.dam_complete_level_codes cl ON cl.code = d.complete_level_code
      LEFT JOIN dams.lake_control_codes lk ON lk.code = d.lake_control_code
-     LEFT JOIN cabd.watershed_groups wg ON wg.code::text = d.watershed_group_code::text;
+     LEFT JOIN cabd.watershed_groups wg ON wg.code::text = d.watershed_group_code::text
+     LEFT JOIN dams.passability_status_codes ps ON ps.code = d.passability_status_code;
 
-grant all privileges on cabd.dams_medium_large_view to cabd;
+GRANT ALL PRIVILEGES ON cabd.dams_medium_large_view to cabd;
      
 DELETE FROM cabd.feature_types where type = 'dams_medium_large';
 DELETE FROM cabd.feature_type_metadata where view_name = 'cabd.dams_medium_large_view';
@@ -538,12 +554,10 @@ INSERT INTO cabd.feature_type_metadata (view_name,field_name,"name",description,
 	 ('cabd.dams_medium_large_view','reservoir_name_en','Reservoir Name (English)','Name of the reservoir or controlled lake (i.e., impounded waterbody), English.',false),
 	 ('cabd.dams_medium_large_view','reservoir_name_fr','Reservoir Name (French)','Name of the reservoir or controlled lake (i.e., impounded waterbody), French.',false),
 	 ('cabd.dams_medium_large_view','watershed_group_name','Watershed Group Name',NULL,false),
-	 ('cabd.dams_medium_large_View', 'nhn_workunit_id', 'NHN Work Unit', NULL, false),
+	 ('cabd.dams_medium_large_view', 'nhn_workunit_id', 'NHN Work Unit', NULL, false),
 	 ('cabd.dams_medium_large_view','province_territory_code','Province/Territory Code',NULL,false),
 	 ('cabd.dams_medium_large_view','province_territory','Province/Territory Name',NULL,false),
 	 ('cabd.dams_medium_large_view','nearest_municipality','Nearest Municipality','Name of nearest municipality.',false),
-	 ('cabd.dams_medium_large_view','province_reg_body','Provincial Regulatory Body','The public or government agency responsible for regulation, licensing, compliance and enforcement at the provincial level.',false),
-	 ('cabd.dams_medium_large_view','federal_reg_body','Federal Regulatory Body','The public or government agency responsible for regulation, licensing, compliance and enforcement at the federal level.',false),
 	 ('cabd.dams_medium_large_view','operating_note','Operating Note','Unstructured comments on important operation considerations for the dam structure.',false),
 	 ('cabd.dams_medium_large_view','operating_status_code','Operating Status Code',NULL,false),
 	 ('cabd.dams_medium_large_view','operating_status','Operating Status',NULL,false),
@@ -568,12 +582,11 @@ INSERT INTO cabd.feature_type_metadata (view_name,field_name,"name",description,
 	 ('cabd.dams_medium_large_view','use_pollution','Use Pollution Control',NULL,false),
 	 ('cabd.dams_medium_large_view','use_invasivespecies_code','Use Invasive Species Control Code','Indicates the dam is used in control invasive species and the extent to which invasive species control is a planned use (i.e., Main use, major use, or secondary use).',false),
 	 ('cabd.dams_medium_large_view','use_invasivespecies','Use Invasive Species Control',NULL,false),
-	 ('cabd.dams_medium_large_view','use_other_code','Use Other Code','Indicates the dam is used for Ã¢â‚¬Å“otherÃ¢â‚¬ purposes, and the extent to which it is a planned use (i.e., Main use, major use, or secondary use).',false),
+	 ('cabd.dams_medium_large_view','use_other_code','Use Other Code','Indicates the dam is used for "other" purposes, and the extent to which it is a planned use (i.e., Main use, major use, or secondary use).',false),
 	 ('cabd.dams_medium_large_view','use_other','Use Other',NULL,false),
-	 ('cabd.dams_medium_large_view','lake_control_code','Lake Control Code','Indicates whether a reservoir has been built at the location of an existing natural lake using a lake control structure; currently this column only contains limited entries; Ã¢â‚¬Å“YesÃ¢â‚¬ = lake control structure raises original lake level; Ã¢â‚¬Å“EnlargedÃ¢â‚¬ = lake control structure enlarged the original lake surface area; Ã¢â‚¬Å“MaybeÃ¢â‚¬ = not sure, but data seems to indicate a lake control structure.',false),
+	 ('cabd.dams_medium_large_view','lake_control_code','Lake Control Code','Indicates whether a reservoir has been built at the location of an existing natural lake using a lake control structure; currently this column only contains limited entries; "Yes" = lake control structure raises original lake level; "Enlarged" = lake control structure enlarged the original lake surface area; "Maybe" = not sure, but data seems to indicate a lake control structure.',false),
 	 ('cabd.dams_medium_large_view','lake_control','Lake Control',NULL,false),
-	 ('cabd.dams_medium_large_view','construction_year','Construction Year','Year in which the dam was built (not further specified: year of construction; year of completion; year of commissioning; year of refurbishment/update; etc.)',false),
-	 ('cabd.dams_medium_large_view','removed_year','Removed Year','Year in which the dam was decommissioned, removed, replaced, subsumed, or destroyed.',false),
+	 ('cabd.dams_medium_large_view','construction_year','Construction Year','Year in which the dam was built (not further specified: year of construction; year of completion; year of commissioning; year of refurbishment/update; etc.)',false), 
 	 ('cabd.dams_medium_large_view','assess_schedule','Assessment Schedule','Frequency at which the dam structure is assessed by ownership party or regulatory body.',false),
 	 ('cabd.dams_medium_large_view','expected_life','Expected Life (years)','Number of years the dam structure is expected to last.',false),
 	 ('cabd.dams_medium_large_view','maintenance_last','Last Maintenance Date','Date of last maintenance or renovation work performed on the barrier.',false),
@@ -595,10 +608,10 @@ INSERT INTO cabd.feature_type_metadata (view_name,field_name,"name",description,
 	 ('cabd.dams_medium_large_view','reservoir_depth_m','Reservoir Depth (m)','Average depth of reservoir in meters.',false),
 	 ('cabd.dams_medium_large_view','storage_capacity_mcm','Storage Capacity (cm)','Storage capacity of reservoir in million cubic meters.',false),
 	 ('cabd.dams_medium_large_view','avg_rate_of_discharge_ls','Average Rate Of Discharge (l/s)','Average rate of discharge at dam location in liters per second.',false),
-	 ('cabd.dams_medium_large_view','degree_of_regulation_pc','Degree of Regulation','Degree of Regulation (DOR) in percent; equivalent to Ã¢â‚¬Å“residence timeÃ¢â‚¬ of water in the reservoir; calculated as ratio between storage capacity (Ã¢â‚¬ËœCap_mcmÃ¢â‚¬â„¢) and total annual flow (derived from Ã¢â‚¬ËœDis_avg_lsÃ¢â‚¬â„¢); values capped at 10,000 indicate exceedingly high values, which may be due to inconsistencies in the data and/or incorrect allocation to the river network and the associated discharges.',false),
+	 ('cabd.dams_medium_large_view','degree_of_regulation_pc','Degree of Regulation','Degree of Regulation (DOR) in percent; equivalent to "residence time" of water in the reservoir; calculated as ratio between storage capacity (Cap_mcm) and total annual flow (derived from Dis_avg_ls); values capped at 10,000 indicate exceedingly high values, which may be due to inconsistencies in the data and/or incorrect allocation to the river network and the associated discharges.',false),
 	 ('cabd.dams_medium_large_view','provincial_flow_req','Provinical Flow Requirements (cm)','Legislated flow requirements for the dam structure in cubic meters per second regulated by the provincial licensing body.',false),
 	 ('cabd.dams_medium_large_view','federal_flow_req','Federal Flow Requirements (cm)','Minimum flow recommendations for the dam structure in cubic meters per second. Based on assessments by Fisheries and Oceans Canada for the protection of fish and fish habitat.',false),
-	 ('cabd.dams_medium_large_view','catchment_area_skm','Upstream Catchment Area (sqkm)','Area of upstream catchment draining into the reservoir in square kilometers. The area of upstream catchment is defined by Ã¢â‚¬Å“Elementary CatchmentÃ¢â‚¬ units in the National Hydrography Network.',false),
+	 ('cabd.dams_medium_large_view','catchment_area_skm','Upstream Catchment Area (sqkm)','Area of upstream catchment draining into the reservoir in square kilometers. The area of upstream catchment is defined by "Elementary Catchment" units in the National Hydrography Network.',false),
 	 ('cabd.dams_medium_large_view','hydro_peaking_system','Has Hydro Peaking System','Indicates if the dam employs a hydro peaking system.',false),
 	 ('cabd.dams_medium_large_view','generating_capacity_mwh','Generating Capacity (mwh)','The amount of electricity the hydroelectric facility can produce in megawatt hours.',false),
 	 ('cabd.dams_medium_large_view','turbine_number','Number of Turbines','The number of turbines in the dam structure.',false),
@@ -612,4 +625,8 @@ INSERT INTO cabd.feature_type_metadata (view_name,field_name,"name",description,
 	 ('cabd.dams_medium_large_view','ownership_type_code','Ownership Type Code',NULL,false),
 	 ('cabd.dams_medium_large_view','ownership_type','Ownership Type',NULL,false),
 	 ('cabd.dams_medium_large_view','province_compliance_status','Provincial Compliance Status','The status of regulatory compliance with provincial licensing body.',false),
-	 ('cabd.dams_medium_large_view','federal_compliance_status','Federal Compliance Status','The status of regulatory compliance with the federal licensing body.',false);	 
+	 ('cabd.dams_medium_large_view','federal_compliance_status','Federal Compliance Status','The status of regulatory compliance with the federal licensing body.',false), 
+	 ('cabd.dams_medium_large_view','upstream_linear_km','Upstream Linear Length (km)','The amount of unobstructed linear kilometers upstream of the barrier that would become avaliable to aquatic species if the barrier were to be removed.',false),
+	 ('cabd.dams_medium_large_view','passability_status_code','Passability Status Code','Code referencing the degree to which the structure acts as a barrier to fish in the upstream direction.',false),
+	 ('cabd.dams_medium_large_view','passability_status','Passability Status','The degress to which the structure acts as a barrier to fish in the upstream direction.',false),
+	 ('cabd.dams_medium_large_view','passability_status_note','Passability Status Node','Unstructured notes to provide context for the assigned passability status code (e.g., species restrictions)',false);
