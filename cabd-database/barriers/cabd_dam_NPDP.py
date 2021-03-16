@@ -72,8 +72,6 @@ alter table {workingTable} add column  province_territory_code varchar(2);
 alter table {workingTable} add column nearest_municipality varchar(512);
 alter table {workingTable} add column "owner" varchar(512);
 alter table {workingTable} add column ownership_type_code int2;
-alter table {workingTable} add column province_reg_body varchar(512);
-alter table {workingTable} add column federal_reg_body varchar(512);
 alter table {workingTable} add column province_compliance_status varchar(64);
 alter table {workingTable} add column federal_compliance_status varchar(64);
 alter table {workingTable} add column operating_note text;
@@ -91,7 +89,6 @@ alter table {workingTable} add column use_invasivespecies_code int2;
 alter table {workingTable} add column use_other_code int2;
 alter table {workingTable} add column lake_control_code int2;
 alter table {workingTable} add column construction_year numeric;
-alter table {workingTable} add column removed_year numeric;
 alter table {workingTable} add column assess_schedule varchar(100);
 alter table {workingTable} add column expected_life int2;
 alter table {workingTable} add column maintenance_last date;
@@ -125,6 +122,10 @@ alter table {workingTable} add column data_source_id varchar(256);
 alter table {workingTable} add column data_source varchar(256);
 alter table {workingTable} add column complete_level_code int2;
 alter table {workingTable} add column "comments" text;
+
+alter table {workingTable} add column upstream_linear_km float8;
+alter table {workingTable} add column passabiltiy_status_code int2;
+alter table {workingTable} add column passabiltiy_status_note text;
 
 alter table {workingTable} add column original_point geometry(POINT, 4326);
 alter table {workingTable} add column snapped_point geometry(POINT, 4326);
@@ -298,13 +299,13 @@ cabd_id, dam_name_en,
 dam_name_fr,waterbody_name_en,waterbody_name_fr,
 reservoir_name_en,reservoir_name_fr,watershed_group_code,
 province_territory_code,nearest_municipality,"owner",
-ownership_type_code,province_reg_body,federal_reg_body,
+ownership_type_code,
 province_compliance_status,federal_compliance_status,operating_note,
 operating_status_code,use_code,use_irrigation_code,
 use_electricity_code,use_supply_code,use_floodcontrol_code,
 use_recreation_code,use_navigation_code,use_fish_code,
 use_pollution_code,use_invasivespecies_code,use_other_code,
-lake_control_code,construction_year,removed_year,
+lake_control_code,construction_year,
 assess_schedule,expected_life,maintenance_last,
 maintenance_next,function_code,condition_code,construction_type_code,
 height_m,length_m,size_class_code,spillway_capacity,spillway_type_code,
@@ -313,19 +314,20 @@ avg_rate_of_discharge_ls,degree_of_regulation_pc,provincial_flow_req,
 federal_flow_req,catchment_area_skm,hydro_peaking_system,
 generating_capacity_mwh,turbine_number,turbine_type_code,
 up_passage_type_code,down_passage_route_code,capture_date,last_update,
-data_source_id,data_source,"comments",complete_level_code,original_point,snapped_point)
+data_source_id,data_source,"comments",complete_level_code,
+upstream_linear_km,passability_status_code,passability_status_note,original_point,snapped_point)
 SELECT
 cabd_id, dam_name_en,
 dam_name_fr,waterbody_name_en,waterbody_name_fr,
 reservoir_name_en,reservoir_name_fr,watershed_group_code,
 province_territory_code,nearest_municipality,"owner",
-ownership_type_code,province_reg_body,federal_reg_body,
+ownership_type_code,
 province_compliance_status,federal_compliance_status,operating_note,
 operating_status_code,use_code,use_irrigation_code,
 use_electricity_code,use_supply_code,use_floodcontrol_code,
 use_recreation_code,use_navigation_code,use_fish_code,
 use_pollution_code,use_invasivespecies_code,use_other_code,
-lake_control_code,construction_year,removed_year,
+lake_control_code,construction_year,
 assess_schedule,expected_life,maintenance_last,
 maintenance_next,function_code,condition_code,construction_type_code,
 height_m,length_m,size_class_code,spillway_capacity,spillway_type_code,
@@ -334,7 +336,8 @@ avg_rate_of_discharge_ls,degree_of_regulation_pc,provincial_flow_req,
 federal_flow_req,catchment_area_skm,hydro_peaking_system,
 generating_capacity_mwh,turbine_number,turbine_type_code,
 up_passage_type_code,down_passage_route_code,capture_date,last_update,
-data_source_id,data_source,"comments",complete_level_code, original_point,snapped_point
+data_source_id,data_source,"comments",complete_level_code, 
+upstream_linear_km,passability_status_code,passability_status_note, original_point,snapped_point
 FROM {workingTable};
 """
 
