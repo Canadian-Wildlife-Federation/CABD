@@ -45,7 +45,7 @@ public enum GeoJsonUtils {
 	 */
 	public void writeGeometry(JsonGenerator gen, Geometry g) throws IOException {
 
-		gen.writeObjectFieldStart("geomtry");
+		gen.writeObjectFieldStart("geometry");
 
 		gen.writeStringField("type", g.getGeometryType());
 
