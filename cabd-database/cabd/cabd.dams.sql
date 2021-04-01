@@ -531,8 +531,8 @@ GRANT ALL PRIVILEGES ON cabd.dams_medium_large_view to cabd;
 DELETE FROM cabd.feature_types where type = 'dams_medium_large';
 DELETE FROM cabd.feature_type_metadata where view_name = 'cabd.dams_medium_large_view';
 
-INSERT INTO cabd.feature_types ("type",data_view) VALUES
-	 ('dams_medium_large','cabd.dams_medium_large_view');
+INSERT INTO cabd.feature_types ("type",data_view, name) VALUES
+	 ('dams_medium_large','cabd.dams_medium_large_view', 'Dams - Medium/Large');
 
 INSERT INTO cabd.feature_type_metadata (view_name,field_name,"name",description,is_link, data_type, vw_simple_order, vw_all_order) VALUES
 	 ('cabd.dams_medium_large_view','cabd_id','Barrier Identifier','Unique Identifier for dam.',false, 'uuid', null, 1),

@@ -95,8 +95,8 @@ grant all privileges on cabd.waterfalls_view to cabd;
 DELETE FROM cabd.feature_types where type = 'waterfalls';
 DELETE FROM cabd.feature_type_metadata where view_name = 'cabd.waterfalls_view';
 
-INSERT INTO cabd.feature_types ("type",data_view) VALUES
-	 ('waterfalls','cabd.waterfalls_view');
+INSERT INTO cabd.feature_types ("type",data_view, name) VALUES
+	 ('waterfalls','cabd.waterfalls_view', 'Waterfalls');
 	 
 
 INSERT INTO cabd.feature_type_metadata (view_name,field_name,"name",description,is_link, data_type, vw_simple_order,vw_all_order) VALUES

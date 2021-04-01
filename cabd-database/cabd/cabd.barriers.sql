@@ -1,8 +1,8 @@
 delete from cabd.feature_types where type = 'barriers';
 delete from cabd.feature_type_metadata where view_name = 'cabd.barriers_view';
 
-INSERT INTO cabd.feature_types ("type",data_view) VALUES
-	 ('barriers','cabd.barriers_view');
+INSERT INTO cabd.feature_types ("type",data_view, name) VALUES
+	 ('barriers','cabd.barriers_view', 'All Barriers');
 	 
 INSERT INTO cabd.feature_type_metadata (view_name,field_name,"name",description,is_link, data_type, vw_simple_order,vw_all_order) VALUES
 	 ('cabd.barriers_view','cabd_id','Barrier Identifier','Unique identifier for each barrier.',false,'varchar(512)',null,1),

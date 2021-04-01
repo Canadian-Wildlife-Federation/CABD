@@ -190,8 +190,8 @@ grant all privileges on cabd.fishways_view to cabd;
 DELETE FROM cabd.feature_types where type = 'fishways';
 DELETE FROM cabd.feature_type_metadata where view_name = 'cabd.fishways_view';
 
-INSERT INTO cabd.feature_types ("type",data_view) VALUES
-	 ('fishways','cabd.fishways_view');
+INSERT INTO cabd.feature_types ("type",data_view, name) VALUES
+	 ('fishways','cabd.fishways_view', 'Fishways');
 	
 
 INSERT INTO cabd.feature_type_metadata (view_name,field_name,"name",description,is_link, data_type, vw_simple_order, vw_all_order) VALUES
