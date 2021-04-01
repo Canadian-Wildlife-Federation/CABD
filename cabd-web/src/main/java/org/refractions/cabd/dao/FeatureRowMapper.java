@@ -62,10 +62,10 @@ public class FeatureRowMapper implements RowMapper<Feature> {
 				}
 			}else if (field.isLink()) {
 				UUID oo = (UUID)rs.getObject(field.getFieldName());
-				feature.addLinkAttribute(field.getName(), oo);
+				feature.addLinkAttribute(field.getFieldName(), oo);
 			}else {
 				Object oo = rs.getObject(field.getFieldName());
-				feature.addAttribute(field.getName(), oo);
+				feature.addAttribute(field.getFieldName(), oo);
 			}
 		};
 		return feature;

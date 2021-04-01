@@ -28,18 +28,37 @@ public class FeatureViewMetadataField {
 	private String name;
 	private String description;
 
+	private String datatype;
+	private Integer simpleOrder;
+	private Integer allOrder;
+	
 	private boolean isLink = false;
 	
 	private boolean isGeometry = false;
 	private Integer srid = null;
 	
-	public FeatureViewMetadataField(String fieldName, String name, String description, boolean isLink) {
+	public FeatureViewMetadataField(String fieldName, String name, String description, 
+			boolean isLink, String datatype, Integer simpleOrder, Integer allOrder) {
 		this.fieldName = fieldName;
 		this.name = name;
 		this.description = description;
 		this.isLink = isLink;
+		this.datatype = datatype;
+		this.simpleOrder = simpleOrder;
+		this.allOrder = allOrder;
 	}
 	
+	public String getDataType() {
+		return this.datatype;
+	}
+	
+	public Integer getAllOrder() {
+		return this.allOrder;
+	}
+	
+	public Integer getSimpleOrder() {
+		return this.simpleOrder;
+	}
 	public boolean isLink() {
 		return this.isLink;
 	}

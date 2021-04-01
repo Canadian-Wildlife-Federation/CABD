@@ -31,6 +31,11 @@ public class FeatureViewMetadata {
 	 */
 	public static final String ALL_FEATURES_VIEW = "cabd.all_features_view";
 	
+	/**
+	 * attribute key for link to feature 
+	 */
+	public static final String URL_ATTRIBUTE = "url";
+	
 	private String featureView;
 	private Collection<FeatureViewMetadataField> fields;
 	

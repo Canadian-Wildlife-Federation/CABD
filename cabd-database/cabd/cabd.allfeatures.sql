@@ -1,22 +1,22 @@
 delete from cabd.feature_type_metadata where view_name = 'cabd.all_features_view';
-
 	 
-INSERT INTO cabd.feature_type_metadata (view_name,field_name,"name",description,is_link) VALUES
-	 ('cabd.all_features_view','geometry','Location',NULL,false),
-	 ('cabd.all_features_view','feature_type','Feature Type',NULL,false),
-	 ('cabd.all_features_view','province_territory','Province/Territory Name',NULL,false),
-	 ('cabd.all_features_view','province_territory_code','Province/Territory Code',NULL,false),
-	 ('cabd.all_features_view','watershed_group_code','Watershed Group Code',NULL,false),
-	 ('cabd.all_features_view','watershed_group_name','Watershed Group Name',NULL,false),
-	 ('cabd.all_features_view','nhn_workunit_id','NHN Work Unit',NULL,false),
-	 ('cabd.all_features_view','nearest_municipality','Nearest Municipality','Name of nearest municipality (i.e., a city or town that has corporate status and local government).',false),
-	 ('cabd.all_features_view','waterbody_name_en','Waterbody Name (English)','English name of waterbody in which the barrier is recorded.',false),
-	 ('cabd.all_features_view','waterbody_name_fr','Waterbody Name (French)','French name of waterbody in which the barrier is recorded.',false),
-	 ('cabd.all_features_view','reservoir_name_en','Reservoir Name (English)','English name of reservoir in which the barrier is recorded.',false),
-	 ('cabd.all_features_view','reservoir_name_fr','Reservoir Name (French)','French name of reservoir in which the barrier is recorded.',false),
-	 ('cabd.all_features_view','name_en','Feature Name (English)','English given or known name of the feature',false),
-	 ('cabd.all_features_view','name_fr','Feature Name (French)','French given or known name of the feature.',false),
-	 ('cabd.all_features_view','cabd_id','Feature Identifier','Unique identifier for each feature.',false);
+INSERT INTO cabd.feature_type_metadata (view_name,field_name,"name",description,is_link,data_type,vw_simple_order,vw_all_order) VALUES
+	 ('cabd.all_features_view','cabd_id','Feature Identifier','Unique identifier for each feature.',false, 'uuid', null, 1),
+	 ('cabd.all_features_view','name_en','Feature Name (English)','English given or known name of the feature',false, 'varchar(512)', 1, 2),
+	 ('cabd.all_features_view','name_fr','Feature Name (French)','French given or known name of the feature.',false, 'varchar(512)', null, 3),
+	 ('cabd.all_features_view','waterbody_name_en','Waterbody Name (English)','English name of waterbody in which the barrier is recorded.',false, 'varchar(512)', 2, 4),
+	 ('cabd.all_features_view','waterbody_name_fr','Waterbody Name (French)','French name of waterbody in which the barrier is recorded.',false, 'varchar(512)', null, 5),
+	 ('cabd.all_features_view','reservoir_name_en','Reservoir Name (English)','English name of reservoir in which the barrier is recorded.',false, 'varchar(512)', 3, 6),
+	 ('cabd.all_features_view','reservoir_name_fr','Reservoir Name (French)','French name of reservoir in which the barrier is recorded.',false, 'varchar(512)', null, 7),
+	 ('cabd.all_features_view','province_territory','Province/Territory Name',NULL,false, 'varchar(32)', 4, 8),
+	 ('cabd.all_features_view','province_territory_code','Province/Territory Code',NULL,false, 'varchar(2)', null, 9),
+	 ('cabd.all_features_view','watershed_group_code','Watershed Group Code',NULL,false,'varchar(32)',null,10),
+	 ('cabd.all_features_view','watershed_group_name','Watershed Group Name',NULL,false,'varchar(512)',null,11),
+	 ('cabd.all_features_view','nhn_workunit_id','NHN Work Unit',NULL,false,'varchar(7)',null,12),
+	 ('cabd.all_features_view','nearest_municipality','Nearest Municipality','Name of nearest municipality (i.e., a city or town that has corporate status and local government).',false,'varchar(512)',null,13),
+	 ('cabd.all_features_view','feature_type','Feature Type',NULL,false, 'text', null,14),
+	 ('cabd.all_features_view','geometry','Location',NULL,false, 'geometry',null,null);
+	 
 	 
 	 
 CREATE OR REPLACE VIEW cabd.all_features_view

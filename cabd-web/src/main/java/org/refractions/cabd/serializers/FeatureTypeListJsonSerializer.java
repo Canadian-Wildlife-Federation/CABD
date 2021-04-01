@@ -16,9 +16,11 @@
 package org.refractions.cabd.serializers;
 
 import java.io.IOException;
+import java.util.List;
+import java.util.function.Function;
 
-import org.refractions.cabd.model.Feature;
-import org.refractions.cabd.model.FeatureList;
+import org.refractions.cabd.model.FeatureType;
+import org.refractions.cabd.model.FeatureViewMetadataField;
 import org.springframework.boot.jackson.JsonComponent;
 
 import com.fasterxml.jackson.core.JsonGenerator;
@@ -26,27 +28,38 @@ import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 
 /**
- * Serializes a list of Feature features to a GeoJson FeatureCollection.
+ * Serializer for a list feature types
  * 
  * @author Emily
  *
  */
 @JsonComponent
-public class FeatureListJsonSerializer extends JsonSerializer<FeatureList> {
+public class FeatureTypeListJsonSerializer extends JsonSerializer<List<FeatureType>> {
 
 	@Override
-	public void serialize(FeatureList value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+	public void serialize(List<FeatureType> value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
 
-		gen.writeStartObject();
-		gen.writeStringField("type", "FeatureCollection");
-		// features
-		gen.writeFieldName("features");
 		gen.writeStartArray();
-		for (Feature b : value.getFeatures()) {
-			gen.writeObject(b);
+		for (FeatureType type: value) {
+			gen.writeStartObject();
+			gen.writeStringField("type", type.getType());
+			gen.writeStringField("name", type.getName());
+			gen.writeStringField("metadata", type.getMetadataUrl());
+			gen.writeStringField("features", type.getDataUrl());
+			gen.writeEndObject();
 		}
 		gen.writeEndArray();
-		gen.writeEndObject();
 	}
-
+		
+	class DataView{
+		String name;
+		Function<FeatureViewMetadataField,Integer> orderer;
+		
+		public DataView(String name, Function<FeatureViewMetadataField,Integer> orderer) {
+			this.name = name;
+			this.orderer = orderer;
+		}
+	
+	}
+	
 }

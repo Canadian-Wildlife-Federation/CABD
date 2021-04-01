@@ -27,26 +27,38 @@ public class FeatureType {
 
 	private String type;
 	private String dataView;
+	private String name;
 	
-	private String url;
+	private String dataurl;
+	private String metadataurl;
 	
 	private FeatureViewMetadata metadata;
 	
-	public FeatureType(String type, String dataView) {
+	public FeatureType(String type, String dataView, String name) {
 		this.type = type;
 		this.dataView = dataView;	
+		this.name = name;
 	}
 
 	public String getType() {
 		return type;
 	}
 
-	public String getUrl() {
-		return this.url;
+	public String getName() {
+		return this.name;
 	}
 	
-	public void setUrl(String root) {
-		this.url = root + "/" + getType();
+	public String getDataUrl() {
+		return this.dataurl;
+	}
+	
+	public String getMetadataUrl() {
+		return this.metadataurl;
+	}
+	
+	public void setUrls(String data, String metadata) {
+		this.dataurl = data + "/" + getType();
+		this.metadataurl = metadata + "/" + getType();
 	}
 	
 	@JsonIgnore

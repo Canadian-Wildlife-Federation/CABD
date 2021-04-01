@@ -36,7 +36,7 @@ public class FeatureList {
 	public FeatureList(List<Feature> features) {
 		this.features = features;		
 		String rooturl = ServletUriComponentsBuilder.fromCurrentContextPath().path("/").path(FeatureController.PATH).build().toUriString();		
-		features.forEach(f->f.addAttribute("url", rooturl + "/" + f.getId().toString()));
+		features.forEach(f->f.addAttribute(FeatureViewMetadata.URL_ATTRIBUTE, rooturl + "/" + f.getId().toString()));
 	}
 	
 	public List<Feature> getFeatures(){

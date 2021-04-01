@@ -69,6 +69,9 @@ CREATE TABLE cabd.feature_type_metadata (
 	name varchar NULL, -- human friendly name of field
 	description varchar NULL, -- description of field
 	is_link bool NOT NULL DEFAULT false,
+	data_type varchar(32) NOT NULL, --data type for UI
+	vw_simple_order integer NULL, --order of attributes for simple view in ui 
+	vw_all_order integer NULL, --order of attributes for all attributes view in ui
 	CONSTRAINT barrier_type_metadata_pk PRIMARY KEY (view_name, field_name)
 );
 COMMENT ON TABLE cabd.feature_type_metadata IS 'A table that maps view field names to human friendly field names.';
@@ -77,9 +80,13 @@ COMMENT ON COLUMN cabd.feature_type_metadata.view_name IS 'view name';
 COMMENT ON COLUMN cabd.feature_type_metadata.field_name IS 'field name';
 COMMENT ON COLUMN cabd.feature_type_metadata.name IS 'human friendly name of field';
 COMMENT ON COLUMN cabd.feature_type_metadata.description IS 'description of field';
+COMMENT ON COLUMN cabd.feature_type_metadata.data_type IS 'field data type';
+COMMENT ON COLUMN cabd.feature_type_metadata.vw_simple_order IS 'order of attributes for the simple view (or null if not visible in this view)';
+COMMENT ON COLUMN cabd.feature_type_metadata.vw_all_order IS 'order of attributes for the all attribute view (or null if not visible in this view)';
 
 CREATE TABLE cabd.feature_types (
 	"type" varchar(32) NOT NULL, -- Unique key representing feature type.
+	name varchar(256) NOT NULL,
 	data_view varchar NOT NULL, -- Database view for querying feature dataset
 	CONSTRAINT barrier_types_pk PRIMARY KEY (type)
 );

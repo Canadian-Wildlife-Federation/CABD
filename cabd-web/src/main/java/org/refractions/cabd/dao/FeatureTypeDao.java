@@ -45,7 +45,7 @@ public class FeatureTypeDao {
 	 * Mapper for feature type query to FeatureType 
 	 */
 	private RowMapper<FeatureType> typeMapper = (rs, rownum)-> 
-		new FeatureType(rs.getString("type"), rs.getString("data_view"));
+		new FeatureType(rs.getString("type"), rs.getString("data_view"), rs.getString("name"));
 		
 	/**
 	 * Mapper for metadata field row to FeatureViewMetadataField object
@@ -53,7 +53,9 @@ public class FeatureTypeDao {
 	private RowMapper<FeatureViewMetadataField> viewMetadataMapper = (rs, rownum) -> 
 		new FeatureViewMetadataField(
 				rs.getString("field_name"), rs.getString("name"), 
-				rs.getString("description"), rs.getBoolean("is_link"));
+				rs.getString("description"), rs.getBoolean("is_link"),
+				rs.getString("data_type"), (Integer)rs.getObject("vw_simple_order"),
+				(Integer)rs.getObject("vw_all_order"));
 
 	
 	public FeatureTypeDao() {
@@ -65,7 +67,7 @@ public class FeatureTypeDao {
 	 * @return
 	 */
 	public List<FeatureType> getFeatureTypes(){
-		String query = "SELECT type, data_view FROM " + FEATURE_TYPE_TABLE;
+		String query = "SELECT type, data_view, name FROM " + FEATURE_TYPE_TABLE;
 		return jdbcTemplate.query(query, typeMapper);		
 	}
 	
@@ -76,7 +78,7 @@ public class FeatureTypeDao {
 	 */
 	public FeatureViewMetadata getViewMetadata(String view) {
 		
-		String query = "SELECT field_name, name, description, is_link FROM " +
+		String query = "SELECT field_name, name, description, is_link, data_type, vw_simple_order, vw_all_order FROM " +
 					FEATURE_METADATA_TABLE + " WHERE view_name = ?";
 		
 		List<FeatureViewMetadataField> fields = jdbcTemplate.query(query, viewMetadataMapper, view);
