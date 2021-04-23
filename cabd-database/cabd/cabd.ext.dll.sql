@@ -10,7 +10,7 @@ CREATE SERVER chyf_server
         
 CREATE USER MAPPING FOR public
         SERVER chyf_server
-        OPTIONS (user 'chyf@cabd-postgres-dev', password 'GJyF9F2B^]C8yFqG');            
+        OPTIONS (user 'chyf@cabd-postgres-dev', password 'XXXXXXXXXXX');            
         
 CREATE FOREIGN TABLE chyf_flowpath (
  region_id character varying(32),     
