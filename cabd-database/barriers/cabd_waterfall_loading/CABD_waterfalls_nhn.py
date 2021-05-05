@@ -93,6 +93,13 @@ update {workingTable} set fall_name_en = name1;
 update {workingTable} set data_source_id = nid;
 update {workingTable} set data_source = 'nhn';
 --update {workingTable} set complete_level_code;
+update {workingTable} set passability_status_code = 
+    CASE
+    WHEN "height_m" < 5 THEN 2
+    WHEN "height_m" >= 5 THEN 1
+    WHEN "height_m" IS NULL THEN 4
+    ELSE NULL END;
+--update{workingTable} set passability_status_note;
 
 --Use st_force2d(geometry) for geometry with persisting Z value
 update {workingTable} set original_point = st_transform(st_geometryN(st_force2d(geometry), 1), 4326);

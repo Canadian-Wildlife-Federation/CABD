@@ -93,6 +93,13 @@ update {workingTable} set waterbody_name_en = RIVNAME_1;
 update {workingTable} set data_source_id = SHAPE_FID;
 update {workingTable} set data_source = 'nswf';
 --update {workingTable} set complete_level_code;
+update {workingTable} set passability_status_code = 
+    CASE
+    WHEN "height_m" < 5 THEN 2
+    WHEN "height_m" >= 5 THEN 1
+    WHEN "height_m" IS NULL THEN 4
+    ELSE NULL END;
+--update{workingTable} set passability_status_note;
 
 update {workingTable} set original_point = st_transform(st_geometryN(geometry, 1), 4326);
 select cabd.snap_to_network('{workingSchema}', '{workingTableRaw}', 'original_point', 'snapped_point', {snappingDistance});
