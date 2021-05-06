@@ -2,7 +2,7 @@ import psycopg2 as pg2
 import sys
 import subprocess
 
-ogr = "C:\\Program Files\\QGIS 3.12\\bin\\ogr2ogr.exe";
+ogr = "C:\\OSGeo4W64\\bin\\ogr2ogr.exe";
 
 dbHost = "cabd-postgres-dev.postgres.database.azure.com"
 dbPort = "5432"
@@ -12,7 +12,7 @@ dbPassword = "XXXX"
 
 #this is the temporary table the data is loaded into
 workingSchema = "load"
-workingTableRaw = "gdams"
+workingTableRaw = "dams_nbhn"
 workingTable = workingSchema + "." + workingTableRaw
 
 #maximum distance for snapping barriers to stream network in meters
@@ -24,7 +24,7 @@ if len(sys.argv) == 2:
     dataFile = sys.argv[1]
     
 if dataFile == '':
-    print("Data file required.  Usage: cabd_dam_GRAND.py <datafile>")
+    print("Data file required.  Usage: cabd_dams_nbhn.py <datafile>")
     sys.exit()
 
 
@@ -55,10 +55,8 @@ subprocess.run(pycmd)
 #run scripts to convert the data
 print("running mapping queries...")
 query = f"""
-
 alter table {workingTable} add column cabd_id uuid;
 update {workingTable} set cabd_id = uuid_generate_v4();
-
 alter table {workingTable} add column latitude double precision;
 alter table {workingTable} add column longitude double precision;
 alter table {workingTable} add column dam_name_en varchar(512);
@@ -73,9 +71,9 @@ alter table {workingTable} add column province_territory_code varchar(2);
 alter table {workingTable} add column nearest_municipality varchar(512);
 alter table {workingTable} add column "owner" varchar(512);
 alter table {workingTable} add column ownership_type_code int2;
-alter table {workingTable} add column province_compliance_status varchar(64);
+alter table {workingTable} add column provincial_compliance_status varchar(64);
 alter table {workingTable} add column federal_compliance_status varchar(64);
-alter table {workingTable} add column operating_note text;
+alter table {workingTable} add column operating_notes text;
 alter table {workingTable} add column operating_status_code int2;
 alter table {workingTable} add column use_code int2;
 alter table {workingTable} add column use_irrigation_code int2;
@@ -122,136 +120,99 @@ alter table {workingTable} add column last_update date;
 alter table {workingTable} add column data_source_id varchar(256);
 alter table {workingTable} add column data_source varchar(256);
 alter table {workingTable} add column complete_level_code int2;
-
+alter table {workingTable} add column "comments" text;
 alter table {workingTable} add column upstream_linear_km float8;
-alter table {workingTable} add column passabiltiy_status_code int2;
-alter table {workingTable} add column passabiltiy_status_note text;
-
+alter table {workingTable} add column passability_status_code int2;
+alter table {workingTable} add column passability_status_note text;
 alter table {workingTable} add column original_point geometry(POINT, 4326);
 alter table {workingTable} add column snapped_point geometry(POINT, 4326);
 
-update {workingTable} set latitude = LAT_DD, longitude = LONG_DD;
-
-update {workingTable} set 
-    dam_name_en = DAM_NAME, 
-    waterbody_name_en = RIVER, 
-    reservoir_name_en = RES_NAME,
-    nearest_municipality = NEAR_CITY;
-
-update {workingTable} set province_territory_code = 
-    case when ADMIN_UNIT = 'Alberta' THEN 'ab'
-    when ADMIN_UNIT = 'British Columbia' THEN 'bc'
-    when ADMIN_UNIT= 'Manitoba' THEN 'mb'
-    when ADMIN_UNIT = 'New Brunswick' THEN 'nb'
-    when ADMIN_UNIT = 'Newfoundland and Labrador' THEN 'nl'
-    when ADMIN_UNIT = 'Nova Scotia' THEN 'ns'
-    when ADMIN_UNIT = 'Northwest Territories' THEN 'nt'
-    when ADMIN_UNIT = 'Nunavut' THEN 'nu'
-    when ADMIN_UNIT = 'Ontario' THEN 'on'
-    when ADMIN_UNIT = 'Prince Edward Island' THEN 'pe'
-    when ADMIN_UNIT = 'Saskatchewan' THEN 'sk'
-    when admin_unit = 'Yukon' THEN 'yt'
-    when admin_unit = 'Quebec' THEN 'qc'
-    ELSE null END;
-
-update {workingTable} set use_code = 
-    case when MAIN_USE = 'Hydroelectricity' THEN 2
-    when MAIN_USE = 'Irrigation' THEN 1
-    when MAIN_USE = 'Other' THEN 10
-    when MAIN_USE = 'Recreation' THEN 5
-    when MAIN_USE = 'Water supply' THEN 3
-    when MAIN_USE = 'Flood control' THEN 4
-    else NULL end;
-
-
-update {workingTable} set use_irrigation_code = 
-    case when USE_IRRI = 'Sec' THEN 3
-    when USE_IRRI = 'Main' THEN 1
-    else NULL end;
-
-update {workingTable} set use_electricity_code = 
-    case when USE_ELEC = 'Sec' THEN 3
-    when USE_ELEC = 'Main' THEN 1
-    else NULL end;
-
-update {workingTable} set use_supply_code = 
-    case when USE_SUPP = 'Sec' THEN 3
-    when USE_SUPP = 'Main' THEN 1
-    else NULL end;
-
-update {workingTable} set use_floodcontrol_code = 
-    case when USE_FCON = 'Sec' THEN 3
-    when USE_FCON = 'Main' THEN 1
-    else NULL end;
-
-update {workingTable} set use_recreation_code = 
-    case when USE_RECR = 'Sec' THEN 3
-    when USE_FCON = 'Main' THEN 1
-    else NULL end;
-
-
-update {workingTable} set use_navigation_code = 
-    case when USE_NAVI = 'Sec' THEN 3
-    when USE_NAVI = 'Main' THEN 1
-    else NULL end;
-
-
-update {workingTable} set use_fish_code = 
-    case when USE_FISH = 'Sec' THEN 3
-    when USE_FISH = 'Main' THEN 1
-    else NULL end;
-
-update {workingTable} set use_pollution_code = 
-    case when USE_PCON = 'Sec' THEN 3
-    when USE_PCON = 'Main' THEN 1
-    else NULL end;
-
-update {workingTable} set use_other_code = 
-    case when USE_OTHR = 'Sec' THEN 3
-    when USE_OTHR = 'Main' THEN 1
-    else NULL end;
-
-update {workingTable} set lake_control_code = 
-    case when LAKE_CTRL = 'Yes' THEN 1
-    when LAKE_CTRL = 'Enlarged' THEN 2
-    when LAKE_CTRL = 'Maybe' THEN 3
-    else NULL end;
-
-
-update {workingTable} set size_class_code = 
-    case when DAM_HGT_M < 0 THEN NULL
-    when DAM_HGT_M >= 0 AND DAM_HGT_M < 15 THEN 2
-    when DAM_HGT_M >= 15 THEN 3
-    else NULL end;
-
-update {workingTable} set reservoir_present = case when AREA_SKM = -99 THEN FALSE ELSE TRUE END;
-
-
-update {workingTable} set 
-    reservoir_area_skm = CASE WHEN AREA_SKM = -99 THEN NULL ELSE AREA_SKM END,  
-    reservoir_depth_m = CASE WHEN DEPTH_M = -99 THEN NULL ELSE DEPTH_M END,
-    storage_capacity_mcm = CASE WHEN CAP_MCM = -99 THEN NULL ELSE CAP_MCM END,
-    avg_rate_of_discharge_ls = DIS_AVG_LS,
-    degree_of_regulation_pc = DOR_PC,
-    catchment_area_skm = CATCH_SKM;
-
-update {workingTable} set "data_source_id" = GRAND_ID;
-update {workingTable} set "data_source" = 'GRanD_Database_v1.3';
-
-update {workingTable} set complete_level_code = 
-    case when QUALITY = '1: Verified' THEN 4
-    when QUALITY = '2: Good' THEN 3
-    when QUALITY = '3: Fair' THEN 3
-    when QUALITY = '4: Poor' THEN 2
-    when QUALITY = '5: Unreliable' THEN 1
-    else NULL end;
+update {workingTable} set dam_name_en = 
+    CASE 
+    WHEN NAME1 IS NOT NULL then NAME1
+    WHEN NAME1 IS NULL then LOCALNAME
+    ELSE NULL END;
+--update {workingTable} set dam_name_fr;
+--update {workingTable} set waterbody_name_en;
+--update {workingTable} set waterbody_name_fr;
+--update {workingTable} set reservoir_name_en;
+--update {workingTable} set reservoir_name_fr;
+--update {workingTable} set watershed_group_code;
+--update {workingTable} set nhn_workunit_id;
+--update {workingTable} set province_territory_code;
+--update {workingTable} set nearest_municipality;
+--update {workingTable} set owner;
+--update {workingTable} set ownership_type_code;
+--update {workingTable} set province_reg_body; removed
+--update {workingTable} set federal_reg_body; removed
+--update {workingTable} set provincial_compliance_status;
+--update {workingTable} set federal_compliance_status;
+--update {workingTable} set operating_notes;
+update {workingTable} set operating_status_code =
+    CASE 
+    WHEN MANMADESTA = -1 then 5
+    WHEN MANMADESTA = 1 then 2
+    WHEN MANMADESTA = 2 then 1
+    ELSE NULL END;
+--update {workingTable} set use_code;
+--update {workingTable} set use_irrigation_code;
+--update {workingTable} set use_electricity_code;
+--update {workingTable} set use_supply_code;
+--update {workingTable} set use_floodcontrol_code;
+--update {workingTable} set use_recreation_code;
+--update {workingTable} set use_navigation_code;
+--update {workingTable} set use_fish_code;
+--update {workingTable} set use_pollution_code;
+--update {workingTable} set use_invasivespecies_code;
+--update {workingTable} set use_other_code;
+--update {workingTable} set lake_control_code;
+--update {workingTable} set construction_year;
+--update {workingTable} set removed_year;
+--update {workingTable} set assess_schedule;
+--update {workingTable} set expected_life;
+--update {workingTable} set maintenance_last;
+--update {workingTable} set maintenance_next;
+--update {workingTable} set condition_code;
+--update {workingTable} set function_code;
+--update {workingTable} set construction_type_code;
+--update {workingTable} set height_m;
+--update {workingTable} set length_m;
+--update {workingTable} set size_class_code;
+    CASE
+    WHEN "height_m" < 5 THEN 1
+    WHEN "height_m" >= 5 AND  "height_m" < 15 THEN 2
+    WHEN "height_m" >= 15 THEN 3
+    ELSE NULL END;
+--update {workingTable} set spillway_capacity;
+--update {workingTable} set spillway_type_code;
+--update {workingTable} set reservoir_present;
+--update {workingTable} set reservoir_area_skm;
+--update {workingTable} set reservoir_depth_m;
+--update {workingTable} set avg_rate_of_discharge_ls;
+--update {workingTable} set storage_capacity_mcm;
+--update {workingTable} set degree_of_regulation_pc;
+--update {workingTable} set catchment_area_skm;
+--update {workingTable} set provincial_flow_req;
+--update {workingTable} set federal_flow_req;
+--update {workingTable} set hydro_peaking_system;
+--update {workingTable} set generating_capacity_mwh;
+--update {workingTable} set turbine_number;
+--update {workingTable} set turbine_type_code;
+--update {workingTable} set upstream_linear_km;
+--update {workingTable} set passability_status_code;
+--update {workingTable} set passability_status_note;
+--update {workingTable} set up_passage_type_code;
+--update {workingTable} set down_passage_route_code;
+--update {workingTable} set capture_date;
+--update {workingTable} set last_update;
+update {workingTable} set data_source_id = NID;
+update {workingTable} set data_source = 'nbhn';
+--update {workingTable} set "comments" text;
+--update {workingTable} set complete_level_code;
 
 update {workingTable} set original_point = st_setsrid(st_makepoint(longitude, latitude), 4326);
-   
 select cabd.snap_to_network('{workingSchema}', '{workingTableRaw}', 'original_point', 'snapped_point', {snappingDistance});
-
 update {workingTable} set snapped_point = original_point where snapped_point is null;
-  
 update {workingTable} set province_territory_code = a.code from cabd.province_territory_codes a where st_contains(a.geometry, original_point) and province_territory_code is null;
 update {workingTable} set nhn_workunit_id = a.id from cabd.nhn_workunit a where st_contains(a.polygon, original_point) and nhn_workunit_id is null;
     """
@@ -267,9 +228,9 @@ INSERT INTO dams.dams_medium_large(
 cabd_id, dam_name_en,
 dam_name_fr,waterbody_name_en,waterbody_name_fr,
 reservoir_name_en,reservoir_name_fr,watershed_group_code,
-province_territory_code,nearest_municipality,"owner",
+nhn_workunit_id,province_territory_code,nearest_municipality,"owner",
 ownership_type_code,
-province_compliance_status,federal_compliance_status,operating_note,
+provincial_compliance_status,federal_compliance_status,operating_notes,
 operating_status_code,use_code,use_irrigation_code,
 use_electricity_code,use_supply_code,use_floodcontrol_code,
 use_recreation_code,use_navigation_code,use_fish_code,
@@ -289,9 +250,9 @@ SELECT
 cabd_id, dam_name_en,
 dam_name_fr,waterbody_name_en,waterbody_name_fr,
 reservoir_name_en,reservoir_name_fr,watershed_group_code,
-province_territory_code,nearest_municipality,"owner",
+nhn_workunit_id,province_territory_code,nearest_municipality,"owner",
 ownership_type_code,
-province_compliance_status,federal_compliance_status,operating_note,
+provincial_compliance_status,federal_compliance_status,operating_notes,
 operating_status_code,use_code,use_irrigation_code,
 use_electricity_code,use_supply_code,use_floodcontrol_code,
 use_recreation_code,use_navigation_code,use_fish_code,
@@ -305,8 +266,8 @@ avg_rate_of_discharge_ls,degree_of_regulation_pc,provincial_flow_req,
 federal_flow_req,catchment_area_skm,hydro_peaking_system,
 generating_capacity_mwh,turbine_number,turbine_type_code,
 up_passage_type_code,down_passage_route_code,capture_date,last_update,
-data_source_id,data_source,"comments",complete_level_code,
-upstream_linear_km,passability_status_code,passability_status_note,original_point,snapped_point
+data_source_id,data_source,"comments",complete_level_code, 
+upstream_linear_km,passability_status_code,passability_status_note, original_point,snapped_point
 FROM {workingTable};
 """
 

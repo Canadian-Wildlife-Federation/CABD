@@ -2,7 +2,7 @@ import psycopg2 as pg2
 import sys
 import subprocess
 
-ogr = "C:\\Program Files\\QGIS 3.12\\bin\\ogr2ogr.exe";
+ogr = "C:\\OSGeo4W64\\bin\\ogr2ogr.exe";
 
 dbHost = "cabd-postgres-dev.postgres.database.azure.com"
 dbPort = "5432"
@@ -49,19 +49,16 @@ conn.commit();
 
 #load data using ogr
 orgDb="dbname='" + dbName + "' host='"+ dbHost+"' port='"+dbPort+"' user='"+dbUser+"' password='"+ dbPassword+"'"
-pycmd = '"' + ogr + '" -f "PostgreSQL" PG:"' + orgDb + '" -sql "SELECT * FROM Fishway_Table" -nln "' + workingTable + '" --config OGR_XLSX_HEADERS FORCE ' + dataFile
+pycmd = '"' + ogr + '" -f "PostgreSQL" PG:"' + orgDb + '" -nln "' + workingTable + '" -lco GEOMETRY_NAME=geometry -nlt PROMOTE_TO_MULTI ' + dataFile
 print(pycmd)
 subprocess.run(pycmd)
 
 #run scripts to convert the data
 print("running mapping queries...")
 query = f"""
-
 delete from {workingTable} where "fishway type" is null;
-
 alter table {workingTable} add column cabd_id uuid;
 update {workingTable} set cabd_id = uuid_generate_v4();
-
 alter table {workingTable} add column dam_id uuid;
 alter table {workingTable} add column latitude double precision;
 alter table {workingTable} add column longitude double precision;
@@ -75,14 +72,12 @@ alter table {workingTable} add column watershed_group_code varchar(32);
 alter table {workingTable} add column province_territory_code varchar(2);
 alter table {workingTable} add column nhn_workunit_id varchar(7);
 alter table {workingTable} add column nearest_municipality varchar(512);
-
 alter table {workingTable} add column fishpass_type_code int2 ;
 alter table {workingTable} add column monitoring_equipment text;
 alter table {workingTable} add column contracted_by text;
 alter table {workingTable} add column constructed_by text;
 alter table {workingTable} add column plans_held_by text;
 alter table {workingTable} add column purpose text;
-
 alter table {workingTable} add column designed_on_biology bool;
 alter table {workingTable} add column length_m float4;
 alter table {workingTable} add column elevation_m float4;
@@ -108,17 +103,12 @@ alter table {workingTable} add column fishway_reference_id VARCHAR(256);
 alter table {workingTable} add column data_source_id varchar(256);
 alter table {workingTable} add column data_source varchar(256);
 alter table {workingTable} add column complete_level_code int2;
-
 alter table {workingTable} add column original_point geometry(POINT, 4326);
 alter table {workingTable} add column snapped_point geometry(POINT, 4326);
-
-
 update {workingTable} set latitude = cast("gps decimal latitude" as double precision);
 update {workingTable} set longitude = cast("gps decimal longitude" as double precision);
 update {workingTable} set longitude = null, latitude = null where longitude = 0 and latitude = 0;
-
 update {workingTable} set dam_name_en =  "name of dam/barrier";
-
 update {workingTable} set province_territory_code =
  case when "province/ territory" = 'Alberta' THEN 'ab'
  when "province/ territory" = 'British Columbia' THEN 'bc'
@@ -134,9 +124,7 @@ update {workingTable} set province_territory_code =
  when "province/ territory" = 'Manitoba' THEN 'mb'
  when "province/ territory" = 'Nunavut' THEN 'nu'
  else null end;
-
 update {workingTable} set nearest_municipality = "municipality";
-
 update {workingTable} set fishpass_type_code = 
 case WHEN "fishway type" = 'Vertical slot' THEN 6
 WHEN "fishway type" = 'Pool&Weir' THEN 3
@@ -159,24 +147,19 @@ WHEN "fishway type" = 'Pool and Weir' THEN 3
 WHEN "fishway type" = 'Rock ramp' THEN 2
 ELSE NULL
 END;
-
-update {workingTable} set fishpass_type_code = 11 WHERE fishpass_type_code is null;
-
+update {workingTable} set fishpass_type_code = 9 WHERE fishpass_type_code is null;
 update {workingTable} set
      monitoring_equipment = "monitoring equipment",
      contracted_by = "contracted by",
      constructed_by = "constructed by",
      plans_held_by = "plans held by",
      purpose = "purpose of fishway";
-
 update {workingTable} set designed_on_biology = case 
     when "designed based on biology?" = 'Yes' THEN true
     when "designed based on biology?" = 'yes' THEN true
     when "designed based on biology?" = 'No' THEN false
     else null
 end;
-
-
 update {workingTable} set 
     length_m = cast("length of fishway (m)" as double precision),
     elevation_m = cast("elevation (m)" as double precision),
@@ -188,8 +171,6 @@ update {workingTable} set entrance_location_code = case
     when "bank or midstream entrance" = 'Bank' THEN 2
     else null
 end;
-
-
 update {workingTable} set entrance_position_code = case     
     when "entrance position in water column" = 'Bottom' THEN 1
     when "entrance position in water column" = 'Surface' THEN 2
@@ -198,38 +179,28 @@ update {workingTable} set entrance_position_code = case
     when "entrance position in water column" = 'Mid-column' THEN 4
     else null
 end;
-
 update {workingTable} set modified = case 
     when "post_construction modifications?" = 'Yes' THEN true
     when "post_construction modifications?" = 'No' THEN false
     else null
 end;
-
 update {workingTable} set modification_year = cast("date of modification" as integer);
 update {workingTable} set modification_purpose = "reason for modification";
 update {workingTable} set year_constructed = cast("date constructed" as integer);
-
-
 update {workingTable} set operated_by = "operated by";
 update {workingTable} set operation_period = "period of operation";
-
 update {workingTable} set has_evaluating_studies = case 
     when "evaluating studies" = 'Yes' THEN true
     when "evaluating studies" = 'No' THEN false
     else null
 end;
-
 update {workingTable} set 
     nature_of_evaluation_studies = "nature of evaluation studies",
     engineering_notes = "engineering notes";
-
 update {workingTable} set 
     data_source = 'CANFISHPASS',
     data_source_id = null; 
-
-
 create table {speciesMappingTable} (name varchar, fishid uuid);
-
 insert into {speciesMappingTable}
   select distinct rtrim(ltrim(id)) from (
    select distinct split_part(id, ',', generate_series(1, 50)) as id from 
@@ -315,17 +286,13 @@ update {speciesMappingTable} set fishid = a.id from cabd.fish_species a where {s
 update {speciesMappingTable} set fishid = a.id from cabd.fish_species a where {speciesMapping}.name = 'Alewives' and a.name = 'Alewife (Alosa pseudoharengus)';
 update {speciesMappingTable} set fishid = a.id from cabd.fish_species a where {speciesMapping}.name = 'Sander Lucius' and a.name = 'Zander (Sander lucioperca)';
 update {speciesMappingTable} set fishid = a.id from cabd.fish_species a where {speciesMapping}.name = 'Stizostedion canadense' and a.name = 'Sauger (Sander canadensis)';
-
 update {speciesMappingTable} set fishid = a.id from cabd.fish_species a where {speciesMapping}.name = 'members of the Catostomus genus' and a.name = 'Longnose sucker (Catostomus catostomus)';
 insert into {speciesMappingTable} (fishid, name) select a.id, 'members of the Catostomus genus' from cabd.fish_species a where a.name in ('Bridgelip sucker (Catostomus columbianus)','White sucker (Catostomus commersonii)', 'Mountain sucker (Catostomus platyrhynchus)', 'Largescale sucker (Catostumus macrocheilus)');
-
-update {workingTable} set original_point = st_setsrid(st_makepoint(longitude, latitude), 4326);
+update {workingTable} set original_point = st_transform(st_geometryN(geometry, 1), 4326);
 update {workingTable} set snapped_point = original_point where snapped_point is null;
 select cabd.snap_to_network('{workingSchema}', '{workingTableRaw}', 'original_point', 'snapped_point', {snappingDistance});
-
 update {workingTable} set province_territory_code = a.code from cabd.province_territory_codes a where st_contains(a.geometry, original_point) and province_territory_code is null;
 update {workingTable} set nhn_workunit_id = a.id from cabd.nhn_workunit a where st_contains(a.polygon, original_point) and nhn_workunit_id is null;
-
 --compute dam_id based on 100m buffer
 update {workingTable} set dam_id = foo.dam_id
 FROM
@@ -345,7 +312,6 @@ FROM
   ) bar
   ) foo
   where foo.cabd_id = {workingTable}.cabd_id;
-
     """
 
 
@@ -377,12 +343,10 @@ operated_by, operation_period, has_evaluating_studies, nature_of_evaluation_stud
 max_fishway_velocity_ms, estimate_of_attraction_pct, estimate_of_passage_success_pct, fishway_reference_id, data_source_id,
 data_source, complete_level_code, original_point, snapped_point
 FROM {workingTable};
-
 insert into fishways.species_mapping (fishway_id, species_id, known_to_use)
 select distinct a.cabd_id, b.fishid, true
 from {workingTable} a, {speciesMappingTable} b
 where a."species known to use fishway" like '%' || b.name || '%' and b.fishid is not null;
-
 insert into fishways.species_mapping (fishway_id, species_id, known_to_use)
 select cabd_id, fishid, false from 
 (select distinct a.cabd_id, b.fishid
@@ -390,7 +354,6 @@ from {workingTable} a, {speciesMappingTable} b
 where a."species known not to use fishway" like '%' || b.name || '%' and b.fishid is not null
 except 
 select fishway_id, species_id from fishways.species_mapping sm ) foo;
-
 """
 
 print("Script Complete")
