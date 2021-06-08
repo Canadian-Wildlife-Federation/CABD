@@ -1,14 +1,14 @@
------------- CABD Barrier - Data Loading Scripts ----------------
+------------ CABD Feature Types - Data Loading Scripts ----------------
 
-These python scripts load barrier data from various sources into the CABD database.
+These python scripts load feature data from various sources into the CABD database.
 All scripts load data into a temporary table identified at the top of the file.  Once finished the
-script write out the sql statement to run to load the data into the main barrier database table.
+script write out the sql statement to run to load the data into the main feature database table.
 
 
 **** !!! 
-The script DOES NOT load data into the main barrier database table - the user must
+The script DOES NOT load data into the main feature database table - the user must
 run the sql that is printed out after the data is loaded in order to move the data
-from the temporary working table into the production barrier table.
+from the temporary working table into the production feature table.
 **** !!!
  
 
@@ -29,6 +29,6 @@ The variables are ogr, dbHost, dbPort, dbName, dbUser, dbPassword.
 cabd_XXX_XXXXX.py <dataFile>
 
 Once the data has been loaded into the temporary table you can view the data and make any addition updates you want
-to make before loading the data into the main dam barrier table. (The script writes out the sql statement required to load the
+to make before loading the data into the main feature table. (The script writes out the sql statement required to load the
 data).
 
