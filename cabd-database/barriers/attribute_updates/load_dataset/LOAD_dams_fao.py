@@ -1,140 +1,86 @@
-import psycopg2 as pg2
-import sys
-import subprocess
+import LOAD_dams_main as main
 
-ogr = "C:\\OSGeo4W64\\bin\\ogr2ogr.exe";
-
-dbHost = "localhost"
-dbPort = "5432"
-dbName = "cabd_dev"
-dbUser = "kohearn@cabd_dev"
-dbPassword = "denim-snail"
-
-#create temporary table and table to be inserted into CABD dataset
-tempSchema = "source_data"
-tempTableRaw = "dams_fao_original"
-tempTable = tempSchema + "." + tempTableRaw
-workingSchema = "load"
-workingTableRaw = "dams_fao"
-workingTable = workingSchema + "." + workingTableRaw
-
-dataFile = ""
-
-if len(sys.argv) == 2:
-    dataFile = sys.argv[1]
+script = main.DamLoadingScript("fao")
     
-if dataFile == '':
-    print("Data file required.  Usage: LOAD_dams_fao.py <datafile>")
-    sys.exit()
-
-
-print("Loading data from file " +  dataFile)
-
-
-conn = pg2.connect(database=dbName, 
-                   user=dbUser, 
-                   host=dbHost, 
-                   password=dbPassword, 
-                   port=dbPort)
-
-query = f"""
-CREATE SCHEMA IF NOT EXISTS {tempSchema};
-CREATE SCHEMA IF NOT EXISTS {workingSchema};
-DROP TABLE IF EXISTS {tempTable};
-DROP TABLE IF EXISTS {workingTable};
-"""
-
-with conn.cursor() as cursor:
-    cursor.execute(query)
-conn.commit()
-
-#load data using ogr
-orgDb="dbname='" + dbName + "' host='"+ dbHost+"' port='"+dbPort+"' user='"+dbUser+"' password='"+ dbPassword+"'"
-pycmd = '"' + ogr + '" -f "PostgreSQL" PG:"' + orgDb + '" -nln "' + tempTable + '" -lco GEOMETRY_NAME=geometry -nlt PROMOTE_TO_MULTI ' + '"' + dataFile + '"'
-print(pycmd)
-subprocess.run(pycmd)
-
-#run scripts to convert the data
-print("Running mapping queries...")
 query = f"""
 --add new columns and populate tempTable with mapped attributes
-ALTER TABLE {tempTable} ADD COLUMN dam_name_en varchar(512);
-ALTER TABLE {tempTable} ADD COLUMN nearest_municipality varchar(512);
-ALTER TABLE {tempTable} ADD COLUMN waterbody_name_en varchar(512);
-ALTER TABLE {tempTable} ADD COLUMN construction_year numeric;
-ALTER TABLE {tempTable} ADD COLUMN height_m float4;
-ALTER TABLE {tempTable} ADD COLUMN storage_capacity_mcm float8;
-ALTER TABLE {tempTable} ADD COLUMN reservoir_area_skm float4;
-ALTER TABLE {tempTable} ADD COLUMN use_irrigation_code int2;
-ALTER TABLE {tempTable} ADD COLUMN use_supply_code int2;
-ALTER TABLE {tempTable} ADD COLUMN use_floodcontrol_code int2;
-ALTER TABLE {tempTable} ADD COLUMN use_electricity_code int2;
-ALTER TABLE {tempTable} ADD COLUMN use_navigation_code int2;
-ALTER TABLE {tempTable} ADD COLUMN use_recreation_code int2;
-ALTER TABLE {tempTable} ADD COLUMN use_pollution_code int2;
-ALTER TABLE {tempTable} ADD COLUMN use_other_code int2;
-ALTER TABLE {tempTable} ADD COLUMN comments text;
-ALTER TABLE {tempTable} ADD COLUMN data_source text;
+ALTER TABLE {script.tempTable} ADD COLUMN dam_name_en varchar(512);
+ALTER TABLE {script.tempTable} ADD COLUMN nearest_municipality varchar(512);
+ALTER TABLE {script.tempTable} ADD COLUMN waterbody_name_en varchar(512);
+ALTER TABLE {script.tempTable} ADD COLUMN construction_year numeric;
+ALTER TABLE {script.tempTable} ADD COLUMN height_m float4;
+ALTER TABLE {script.tempTable} ADD COLUMN storage_capacity_mcm float8;
+ALTER TABLE {script.tempTable} ADD COLUMN reservoir_area_skm float4;
+ALTER TABLE {script.tempTable} ADD COLUMN use_irrigation_code int2;
+ALTER TABLE {script.tempTable} ADD COLUMN use_supply_code int2;
+ALTER TABLE {script.tempTable} ADD COLUMN use_floodcontrol_code int2;
+ALTER TABLE {script.tempTable} ADD COLUMN use_electricity_code int2;
+ALTER TABLE {script.tempTable} ADD COLUMN use_navigation_code int2;
+ALTER TABLE {script.tempTable} ADD COLUMN use_recreation_code int2;
+ALTER TABLE {script.tempTable} ADD COLUMN use_pollution_code int2;
+ALTER TABLE {script.tempTable} ADD COLUMN use_other_code int2;
+ALTER TABLE {script.tempTable} ADD COLUMN comments text;
+ALTER TABLE {script.tempTable} ADD COLUMN data_source text;
 
-UPDATE {tempTable} SET dam_name_en = name_of_dam;
-UPDATE {tempTable} SET nearest_municipality = nearest_city;
-UPDATE {tempTable} SET waterbody_name_en =
+UPDATE {script.tempTable} SET dam_name_en = name_of_dam;
+UPDATE {script.tempTable} SET nearest_municipality = nearest_city;
+UPDATE {script.tempTable} SET waterbody_name_en =
     CASE
     WHEN regexp_match(river, '.*River.*') IS NOT NULL THEN river
     WHEN regexp_match(river, '.*Creek.*') IS NOT NULL THEN river
     WHEN regexp_match(river, '.*Falls.*') IS NOT NULL THEN river
     WHEN river IS NULL THEN NULL
     ELSE (river || ' River') END;
-UPDATE {tempTable} SET construction_year = 
+UPDATE {script.tempTable} SET construction_year = 
     CASE
     WHEN completed_operational_since = 'Incomplete?' THEN NULL
     ELSE completed_operational_since::numeric END;
-UPDATE {tempTable} SET height_m = dam_height_m;
-UPDATE {tempTable} SET storage_capacity_mcm = reservoir_capacity_million_m3;
-UPDATE {tempTable} SET reservoir_area_skm = reservoir_area_km2;
-UPDATE {tempTable} SET use_irrigation_code = 
+UPDATE {script.tempTable} SET height_m = dam_height_m;
+UPDATE {script.tempTable} SET storage_capacity_mcm = reservoir_capacity_million_m3;
+UPDATE {script.tempTable} SET reservoir_area_skm = reservoir_area_km2;
+UPDATE {script.tempTable} SET use_irrigation_code = 
     CASE
     WHEN irrigation = 'x' THEN 3
     ELSE NULL END;
-UPDATE {tempTable} SET use_supply_code = 
+UPDATE {script.tempTable} SET use_supply_code = 
     CASE
     WHEN water_supply = 'x' THEN 3
     ELSE NULL END;
-UPDATE {tempTable} SET use_floodcontrol_code = 
+UPDATE {script.tempTable} SET use_floodcontrol_code = 
     CASE
     WHEN flood_control = 'x' THEN 3
     ELSE NULL END;
-UPDATE {tempTable} SET use_electricity_code = 
+UPDATE {script.tempTable} SET use_electricity_code = 
     CASE
     WHEN hydroelectricity_mw = 'x' THEN 3
     ELSE NULL END;
-UPDATE {tempTable} SET use_navigation_code = 
+UPDATE {script.tempTable} SET use_navigation_code = 
     CASE
     WHEN navigation = 'x' THEN 3
     ELSE NULL END;
-UPDATE {tempTable} SET use_recreation_code = 
+UPDATE {script.tempTable} SET use_recreation_code = 
     CASE
     WHEN recreation = 'x' THEN 3
     ELSE NULL END;
-UPDATE {tempTable} SET use_pollution_code = 
+UPDATE {script.tempTable} SET use_pollution_code = 
     CASE
     WHEN pollution_control = 'x' THEN 3
     ELSE NULL END;
-UPDATE {tempTable} SET use_other_code =
+UPDATE {script.tempTable} SET use_other_code =
     CASE
     WHEN other = 'x' THEN 3
     ELSE NULL END;
-UPDATE {tempTable} SET "comments" = comments_orig;
-UPDATE {tempTable} SET data_source = 'fao_' || id_fao;
+UPDATE {script.tempTable} SET "comments" = comments_orig;
+UPDATE {script.tempTable} SET data_source = 'fao_' || id_fao;
 
-ALTER TABLE {tempTable} ALTER COLUMN data_source SET NOT NULL;
-ALTER TABLE {tempTable} DROP CONSTRAINT {tempTableRaw}_pkey;
-ALTER TABLE {tempTable} ADD PRIMARY KEY (data_source);
-ALTER TABLE {tempTable} DROP COLUMN fid;
+ALTER TABLE {script.tempTable} ALTER COLUMN data_source SET NOT NULL;
+ALTER TABLE {script.tempTable} DROP CONSTRAINT {script.datasetname}_pkey;
+ALTER TABLE {script.tempTable} ADD PRIMARY KEY (data_source);
+ALTER TABLE {script.tempTable} DROP COLUMN fid;
 
 --create workingTable and insert mapped attributes
 --ensure all the columns match the new columns you added
-CREATE TABLE {workingTable}(
+CREATE TABLE {script.workingTable}(
     cabd_id uuid,
     dam_name_en varchar(512),
     nearest_municipality varchar(512),
@@ -154,7 +100,7 @@ CREATE TABLE {workingTable}(
     comments text,
     data_source text PRIMARY KEY
 );
-INSERT INTO {workingTable}(
+INSERT INTO {script.workingTable}(
     dam_name_en,
     nearest_municipality,
     waterbody_name_en,
@@ -191,10 +137,10 @@ SELECT
     use_other_code,
     "comments",
     data_source
-FROM {tempTable};
+FROM {script.tempTable};
 
 --delete extra fields from tempTable except data_source
-ALTER TABLE {tempTable}
+ALTER TABLE {script.tempTable}
     DROP COLUMN dam_name_en,
     DROP COLUMN nearest_municipality,
     DROP COLUMN waterbody_name_en,
@@ -212,30 +158,16 @@ ALTER TABLE {tempTable}
     DROP COLUMN use_other_code,
     DROP COLUMN "comments";
 
-"""
-
-with conn.cursor() as cursor:
-    cursor.execute(query)
-conn.commit()
-
-print("Finding CABD IDs...")
-query = f"""
+-- Finding CABD IDs...
 UPDATE
-	load.dams_fao AS fao
+	{script.workingTable} AS fao
 SET
 	cabd_id = duplicates.cabd_dam_id
 FROM
-	load.duplicates AS duplicates
+	{script.duplicatetable} AS duplicates
 WHERE
 	fao.data_source = duplicates.data_source
 	OR fao.data_source = duplicates.dups_fao;
 """
 
-with conn.cursor() as cursor:
-    cursor.execute(query)
-
-conn.commit()
-conn.close()
-
-print("Script complete")
-print("Data loaded into table: " + workingTable)
+script.do_work(query)

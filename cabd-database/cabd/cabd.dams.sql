@@ -140,7 +140,7 @@ CREATE TABLE dams.passability_status_codes(
 	code int2 NOT NULL,
 	"name" varchar(32) NOT NULL,
 	description text NULL,
-	CONSTRAINT passability_sutatus_codes_pk PRIMARY KEY (code);
+	CONSTRAINT passability_sutatus_codes_pk PRIMARY KEY (code)
 );
 COMMENT ON TABLE dams.passability_status_codes IS 'Reference table for the degree to which the structure acts as a barrier to fish in the upstream direction.';
 COMMENT ON COLUMN dams.passability_status_codes.code IS 'Code referencing the degree to which the structure acts as a barrier to fish in the upstream direction.';
@@ -262,7 +262,7 @@ COMMENT ON COLUMN dams.dams_medium_large.provincial_flow_req IS 'Legislated flow
 COMMENT ON COLUMN dams.dams_medium_large.federal_flow_req IS 'Minimum flow recommendations for the dam structure in cubic meters per second. Based on assessments by Fisheries and Oceans Canada for the protection of fish and fish habitat.';
 COMMENT ON COLUMN dams.dams_medium_large.catchment_area_skm IS 'Area of upstream catchment draining into the reservoir in square kilometers. The area of upstream catchment is defined by "Elementary Catchment" units in the National Hydrography Network.';
 COMMENT ON COLUMN dams.dams_medium_large.hydro_peaking_system IS 'Indicates if the dam employs a hydro peaking system.';
-COMMENT ON COLUMN dams.dams_medium_large.upstream_linear_km IS 'The amount of unobstructed linear kilometers upstream of the barrier that would become available to aquatic species if the barrier were to be remediated.' 
+COMMENT ON COLUMN dams.dams_medium_large.upstream_linear_km IS 'The amount of unobstructed linear kilometers upstream of the barrier that would become available to aquatic species if the barrier were to be remediated.'; 
 COMMENT ON COLUMN dams.dams_medium_large.generating_capacity_mwh IS 'The amount of electricity the hydroelectric facility can produce in megawatt hours.';
 COMMENT ON COLUMN dams.dams_medium_large.turbine_number IS 'The number of turbines in the dam structure.';
 COMMENT ON COLUMN dams.dams_medium_large.capture_date IS 'The capture date for a structure as documented in the original dataset, if provided.';
