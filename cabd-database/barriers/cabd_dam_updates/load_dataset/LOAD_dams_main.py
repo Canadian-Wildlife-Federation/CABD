@@ -1,6 +1,7 @@
 import psycopg2 as pg2
 import subprocess
 import sys
+from uuid import uuid4
 
 ogr = "C:\\Program Files\\QGIS 3.12\\bin\\ogr2ogr.exe";
 
@@ -11,6 +12,9 @@ dbUser = "postgres"
 dbPassword = "sql"
 
 duplicatestable = "load.duplicates"
+
+damTable = "dams.dams_medium_large"
+damAttributeTable = "dams.dams_medium_large_attribute_source"
 
 class DamLoadingScript:
 
@@ -24,11 +28,13 @@ class DamLoadingScript:
     datasetname = ""
     datafile = ""
     
+    dsUuid = uuid4();
+    
     def __init__(self, datasetname):
         self.datasetname = datasetname
         self.tempTable = self.tempSchema + "." + datasetname
         self.workingTable = self.workingSchema + "." + datasetname
-
+        
         if len(sys.argv) == 2:
             self.datafile = sys.argv[1]
             
@@ -38,7 +44,7 @@ class DamLoadingScript:
             sys.exit()
 
 
-    def do_work(self, mappingquery):       
+    def do_work(self, mappingquery, prodquery):       
         print("Loading data from file " +  self.datafile)
          
         self.conn = pg2.connect(database=dbName, 
@@ -57,6 +63,8 @@ class DamLoadingScript:
         
         print("Script complete")
         print("Data loaded into table: " + self.workingTable)
+        print("To Update Production Data:")
+        print(prodquery);
 
     #load data from geopackage file into the database
     #into a table calls tempSchema.datasetname
