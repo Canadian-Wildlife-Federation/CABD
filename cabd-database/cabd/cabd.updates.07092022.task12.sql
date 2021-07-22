@@ -1508,7 +1508,6 @@ SELECT d.cabd_id,
     d.has_evaluating_studies,
     d.nature_of_evaluation_studies,
     d.engineering_notes,
-    d.operating_notes,
     d.mean_fishway_velocity_ms,
     d.max_fishway_velocity_ms,
     d.estimate_of_attraction_pct,
@@ -1587,9 +1586,9 @@ AS SELECT d.cabd_id,
     d.ownership_type_code,
     ow.name AS ownership_type,
     d.municipality,
-    d.province_compliance_status,
+    d.provincial_compliance_status,
     d.federal_compliance_status,
-    d.operating_note,
+    d.operating_notes,
     d.operating_status_code,
     os.name AS operating_status,
     d.use_code,
@@ -1687,7 +1686,7 @@ AS SELECT d.cabd_id,
      LEFT JOIN dams.dam_complete_level_codes cl ON cl.code = d.complete_level_code
      LEFT JOIN dams.lake_control_codes lk ON lk.code = d.lake_control_code
      LEFT JOIN cabd.nhn_workunit nhn ON nhn.id = d.nhn_workunit_id
-     LEFT JOIN dams.passability_status_codes ps ON ps.code = d.passability_status_code;
+     LEFT JOIN cabd.passability_status_codes ps ON ps.code = d.passability_status_code;
 
      
 CREATE VIEW cabd.all_features_view

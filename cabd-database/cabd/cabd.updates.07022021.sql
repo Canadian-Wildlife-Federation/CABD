@@ -4,6 +4,13 @@
 -- information in the feature types, then removes the data source
 -- field from that table and corresponding view
 
+
+update cabd.feature_type_metadata set field_name = 'provincial_compliance_status'
+where view_name = 'cabd.dams_medium_large_view' and field_name = 'province_compliance_status';
+
+update cabd.feature_type_metadata set field_name = 'operating_notes'
+where view_name = 'cabd.dams_medium_large_view' and field_name = 'operating_note';
+
 --------------- DATA SOURCE TABLE ------------------------
 -- make the necessary data source attribute tracking tables
 CREATE TABLE cabd.data_source(
@@ -48,12 +55,12 @@ CREATE TABLE dams.dams_medium_large_attribute_source (
 	owner_dsfid varchar,
 	ownership_type_code_ds uuid REFERENCES cabd.data_source(id),
 	ownership_type_code_dsfid varchar,
-	province_compliance_status_ds uuid REFERENCES cabd.data_source(id),
-	province_compliance_status_dsfid varchar,
+	provincial_compliance_status_ds uuid REFERENCES cabd.data_source(id),
+	provincial_compliance_status_dsfid varchar,
 	federal_compliance_status_ds uuid REFERENCES cabd.data_source(id),
 	federal_compliance_status_dsfid varchar,
-	operating_note_ds uuid REFERENCES cabd.data_source(id),
-	operating_note_dsfid varchar, 
+	operating_notes_ds uuid REFERENCES cabd.data_source(id),
+	operating_notes_dsfid varchar, 
 	operating_status_code_ds uuid REFERENCES cabd.data_source(id),
 	operating_status_code_dsfid varchar,
 	use_code_ds uuid REFERENCES cabd.data_source(id),
@@ -161,9 +168,9 @@ waterbody_name_en_ds, waterbody_name_en_dsfid, waterbody_name_fr_ds, waterbody_n
 reservoir_name_en_ds, reservoir_name_en_dsfid, reservoir_name_fr_ds, reservoir_name_fr_dsfid, 
 nearest_municipality_ds, 
 nearest_municipality_dsfid, owner_ds, owner_dsfid, ownership_type_code_ds, 
-ownership_type_code_dsfid, province_compliance_status_ds, province_compliance_status_dsfid, 
-federal_compliance_status_ds, federal_compliance_status_dsfid, operating_note_ds, 
-operating_note_dsfid, operating_status_code_ds, operating_status_code_dsfid, use_code_ds, 
+ownership_type_code_dsfid, provincial_compliance_status_ds, provincial_compliance_status_dsfid, 
+federal_compliance_status_ds, federal_compliance_status_dsfid, operating_notes_ds, 
+operating_notes_dsfid, operating_status_code_ds, operating_status_code_dsfid, use_code_ds, 
 use_code_dsfid, use_irrigation_code_ds, use_irrigation_code_dsfid, use_electricity_code_ds, 
 use_electricity_code_dsfid, use_supply_code_ds, use_supply_code_dsfid, use_floodcontrol_code_ds, 
 use_floodcontrol_code_dsfid, use_recreation_code_ds, use_recreation_code_dsfid, 
@@ -209,12 +216,12 @@ case when a."owner" is not null then b.id else null end,
 case when a."owner" is not null then a.data_source_id else null end,
 case when a.ownership_type_code is not null then b.id else null end,
 case when a.ownership_type_code is not null then a.data_source_id else null end,
-case when a.province_compliance_status is not null then b.id else null end,
-case when a.province_compliance_status is not null then a.data_source_id else null end,
+case when a.provincial_compliance_status is not null then b.id else null end,
+case when a.provincial_compliance_status is not null then a.data_source_id else null end,
 case when a.federal_compliance_status is not null then b.id else null end,
 case when a.federal_compliance_status is not null then a.data_source_id else null end,
-case when a.operating_note is not null then b.id else null end,
-case when a.operating_note is not null then a.data_source_id else null end,
+case when a.operating_notes is not null then b.id else null end,
+case when a.operating_notes is not null then a.data_source_id else null end,
 case when a.operating_status_code is not null then b.id else null end,
 case when a.operating_status_code is not null then a.data_source_id else null end,
 case when a.use_code is not null then b.id else null end,
@@ -350,9 +357,9 @@ AS SELECT d.cabd_id,
     d.ownership_type_code,
     ow.name AS ownership_type,
     d.nearest_municipality,
-    d.province_compliance_status,
+    d.provincial_compliance_status,
     d.federal_compliance_status,
-    d.operating_note,
+    d.operating_notes,
     d.operating_status_code,
     os.name AS operating_status,
     d.use_code,
@@ -451,7 +458,7 @@ AS SELECT d.cabd_id,
      LEFT JOIN dams.dam_complete_level_codes cl ON cl.code = d.complete_level_code
      LEFT JOIN dams.lake_control_codes lk ON lk.code = d.lake_control_code
      LEFT JOIN cabd.watershed_groups wg ON wg.code::text = d.watershed_group_code::text
-     LEFT JOIN dams.passability_status_codes ps ON ps.code = d.passability_status_code;
+     LEFT JOIN cabd.passability_status_codes ps ON ps.code = d.passability_status_code;
 
 GRANT ALL PRIVILEGES ON cabd.dams_medium_large_view to cabd;
 
