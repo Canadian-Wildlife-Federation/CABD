@@ -11,11 +11,11 @@ alter table waterfalls.waterfalls add column passability_status_code int2 null;
 COMMENT ON COLUMN waterfalls.waterfalls.passability_status_code IS 'Code referencing the degree to which the structure acts as a barrier to fish in the upstream direction';
 ALTER TABLE waterfalls.waterfalls ADD CONSTRAINT waterfalls_fk_4 FOREIGN KEY (passability_status_code) REFERENCES cabd.passability_status_codes(code);
 
-update feature_type_metadata set vw_all_order = vw_all_order + 2 where view_name = 'cabd.waterfalls_view' and vw_all_order >= 11; 
-update feature_type_metadata set vw_simple_order = vw_simple_order + 1 where view_name = 'cabd.waterfalls_view' and vw_simple_order >= 7; 
-insert into feature_type_metadata(view_name, field_name, name, description, is_link, data_type, vw_simple_order,vw_all_order)
+update cabd.feature_type_metadata set vw_all_order = vw_all_order + 2 where view_name = 'cabd.waterfalls_view' and vw_all_order >= 11; 
+update cabd.feature_type_metadata set vw_simple_order = vw_simple_order + 1 where view_name = 'cabd.waterfalls_view' and vw_simple_order >= 7; 
+insert into cabd.feature_type_metadata(view_name, field_name, name, description, is_link, data_type, vw_simple_order,vw_all_order)
 values ('cabd.waterfalls_view', 'passability_status_code', 'Passability Status Code','Code referencing the degree to which the structure acts as a barrier to fish in the upstream direction.', false, 'integer', null, 11)
-insert into feature_type_metadata(view_name, field_name, name, description, is_link, data_type, vw_simple_order,vw_all_order)
+insert into cabd.feature_type_metadata(view_name, field_name, name, description, is_link, data_type, vw_simple_order,vw_all_order)
 values ('cabd.waterfalls_view', 'passability_status', 'Passability Status','The degree to which the structure acts as a barrier to fish in the upstream direction.', false, 'varchar(32)', 7,  12)
 
 
@@ -113,12 +113,12 @@ AS SELECT barriers.cabd_id,
      
 grant all privileges on cabd.barriers_view to cabd;   
 
-update feature_type_metadata set vw_all_order = vw_all_order + 2 where view_name = 'cabd.barriers_view' and vw_all_order >= 14; 
-insert into feature_type_metadata(view_name, field_name, name, description, is_link, data_type, vw_simple_order,vw_all_order)
-values ('cabd.barriers_view', 'passability_status_code', 'Passability Status Code','Code referencing the degree to which the structure acts as a barrier to fish in the upstream direction.', false, 'integer', null, 14)
+update cabd.feature_type_metadata set vw_all_order = vw_all_order + 2 where view_name = 'cabd.barriers_view' and vw_all_order >= 14; 
+insert into cabd.feature_type_metadata(view_name, field_name, name, description, is_link, data_type, vw_simple_order,vw_all_order)
+values ('cabd.barriers_view', 'passability_status_code', 'Passability Status Code','Code referencing the degree to which the structure acts as a barrier to fish in the upstream direction.', false, 'integer', null, 14);
 
 insert into feature_type_metadata(view_name, field_name, name, description, is_link, data_type, vw_simple_order,vw_all_order)
-values ('cabd.barriers_view', 'passability_status', 'Passability Status','The degree to which the structure acts as a barrier to fish in the upstream direction.', false, 'varchar(32)', 6,  15)
+values ('cabd.barriers_view', 'passability_status', 'Passability Status','The degree to which the structure acts as a barrier to fish in the upstream direction.', false, 'varchar(32)', 6,  15);
 
 
 --update all features view and associated metadata
@@ -197,11 +197,11 @@ AS SELECT barriers.cabd_id,
 grant all privileges on cabd.all_features_view to cabd;
 
 
-update feature_type_metadata set vw_all_order = vw_all_order + 2 where view_name = 'cabd.all_features_view' and vw_all_order >= 14; 
-insert into feature_type_metadata(view_name, field_name, name, description, is_link, data_type, vw_simple_order,vw_all_order)
-values ('cabd.all_features_view', 'passability_status_code', 'Passability Status Code','Code referencing the degree to which the structure acts as a barrier to fish in the upstream direction.', false, 'integer', null, 14)
+update cabd.feature_type_metadata set vw_all_order = vw_all_order + 2 where view_name = 'cabd.all_features_view' and vw_all_order >= 14; 
+insert into cabd.feature_type_metadata(view_name, field_name, name, description, is_link, data_type, vw_simple_order,vw_all_order)
+values ('cabd.all_features_view', 'passability_status_code', 'Passability Status Code','Code referencing the degree to which the structure acts as a barrier to fish in the upstream direction.', false, 'integer', null, 14);
 
-insert into feature_type_metadata(view_name, field_name, name, description, is_link, data_type, vw_simple_order,vw_all_order)
-values ('cabd.all_features_view', 'passability_status', 'Passability Status','The degree to which the structure acts as a barrier to fish in the upstream direction.', false, 'varchar(32)', 5,  15)
+insert into cabd.feature_type_metadata(view_name, field_name, name, description, is_link, data_type, vw_simple_order,vw_all_order)
+values ('cabd.all_features_view', 'passability_status', 'Passability Status','The degree to which the structure acts as a barrier to fish in the upstream direction.', false, 'varchar(32)', 5,  15);
 
 
