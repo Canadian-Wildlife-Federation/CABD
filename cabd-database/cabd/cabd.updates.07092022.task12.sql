@@ -5,7 +5,7 @@ DROP VIEW cabd.all_features_view;
 DROP VIEW cabd.barriers_view;
 
 --typos
-update cabd.feature_type_metadata set name = 'River/Stream Name (English)' where view_name  = 'cabd.fishways_view' and field_name = 'river_name_en'
+update cabd.feature_type_metadata set name = 'River/Stream Name (English)' where view_name  = 'cabd.fishways_view' and field_name = 'river_name_en';
 update cabd.feature_type_metadata set name = 'Average Velocity of Water Flow (m/s)' where view_name  = 'cabd.fishways_view' and field_name = 'mean_fishway_velocity_ms';
 update cabd.feature_type_metadata set name = 'Maximum Velocity of Water Flow (m/s)' where view_name  = 'cabd.fishways_view' and field_name = 'max_fishway_velocity_ms';
 update cabd.feature_type_metadata set name = 'Transit Success Estimate (%)' where view_name  = 'cabd.fishways_view' and field_name = 'estimate_of_passage_success_pct';
@@ -19,9 +19,6 @@ update cabd.feature_type_metadata set name = 'Completeness Level Code' where vie
 update cabd.feature_type_metadata set name = 'Completeness Level' where view_name  = 'cabd.dams_medium_large_view' and field_name = 'complete_level';
 
 update cabd.feature_type_metadata set name = 'Completeness Level' where view_name  = 'cabd.waterfalls_view' and field_name = 'complete_level';
-
--- 1.2 - update the dams table to change name from "Dams - Medium/Large" to "Dams" 
-update cabd.feature_types set name = 'Dams' where type = 'dams_medium_large';
 
 -- 1.3 - change “Inclination_pct” attribute name in the fishway table to “Gradient”.
 alter table fishways.fishways rename column inclination_pct to gradient;
@@ -1456,12 +1453,15 @@ UPDATE cabd.nhn_workunit set major_drainage_area = 'Mississippi River Drainage A
 UPDATE cabd.nhn_workunit set major_drainage_area = 'Mississippi River Drainage Area', sub_drainage_area = 'Missouri', sub_sub_drainage_area = 'Big Muddy' WHERE id = '11AFB00';
 
 
-INSERT INTO cabd.feature_type_metadata(view_name,field_name,name,description,is_link,data_type,vw_simple_order, vw_all_order) values 
-('cabd.dams_medium_large_view', 'data_source', 'Data Source', 'A link to the datasource details for the features', true, 'url', 19,92),
-('cabd.waterfalls_view', 'data_source', 'Data Source', 'A link to the datasource details for the features', true, 'url', 9,21),
-('cabd.fishways_view', 'data_source', 'Data Source', 'A link to the datasource details for the features', true, 'url', 26,52),
-('cabd.barriers_view', 'data_source', 'Data Source', 'A link to the datasource details for the features', true, 'url', 6,16),
-('cabd.all_features_view', 'data_source', 'Data Source', 'A link to the datasource details for the features', true, 'url', 6,16);
+-- 1.2 - update the dams table to change name from "Dams - Medium/Large" to "Dams" 
+update cabd.feature_types set name = 'Dams' where type = 'dams_medium_large';
+alter table dams.dams_medium_large rename to dams;
+alter table dams.dams_medium_large_attribute_source rename to dams_attribute_source;
+update cabd.feature_type_metadata set view_name = 'cabd.dams_view' where view_name = 'cabd.dams_medium_large_view';
+update cabd.feature_types set data_view = 'cabd.dams_view', attribute_source_table = 'dams.dams_attribute_source' where type = 'dams_medium_large';
+--update cabd.feature_types set type = 'dams' where type = 'dams_medium_large';
+
+
 
 -- recreate views with changes above
 
@@ -1518,7 +1518,6 @@ SELECT d.cabd_id,
     cl.name as complete_level,
     sp1.species AS known_use,
     sp2.species AS known_notuse,
-	'/featuresources/' || d.cabd_id as data_source,    
     d.original_point as geometry
 FROM fishways.fishways d
      LEFT JOIN cabd.province_territory_codes pt ON pt.code = d.province_territory_code
@@ -1561,7 +1560,6 @@ SELECT w.cabd_id,
     cl.name AS complete_level,
     w.passability_status_code,
     ps.name as passability_status,
-	'/featuresources/' || w.cabd_id as data_source,
     w.snapped_point as geometry
    FROM waterfalls.waterfalls w
      JOIN cabd.province_territory_codes pt ON w.province_territory_code::text = pt.code::text
@@ -1570,7 +1568,7 @@ SELECT w.cabd_id,
      LEFT JOIN cabd.passability_status_codes ps ON ps.code = w.passability_status_code;
 
 
-CREATE OR REPLACE VIEW cabd.dams_medium_large_view
+CREATE OR REPLACE VIEW cabd.dams_view
 AS SELECT d.cabd_id,
     'dams_medium_large'::text AS feature_type,
     st_y(d.snapped_point) as latitude,
@@ -1662,9 +1660,8 @@ AS SELECT d.cabd_id,
     d.passability_status_note,
     d.complete_level_code,
     cl.name AS complete_level,
-    '/featuresources/' || d.cabd_id as data_source,
     d.snapped_point AS geometry
-   FROM dams.dams_medium_large d
+   FROM dams.dams d
      JOIN cabd.province_territory_codes pt ON pt.code::text = d.province_territory_code::text
      LEFT JOIN cabd.barrier_ownership_type_codes ow ON ow.code = d.ownership_type_code
      LEFT JOIN dams.operating_status_codes os ON os.code = d.operating_status_code
@@ -1709,22 +1706,21 @@ AS SELECT barriers.cabd_id,
     barriers.reservoir_name_fr,
     barriers.passability_status_code,
     ps.name as passability_status,
-    '/featuresources/' || barriers.cabd_id as data_source,
     barriers.snapped_point as geometry
-   FROM ( SELECT dams_medium_large.cabd_id,
+   FROM ( SELECT dams.cabd_id,
             'dams_medium_large'::text AS barrier_type,
-            dams_medium_large.dam_name_en AS name_en,
-            dams_medium_large.dam_name_fr AS name_fr,
-            dams_medium_large.province_territory_code,
-            dams_medium_large.nhn_workunit_id,
-            dams_medium_large.municipality,
-            dams_medium_large.waterbody_name_en,
-            dams_medium_large.waterbody_name_fr,
-            dams_medium_large.reservoir_name_en,
-            dams_medium_large.reservoir_name_fr,
-            dams_medium_large.passability_status_code,
-            dams_medium_large.snapped_point
-           FROM dams.dams_medium_large
+            dams.dam_name_en AS name_en,
+            dams.dam_name_fr AS name_fr,
+            dams.province_territory_code,
+            dams.nhn_workunit_id,
+            dams.municipality,
+            dams.waterbody_name_en,
+            dams.waterbody_name_fr,
+            dams.reservoir_name_en,
+            dams.reservoir_name_fr,
+            dams.passability_status_code,
+            dams.snapped_point
+           FROM dams.dams
         UNION
          SELECT waterfalls.cabd_id,
             'waterfalls'::text AS barrier_type,
@@ -1777,22 +1773,21 @@ AS SELECT barriers.cabd_id,
     barriers.reservoir_name_fr,
     barriers.passability_status_code,
     ps.name as passability_status,
-    '/featuresources/' || barriers.cabd_id as data_source,
     barriers.snapped_point as geometry
-   FROM ( SELECT dams_medium_large.cabd_id,
+   FROM ( SELECT dams.cabd_id,
             'dams_medium_large'::text AS barrier_type,
-            dams_medium_large.dam_name_en AS name_en,
-            dams_medium_large.dam_name_fr AS name_fr,
-            dams_medium_large.province_territory_code,
-            dams_medium_large.nhn_workunit_id,
-            dams_medium_large.municipality,
-            dams_medium_large.waterbody_name_en,
-            dams_medium_large.waterbody_name_fr,
-            dams_medium_large.reservoir_name_en,
-            dams_medium_large.reservoir_name_fr,
-            dams_medium_large.passability_status_code,
-            dams_medium_large.snapped_point
-           FROM dams.dams_medium_large
+            dams.dam_name_en AS name_en,
+            dams.dam_name_fr AS name_fr,
+            dams.province_territory_code,
+            dams.nhn_workunit_id,
+            dams.municipality,
+            dams.waterbody_name_en,
+            dams.waterbody_name_fr,
+            dams.reservoir_name_en,
+            dams.reservoir_name_fr,
+            dams.passability_status_code,
+            dams.snapped_point
+           FROM dams.dams
         UNION
          SELECT waterfalls.cabd_id,
             'waterfalls'::text AS barrier_type,
@@ -1821,12 +1816,12 @@ update cabd.feature_type_metadata set vw_all_order = 17 where view_name = 'cabd.
 update cabd.feature_type_metadata set vw_all_order = 18 where view_name = 'cabd.waterfalls_view' and field_name = 'sub_sub_drainage_area';
 update cabd.feature_type_metadata set vw_all_order = 19 where view_name = 'cabd.waterfalls_view' and field_name = 'municipality';
 update cabd.feature_type_metadata set vw_all_order = 20 where view_name = 'cabd.waterfalls_view' and field_name = 'feature_type';
-update cabd.feature_type_metadata set vw_all_order = 86 where view_name = 'cabd.dams_medium_large_view' and field_name = 'municipality';
-update cabd.feature_type_metadata set vw_all_order = 87 where view_name = 'cabd.dams_medium_large_view' and field_name = 'comments';
-update cabd.feature_type_metadata set vw_all_order = 88 where view_name = 'cabd.dams_medium_large_view' and field_name = 'nhn_workunit_id';
-update cabd.feature_type_metadata set vw_all_order = 89 where view_name = 'cabd.dams_medium_large_view' and field_name = 'sub_sub_drainage_area';
-update cabd.feature_type_metadata set vw_all_order = 90 where view_name = 'cabd.dams_medium_large_view' and field_name = 'last_modified';
-update cabd.feature_type_metadata set vw_all_order = 91 where view_name = 'cabd.dams_medium_large_view' and field_name = 'feature_type';
+update cabd.feature_type_metadata set vw_all_order = 86 where view_name = 'cabd.dams_view' and field_name = 'municipality';
+update cabd.feature_type_metadata set vw_all_order = 87 where view_name = 'cabd.dams_view' and field_name = 'comments';
+update cabd.feature_type_metadata set vw_all_order = 88 where view_name = 'cabd.dams_view' and field_name = 'nhn_workunit_id';
+update cabd.feature_type_metadata set vw_all_order = 89 where view_name = 'cabd.dams_view' and field_name = 'sub_sub_drainage_area';
+update cabd.feature_type_metadata set vw_all_order = 90 where view_name = 'cabd.dams_view' and field_name = 'last_modified';
+update cabd.feature_type_metadata set vw_all_order = 91 where view_name = 'cabd.dams_view' and field_name = 'feature_type';
 update cabd.feature_type_metadata set vw_all_order = 48 where view_name = 'cabd.fishways_view' and field_name = 'municipality';
 update cabd.feature_type_metadata set vw_all_order = 49 where view_name = 'cabd.fishways_view' and field_name = 'nhn_workunit_id';
 update cabd.feature_type_metadata set vw_all_order = 50 where view_name = 'cabd.fishways_view' and field_name = 'sub_sub_drainage_area';
@@ -1835,466 +1830,7 @@ update cabd.feature_type_metadata set vw_all_order = 51 where view_name = 'cabd.
 
 grant all privileges on cabd.barriers_view to cabd;   
 grant all privileges on cabd.all_features_view to cabd;
-GRANT ALL PRIVILEGES ON cabd.dams_medium_large_view to cabd;
+GRANT ALL PRIVILEGES ON cabd.dams_view to cabd;
 grant all privileges on cabd.fishways_view to cabd;     
 grant all privileges on cabd.waterfalls_view to cabd;
 
-
-
-
-
-
-
-
-
-
-
-
---view for waterfalls attribute data source details 
-create view waterfalls.waterfalls_attribute_source_view as 
-select a.cabd_id,
-a.fall_name_en_ds,
-b.name || case when b.version_number is not null then ' ' || b.version_number else '' end || case when b.version_date is not null then ' (' || b.version_date || ')' else '' end as fall_name_en_ds_name,
-a.fall_name_en_dsfid,
-a.fall_name_fr_ds,
-c.name || case when c.version_number is not null then ' ' || c.version_number else '' end || case when c.version_date is not null then ' (' || c.version_date || ')' else '' end as fall_name_fr_ds_name,
-a.fall_name_fr_dsfid,
-a.waterbody_name_en_ds,
-d.name || case when d.version_number is not null then ' ' || d.version_number else '' end || case when d.version_date is not null then ' (' || d.version_date || ')' else '' end as waterbody_name_en_ds_name,
-a.waterbody_name_en_dsfid,
-a.waterbody_name_fr_ds,
-e.name || case when e.version_number is not null then ' ' || e.version_number else '' end || case when e.version_date is not null then ' (' || e.version_date || ')' else '' end as waterbody_name_fr_ds_name,
-a.waterbody_name_fr_dsfid,
-a.municipality_ds,
-f.name || case when f.version_number is not null then ' ' || f.version_number else '' end || case when f.version_date is not null then ' (' || f.version_date || ')' else '' end as municipality_ds_name,
-a.municipality_dsfid,
-a.fall_height_m_ds,
-g.name || case when g.version_number is not null then ' ' || g.version_number else '' end || case when g.version_date is not null then ' (' || g.version_date || ')' else '' end as fall_height_m_ds_name,
-a.fall_height_m_dsfid,
-a.comments_ds,
-h.name || case when h.version_number is not null then ' ' || h.version_number else '' end || case when h.version_date is not null then ' (' || h.version_date || ')' else '' end as comments_ds_name,
-a.comments_dsfid,
-a.complete_level_code_ds,
-i.name || case when i.version_number is not null then ' ' || i.version_number else '' end || case when i.version_date is not null then ' (' || i.version_date || ')' else '' end as complete_level_code_ds_name,
-a.complete_level_code_dsfid,
-a.passability_status_code_ds,
-j.name || case when j.version_number is not null then ' ' || j.version_number else '' end || case when j.version_date is not null then ' (' || j.version_date || ')' else '' end as passability_status_code_ds_name,
-a.passability_status_code_dsfid,
-a.original_point_ds,
-k.name || case when k.version_number is not null then ' ' || k.version_number else '' end || case when k.version_date is not null then ' (' || k.version_date || ')' else '' end as original_point_ds_name,
-a.original_point_dsfid
-from waterfalls.waterfalls_attribute_source a
-left join cabd.data_source b on a.fall_name_en_ds = b.id
-left join cabd.data_source c on a.fall_name_fr_ds = c.id
-left join cabd.data_source d on a.waterbody_name_en_ds = d.id
-left join cabd.data_source e on a.waterbody_name_fr_ds = e.id
-left join cabd.data_source f on a.municipality_ds = f.id
-left join cabd.data_source g on a.fall_height_m_ds = g.id
-left join cabd.data_source h on a."comments_ds" = h.id
-left join cabd.data_source i on a.complete_level_code_ds = i.id
-left join cabd.data_source j on a.passability_status_code_ds = j.id
-left join cabd.data_source k on a.original_point_ds = k.id;
-
-
-create view fishways.fishways_attribute_source_view as 
-select 
-a.cabd_id,
-a.dam_name_en_ds,
-bb.name || case when bb.version_number is not null then ' ' || bb.version_number else '' end || case when bb.version_date is not null then ' (' || bb.version_date || ')' else '' end as dam_name_en_ds_name,
-a.dam_name_en_dsfid,
-a.dam_name_fr_ds,
-c.name || case when c.version_number is not null then ' ' || c.version_number else '' end || case when c.version_date is not null then ' (' || c.version_date || ')' else '' end as dam_name_fr_ds_name,
-a.dam_name_fr_dsfid,
-a.waterbody_name_en_ds,
-d.name || case when d.version_number is not null then ' ' || d.version_number else '' end || case when d.version_date is not null then ' (' || d.version_date || ')' else '' end as waterbody_name_en_ds_name,
-a.waterbody_name_en_dsfid,
-a.waterbody_name_fr_ds,
-e.name || case when e.version_number is not null then ' ' || e.version_number else '' end || case when e.version_date is not null then ' (' || e.version_date || ')' else '' end as waterbody_name_fr_ds_name,
-a.waterbody_name_fr_dsfid,
-a.river_name_en_ds,
-f.name || case when f.version_number is not null then ' ' || f.version_number else '' end || case when f.version_date is not null then ' (' || f.version_date || ')' else '' end as river_name_en_ds_name,
-a.river_name_en_dsfid,
-a.river_name_fr_ds,
-g.name || case when g.version_number is not null then ' ' || g.version_number else '' end || case when g.version_date is not null then ' (' || g.version_date || ')' else '' end as river_name_fr_ds_name,
-a.river_name_fr_dsfid,
-a.municipality_ds,
-h.name || case when h.version_number is not null then ' ' || h.version_number else '' end || case when h.version_date is not null then ' (' || h.version_date || ')' else '' end as municipality_ds_name,
-a.municipality_dsfid,
-a.fishpass_type_code_ds,
-i.name || case when i.version_number is not null then ' ' || i.version_number else '' end || case when i.version_date is not null then ' (' || i.version_date || ')' else '' end as fishpass_type_code_ds_name,
-a.fishpass_type_code_dsfid,
-a.monitoring_equipment_ds,
-j.name || case when j.version_number is not null then ' ' || j.version_number else '' end || case when j.version_date is not null then ' (' || j.version_date || ')' else '' end as monitoring_equipment_ds_name,
-a.monitoring_equipment_dsfid,
-a.architect_ds,
-k.name || case when k.version_number is not null then ' ' || k.version_number else '' end || case when k.version_date is not null then ' (' || k.version_date || ')' else '' end as architect_ds_name,
-a.architect_dsfid,
-a.contracted_by_ds,
-l.name || case when l.version_number is not null then ' ' || l.version_number else '' end || case when l.version_date is not null then ' (' || l.version_date || ')' else '' end as contracted_by_ds_name,
-a.contracted_by_dsfid,
-a.constructed_by_ds,
-m.name || case when m.version_number is not null then ' ' || m.version_number else '' end || case when m.version_date is not null then ' (' || m.version_date || ')' else '' end as constructed_by_ds_name,
-a.constructed_by_dsfid,
-a.plans_held_by_ds,
-n.name || case when n.version_number is not null then ' ' || n.version_number else '' end || case when n.version_date is not null then ' (' || n.version_date || ')' else '' end as plans_held_by_ds_name,
-a.plans_held_by_dsfid,
-a.purpose_ds,
-o.name || case when o.version_number is not null then ' ' || o.version_number else '' end || case when o.version_date is not null then ' (' || o.version_date || ')' else '' end as purpose_ds_name,
-a.purpose_dsfid,
-a.designed_on_biology_ds,
-p.name || case when p.version_number is not null then ' ' || p.version_number else '' end || case when p.version_date is not null then ' (' || p.version_date || ')' else '' end as designed_on_biology_ds_name,
-a.designed_on_biology_dsfid,
-a.length_m_ds,
-q.name || case when q.version_number is not null then ' ' || q.version_number else '' end || case when q.version_date is not null then ' (' || q.version_date || ')' else '' end as length_m_ds_name,
-a.length_m_dsfid,
-a.elevation_m_ds,
-r.name || case when r.version_number is not null then ' ' || r.version_number else '' end || case when r.version_date is not null then ' (' || r.version_date || ')' else '' end as elevation_m_ds_name,
-a.elevation_m_dsfid,
-a.gradient_ds,
-s.name || case when s.version_number is not null then ' ' || s.version_number else '' end || case when s.version_date is not null then ' (' || s.version_date || ')' else '' end as gradient_ds_name,
-a.gradient_dsfid,
-a.depth_m_ds,
-t.name || case when t.version_number is not null then ' ' || t.version_number else '' end || case when t.version_date is not null then ' (' || t.version_date || ')' else '' end as depth_m_ds_name,
-a.depth_m_dsfid,
-a.entrance_location_code_ds,
-u.name || case when u.version_number is not null then ' ' || u.version_number else '' end || case when u.version_date is not null then ' (' || u.version_date || ')' else '' end as entrance_location_code_ds_name,
-a.entrance_location_code_dsfid,
-a.entrance_position_code_ds,
-v.name || case when v.version_number is not null then ' ' || v.version_number else '' end || case when v.version_date is not null then ' (' || v.version_date || ')' else '' end as entrance_position_code_ds_name,
-a.entrance_position_code_dsfid,
-a.modified_ds,
-w.name || case when w.version_number is not null then ' ' || w.version_number else '' end || case when w.version_date is not null then ' (' || w.version_date || ')' else '' end as modified_ds_name,
-a.modified_dsfid,
-a.modification_year_ds,
-x.name || case when x.version_number is not null then ' ' || x.version_number else '' end || case when x.version_date is not null then ' (' || x.version_date || ')' else '' end as modification_year_ds_name,
-a.modification_year_dsfid,
-a.modification_purpose_ds,
-y.name || case when y.version_number is not null then ' ' || y.version_number else '' end || case when y.version_date is not null then ' (' || y.version_date || ')' else '' end as modification_purpose_ds_name,
-a.modification_purpose_dsfid,
-a.year_constructed_ds,
-z.name || case when z.version_number is not null then ' ' || z.version_number else '' end || case when z.version_date is not null then ' (' || z.version_date || ')' else '' end as year_constructed_ds_name,
-a.year_constructed_dsfid,
-a.operated_by_ds,
-aa.name || case when aa.version_number is not null then ' ' || aa.version_number else '' end || case when aa.version_date is not null then ' (' || aa.version_date || ')' else '' end as operated_by_ds_name,
-a.operated_by_dsfid,
-a.operation_period_ds,
-ab.name || case when ab.version_number is not null then ' ' || ab.version_number else '' end || case when ab.version_date is not null then ' (' || ab.version_date || ')' else '' end as operation_period_ds_name,
-a.operation_period_dsfid,
-a.has_evaluating_studies_ds,
-ac.name || case when ac.version_number is not null then ' ' || ac.version_number else '' end || case when ac.version_date is not null then ' (' || ac.version_date || ')' else '' end as has_evaluating_studies_ds_name,
-a.has_evaluating_studies_dsfid,
-a.nature_of_evaluation_studies_ds,
-ad.name || case when ad.version_number is not null then ' ' || ad.version_number else '' end || case when ad.version_date is not null then ' (' || ad.version_date || ')' else '' end as nature_of_evaluation_studies_ds_name,
-a.nature_of_evaluation_studies_dsfid,
-a.engineering_notes_ds,
-ae.name || case when ae.version_number is not null then ' ' || ae.version_number else '' end || case when ae.version_date is not null then ' (' || ae.version_date || ')' else '' end as engineering_notes_ds_name,
-a.engineering_notes_dsfid,
-a.operating_notes_ds,
-af.name || case when af.version_number is not null then ' ' || af.version_number else '' end || case when af.version_date is not null then ' (' || af.version_date || ')' else '' end as operating_notes_ds_name,
-a.operating_notes_dsfid,
-a.mean_fishway_velocity_ms_ds,
-ag.name || case when ag.version_number is not null then ' ' || ag.version_number else '' end || case when ag.version_date is not null then ' (' || ag.version_date || ')' else '' end as mean_fishway_velocity_m_ds_name,
-a.mean_fishway_velocity_ms_dsfid,
-a.max_fishway_velocity_ms_ds,
-ah.name || case when ah.version_number is not null then ' ' || ah.version_number else '' end || case when ah.version_date is not null then ' (' || ah.version_date || ')' else '' end as max_fishway_velocity_ms_ds_name,
-a.max_fishway_velocity_ms_dsfid,
-a.estimate_of_attraction_pct_ds,
-ai.name || case when ai.version_number is not null then ' ' || ai.version_number else '' end || case when ai.version_date is not null then ' (' || ai.version_date || ')' else '' end as estimate_of_attraction_pct_ds_name,
-a.estimate_of_attraction_pct_dsfid,
-a.estimate_of_passage_success_pct_ds,
-aj.name || case when aj.version_number is not null then ' ' || aj.version_number else '' end || case when aj.version_date is not null then ' (' || aj.version_date || ')' else '' end as estimate_of_passage_success_pct_ds_name,
-a.estimate_of_passage_success_pct_dsfid,
-a.fishway_reference_id_ds,
-ak.name || case when ak.version_number is not null then ' ' || ak.version_number else '' end || case when ak.version_date is not null then ' (' || ak.version_date || ')' else '' end as fishway_reference_id_ds_name,
-a.fishway_reference_id_dsfid,
-a.complete_level_code_ds,
-al.name || case when al.version_number is not null then ' ' || al.version_number else '' end || case when al.version_date is not null then ' (' || al.version_date || ')' else '' end as complete_level_code_ds_name,
-a.complete_level_code_dsfid,
-a.original_point_ds,
-am.name || case when am.version_number is not null then ' ' || am.version_number else '' end || case when am.version_date is not null then ' (' || am.version_date || ')' else '' end as original_point_ds_name,
-a.original_point_dsfid
-from fishways.fishways_attribute_source a
-left join cabd.data_source bb on bb.id = a.dam_name_en_ds
-left join cabd.data_source c on c.id = a.dam_name_fr_ds
-left join cabd.data_source d on d.id = a.waterbody_name_en_ds
-left join cabd.data_source e on e.id = a.waterbody_name_fr_ds
-left join cabd.data_source f on f.id = a.river_name_en_ds
-left join cabd.data_source g on g.id = a.river_name_fr_ds
-left join cabd.data_source h on h.id = a.municipality_ds
-left join cabd.data_source i on i.id = a.fishpass_type_code_ds
-left join cabd.data_source j on j.id = a.monitoring_equipment_ds
-left join cabd.data_source k on k.id = a.architect_ds
-left join cabd.data_source l on l.id = a.contracted_by_ds
-left join cabd.data_source m on m.id = a.constructed_by_ds
-left join cabd.data_source n on n.id = a.plans_held_by_ds
-left join cabd.data_source o on o.id = a.purpose_ds
-left join cabd.data_source p on p.id = a.designed_on_biology_ds
-left join cabd.data_source q on q.id = a.length_m_ds
-left join cabd.data_source r on r.id = a.elevation_m_ds
-left join cabd.data_source s on s.id = a.gradient_ds
-left join cabd.data_source t on t.id = a.depth_m_ds
-left join cabd.data_source u on u.id = a.entrance_location_code_ds
-left join cabd.data_source v on v.id = a.entrance_position_code_ds
-left join cabd.data_source w on w.id = a.modified_ds
-left join cabd.data_source x on x.id = a.modification_year_ds
-left join cabd.data_source y on y.id = a.modification_purpose_ds
-left join cabd.data_source z on z.id = a.year_constructed_ds
-left join cabd.data_source aa on aa.id = a.operated_by_ds
-left join cabd.data_source ab on ab.id = a.operation_period_ds
-left join cabd.data_source ac on ac.id = a.has_evaluating_studies_ds
-left join cabd.data_source ad on ad.id = a.nature_of_evaluation_studies_ds
-left join cabd.data_source ae on ae.id = a.engineering_notes_ds
-left join cabd.data_source af on af.id = a.operating_notes_ds
-left join cabd.data_source ag on ag.id = a.mean_fishway_velocity_ms_ds
-left join cabd.data_source ah on ah.id = a.max_fishway_velocity_ms_ds
-left join cabd.data_source ai on ai.id = a.estimate_of_attraction_pct_ds
-left join cabd.data_source aj on aj.id = a.estimate_of_passage_success_pct_ds
-left join cabd.data_source ak on ak.id = a.fishway_reference_id_ds
-left join cabd.data_source al on al.id = a.complete_level_code_ds
-left join cabd.data_source am on am.id = a.original_point_ds;
-
-grant all privileges on waterfalls.waterfalls_attribute_source_view to cabd;
-
-create view dams.dams_medium_large_attribute_source_view ;
-select
-a.cabd_id, 
-a.dam_name_en_ds, 
-aa.name || case when aa.version_number is not null then ' ' || aa.version_number else '' end || case when aa.version_date is not null then ' (' || aa.version_date || ')' else '' end as dam_name_en_ds_name,
-a.dam_name_en_dsfid, 
-a.dam_name_fr_ds, 
-ab.name || case when ab.version_number is not null then ' ' || ab.version_number else '' end || case when ab.version_date is not null then ' (' || ab.version_date || ')' else '' end as dam_name_fr_ds_name,
-a.dam_name_fr_dsfid, 
-a.waterbody_name_en_ds, 
-ac.name || case when ac.version_number is not null then ' ' || ac.version_number else '' end || case when ac.version_date is not null then ' (' || ac.version_date || ')' else '' end as waterbody_name_en_ds_name,
-a.waterbody_name_en_dsfid,
-a.waterbody_name_fr_ds, 
-ad.name || case when ad.version_number is not null then ' ' || ad.version_number else '' end || case when ad.version_date is not null then ' (' || ad.version_date || ')' else '' end as waterbody_name_fr_ds_name,
-a.waterbody_name_fr_dsfid,
-a.reservoir_name_en_ds, 
-ae.name || case when ae.version_number is not null then ' ' || ae.version_number else '' end || case when ae.version_date is not null then ' (' || ae.version_date || ')' else '' end as reservoir_name_en_ds_name,
-a.reservoir_name_en_dsfid,
-a.reservoir_name_fr_ds, 
-af.name || case when af.version_number is not null then ' ' || af.version_number else '' end || case when af.version_date is not null then ' (' || af.version_date || ')' else '' end as reservoir_name_fr_ds_name,
-a.reservoir_name_fr_dsfid,
-a.municipality_ds, 
-ag.name || case when ag.version_number is not null then ' ' || ag.version_number else '' end || case when ag.version_date is not null then ' (' || ag.version_date || ')' else '' end as municipality_ds_name,
-a.municipality_dsfid, 
-a.owner_ds, 
-ah.name || case when ah.version_number is not null then ' ' || ah.version_number else '' end || case when ah.version_date is not null then ' (' || ah.version_date || ')' else '' end as owner_ds_name,
-a.owner_dsfid, 
-a.ownership_type_code_ds,
-ai.name || case when ai.version_number is not null then ' ' || ai.version_number else '' end || case when ai.version_date is not null then ' (' || ai.version_date || ')' else '' end as ownership_type_code_ds_name,
-a.ownership_type_code_dsfid,
-a.province_compliance_status_ds,
-aj.name || case when aj.version_number is not null then ' ' || aj.version_number else '' end || case when aj.version_date is not null then ' (' || aj.version_date || ')' else '' end as province_compliance_status_ds_name,
-a.province_compliance_status_dsfid,
-a.federal_compliance_status_ds,
-ak.name || case when ak.version_number is not null then ' ' || ak.version_number else '' end || case when ak.version_date is not null then ' (' || ak.version_date || ')' else '' end as federal_compliance_status_ds_name,
-a.federal_compliance_status_dsfid,
-a.operating_note_ds, 
-al.name || case when al.version_number is not null then ' ' || al.version_number else '' end || case when al.version_date is not null then ' (' || al.version_date || ')' else '' end as operating_note_ds_name,
-a.operating_note_dsfid, 
-a.operating_status_code_ds,
-am.name || case when am.version_number is not null then ' ' || am.version_number else '' end || case when am.version_date is not null then ' (' || am.version_date || ')' else '' end as operating_status_code_ds_name,
-a.operating_status_code_dsfid,
-a.use_code_ds, 
-an.name || case when an.version_number is not null then ' ' || an.version_number else '' end || case when an.version_date is not null then ' (' || an.version_date || ')' else '' end as use_code_ds_name,
-a.use_code_dsfid, 
-a.use_irrigation_code_ds,
-ao.name || case when ao.version_number is not null then ' ' || ao.version_number else '' end || case when ao.version_date is not null then ' (' || ao.version_date || ')' else '' end as use_irrigation_code_ds_name,
-a.use_irrigation_code_dsfid,
-a.use_electricity_code_ds,
-ap.name || case when ap.version_number is not null then ' ' || ap.version_number else '' end || case when ap.version_date is not null then ' (' || ap.version_date || ')' else '' end as use_electricity_code_ds_name,
-a.use_electricity_code_dsfid,
-a.use_supply_code_ds, 
-aq.name || case when aq.version_number is not null then ' ' || aq.version_number else '' end || case when aq.version_date is not null then ' (' || aq.version_date || ')' else '' end as use_supply_code_ds_name,
-a.use_supply_code_dsfid, 
-a.use_floodcontrol_code_ds,
-ar.name || case when ar.version_number is not null then ' ' || ar.version_number else '' end || case when ar.version_date is not null then ' (' || ar.version_date || ')' else '' end as use_floodcontrol_code_ds_name,
-a.use_floodcontrol_code_dsfid,
-a.use_recreation_code_ds,
-aas.name || case when aas.version_number is not null then ' ' || aas.version_number else '' end || case when aas.version_date is not null then ' (' || aas.version_date || ')' else '' end as use_recreation_code_ds_name,
-a.use_recreation_code_dsfid,
-a.use_navigation_code_ds,
-aat.name || case when aat.version_number is not null then ' ' || aat.version_number else '' end || case when aat.version_date is not null then ' (' || aat.version_date || ')' else '' end as use_navigation_code_ds_name,
-a.use_navigation_code_dsfid,
-a.use_fish_code_ds, 
-au.name || case when au.version_number is not null then ' ' || au.version_number else '' end || case when au.version_date is not null then ' (' || au.version_date || ')' else '' end as use_fish_code_ds_name,
-a.use_fish_code_dsfid, 
-a.use_pollution_code_ds, 
-av.name || case when av.version_number is not null then ' ' || av.version_number else '' end || case when av.version_date is not null then ' (' || av.version_date || ')' else '' end as use_pollution_code_ds_name,
-a.use_pollution_code_dsfid,
-a.use_invasivespecies_code_ds,
-aw.name || case when aw.version_number is not null then ' ' || aw.version_number else '' end || case when aw.version_date is not null then ' (' || aw.version_date || ')' else '' end as use_invasivespecies_code_ds_name,
-a.use_invasivespecies_code_dsfid,
-a.use_other_code_ds, 
-ax.name || case when ax.version_number is not null then ' ' || ax.version_number else '' end || case when ax.version_date is not null then ' (' || ax.version_date || ')' else '' end as use_other_code_ds_name,
-a.use_other_code_dsfid, 
-a.lake_control_code_ds, 
-ay.name || case when ay.version_number is not null then ' ' || ay.version_number else '' end || case when ay.version_date is not null then ' (' || ay.version_date || ')' else '' end as lake_control_code_ds_name,
-a.lake_control_code_dsfid,
-a.construction_year_ds, 
-az.name || case when az.version_number is not null then ' ' || az.version_number else '' end || case when az.version_date is not null then ' (' || az.version_date || ')' else '' end as construction_year_ds_name,
-a.construction_year_dsfid,
-a.assess_schedule_ds, 
-ba.name || case when ba.version_number is not null then ' ' || ba.version_number else '' end || case when ba.version_date is not null then ' (' || ba.version_date || ')' else '' end as assess_schedule_ds_name,
-a.assess_schedule_dsfid, 
-a.expected_life_ds, 
-bb.name || case when bb.version_number is not null then ' ' || bb.version_number else '' end || case when bb.version_date is not null then ' (' || bb.version_date || ')' else '' end as expected_life_ds_name,
-a.expected_life_dsfid, 
-a.maintenance_last_ds, 
-bc.name || case when bc.version_number is not null then ' ' || bc.version_number else '' end || case when bc.version_date is not null then ' (' || bc.version_date || ')' else '' end as maintenance_last_ds_name,
-a.maintenance_last_dsfid,
-a.maintenance_next_ds, 
-bd.name || case when bd.version_number is not null then ' ' || bd.version_number else '' end || case when bd.version_date is not null then ' (' || bd.version_date || ')' else '' end as maintenance_next_ds_name,
-a.maintenance_next_dsfid,
-a.function_code_ds, 
-be.name || case when be.version_number is not null then ' ' || be.version_number else '' end || case when be.version_date is not null then ' (' || be.version_date || ')' else '' end as function_code_ds_name,
-a.function_code_dsfid, 
-a.condition_code_ds, 
-bf.name || case when bf.version_number is not null then ' ' || bf.version_number else '' end || case when bf.version_date is not null then ' (' || bf.version_date || ')' else '' end as condition_code_ds_name,
-a.condition_code_dsfid, 
-a.construction_type_code_ds,
-bg.name || case when bg.version_number is not null then ' ' || bg.version_number else '' end || case when bg.version_date is not null then ' (' || bg.version_date || ')' else '' end as construction_type_code_ds_name,
-a.construction_type_code_dsfid,
-a.height_m_ds, 
-bh.name || case when bh.version_number is not null then ' ' || bh.version_number else '' end || case when bh.version_date is not null then ' (' || bh.version_date || ')' else '' end as height_m_ds_name,
-a.height_m_dsfid, 
-a.length_m_ds, 
-bi.name || case when bi.version_number is not null then ' ' || bi.version_number else '' end || case when bi.version_date is not null then ' (' || bi.version_date || ')' else '' end as length_m_ds_name,
-a.length_m_dsfid, 
-a.size_class_code_ds, 
-bj.name || case when bj.version_number is not null then ' ' || bj.version_number else '' end || case when bj.version_date is not null then ' (' || bj.version_date || ')' else '' end as size_class_code_ds_name,
-a.size_class_code_dsfid, 
-a.spillway_capacity_ds, 
-bk.name || case when bk.version_number is not null then ' ' || bk.version_number else '' end || case when bk.version_date is not null then ' (' || bk.version_date || ')' else '' end as spillway_capacity_ds_name,
-a.spillway_capacity_dsfid,
-a.spillway_type_code_ds, 
-bl.name || case when bl.version_number is not null then ' ' || bl.version_number else '' end || case when bl.version_date is not null then ' (' || bl.version_date || ')' else '' end as spillway_type_code_ds_name,
-a.spillway_type_code_dsfid,
-a.reservoir_present_ds, 
-bm.name || case when bm.version_number is not null then ' ' || bm.version_number else '' end || case when bm.version_date is not null then ' (' || bm.version_date || ')' else '' end as reservoir_present_ds_name,
-a.reservoir_present_dsfid,
-a.reservoir_area_skm_ds, 
-bn.name || case when bn.version_number is not null then ' ' || bn.version_number else '' end || case when bn.version_date is not null then ' (' || bn.version_date || ')' else '' end as reservoir_area_skm_ds_name,
-a.reservoir_area_skm_dsfid,
-a.reservoir_depth_m_ds, 
-bo.name || case when bo.version_number is not null then ' ' || bo.version_number else '' end || case when bo.version_date is not null then ' (' || bo.version_date || ')' else '' end as reservoir_depth_m_ds_name,
-a.reservoir_depth_m_dsfid,
-a.storage_capacity_mcm_ds,
-bp.name || case when bp.version_number is not null then ' ' || bp.version_number else '' end || case when bp.version_date is not null then ' (' || bp.version_date || ')' else '' end as storage_capacity_mcm_ds_name,
-a.storage_capacity_mcm_dsfid,
-a.avg_rate_of_discharge_ls_ds,
-bq.name || case when bq.version_number is not null then ' ' || bq.version_number else '' end || case when bq.version_date is not null then ' (' || bq.version_date || ')' else '' end as avg_rate_of_discharge_ls_ds_name,
-a.avg_rate_of_discharge_ls_dsfid,
-a.degree_of_regulation_pc_ds,
-br.name || case when br.version_number is not null then ' ' || br.version_number else '' end || case when br.version_date is not null then ' (' || br.version_date || ')' else '' end as degree_of_regulation_pc_ds_name,
-a.degree_of_regulation_pc_dsfid,
-a.provincial_flow_req_ds,
-bs.name || case when bs.version_number is not null then ' ' || bs.version_number else '' end || case when bs.version_date is not null then ' (' || bs.version_date || ')' else '' end as provincial_flow_req_ds_name,
-a.provincial_flow_req_dsfid,
-a.federal_flow_req_ds, 
-bt.name || case when bt.version_number is not null then ' ' || bt.version_number else '' end || case when bt.version_date is not null then ' (' || bt.version_date || ')' else '' end as federal_flow_req_ds_name,
-a.federal_flow_req_dsfid,
-a.catchment_area_skm_ds, 
-bu.name || case when bu.version_number is not null then ' ' || bu.version_number else '' end || case when bu.version_date is not null then ' (' || bu.version_date || ')' else '' end as catchment_area_skm_ds_name,
-a.catchment_area_skm_dsfid,
-a.upstream_linear_km_ds, 
-bv.name || case when bv.version_number is not null then ' ' || bv.version_number else '' end || case when bv.version_date is not null then ' (' || bv.version_date || ')' else '' end as upstream_linear_km_ds_name,
-a.upstream_linear_km_dsfid,
-a.hydro_peaking_system_ds,
-bw.name || case when bw.version_number is not null then ' ' || bw.version_number else '' end || case when bw.version_date is not null then ' (' || bw.version_date || ')' else '' end as hydro_peaking_system_ds_name,
-a.hydro_peaking_system_dsfid,
-a.generating_capacity_mwh_ds,
-bx.name || case when bx.version_number is not null then ' ' || bx.version_number else '' end || case when bx.version_date is not null then ' (' || bx.version_date || ')' else '' end as generating_capacity_mwh_ds_name,
-a.generating_capacity_mwh_dsfid,
-a.turbine_number_ds, 
-bby.name || case when bby.version_number is not null then ' ' || bby.version_number else '' end || case when bby.version_date is not null then ' (' || bby.version_date || ')' else '' end as turbine_number_ds_name,
-a.turbine_number_dsfid, 
-a.turbine_type_code_ds, 
-bz.name || case when bz.version_number is not null then ' ' || bz.version_number else '' end || case when bz.version_date is not null then ' (' || bz.version_date || ')' else '' end as turbine_type_code_ds_name,
-a.turbine_type_code_dsfid,
-a.up_passage_type_code_ds,
-ca.name || case when ca.version_number is not null then ' ' || ca.version_number else '' end || case when ca.version_date is not null then ' (' || ca.version_date || ')' else '' end as up_passage_type_code_ds_name,
-a.up_passage_type_code_dsfid,
-a.down_passage_route_code_ds,
-cb.name || case when cb.version_number is not null then ' ' || cb.version_number else '' end || case when cb.version_date is not null then ' (' || cb.version_date || ')' else '' end as down_passage_route_code_ds_name,
-a.down_passage_route_code_dsfid,
-a.passability_status_code_ds,
-cc.name || case when cc.version_number is not null then ' ' || cc.version_number else '' end || case when cc.version_date is not null then ' (' || cc.version_date || ')' else '' end as passability_status_code_ds_name,
-a.passability_status_code_dsfid,
-a.passability_status_note_ds,
-cd.name || case when cd.version_number is not null then ' ' || cd.version_number else '' end || case when cd.version_date is not null then ' (' || cd.version_date || ')' else '' end as passability_status_note_ds_name,
-a.passability_status_note_dsfid,
-a.comments_ds, 
-ce.name || case when ce.version_number is not null then ' ' || ce.version_number else '' end || case when ce.version_date is not null then ' (' || ce.version_date || ')' else '' end as comments_ds_name,
-a.comments_dsfid, 
-a.complete_level_code_ds,
-cf.name || case when cf.version_number is not null then ' ' || cf.version_number else '' end || case when cf.version_date is not null then ' (' || cf.version_date || ')' else '' end as complete_level_code_ds_name,
-a.complete_level_code_dsfid,
-a.original_point_ds, 
-cg.name || case when cg.version_number is not null then ' ' || cg.version_number else '' end || case when cg.version_date is not null then ' (' || cg.version_date || ')' else '' end as original_point_ds_name,
-a.original_point_dsfid
-
-from dams.dams_medium_large_attribute_source a
-left join cabd.data_source aa on aa.id = a.dam_name_en_ds
-left join cabd.data_source ab on ab.id = a.dam_name_fr_ds
-left join cabd.data_source ac on ac.id = a.waterbody_name_en_ds
-left join cabd.data_source ad on ad.id = a.waterbody_name_fr_ds
-left join cabd.data_source ae on ae.id = a.reservoir_name_en_ds
-left join cabd.data_source af on af.id = a.reservoir_name_fr_ds
-left join cabd.data_source ag on ag.id = a.municipality_ds
-left join cabd.data_source ah on ah.id = a.owner_ds
-left join cabd.data_source ai on ai.id = a.ownership_type_code_ds
-left join cabd.data_source aj on aj.id = a.province_compliance_status_ds
-left join cabd.data_source ak on ak.id = a.federal_compliance_status_ds
-left join cabd.data_source al on al.id = a.operating_note_ds
-left join cabd.data_source am on am.id = a.operating_status_code_ds
-left join cabd.data_source an on an.id = a.use_code_ds
-left join cabd.data_source ao on ao.id = a.use_irrigation_code_ds
-left join cabd.data_source ap on ap.id = a.use_electricity_code_ds
-left join cabd.data_source aq on aq.id = a.use_supply_code_ds
-left join cabd.data_source ar on ar.id = a.use_floodcontrol_code_ds
-left join cabd.data_source aas on aas.id = a.use_recreation_code_ds
-left join cabd.data_source aat on aat.id = a.use_navigation_code_ds
-left join cabd.data_source au on au.id = a.use_fish_code_ds
-left join cabd.data_source av on av.id = a.use_pollution_code_ds
-left join cabd.data_source aw on aw.id = a.use_invasivespecies_code_ds
-left join cabd.data_source ax on ax.id = a.use_other_code_ds
-left join cabd.data_source ay on ay.id = a.lake_control_code_ds
-left join cabd.data_source az on az.id = a.construction_year_ds
-left join cabd.data_source ba on ba.id = a.assess_schedule_ds
-left join cabd.data_source bb on bb.id = a.expected_life_ds
-left join cabd.data_source bc on bc.id = a.maintenance_last_ds
-left join cabd.data_source bd on bd.id = a.maintenance_next_ds
-left join cabd.data_source be on be.id = a.function_code_ds
-left join cabd.data_source bf on bf.id = a.condition_code_ds
-left join cabd.data_source bg on bg.id = a.construction_type_code_ds
-left join cabd.data_source bh on bh.id = a.height_m_ds
-left join cabd.data_source bi on bi.id = a.length_m_ds
-left join cabd.data_source bj on bj.id = a.size_class_code_ds
-left join cabd.data_source bk on bk.id = a.spillway_capacity_ds
-left join cabd.data_source bl on bl.id = a.spillway_type_code_ds
-left join cabd.data_source bm on bm.id = a.reservoir_present_ds
-left join cabd.data_source bn on bn.id = a.reservoir_area_skm_ds
-left join cabd.data_source bo on bo.id = a.reservoir_depth_m_ds
-left join cabd.data_source bp on bp.id = a.storage_capacity_mcm_ds
-left join cabd.data_source bq on bq.id = a.avg_rate_of_discharge_ls_ds
-left join cabd.data_source br on br.id = a.degree_of_regulation_pc_ds
-left join cabd.data_source bs on bs.id = a.provincial_flow_req_ds
-left join cabd.data_source bt on bt.id = a.federal_flow_req_ds
-left join cabd.data_source bu on bu.id = a.catchment_area_skm_ds
-left join cabd.data_source bv on bv.id = a.upstream_linear_km_ds
-left join cabd.data_source bw on bw.id = a.hydro_peaking_system_ds
-left join cabd.data_source bx on bx.id = a.generating_capacity_mwh_ds
-left join cabd.data_source bby on bby.id = a.turbine_number_ds
-left join cabd.data_source bz on bz.id = a.turbine_type_code_ds
-left join cabd.data_source ca on ca.id = a.up_passage_type_code_ds
-left join cabd.data_source cb on cb.id = a.down_passage_route_code_ds
-left join cabd.data_source cc on cc.id = a.passability_status_code_ds
-left join cabd.data_source cd on cd.id = a.passability_status_note_ds
-left join cabd.data_source ce on ce.id = a.comments_ds
-left join cabd.data_source cf on cf.id = a.complete_level_code_ds
-left join cabd.data_source cg on cg.id = a.original_point_ds;
-
-grant all privileges on dams.dams_medium_large_attribute_source_view to cabd;
