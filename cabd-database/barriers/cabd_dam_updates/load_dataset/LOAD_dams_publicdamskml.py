@@ -60,7 +60,6 @@ CREATE TABLE {script.workingTable}(
     construction_type_code int2,
     height_m float4,
     length_m float4,
-    duplicate_id varchar,
     data_source uuid not null,
     data_source_id varchar PRIMARY KEY
 );
@@ -72,7 +71,6 @@ INSERT INTO {script.workingTable}(
     construction_type_code,
     height_m,
     length_m,
-    duplicate_id,
     data_source,
     data_source_id
 )
@@ -84,7 +82,6 @@ SELECT
     construction_type_code,
     height_m,
     length_m,
-    'Public_Dams_KML_' || data_source_id,
     data_source,
     data_source_id
 FROM {script.tempTable};
@@ -107,8 +104,8 @@ SET
 FROM
 	{script.duplicatestable} AS duplicates
 WHERE
-	publicdamskml.duplicate_id = duplicates.data_source
-	OR publicdamskml.duplicate_id = duplicates.dups_publicdamskml;
+    (publicdamskml.data_source_id = duplicates.data_source_id AND duplicates.data_source = 'publicdamskml') 
+    OR publicdamskml.data_source_id = duplicates.dups_publicdamskml;       
 """
 
 #this query updates the production data tables
@@ -117,7 +114,7 @@ prodquery = f"""
 
 --create new data source record
 INSERT INTO cabd.data_source (uuid, name, version_date, version_number, source, comments)
-VALUES('{script.dsUuid}', 'Public Dams KML', now(), null, null, 'Data update - ' || now());
+VALUES('{script.dsUuid}', 'publicdamskml', now(), null, null, 'Data update - ' || now());
 
 --update existing features 
 UPDATE

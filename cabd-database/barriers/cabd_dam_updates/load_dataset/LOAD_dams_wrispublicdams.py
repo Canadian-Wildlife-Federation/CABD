@@ -48,8 +48,8 @@ UPDATE {script.tempTable} SET operating_status_code =
     CASE 
     WHEN dam_operation_code = 'Abandoned' THEN 1
     WHEN dam_operation_code = 'Active' THEN 2
-    WHEN dam_operation_code IN ('Decommissioned', 'Removed') THEN 3
-    WHEN dam_operation_code = 'Deactivated' THEN 4
+    WHEN dam_operation_code = 'Removed' THEN 3
+    WHEN dam_operation_code IN ('Deactivated', 'Decommissioned') THEN 4
     WHEN dam_operation_code IN ('Application', 'Not Constructed', 'Breached (Failed)') THEN 5
     ELSE NULL END; 
 
@@ -70,7 +70,6 @@ CREATE TABLE {script.workingTable}(
     height_m float4,
     length_m float4,
     operating_status_code int2,
-    duplicate_id varchar,
     data_source uuid not null,
     data_source_id varchar PRIMARY KEY
 );
@@ -83,7 +82,6 @@ INSERT INTO {script.workingTable}(
     height_m,
     length_m,
     operating_status_code,
-    duplicate_id,
     data_source,
     data_source_id
 )
@@ -96,7 +94,6 @@ SELECT
     height_m,
     length_m,
     operating_status_code,
-    'WRIS_Public_Dams_' || data_source_id,
     data_source,
     data_source_id
 FROM {script.tempTable};
@@ -120,8 +117,8 @@ SET
 FROM
 	{script.duplicatestable} AS duplicates
 WHERE
-	wrispublicdams.duplicate_id = duplicates.data_source
-	OR wrispublicdams.duplicate_id = duplicates.dups_wrispublicdams;
+    (wrispublicdams.data_source_id = duplicates.data_source_id AND duplicates.data_source = 'wrispublicdams') 
+    OR wrispublicdams.data_source_id = duplicates.dups_wrispublicdams;       
 """
 
 
@@ -131,7 +128,7 @@ prodquery = f"""
 
 --create new data source record
 INSERT INTO cabd.data_source (uuid, name, version_date, version_number, source, comments)
-VALUES('{script.dsUuid}', 'WRIS Public Dams', now(), null, null, 'Data update - ' || now());
+VALUES('{script.dsUuid}', 'wrispublicdams', now(), null, null, 'Data update - ' || now());
 
 --update existing features 
 UPDATE

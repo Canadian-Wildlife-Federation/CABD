@@ -30,21 +30,18 @@ CREATE TABLE {script.workingTable}(
     cabd_id uuid,
     dam_name_en varchar(512),
     comments text,
-    duplicate_id varchar,
     data_source uuid not null,
     data_source_id varchar PRIMARY KEY
 );
 INSERT INTO {script.workingTable}(
     dam_name_en,
     "comments",
-    duplicate_id,
     data_source,
     data_source_id
 )
 SELECT
     dam_name_en,
     "comments",
-    'ohn_' || data_source_id,
     data_source,
     data_source_id
 FROM {script.tempTable};
@@ -62,8 +59,8 @@ SET
 FROM
 	{script.duplicatestable} AS duplicates
 WHERE
-	ohn.duplicate_id = duplicates.data_source
-	OR ohn.duplicate_id = duplicates.dups_ohn;
+    (ohn.data_source_id = duplicates.data_source_id AND duplicates.data_source = 'ohn') 
+    OR ohn.data_source_id = duplicates.dups_ohn;       
 """
 
 #this query updates the production data tables

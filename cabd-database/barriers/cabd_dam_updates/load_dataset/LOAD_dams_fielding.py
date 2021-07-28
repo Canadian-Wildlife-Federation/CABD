@@ -1,6 +1,6 @@
 import LOAD_dams_main as main
 
-script = main.DamLoadingScript("fielding")
+script = main.DamLoadingScript("gfielding")
 
 query = f"""
 --data source fields
@@ -39,6 +39,7 @@ UPDATE {script.tempTable} SET use_code =
     WHEN primary_function_of_dam = 'Aboiteau or other flood reduction structure' THEN 4
     WHEN primary_function_of_dam = 'Navigation aid' THEN 6
     WHEN primary_function_of_dam = 'Mine tailings management' THEN 8
+    WHEN primary_function_of_dam IS NULL THEN 11 --new unknown use_code value
     ELSE NULL END;
 UPDATE {script.tempTable} SET use_electricity_code =
     CASE
@@ -90,7 +91,6 @@ CREATE TABLE {script.workingTable}(
     use_pollution_code int2,
     function_code int2,
     "comments" text,
-    duplicate_id varchar,
     data_source uuid not null,
     data_source_id varchar PRIMARY KEY
 );
@@ -106,7 +106,6 @@ INSERT INTO {script.workingTable}(
     use_pollution_code,
     function_code,
     "comments",
-    duplicate_id,
     data_source,
     data_source_id
 )
@@ -122,7 +121,6 @@ SELECT
     use_pollution_code,
     function_code,
     "comments",
-    'fielding_' || data_source_id,
     data_source,
     data_source_id
 FROM {script.tempTable};
@@ -143,14 +141,14 @@ ALTER TABLE {script.tempTable}
 
 -- Finding CABD IDs...
 UPDATE
-	{script.workingTable} AS fielding
+	{script.workingTable} AS gfielding
 SET
 	cabd_id = duplicates.cabd_dam_id
 FROM
 	{script.duplicatestable} AS duplicates
 WHERE
-	fielding.duplicate_id = duplicates.data_source
-	OR fielding.duplicate_id = duplicates.dups_fielding;
+    (gfielding.data_source_id = duplicates.data_source_id AND duplicates.data_source = 'gfielding') 
+    OR gfielding.data_source_id = duplicates.dups_gfielding;       
 """
 
 
@@ -161,7 +159,7 @@ prodquery = f"""
 
 --create new data source record
 INSERT INTO cabd.data_source (uuid, name, version_date, version_number, source, comments)
-VALUES('{script.dsUuid}', 'fielding', now(), null, null, 'Data update - ' || now());
+VALUES('{script.dsUuid}', 'gfielding', now(), null, null, 'Data update - ' || now());
 
 --update existing features 
 UPDATE

@@ -24,19 +24,16 @@ ALTER TABLE {script.tempTable} DROP COLUMN fid;
 CREATE TABLE {script.workingTable}(
     cabd_id uuid,
     waterbody_name_en varchar(512),
-    duplicate_id varchar,
     data_source uuid not null,
     data_source_id varchar PRIMARY KEY
 );
 INSERT INTO {script.workingTable}(
     waterbody_name_en,
-    duplicate_id, 
     data_source, 
     data_source_id
 )
 SELECT
     waterbody_name_en,
-    'fishwerks_' || data_source_id,
     data_source,
     data_source_id
 FROM {script.tempTable};
@@ -53,8 +50,8 @@ SET
 FROM
 	{script.duplicatestable} AS duplicates
 WHERE
-	fishwerks.duplicate_id = duplicates.data_source
-	OR fishwerks.duplicate_id = duplicates.dups_fishwerks;
+    (fishwerks.data_source_id = duplicates.data_source_id AND duplicates.data_source = 'fishwerks') 
+    OR fishwerks.data_source_id = duplicates.dups_fishwerks;       
 """
 
 #this query updates the production data tables

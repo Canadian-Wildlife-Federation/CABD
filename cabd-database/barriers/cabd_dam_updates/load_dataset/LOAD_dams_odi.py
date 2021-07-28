@@ -6,7 +6,7 @@ query = f"""
 --data source fields
 ALTER TABLE {script.tempTable} ADD COLUMN data_source uuid;
 ALTER TABLE {script.tempTable} ADD COLUMN data_source_id varchar;
-UPDATE {script.tempTable} SET data_source_id = ogf_id;
+UPDATE {script.tempTable} SET data_source_id = dam_id;
 UPDATE {script.tempTable} SET data_source = '{script.dsUuid}';
 
 --add new columns and populate tempTable with mapped attributes
@@ -25,6 +25,7 @@ UPDATE {script.tempTable} SET ownership_type_code =
     WHEN DAM_OWNERSHIP = 'Private' THEN 4
     WHEN DAM_OWNERSHIP = 'Provincial' THEN 5
     WHEN DAM_OWNERSHIP = 'Ontario Power Generation' THEN 5
+    WHEN DAM_OWNERSHIP IS NULL THEN 7 --new unknown ownership_type_code value
     ELSE NULL END;
 
 UPDATE {script.tempTable} SET "comments" = GENERAL_COMMENTS;
@@ -41,7 +42,6 @@ CREATE TABLE {script.workingTable}(
     "owner" varchar(512),
     ownership_type_code int2,
     comments text,
-    duplicate_id varchar,
     data_source uuid not null,
     data_source_id varchar PRIMARY KEY
 );
@@ -50,7 +50,6 @@ INSERT INTO {script.workingTable}(
     "owner",
     ownership_type_code,
     comments,
-    duplicate_id,
     data_source,
     data_source_id    
 )
@@ -59,7 +58,6 @@ SELECT
     "owner",
     ownership_type_code,
     comments,
-    'ODI_' || data_source_id,
     data_source,
     data_source_id    
 FROM {script.tempTable};
@@ -79,8 +77,8 @@ SET
 FROM
 	{script.duplicatestable} AS duplicates
 WHERE
-	odi.duplicate_id = duplicates.data_source
-	OR odi.duplicate_id = duplicates.dups_odi;
+    (odi.data_source_id = duplicates.data_source_id AND duplicates.data_source = 'odi') 
+    OR odi.data_source_id = duplicates.dups_odi;       
     """
 
 #this query updates the production data tables
@@ -89,7 +87,7 @@ prodquery = f"""
 
 --create new data source record
 INSERT INTO cabd.data_source (uuid, name, version_date, version_number, source, comments)
-VALUES('{script.dsUuid}', 'ODI', now(), null, null, 'Data update - ' || now());
+VALUES('{script.dsUuid}', 'odi', now(), null, null, 'Data update - ' || now());
 
 --update existing features 
 UPDATE

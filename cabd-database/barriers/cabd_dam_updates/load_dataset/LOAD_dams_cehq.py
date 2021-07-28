@@ -11,7 +11,7 @@ UPDATE {script.tempTable} SET data_source = '{script.dsUuid}';
 
 --add new columns and populate tempTable with mapped attributes
 ALTER TABLE {script.tempTable} ADD COLUMN dam_name_fr varchar(512);
-ALTER TABLE {script.tempTable} ADD COLUMN nearest_municipality varchar(512);
+ALTER TABLE {script.tempTable} ADD COLUMN municipality varchar(512);
 ALTER TABLE {script.tempTable} ADD COLUMN reservoir_name_fr varchar(512);
 ALTER TABLE {script.tempTable} ADD COLUMN reservoir_present bool;
 ALTER TABLE {script.tempTable} ADD COLUMN waterbody_name_fr varchar(512);
@@ -27,7 +27,7 @@ ALTER TABLE {script.tempTable} ADD COLUMN maintenance_next date;
 ALTER TABLE {script.tempTable} ADD COLUMN maintenance_last date;
 
 UPDATE {script.tempTable} SET dam_name_fr = "numéro_barrage";
-UPDATE {script.tempTable} SET nearest_municipality = "municipalité";
+UPDATE {script.tempTable} SET municipality = "municipalité";
 UPDATE {script.tempTable} SET reservoir_name_fr = "nom_du_réservoir";
 UPDATE {script.tempTable} SET reservoir_present =
     CASE 
@@ -55,6 +55,7 @@ UPDATE {script.tempTable} SET use_code =
     WHEN "utilisation" = 'Régularisation' THEN 10
     WHEN "utilisation" = 'Réserve incendie' THEN 3
     WHEN "utilisation" = 'Site historique' THEN 5
+    WHEN "utilisation" IS NULL THEN 11 --new unknown use_code value
     ELSE NULL END;
 UPDATE {script.tempTable} SET height_m = "hauteur_du_barrage_m";
 UPDATE {script.tempTable} SET construction_type_code =
@@ -100,7 +101,7 @@ ALTER TABLE {script.tempTable} DROP COLUMN fid;
 CREATE TABLE {script.workingTable}(
     cabd_id uuid,
     dam_name_fr varchar(512),
-    nearest_municipality varchar(512),
+    municipality varchar(512),
     reservoir_name_fr varchar(512),
     reservoir_present bool,
     waterbody_name_fr varchar(512),
@@ -114,13 +115,12 @@ CREATE TABLE {script.workingTable}(
     "owner" varchar(512),
     maintenance_next date,
     maintenance_last date,
-    duplicate_id varchar,
     data_source uuid not null,
     data_source_id varchar PRIMARY KEY
 );
 INSERT INTO {script.workingTable}(
     dam_name_fr,
-    nearest_municipality,
+    municipality,
     reservoir_name_fr,
     reservoir_present,
     waterbody_name_fr,
@@ -134,13 +134,12 @@ INSERT INTO {script.workingTable}(
     "owner",
     maintenance_next,
     maintenance_last,
-    duplicate_id,
     data_source,
     data_source_id
 )
 SELECT
     dam_name_fr,
-    nearest_municipality,
+    municipality,
     reservoir_name_fr,
     reservoir_present,
     waterbody_name_fr,
@@ -154,7 +153,6 @@ SELECT
     "owner",
     maintenance_next,
     maintenance_last,
-    'cehq_' || data_source_id,
     data_source
     data_source_id
 FROM {script.tempTable};
@@ -162,7 +160,7 @@ FROM {script.tempTable};
 --delete extra fields from tempTable except data_source
 ALTER TABLE {script.tempTable}
     DROP COLUMN dam_name_fr,
-    DROP COLUMN nearest_municipality,
+    DROP COLUMN municipality,
     DROP COLUMN reservoir_name_fr,
     DROP COLUMN reservoir_present,
     DROP COLUMN waterbody_name_fr,
@@ -185,8 +183,8 @@ SET
 FROM
 	{script.duplicatestable} AS duplicates
 WHERE
-	cehq.duplicate_id = duplicates.data_source
-	OR cehq.duplicate_id = duplicates.dups_cehq;
+    (cehq.data_source_id = duplicates.data_source_id AND duplicates.data_source = 'cehq') 
+    OR cehq.data_source_id = duplicates.dups_cehq;       
     """
 
 
@@ -203,7 +201,7 @@ UPDATE
     {script.damTable} AS cabd
 SET
     dam_name_fr = CASE WHEN (cabd.dam_name_fr IS NULL AND origin.dam_name_fr IS NOT NULL) THEN origin.dam_name_fr ELSE cabd.dam_name_fr END,
-    nearest_municipality = CASE WHEN (cabd.nearest_municipality IS NULL AND origin.nearest_municipality IS NOT NULL) THEN origin.nearest_municipality ELSE cabd.nearest_municipality END,
+    municipality = CASE WHEN (cabd.municipality IS NULL AND origin.municipality IS NOT NULL) THEN origin.municipality ELSE cabd.municipality END,
     reservoir_name_fr = CASE WHEN (cabd.reservoir_name_fr IS NULL AND origin.reservoir_name_fr IS NOT NULL) THEN origin.reservoir_name_fr ELSE cabd.reservoir_name_fr END,
     reservoir_present = CASE WHEN (cabd.reservoir_present IS NULL AND origin.reservoir_present IS NOT NULL) THEN origin.reservoir_present ELSE cabd.reservoir_present END,
     waterbody_name_fr = CASE WHEN (cabd.waterbody_name_fr IS NULL AND origin.waterbody_name_fr IS NOT NULL) THEN origin.waterbody_name_fr ELSE cabd.waterbody_name_fr END,
@@ -226,7 +224,7 @@ UPDATE
     {script.damAttributeTable} as cabd
 SET    
     dam_name_fr_ds = CASE WHEN (cabd.dam_name_fr IS NULL AND origin.dam_name_fr IS NOT NULL) THEN origin.data_source ELSE cabd.dam_name_fr_ds END,
-    nearest_municipality_ds = CASE WHEN (cabd.nearest_municipality IS NULL AND origin.nearest_municipality IS NOT NULL) THEN origin.data_source ELSE cabd.nearest_municipality_ds END,
+    municipality_ds = CASE WHEN (cabd.municipality IS NULL AND origin.municipality IS NOT NULL) THEN origin.data_source ELSE cabd.municipality_ds END,
     reservoir_name_fr_ds = CASE WHEN (cabd.reservoir_name_fr IS NULL AND origin.reservoir_name_fr IS NOT NULL) THEN origin.data_source ELSE cabd.reservoir_name_fr_ds END,
     reservoir_present_ds = CASE WHEN (cabd.reservoir_present IS NULL AND origin.reservoir_present IS NOT NULL) THEN origin.data_source ELSE cabd.reservoir_present_ds END,
     waterbody_name_fr_ds = CASE WHEN (cabd.waterbody_name_fr IS NULL AND origin.waterbody_name_fr IS NOT NULL) THEN origin.data_source ELSE cabd.waterbody_name_fr_ds END,
@@ -242,7 +240,7 @@ SET
     maintenance_last_ds = CASE WHEN (cabd.maintenance_last IS NULL AND origin.maintenance_last IS NOT NULL) THEN origin.data_source ELSE cabd.maintenance_last_ds END,
     
     dam_name_fr_dsfid = CASE WHEN (cabd.dam_name_fr IS NULL AND origin.dam_name_fr IS NOT NULL) THEN origin.data_source_id ELSE cabd.dam_name_fr_dsfid END,
-    nearest_municipality_dsfid = CASE WHEN (cabd.nearest_municipality IS NULL AND origin.nearest_municipality IS NOT NULL) THEN origin.data_source_id ELSE cabd.nearest_municipality_dsfid END,
+    municipality_dsfid = CASE WHEN (cabd.municipality IS NULL AND origin.municipality IS NOT NULL) THEN origin.data_source_id ELSE cabd.municipality_dsfid END,
     reservoir_name_fr_dsfid = CASE WHEN (cabd.reservoir_name_fr IS NULL AND origin.reservoir_name_fr IS NOT NULL) THEN origin.data_source_id ELSE cabd.reservoir_name_fr_dsfid END,
     reservoir_present_dsfid = CASE WHEN (cabd.reservoir_present IS NULL AND origin.reservoir_present IS NOT NULL) THEN origin.data_source_id ELSE cabd.reservoir_present_dsfid END,
     waterbody_name_fr_dsfid = CASE WHEN (cabd.waterbody_name_fr IS NULL AND origin.waterbody_name_fr IS NOT NULL) THEN origin.data_source_id ELSE cabd.waterbody_name_fr_dsfid END,

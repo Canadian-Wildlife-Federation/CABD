@@ -24,19 +24,16 @@ ALTER TABLE {script.tempTable} DROP COLUMN fid;
 CREATE TABLE {script.workingTable}(
     cabd_id uuid,
     dam_name_en varchar(512),
-    duplicate_id varchar,
     data_source uuid not null,
     data_source_id varchar PRIMARY KEY
 );
 INSERT INTO {script.workingTable}(
     dam_name_en,
-    duplicate_id,
     data_source,
     data_source_id
 )
 SELECT
     dam_name_en,
-    'FWA_Obstructions_' || data_source_id,
     data_source,
     data_source_id
 FROM {script.tempTable};
@@ -53,8 +50,8 @@ SET
 FROM
 	{script.duplicatestable} AS duplicates
 WHERE
-	fwa.duplicate_id = duplicates.data_source
-	OR fwa.duplicate_id = duplicates.dups_fwa;
+    (fwa.data_source_id = duplicates.data_source_id AND duplicates.data_source = 'fwa') 
+    OR fwa.data_source_id = duplicates.dups_fwa;       
 """
 
 #this query updates the production data tables
@@ -63,7 +60,7 @@ prodquery = f"""
 
 --create new data source record
 INSERT INTO cabd.data_source (uuid, name, version_date, version_number, source, comments)
-VALUES('{script.dsUuid}', 'FWA Obstructions', now(), null, null, 'Data update - ' || now());
+VALUES('{script.dsUuid}', 'fwa', now(), null, null, 'Data update - ' || now());
 
 --update existing features 
 UPDATE

@@ -1,6 +1,6 @@
 import LOAD_dams_main as main
 
-script = main.DamLoadingScript("abbasefeatures")
+script = main.DamLoadingScript("ab_basefeatures")
     
 mappingquery = f"""
 
@@ -12,10 +12,8 @@ UPDATE {script.tempTable} SET data_source = '{script.dsUuid}';
 
 --add new columns and populate tempTable with mapped attributes
 ALTER TABLE {script.tempTable} ADD COLUMN dam_name_en varchar(512);
-ALTER TABLE {script.tempTable} ADD COLUMN capture_date_orig date;
 
 UPDATE {script.tempTable} SET dam_name_en = name;
-UPDATE {script.tempTable} SET capture_date = capture_date_orig;
 
 ALTER TABLE {script.tempTable} ALTER COLUMN data_source SET NOT NULL;
 ALTER TABLE {script.tempTable} DROP CONSTRAINT {script.datasetname}_pkey;
@@ -27,31 +25,24 @@ ALTER TABLE {script.tempTable} DROP COLUMN fid;
 CREATE TABLE {script.workingTable}(
     cabd_id uuid,
     dam_name_en varchar(512),
-    capture_date date,
-    duplicate_id varchar,
     data_source uuid not null,
     data_source_id varchar PRIMARY KEY
     
 );
 INSERT INTO {script.workingTable}(
     dam_name_en,
-    capture_date,
-    duplicate_id,
     data_source_id,
     data_source
 )
 SELECT
     dam_name_en,
-    capture_date,
-    'ab_basefeatures_' || data_source_id,
     data_source,
     data_source_id
 FROM {script.tempTable};
 
 --delete extra fields from tempTable except data_source
 ALTER TABLE {script.tempTable}
-    DROP COLUMN dam_name_en,
-    DROP COLUMN capture_date;
+    DROP COLUMN dam_name_en
 
 --Finding CABD IDs...
 UPDATE
@@ -61,8 +52,8 @@ SET
 FROM
     {script.duplicatestable} AS duplicates
 WHERE
-    ab_basefeatures.duplicate_id = duplicates.data_source
-    OR ab_basefeatures.duplicate_id = duplicates.dups_ab_basefeatures;       
+    (ab_basefeatures.data_source_id = duplicates.data_source_id AND duplicates.data_source = 'ab_basefeatures') 
+    OR ab_basefeatures.data_source_id = duplicates.dups_ab_basefeatures;       
 """
 
 
@@ -72,14 +63,13 @@ prodquery = f"""
 
 --create new data source record
 INSERT INTO cabd.data_source (uuid, name, version_date, version_number, source, comments)
-VALUES('{script.dsUuid}', 'ab basefeatures', now(), null, null, 'Data update - ' || now());
+VALUES('{script.dsUuid}', 'ab_basefeatures', now(), null, null, 'Data update - ' || now());
 
 --update existing features 
 UPDATE
     {script.damTable} AS cabd
 SET
-    dam_name_en = CASE WHEN (cabd.dam_name_en IS NULL AND origin.dam_name_en IS NOT NULL) THEN origin.dam_name_en ELSE cabd.dam_name_en END,
-    capture_date_m = CASE WHEN (cabd.capture_date IS NULL AND origin.capture_date IS NOT NULL) THEN origin.capture_date ELSE cabd.capture_date END        
+    dam_name_en = CASE WHEN (cabd.dam_name_en IS NULL AND origin.dam_name_en IS NOT NULL) THEN origin.dam_name_en ELSE cabd.dam_name_en END
 FROM
     {script.workingTable} AS origin
 WHERE
@@ -89,10 +79,8 @@ UPDATE
     {script.damAttributeTable} as cabd
 SET    
     dam_name_en_ds = CASE WHEN (cabd.dam_name_en IS NULL AND origin.dam_name_en IS NOT NULL) THEN origin.data_source ELSE cabd.dam_name_en_ds END,   
-    capture_date_ds = CASE WHEN (cabd.capture_date IS NULL AND origin.capture_date IS NOT NULL) THEN origin.data_source ELSE cabd.capture_date_ds END,
     
-    dam_name_en_dsfid = CASE WHEN (cabd.dam_name_en IS NULL AND origin.dam_name_en IS NOT NULL) THEN origin.data_source_id ELSE cabd.dam_name_en_dsfid END,
-    capture_date_dsfid = CASE WHEN (cabd.capture_date IS NULL AND origin.capture_date IS NOT NULL) THEN origin.data_source_id ELSE cabd.capture_date_dsfid END    
+    dam_name_en_dsfid = CASE WHEN (cabd.dam_name_en IS NULL AND origin.dam_name_en IS NOT NULL) THEN origin.data_source_id ELSE cabd.dam_name_en_dsfid END
 FROM
     {script.workingTable} AS origin    
 WHERE

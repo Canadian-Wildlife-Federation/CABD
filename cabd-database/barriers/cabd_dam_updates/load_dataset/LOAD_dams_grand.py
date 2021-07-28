@@ -14,7 +14,7 @@ ALTER TABLE {script.tempTable} RENAME COLUMN "comments" TO comments_orig;
 ALTER TABLE {script.tempTable} ADD COLUMN dam_name_en varchar(512);
 ALTER TABLE {script.tempTable} ADD COLUMN reservoir_name_en varchar(512);
 ALTER TABLE {script.tempTable} ADD COLUMN waterbody_name_en varchar(512);
-ALTER TABLE {script.tempTable} ADD COLUMN nearest_municipality varchar(512);
+ALTER TABLE {script.tempTable} ADD COLUMN municipality varchar(512);
 ALTER TABLE {script.tempTable} ADD COLUMN construction_year numeric;
 ALTER TABLE {script.tempTable} ADD COLUMN height_m float4;
 ALTER TABLE {script.tempTable} ADD COLUMN length_m float4;
@@ -46,7 +46,7 @@ UPDATE {script.tempTable} SET waterbody_name_en =
     WHEN regexp_match(river, '.*Creek.*') IS NOT NULL THEN river
     WHEN river IS NULL THEN NULL
     ELSE (river || ' River') END;
-UPDATE {script.tempTable} SET nearest_municipality = near_city;
+UPDATE {script.tempTable} SET municipality = near_city;
 UPDATE {script.tempTable} SET construction_year = year;
 UPDATE {script.tempTable} SET height_m = 
     CASE
@@ -83,6 +83,7 @@ UPDATE {script.tempTable} SET use_code =
     WHEN main_use = 'Flood control' THEN 4
     WHEN main_use = 'Recreation' THEN 5
     WHEN main_use = 'Other' THEN 10
+    WHEN main_use IS NULL THEN 11 --new unknown use_code value
     ELSE NULL END;
 UPDATE {script.tempTable} SET use_irrigation_code =
     CASE 
@@ -148,7 +149,7 @@ CREATE TABLE {script.workingTable}(
     dam_name_en varchar(512),
     reservoir_name_en varchar(512),
     waterbody_name_en varchar(512),
-    nearest_municipality varchar(512),
+    municipality varchar(512),
     construction_year numeric,
     height_m float4,
     length_m float4,
@@ -171,7 +172,6 @@ CREATE TABLE {script.workingTable}(
     use_other_code int2,
     lake_control_code int2,
     "comments" text,
-    duplicate_id varchar,
     data_source uuid not null,
     data_source_id varchar PRIMARY KEY
 );
@@ -179,7 +179,7 @@ INSERT INTO {script.workingTable}(
     dam_name_en,
     reservoir_name_en,
     waterbody_name_en,
-    nearest_municipality,
+    municipality,
     construction_year,
     height_m,
     length_m,
@@ -202,7 +202,6 @@ INSERT INTO {script.workingTable}(
     use_other_code,
     lake_control_code,
     "comments",
-    duplicate_id,
     data_source,
     data_source_id
 )
@@ -210,7 +209,7 @@ SELECT
     dam_name_en,
     reservoir_name_en,
     waterbody_name_en,
-    nearest_municipality,
+    municipality,
     construction_year,
     height_m,
     length_m,
@@ -233,7 +232,6 @@ SELECT
     use_other_code,
     lake_control_code,
     "comments",
-    'GRanD_Database_v1.3_' || data_source_id,
     data_source,
     data_source_id
 FROM {script.tempTable};
@@ -243,7 +241,7 @@ ALTER TABLE {script.tempTable}
     DROP COLUMN dam_name_en,
     DROP COLUMN reservoir_name_en,
     DROP COLUMN waterbody_name_en,
-    DROP COLUMN nearest_municipality,
+    DROP COLUMN municipality,
     DROP COLUMN construction_year,
     DROP COLUMN height_m,
     DROP COLUMN length_m,
@@ -274,8 +272,8 @@ SET
 FROM
     {script.duplicatestable} AS duplicates
 WHERE
-    grand.duplicate_id = duplicates.data_source
-    OR grand.duplicate_id = duplicates.dups_grand;
+    (grand.data_source_id = duplicates.data_source_id AND duplicates.data_source = 'grand') 
+    OR grand.data_source_id = duplicates.dups_grand;       
 """
 
 #this query updates the production data tables
@@ -284,7 +282,7 @@ prodquery = f"""
 
 --create new data source record
 INSERT INTO cabd.data_source (uuid, name, version_date, version_number, source, comments)
-VALUES('{script.dsUuid}', 'GRanD Database v1.3', now(), null, null, 'Data update - ' || now());
+VALUES('{script.dsUuid}', 'grand', now(), null, null, 'Data update - ' || now());
 
 --update existing features 
 UPDATE
@@ -293,7 +291,7 @@ SET
     dam_name_en = CASE WHEN (cabd.dam_name_en IS NULL AND origin.dam_name_en IS NOT NULL) THEN origin.dam_name_en ELSE cabd.dam_name_en END,
     reservoir_name_en = CASE WHEN (cabd.reservoir_name_en IS NULL AND origin.reservoir_name_en IS NOT NULL) THEN origin.reservoir_name_en ELSE cabd.reservoir_name_en END,
     waterbody_name_en = CASE WHEN (cabd.waterbody_name_en IS NULL AND origin.waterbody_name_en IS NOT NULL) THEN origin.waterbody_name_en ELSE cabd.waterbody_name_en END,
-    nearest_municipality = CASE WHEN (cabd.nearest_municipality IS NULL AND origin.nearest_municipality IS NOT NULL) THEN origin.nearest_municipality ELSE cabd.nearest_municipality END,
+    municipality = CASE WHEN (cabd.municipality IS NULL AND origin.municipality IS NOT NULL) THEN origin.municipality ELSE cabd.municipality END,
     construction_year = CASE WHEN (cabd.construction_year IS NULL AND origin.construction_year IS NOT NULL) THEN origin.construction_year ELSE cabd.construction_year END,
     height_m = CASE WHEN (cabd.height_m IS NULL AND origin.height_m IS NOT NULL) THEN origin.height_m ELSE cabd.height_m END,         
     length_m = CASE WHEN (cabd.length_m IS NULL AND origin.length_m IS NOT NULL) THEN origin.length_m ELSE cabd.length_m END,         
@@ -327,7 +325,7 @@ SET
     dam_name_en_ds = CASE WHEN (cabd.dam_name_en IS NULL AND origin.dam_name_en IS NOT NULL) THEN origin.data_source ELSE cabd.dam_name_en_ds END,
     reservoir_name_en_ds = CASE WHEN (cabd.reservoir_name_en IS NULL AND origin.reservoir_name_en IS NOT NULL) THEN origin.data_source ELSE cabd.reservoir_name_en_ds END,
     waterbody_name_en_ds = CASE WHEN (cabd.waterbody_name_en IS NULL AND origin.waterbody_name_en IS NOT NULL) THEN origin.data_source ELSE cabd.waterbody_name_en_ds END,
-    nearest_municipality_ds = CASE WHEN (cabd.nearest_municipality IS NULL AND origin.nearest_municipality IS NOT NULL) THEN origin.data_source ELSE cabd.nearest_municipality_ds END,
+    municipality_ds = CASE WHEN (cabd.municipality IS NULL AND origin.municipality IS NOT NULL) THEN origin.data_source ELSE cabd.municipality_ds END,
     construction_year_ds = CASE WHEN (cabd.construction_year IS NULL AND origin.construction_year IS NOT NULL) THEN origin.data_source ELSE cabd.construction_year_ds END,
     height_m_ds = CASE WHEN (cabd.height_m IS NULL AND origin.height_m IS NOT NULL) THEN origin.data_source ELSE cabd.height_m_ds END,         
     length_m_ds = CASE WHEN (cabd.length_m IS NULL AND origin.length_m IS NOT NULL) THEN origin.data_source ELSE cabd.length_m_ds END,         
@@ -355,7 +353,7 @@ SET
     dam_name_en_dsfid = CASE WHEN (cabd.dam_name_en IS NULL AND origin.dam_name_en IS NOT NULL) THEN origin.data_source_id ELSE cabd.dam_name_en_dsfid END,
     reservoir_name_en_dsfid = CASE WHEN (cabd.reservoir_name_en IS NULL AND origin.reservoir_name_en IS NOT NULL) THEN origin.data_source_id ELSE cabd.reservoir_name_en_dsfid END,
     waterbody_name_en_dsfid = CASE WHEN (cabd.waterbody_name_en IS NULL AND origin.waterbody_name_en IS NOT NULL) THEN origin.data_source_id ELSE cabd.waterbody_name_en_dsfid END,
-    nearest_municipality_dsfid = CASE WHEN (cabd.nearest_municipality IS NULL AND origin.nearest_municipality IS NOT NULL) THEN origin.data_source_id ELSE cabd.nearest_municipality_dsfid END,
+    municipality_dsfid = CASE WHEN (cabd.municipality IS NULL AND origin.municipality IS NOT NULL) THEN origin.data_source_id ELSE cabd.municipality_dsfid END,
     construction_year_dsfid = CASE WHEN (cabd.construction_year IS NULL AND origin.construction_year IS NOT NULL) THEN origin.data_source_id ELSE cabd.construction_year_dsfid END,
     height_m_dsfid = CASE WHEN (cabd.height_m IS NULL AND origin.height_m IS NOT NULL) THEN origin.data_source_id ELSE cabd.height_m_dsfid END,         
     length_m_dsfid = CASE WHEN (cabd.length_m IS NULL AND origin.length_m IS NOT NULL) THEN origin.data_source_id ELSE cabd.length_m_dsfid END,         

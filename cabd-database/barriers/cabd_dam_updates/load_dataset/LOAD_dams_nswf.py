@@ -23,19 +23,16 @@ ALTER TABLE {script.tempTable} ADD PRIMARY KEY (data_source_id);
 CREATE TABLE {script.workingTable}(
     cabd_id uuid,
     waterbody_name_en varchar(512),
-    duplicate_id varchar,
     data_source uuid not null,
     data_source_id varchar PRIMARY KEY
 );
 INSERT INTO {script.workingTable}(
     waterbody_name_en,
-    duplicate_id,
     data_source,
     data_source_id
 )
 SELECT
     waterbody_name_en,
-    'nswf_' || data_source_id,
     data_source,
     data_source_id
 FROM {script.tempTable};
@@ -52,8 +49,8 @@ SET
 FROM
 	{script.duplicatestable} AS duplicates
 WHERE
-	nswf.duplicate_id = duplicates.data_source
-	OR nswf.duplicate_id = duplicates.dups_nswf;
+    (nswf.data_source_id = duplicates.data_source_id AND duplicates.data_source = 'nswf') 
+    OR nswf.data_source_id = duplicates.dups_nswf;       
 """
 
 #this query updates the production data tables

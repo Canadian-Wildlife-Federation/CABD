@@ -72,6 +72,7 @@ UPDATE {script.tempTable} SET use_code =
     WHEN main_purpose = 'Pollution control' THEN 8
     WHEN main_purpose = 'Invasive species control' THEN 9
     WHEN main_purpose = 'Other' THEN 10
+    WHEN main_purpose IS NULL THEN 11 --new unknown use_code value
     ELSE NULL END;
 UPDATE {script.tempTable} SET use_irrigation_code =
     CASE
@@ -168,7 +169,6 @@ CREATE TABLE {script.workingTable}(
     storage_capacity_mcm float8,
     reservoir_present bool,
     generating_capacity_mwh float8,
-    duplicate_id varchar,
     data_source uuid not null,
     data_source_id varchar PRIMARY KEY
 );
@@ -190,7 +190,6 @@ INSERT INTO {script.workingTable}(
     storage_capacity_mcm,
     reservoir_present,
     generating_capacity_mwh,
-    duplicate_id,
     data_source,
     data_source_id
 )
@@ -212,7 +211,6 @@ SELECT
     storage_capacity_mcm,
     reservoir_present,
     generating_capacity_mwh,
-    'NPDP_' || data_source_id,
     data_source,
     data_source_id
 FROM {script.tempTable};
@@ -245,8 +243,8 @@ SET
 FROM
 	{script.duplicatestable} AS duplicates
 WHERE
-	npdp.duplicate_id = duplicates.data_source
-	OR npdp.duplicate_id = duplicates.dups_npdp;
+    (npdp.data_source_id = duplicates.data_source_id AND duplicates.data_source = 'npdp') 
+    OR npdp.data_source_id = duplicates.dups_npdp;       
 """
 
 #this query updates the production data tables
@@ -255,7 +253,7 @@ prodquery = f"""
 
 --create new data source record
 INSERT INTO cabd.data_source (uuid, name, version_date, version_number, source, comments)
-VALUES('{script.dsUuid}', 'NPDP', now(), null, null, 'Data update - ' || now());
+VALUES('{script.dsUuid}', 'npdp', now(), null, null, 'Data update - ' || now());
 
 --update existing features 
 UPDATE

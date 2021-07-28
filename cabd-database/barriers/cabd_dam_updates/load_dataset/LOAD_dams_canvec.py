@@ -27,21 +27,18 @@ CREATE TABLE {script.workingTable}(
     cabd_id uuid,
     dam_name_en varchar(512),
     dam_name_fr varchar(512),
-    duplicate_id varchar,
     data_source uuid not null,
     data_source_id varchar PRIMARY KEY
 );
 INSERT INTO {script.workingTable}(
     dam_name_en,
     dam_name_fr,
-    duplicate_id, 
     data_source, 
     data_source_id
 )
 SELECT
     dam_name_en,
     dam_name_fr,
-    'canvec_' || data_source_id, 
     data_source, 
     data_source_id
 FROM {script.tempTable};
@@ -50,8 +47,18 @@ FROM {script.tempTable};
 ALTER TABLE {script.tempTable}
     DROP COLUMN dam_name_en,
     DROP COLUMN dam_name_fr;
-    
-    """
+
+-- Finding CABD IDs...
+UPDATE
+	{script.workingTable} AS canvec
+SET
+	cabd_id = duplicates.cabd_dam_id
+FROM
+	{script.duplicatestable} AS duplicates
+WHERE
+	(canvec.data_source_id = duplicates.data_source_id AND duplicates.data_source = 'canvec') 
+	OR canvec.data_source_id = duplicates.dups_canvec;    
+"""
 
 
 #this query updates the production data tables

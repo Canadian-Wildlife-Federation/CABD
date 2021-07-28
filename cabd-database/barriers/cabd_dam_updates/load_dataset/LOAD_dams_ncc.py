@@ -30,7 +30,6 @@ CREATE TABLE {script.workingTable}(
     dam_name_en varchar(512),
     waterbody_name_en varchar(512),
     "comments" text,
-    duplicate_id varchar,
     data_source uuid not null,
     data_source_id varchar PRIMARY KEY
 );
@@ -38,7 +37,6 @@ INSERT INTO {script.workingTable}(
     dam_name_en,
     waterbody_name_en,
     "comments",
-    duplicate_id,
     data_source,
     data_source_id
 )
@@ -46,7 +44,6 @@ SELECT
     dam_name_en,
     waterbody_name_en,
     "comments",
-    'ncc_' || data_source_id,
     data_source,
     data_source_id
 FROM {script.tempTable};
@@ -65,8 +62,8 @@ SET
 FROM
 	{script.duplicatestable} AS duplicates
 WHERE
-	ncc.duplicate_id = duplicates.data_source
-	OR ncc.duplicate_id = duplicates.dups_ncc;
+    (ncc.data_source_id = duplicates.data_source_id AND duplicates.data_source = 'ncc') 
+    OR ncc.data_source_id = duplicates.dups_ncc;       
 """
 
 

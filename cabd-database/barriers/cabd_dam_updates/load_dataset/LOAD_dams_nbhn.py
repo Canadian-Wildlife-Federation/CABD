@@ -12,7 +12,6 @@ UPDATE {script.tempTable} SET data_source = '{script.dsUuid}';
 --add new columns and populate tempTable with mapped attributes
 ALTER TABLE {script.tempTable} ADD COLUMN dam_name_en varchar(512);
 ALTER TABLE {script.tempTable} ADD COLUMN operating_status_code int2;
-ALTER TABLE {script.tempTable} ADD COLUMN capture_date date;
 
 UPDATE {script.tempTable} SET dam_name_en = 
     CASE 
@@ -24,10 +23,6 @@ UPDATE {script.tempTable} SET operating_status_code =
     WHEN manmade_status = -1 then 5
     WHEN manmade_status = 1 then 2
     WHEN manmade_status = 2 then 1
-    ELSE NULL END;
-UPDATE {script.tempTable} SET capture_date =
-    CASE
-    WHEN length(validity_date) = 8 THEN TO_DATE(validity_date, 'YYYYMMDD')
     ELSE NULL END;
 
 ALTER TABLE {script.tempTable} ALTER COLUMN data_source SET NOT NULL;
@@ -41,24 +36,18 @@ CREATE TABLE {script.workingTable}(
     cabd_id uuid,
     dam_name_en varchar(512),
     operating_status_code int2,
-    capture_date date,
-    duplicate_id varchar,
     data_source uuid not null,
     data_source_id varchar PRIMARY KEY
 );
 INSERT INTO {script.workingTable}(
     dam_name_en,
     operating_status_code,
-    capture_date,
-    duplicate_id,
     data_source,
     data_source_id
 )
 SELECT
     dam_name_en,
     operating_status_code,
-    capture_date,
-    'nbhn_' || data_source_id,
     data_source,
     data_source_id
 FROM {script.tempTable};
@@ -66,8 +55,7 @@ FROM {script.tempTable};
 --delete extra fields from tempTable except data_source
 ALTER TABLE {script.tempTable}
     DROP COLUMN dam_name_en,
-    DROP COLUMN operating_status_code,
-    DROP COLUMN capture_date;
+    DROP COLUMN operating_status_code;
 
 -- Finding CABD IDs...
 UPDATE
@@ -77,8 +65,8 @@ SET
 FROM
 	{script.duplicatestable} AS duplicates
 WHERE
-	nbhn.duplicate_id = duplicates.data_source
-	OR nbhn.duplicate_id = duplicates.dups_nbhn;
+    (nbhn.data_source_id = duplicates.data_source_id AND duplicates.data_source = 'nbhn') 
+    OR nbhn.data_source_id = duplicates.dups_nbhn;       
 """
 
 #this query updates the production data tables
@@ -94,8 +82,7 @@ UPDATE
     {script.damTable} AS cabd
 SET
     dam_name_en = CASE WHEN (cabd.dam_name_en IS NULL AND origin.dam_name_en IS NOT NULL) THEN origin.dam_name_en ELSE cabd.dam_name_en END,
-    operating_status_code = CASE WHEN (cabd.operating_status_code IS NULL AND origin.operating_status_code IS NOT NULL) THEN origin.operating_status_code ELSE cabd.operating_status_code END,
-    capture_date_m = CASE WHEN (cabd.capture_date IS NULL AND origin.capture_date IS NOT NULL) THEN origin.capture_date ELSE cabd.capture_date END        
+    operating_status_code = CASE WHEN (cabd.operating_status_code IS NULL AND origin.operating_status_code IS NOT NULL) THEN origin.operating_status_code ELSE cabd.operating_status_code END
 FROM
     {script.workingTable} AS origin
 WHERE
@@ -106,11 +93,9 @@ UPDATE
 SET    
     dam_name_en_ds = CASE WHEN (cabd.dam_name_en IS NULL AND origin.dam_name_en IS NOT NULL) THEN origin.data_source ELSE cabd.dam_name_en_ds END,
     operating_status_code_ds = CASE WHEN (cabd.operating_status_code IS NULL AND origin.operating_status_code IS NOT NULL) THEN origin.data_source ELSE cabd.operating_status_code_ds END,    
-    capture_date_ds = CASE WHEN (cabd.capture_date IS NULL AND origin.capture_date IS NOT NULL) THEN origin.data_source ELSE cabd.capture_date_ds END,
     
     dam_name_en_dsfid = CASE WHEN (cabd.dam_name_en IS NULL AND origin.dam_name_en IS NOT NULL) THEN origin.data_source_id ELSE cabd.dam_name_en_dsfid END,
-    operating_status_code_dsfid = CASE WHEN (cabd.operating_status_code IS NULL AND origin.operating_status_code IS NOT NULL) THEN origin.data_source_id ELSE cabd.operating_status_code_dsfid END,
-    capture_date_dsfid = CASE WHEN (cabd.capture_date IS NULL AND origin.capture_date IS NOT NULL) THEN origin.data_source_id ELSE cabd.capture_date_dsfid END    
+    operating_status_code_dsfid = CASE WHEN (cabd.operating_status_code IS NULL AND origin.operating_status_code IS NOT NULL) THEN origin.data_source_id ELSE cabd.operating_status_code_dsfid END
 FROM
     {script.workingTable} AS origin    
 WHERE

@@ -11,7 +11,7 @@ UPDATE {script.tempTable} SET data_source = '{script.dsUuid}';
 
 --add new columns and populate tempTable with mapped attributes
 ALTER TABLE {script.tempTable} ADD COLUMN dam_name_en varchar(512);
-ALTER TABLE {script.tempTable} ADD COLUMN nearest_municipality varchar(512);
+ALTER TABLE {script.tempTable} ADD COLUMN municipality varchar(512);
 ALTER TABLE {script.tempTable} ADD COLUMN waterbody_name_en varchar(512);
 ALTER TABLE {script.tempTable} ADD COLUMN construction_year numeric;
 ALTER TABLE {script.tempTable} ADD COLUMN height_m float4;
@@ -28,7 +28,7 @@ ALTER TABLE {script.tempTable} ADD COLUMN use_other_code int2;
 ALTER TABLE {script.tempTable} ADD COLUMN comments text;
 
 UPDATE {script.tempTable} SET dam_name_en = name_of_dam;
-UPDATE {script.tempTable} SET nearest_municipality = nearest_city;
+UPDATE {script.tempTable} SET municipality = nearest_city;
 UPDATE {script.tempTable} SET waterbody_name_en =
     CASE
     WHEN regexp_match(river, '.*River.*') IS NOT NULL THEN river
@@ -87,7 +87,7 @@ ALTER TABLE {script.tempTable} DROP COLUMN fid;
 CREATE TABLE {script.workingTable}(
     cabd_id uuid,
     dam_name_en varchar(512),
-    nearest_municipality varchar(512),
+    municipality varchar(512),
     waterbody_name_en varchar(512),
     construction_year numeric,
     height_m float4,
@@ -102,13 +102,12 @@ CREATE TABLE {script.workingTable}(
     use_pollution_code int2,
     use_other_code int2,
     comments text,
-    duplicate_id varchar,
     data_source uuid not null,
     data_source_id varchar PRIMARY KEY
 );
 INSERT INTO {script.workingTable}(
     dam_name_en,
-    nearest_municipality,
+    municipality,
     waterbody_name_en,
     construction_year,
     height_m,
@@ -123,13 +122,12 @@ INSERT INTO {script.workingTable}(
     use_pollution_code,
     use_other_code,
     "comments",
-    duplicate_id,
     data_source,
     data_source_id,
 )
 SELECT
     dam_name_en,
-    nearest_municipality,
+    municipality,
     waterbody_name_en,
     construction_year,
     height_m,
@@ -144,7 +142,6 @@ SELECT
     use_pollution_code,
     use_other_code,
     "comments",
-    'fao_' || data_source_id,
     data_source,
     data_source_id
 FROM {script.tempTable};
@@ -152,7 +149,7 @@ FROM {script.tempTable};
 --delete extra fields from tempTable except data_source
 ALTER TABLE {script.tempTable}
     DROP COLUMN dam_name_en,
-    DROP COLUMN nearest_municipality,
+    DROP COLUMN municipality,
     DROP COLUMN waterbody_name_en,
     DROP COLUMN construction_year,
     DROP COLUMN height_m,
@@ -176,8 +173,8 @@ SET
 FROM
 	{script.duplicatetable} AS duplicates
 WHERE
-	fao.duplicate_id = duplicates.data_source
-	OR fao.duplicate_id = duplicates.dups_fao;
+    (fao.data_source_id = duplicates.data_source_id AND duplicates.data_source = 'fao') 
+    OR fao.data_source_id = duplicates.dups_fao;       
 """
 
 
@@ -194,7 +191,7 @@ UPDATE
     {script.damTable} AS cabd
 SET
     dam_name_en = CASE WHEN (cabd.dam_name_en IS NULL AND origin.dam_name_en IS NOT NULL) THEN origin.dam_name_en ELSE cabd.dam_name_en END,
-    nearest_municipality = CASE WHEN (cabd.nearest_municipality IS NULL AND origin.nearest_municipality IS NOT NULL) THEN origin.nearest_municipality ELSE cabd.nearest_municipality END,
+    municipality = CASE WHEN (cabd.municipality IS NULL AND origin.municipality IS NOT NULL) THEN origin.municipality ELSE cabd.municipality END,
     waterbody_name_en = CASE WHEN (cabd.waterbody_name_en IS NULL AND origin.waterbody_name_en IS NOT NULL) THEN origin.waterbody_name_en ELSE cabd.waterbody_name_en END,
     construction_year = CASE WHEN (cabd.construction_year IS NULL AND origin.construction_year IS NOT NULL) THEN origin.construction_year ELSE cabd.construction_year END,
     height_m = CASE WHEN (cabd.height_m IS NULL AND origin.height_m IS NOT NULL) THEN origin.height_m ELSE cabd.height_m END,         
@@ -218,7 +215,7 @@ UPDATE
     {script.damAttributeTable} as cabd
 SET    
     dam_name_en_ds = CASE WHEN (cabd.dam_name_en IS NULL AND origin.dam_name_en IS NOT NULL) THEN origin.data_source ELSE cabd.dam_name_en_ds END,
-    nearest_municipality_ds = CASE WHEN (cabd.nearest_municipality IS NULL AND origin.nearest_municipality IS NOT NULL) THEN origin.data_source ELSE cabd.nearest_municipality_ds END,
+    municipality_ds = CASE WHEN (cabd.municipality IS NULL AND origin.municipality IS NOT NULL) THEN origin.data_source ELSE cabd.municipality_ds END,
     waterbody_name_en_ds = CASE WHEN (cabd.waterbody_name_en IS NULL AND origin.waterbody_name_en IS NOT NULL) THEN origin.data_source ELSE cabd.waterbody_name_en_ds END,
     construction_year_ds = CASE WHEN (cabd.construction_year IS NULL AND origin.construction_year IS NOT NULL) THEN origin.data_source ELSE cabd.construction_year_ds END,
     height_m_ds = CASE WHEN (cabd.height_m IS NULL AND origin.height_m IS NOT NULL) THEN origin.data_source ELSE cabd.height_m_ds END,         
@@ -235,7 +232,7 @@ SET
     "comments_ds" = CASE WHEN (cabd."comments" IS NULL AND origin."comments" IS NOT NULL) THEN origin.data_source ELSE cabd.comments_ds END,
     
     dam_name_en_dsfid = CASE WHEN (cabd.dam_name_en IS NULL AND origin.dam_name_en IS NOT NULL) THEN origin.data_source_id ELSE cabd.dam_name_en_dsfid END    
-    nearest_municipality_dsfid = CASE WHEN (cabd.nearest_municipality IS NULL AND origin.nearest_municipality IS NOT NULL) THEN origin.data_source_id ELSE cabd.nearest_municipality_dsfid END,
+    municipality_dsfid = CASE WHEN (cabd.municipality IS NULL AND origin.municipality IS NOT NULL) THEN origin.data_source_id ELSE cabd.municipality_dsfid END,
     waterbody_name_en_dsfid = CASE WHEN (cabd.waterbody_name_en IS NULL AND origin.waterbody_name_en IS NOT NULL) THEN origin.data_source_id ELSE cabd.waterbody_name_en_dsfid END,
     construction_year_dsfid = CASE WHEN (cabd.construction_year IS NULL AND origin.construction_year IS NOT NULL) THEN origin.data_source_id ELSE cabd.construction_year_dsfid END,
     height_m_dsfid = CASE WHEN (cabd.height_m IS NULL AND origin.height_m IS NOT NULL) THEN origin.data_source_id ELSE cabd.height_m_dsfid END,         

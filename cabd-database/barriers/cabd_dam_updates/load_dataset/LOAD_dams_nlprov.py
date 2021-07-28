@@ -6,7 +6,7 @@ query = f"""
 --data source fields
 ALTER TABLE {script.tempTable} ADD COLUMN data_source uuid;
 ALTER TABLE {script.tempTable} ADD COLUMN data_source_id varchar;
-UPDATE {script.tempTable} SET data_source_id = objectid;
+UPDATE {script.tempTable} SET data_source_id = dam_index_num;
 UPDATE {script.tempTable} SET data_source = '{script.dsUuid}';
 
 --add new columns and populate tempTable with mapped attributes
@@ -33,14 +33,14 @@ UPDATE {script.tempTable} SET operating_status_code =
     ELSE NULL END;
 UPDATE {script.tempTable} SET use_code =
     CASE 
-    WHEN purpose_drinking IN ('Primary', 'Secondary') THEN 3
-    WHEN purpose_industrial IN ('Primary', 'Secondary') THEN 10
-    WHEN purpose_hydro IN ('Primary', 'Secondary') THEN 2
-    WHEN purpose_flood IN ('Primary', 'Secondary') THEN 4
-    WHEN purpose_ice IN ('Primary', 'Secondary') THEN 10
-    WHEN purpose_forestry IN ('Primary', 'Secondary') THEN 10
-    WHEN purpose_unknown IN ('Primary', 'Secondary') THEN 10
-    WHEN purpose_other IN ('Primary', 'Secondary') THEN 10
+    WHEN purpose_drinking = 'Primary' THEN 3
+    WHEN purpose_industrial = 'Primary' THEN 10
+    WHEN purpose_hydro = 'Primary' THEN 2
+    WHEN purpose_flood = 'Primary' THEN 4
+    WHEN purpose_ice = 'Primary' THEN 10
+    WHEN purpose_forestry = 'Primary' THEN 10
+    WHEN purpose_unknown = 'Primary' THEN 11 --new unknown use_code value
+    WHEN purpose_other = 'Primary' THEN 10
     ELSE NULL END;
 UPDATE {script.tempTable} SET use_electricity_code =
     CASE 
@@ -98,7 +98,6 @@ CREATE TABLE {script.workingTable}(
     use_other_code int2,
     construction_type_code int2,
     height_m float4,
-    duplicate_id varchar,
     data_source uuid not null,
     data_source_id varchar PRIMARY KEY
 );
@@ -114,7 +113,6 @@ INSERT INTO {script.workingTable}(
     use_other_code,
     construction_type_code,
     height_m,
-    duplicate_id,
     data_source,
     data_source_id
 )
@@ -130,7 +128,6 @@ SELECT
     use_other_code,
     construction_type_code,
     height_m,
-    'nlprov_' || data_source_id,
     data_source,
     data_source_id
 FROM {script.tempTable};
@@ -157,8 +154,8 @@ SET
 FROM
 	{script.duplicatestable} AS duplicates
 WHERE
-	nlprov.duplicate_id = duplicates.data_source
-	OR nlprov.duplicate_id = duplicates.dups_nlprov;
+    (nlprov.data_source_id = duplicates.data_source_id AND duplicates.data_source = 'nlprov') 
+    OR nlprov.data_source_id = duplicates.dups_nlprov;       
 """
 #this query updates the production data tables
 #with the data from the working tables
