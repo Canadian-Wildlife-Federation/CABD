@@ -50,8 +50,8 @@ UPDATE {script.tempTable} SET municipality = near_city;
 UPDATE {script.tempTable} SET construction_year = year;
 UPDATE {script.tempTable} SET height_m = 
     CASE
-    WHEN dam_heigt_m = -99 THEN NULL
-    ELSE dam_heigt_m END;
+    WHEN dam_height_m = -99 THEN NULL
+    ELSE dam_height_m END;
 UPDATE {script.tempTable} SET length_m = 
     CASE
     WHEN dam_len_m = -99 THEN NULL

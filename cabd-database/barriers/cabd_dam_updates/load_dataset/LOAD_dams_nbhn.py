@@ -1,6 +1,6 @@
 import LOAD_dams_main as main
 
-script = main.DamLoadingScript("mbhb")
+script = main.DamLoadingScript("nbhb")
 
 query = f"""
 --data source fields
