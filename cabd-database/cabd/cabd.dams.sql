@@ -290,7 +290,6 @@ ALTER TABLE dams.dams_medium_large ADD CONSTRAINT dams_medium_large_fk_21 FOREIG
 ALTER TABLE dams.dams_medium_large ADD CONSTRAINT dams_medium_large_fk_22 FOREIGN KEY (turbine_type_code) REFERENCES dams.turbine_type_codes(code);
 ALTER TABLE dams.dams_medium_large ADD CONSTRAINT dams_medium_large_fk_23 FOREIGN KEY (complete_level_code) REFERENCES dams.dam_complete_level_codes(code);
 ALTER TABLE dams.dams_medium_large ADD CONSTRAINT dams_medium_large_fk_24 FOREIGN KEY (lake_control_code) REFERENCES dams.lake_control_codes(code);
-ALTER TABLE dams.dams_medium_large ADD CONSTRAINT dams_medium_large_fk_25 FOREIGN KEY (watershed_group_code) REFERENCES cabd.watershed_groups(code);
 ALTER TABLE dams.dams_medium_large ADD CONSTRAINT dams_medium_large_fk_3 FOREIGN KEY (operating_status_code) REFERENCES dams.operating_status_codes(code);
 ALTER TABLE dams.dams_medium_large ADD CONSTRAINT dams_medium_large_fk_4 FOREIGN KEY (use_code) REFERENCES dams.dam_use_codes(code);
 ALTER TABLE dams.dams_medium_large ADD CONSTRAINT dams_medium_large_fk_5 FOREIGN KEY (use_irrigation_code) REFERENCES dams.use_codes(code);
@@ -298,7 +297,7 @@ ALTER TABLE dams.dams_medium_large ADD CONSTRAINT dams_medium_large_fk_6 FOREIGN
 ALTER TABLE dams.dams_medium_large ADD CONSTRAINT dams_medium_large_fk_7 FOREIGN KEY (use_supply_code) REFERENCES dams.use_codes(code);
 ALTER TABLE dams.dams_medium_large ADD CONSTRAINT dams_medium_large_fk_8 FOREIGN KEY (use_floodcontrol_code) REFERENCES dams.use_codes(code);
 ALTER TABLE dams.dams_medium_large ADD CONSTRAINT dams_medium_large_fk_9 FOREIGN KEY (use_recreation_code) REFERENCES dams.use_codes(code);
-ALTER TABLE dams.dams_medium_large ADD CONSTRAINT dams_medium_large_fk_26 FOREIGN KEY (passability_status_code) REFERENCES dams.passability_status_codes(code);
+ALTER TABLE dams.dams_medium_large ADD CONSTRAINT dams_medium_large_fk_26 FOREIGN KEY (passability_status_code) REFERENCES cabd.passability_status_codes(code);
 
 
 INSERT INTO dams.operating_status_codes (code,"name",description) VALUES

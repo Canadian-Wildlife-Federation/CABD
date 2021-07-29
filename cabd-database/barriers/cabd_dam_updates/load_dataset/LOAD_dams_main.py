@@ -3,24 +3,24 @@ import subprocess
 import sys
 from uuid import uuid4
 
-ogr = "C:\\Program Files\\QGIS 3.12\\bin\\ogr2ogr.exe";
+ogr = "C:\\OSGeo4W64\\bin\\ogr2ogr.exe";
 
 dbHost = "localhost"
 dbPort = "5432"
 dbName = "chyf"
-dbUser = "postgres"
-dbPassword = "sql"
+dbUser = "xxxx@cabd-postgres-dev"
+dbPassword = "xxxx"
 
-duplicatestable = "load.duplicates"
+duplicatestable = "damcopy.duplicates"
 
-damTable = "dams.dams_medium_large"
-damAttributeTable = "dams.dams_medium_large_attribute_source"
+damTable = "damcopy.dams"
+damAttributeTable = "damcopy.dams_attribute_source"
 
 class DamLoadingScript:
 
     #create temporary table and table to be inserted into CABD dataset
     tempSchema = "source_data"
-    workingSchema = "load"
+    workingSchema = "damcopy"
     
     tempTable = ""
     workingTable = ""
@@ -40,7 +40,7 @@ class DamLoadingScript:
             
             
         if self.datafile == '':
-            print("Data file required.  Usage: LOAD_dams_grand.py <datafile>")
+            print("Data file required.  Usage: LOAD_dams_<datasetid>.py <datafile>")
             sys.exit()
 
 
