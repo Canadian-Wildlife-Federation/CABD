@@ -100,7 +100,7 @@ ALTER TABLE {script.tempTable}
 UPDATE
 	{script.workingTable} AS publicdamskml
 SET
-	cabd_id = duplicates.cabd_dam_id
+	cabd_id = duplicates.cabd_id
 FROM
 	{script.duplicatestable} AS duplicates
 WHERE
@@ -113,7 +113,7 @@ WHERE
 prodquery = f"""
 
 --create new data source record
-INSERT INTO cabd.data_source (uuid, name, version_date, version_number, source, comments)
+INSERT INTO cabd.data_source (id, name, version_date, version_number, source, comments)
 VALUES('{script.dsUuid}', 'publicdamskml', now(), null, null, 'Data update - ' || now());
 
 --update existing features 

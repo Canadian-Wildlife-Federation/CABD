@@ -2,7 +2,7 @@ import LOAD_dams_main as main
 
 script = main.DamLoadingScript("grand")
     
-mappingquery = f"""
+query = f"""
 --data source fields
 ALTER TABLE {script.tempTable} ADD COLUMN data_source uuid;
 ALTER TABLE {script.tempTable} ADD COLUMN data_source_id varchar;
@@ -268,7 +268,7 @@ ALTER TABLE {script.tempTable}
 UPDATE
     {script.workingTable} AS grand
 SET
-    cabd_id = duplicates.cabd_dam_id
+    cabd_id = duplicates.cabd_id
 FROM
     {script.duplicatestable} AS duplicates
 WHERE
@@ -281,7 +281,7 @@ WHERE
 prodquery = f"""
 
 --create new data source record
-INSERT INTO cabd.data_source (uuid, name, version_date, version_number, source, comments)
+INSERT INTO cabd.data_source (id, name, version_date, version_number, source, comments)
 VALUES('{script.dsUuid}', 'grand', now(), null, null, 'Data update - ' || now());
 
 --update existing features 
@@ -385,6 +385,6 @@ WHERE
     
 """
 
-script.do_work(mappingquery, prodquery)
+script.do_work(query, prodquery)
 
 

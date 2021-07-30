@@ -100,7 +100,7 @@ query = f"""
 UPDATE
 	load.dams_[datasetid] AS [datasetid]
 SET
-	cabd_id = duplicates.cabd_dam_id
+	cabd_id = duplicates.cabd_id
 FROM
 	load.duplicates AS duplicates
 WHERE

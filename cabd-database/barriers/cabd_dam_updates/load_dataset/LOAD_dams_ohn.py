@@ -55,7 +55,7 @@ ALTER TABLE {script.tempTable}
 UPDATE
 	{script.workingTable} AS ohn
 SET
-	cabd_id = duplicates.cabd_dam_id
+	cabd_id = duplicates.cabd_id
 FROM
 	{script.duplicatestable} AS duplicates
 WHERE
@@ -68,7 +68,7 @@ WHERE
 prodquery = f"""
 
 --create new data source record
-INSERT INTO cabd.data_source (uuid, name, version_date, version_number, source, comments)
+INSERT INTO cabd.data_source (id, name, version_date, version_number, source, comments)
 VALUES('{script.dsUuid}', 'ohn', now(), null, null, 'Data update - ' || now());
 
 --update existing features 
@@ -89,7 +89,7 @@ SET
     "comments_ds" = CASE WHEN (cabd.comments IS NULL AND origin.comments IS NOT NULL) THEN origin.data_source ELSE cabd.comments_ds END,
     
     dam_name_en_dsfid = CASE WHEN (cabd.dam_name_en IS NULL AND origin.dam_name_en IS NOT NULL) THEN origin.data_source_id ELSE cabd.dam_name_en_dsfid END,
-    "comments_dsfid" = CASE WHEN (cabd.comments IS NULL AND origin.commentsIS NOT NULL) THEN origin.data_source_id ELSE cabd.comments_dsfid END
+    "comments_dsfid" = CASE WHEN (cabd.comments IS NULL AND origin.comments IS NOT NULL) THEN origin.data_source_id ELSE cabd.comments_dsfid END
 FROM
     {script.workingTable} AS origin    
 WHERE
