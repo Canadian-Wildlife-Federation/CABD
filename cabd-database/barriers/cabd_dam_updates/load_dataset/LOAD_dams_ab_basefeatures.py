@@ -2,7 +2,7 @@ import LOAD_dams_main as main
 
 script = main.DamLoadingScript("ab_basefeatures")
     
-query = f"""
+mappingquery = f"""
 
 --data source fields
 ALTER TABLE {script.tempTable} ADD COLUMN data_source uuid;
@@ -91,4 +91,4 @@ WHERE
     
 """
 
-script.do_work(query, prodquery)
+script.do_work(mappingquery, prodquery)
