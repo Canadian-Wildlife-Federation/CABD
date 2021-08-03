@@ -31,8 +31,8 @@ CREATE TABLE {script.workingTable}(
 );
 INSERT INTO {script.workingTable}(
     dam_name_en,
-    data_source_id,
-    data_source
+    data_source,
+    data_source_id
 )
 SELECT
     dam_name_en,
@@ -42,7 +42,7 @@ FROM {script.tempTable};
 
 --delete extra fields from tempTable except data_source
 ALTER TABLE {script.tempTable}
-    DROP COLUMN dam_name_en
+    DROP COLUMN dam_name_en;
 
 --Finding CABD IDs...
 UPDATE

@@ -169,7 +169,6 @@ UPDATE
     {script.damAttributeTable} AS cabdsource
 SET    
     dam_name_en_ds = CASE WHEN (cabd.dam_name_en IS NULL AND origin.dam_name_en IS NOT NULL) THEN origin.data_source ELSE cabdsource.dam_name_en_ds END,
-    waterbody_name_en_ds = CASE WHEN (cabd.waterbody_name_en IS NULL AND origin.waterbody_name_en IS NOT NULL) THEN origin.data_source ELSE cabdsource.waterbody_name_en_ds END,
     construction_year_ds = CASE WHEN (cabd.construction_year is null and origin.construction_year IS NOT NULL) THEN origin.data_source ELSE cabdsource.construction_year_ds END,
     operating_status_code_ds = CASE WHEN (cabd.operating_status_code is null and origin.operating_status_code IS NOT NULL) THEN origin.data_source ELSE cabdsource.operating_status_code_ds END,
     use_code_ds = CASE WHEN (cabd.use_code is null and origin.use_code IS NOT NULL) THEN origin.data_source ELSE cabdsource.use_code_ds END,
@@ -181,7 +180,6 @@ SET
     height_m_ds = CASE WHEN (cabd.height_m IS NULL AND origin.height_m IS NOT NULL) THEN origin.data_source ELSE cabdsource.height_m_ds END,
 
     dam_name_en_dsfid = CASE WHEN (cabd.dam_name_en IS NULL AND origin.dam_name_en IS NOT NULL) THEN origin.data_source_id ELSE cabdsource.dam_name_en_dsfid END,
-    waterbody_name_en_dsfid = CASE WHEN (cabd.waterbody_name_en IS NULL AND origin.waterbody_name_en IS NOT NULL) THEN origin.data_source_id ELSE cabdsource.waterbody_name_en_dsfid END,
     construction_year_dsfid = CASE WHEN (cabd.construction_year is null and origin.construction_year IS NOT NULL) THEN origin.data_source_id ELSE cabdsource.construction_year_dsfid END,
     operating_status_code_dsfid = CASE WHEN (cabd.operating_status_code is null and origin.operating_status_code IS NOT NULL) THEN origin.data_source_id ELSE cabdsource.operating_status_code_dsfid END,
     use_code_dsfid = CASE WHEN (cabd.use_code is null and origin.use_code IS NOT NULL) THEN origin.data_source_id ELSE cabdsource.use_code_dsfid END,

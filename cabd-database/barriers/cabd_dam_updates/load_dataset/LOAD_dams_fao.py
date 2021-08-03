@@ -123,7 +123,7 @@ INSERT INTO {script.workingTable}(
     use_other_code,
     "comments",
     data_source,
-    data_source_id,
+    data_source_id
 )
 SELECT
     dam_name_en,
@@ -171,7 +171,7 @@ UPDATE
 SET
 	cabd_id = duplicates.cabd_id
 FROM
-	{script.duplicatetable} AS duplicates
+	{script.duplicatestable} AS duplicates
 WHERE
     (fao.data_source_id = duplicates.data_source_id AND duplicates.data_source = 'fao') 
     OR fao.data_source_id = duplicates.dups_fao;       

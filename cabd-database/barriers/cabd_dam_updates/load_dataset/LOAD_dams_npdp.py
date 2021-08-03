@@ -301,23 +301,23 @@ WHERE
 UPDATE
     {script.damTable} AS cabd
 SET
-    dam_name_en = CASE WHEN (cabd.dam_name_en IS NULL AND origin.dam_name_en IS NOT NULL) THEN origin.dam_name_en ELSE cabdsource.dam_name_en END,
-    waterbody_name_en = CASE WHEN (cabd.waterbody_name_en IS NULL AND origin.waterbody_name_en IS NOT NULL) THEN origin.waterbody_name_en ELSE cabdsource.waterbody_name_en END,
-    construction_type_code = CASE WHEN (cabd.construction_type_code IS NULL AND origin.construction_type_code IS NOT NULL) THEN origin.construction_type_code ELSE cabdsource.construction_type_code END,
-    height_m = CASE WHEN (cabd.height_m IS NULL AND origin.height_m IS NOT NULL) THEN origin.height_m ELSE cabdsource.height_m END,
-    length_m = CASE WHEN (cabd.length_m IS NULL AND origin.length_m IS NOT NULL) THEN origin.length_m ELSE cabdsource.length_m END,    
-    use_code = CASE WHEN (cabd.use_code is null and origin.use_code IS NOT NULL) THEN origin.use_code ELSE cabdsource.use_code END,
-    use_irrigation_code = CASE WHEN (cabd.use_irrigation_code is null and origin.use_irrigation_code IS NOT NULL) THEN origin.use_irrigation_code ELSE cabdsource.use_irrigation_code END,
-    use_electricity_code = CASE WHEN (cabd.use_electricity_code is null and origin.use_electricity_code IS NOT NULL) THEN origin.use_electricity_code ELSE cabdsource.use_electricity_code END,
-    use_supply_code = CASE WHEN (cabd.use_supply_code is null and origin.use_supply_code IS NOT NULL) THEN origin.use_supply_code ELSE cabdsource.use_supply_code END,
-    use_floodcontrol_code = CASE WHEN (cabd.use_floodcontrol_code is null and origin.use_floodcontrol_code IS NOT NULL) THEN origin.use_floodcontrol_code ELSE cabdsource.use_floodcontrol_code END,
-    use_recreation_code = CASE WHEN (cabd.use_recreation_code is null and origin.use_recreation_code IS NOT NULL) THEN origin.use_recreation_code ELSE cabdsource.use_recreation_code END,
-    use_navigation_code = CASE WHEN (cabd.use_navigation_code is null and origin.use_navigation_code IS NOT NULL) THEN origin.use_navigation_code ELSE cabdsource.use_navigation_code END,
-    maintenance_last = CASE WHEN (cabd.maintenance_last is null and origin.maintenance_last IS NOT NULL) THEN origin.maintenance_last ELSE cabdsource.maintenance_last END,
-    construction_year = CASE WHEN (cabd.construction_year is null and origin.construction_year IS NOT NULL) THEN origin.construction_year ELSE cabdsource.construction_year END,
-    storage_capacity_mcm = CASE WHEN (cabd.storage_capacity_mcm is null and origin.storage_capacity_mcm IS NOT NULL) THEN origin.storage_capacity_mcm ELSE cabdsource.storage_capacity_mcm END,
-    reservoir_present = CASE WHEN (cabd.reservoir_present is null and origin.reservoir_present IS NOT NULL) THEN origin.reservoir_present ELSE cabdsource.reservoir_present END,
-    generating_capacity_mwh = CASE WHEN (cabd.generating_capacity_mwh is null and origin.generating_capacity_mwh IS NOT NULL) THEN origin.generating_capacity_mwh ELSE cabdsource.generating_capacity_mwh END        
+    dam_name_en = CASE WHEN (cabd.dam_name_en IS NULL AND origin.dam_name_en IS NOT NULL) THEN origin.dam_name_en ELSE cabd.dam_name_en END,
+    waterbody_name_en = CASE WHEN (cabd.waterbody_name_en IS NULL AND origin.waterbody_name_en IS NOT NULL) THEN origin.waterbody_name_en ELSE cabd.waterbody_name_en END,
+    construction_type_code = CASE WHEN (cabd.construction_type_code IS NULL AND origin.construction_type_code IS NOT NULL) THEN origin.construction_type_code ELSE cabd.construction_type_code END,
+    height_m = CASE WHEN (cabd.height_m IS NULL AND origin.height_m IS NOT NULL) THEN origin.height_m ELSE cabd.height_m END,
+    length_m = CASE WHEN (cabd.length_m IS NULL AND origin.length_m IS NOT NULL) THEN origin.length_m ELSE cabd.length_m END,    
+    use_code = CASE WHEN (cabd.use_code is null and origin.use_code IS NOT NULL) THEN origin.use_code ELSE cabd.use_code END,
+    use_irrigation_code = CASE WHEN (cabd.use_irrigation_code is null and origin.use_irrigation_code IS NOT NULL) THEN origin.use_irrigation_code ELSE cabd.use_irrigation_code END,
+    use_electricity_code = CASE WHEN (cabd.use_electricity_code is null and origin.use_electricity_code IS NOT NULL) THEN origin.use_electricity_code ELSE cabd.use_electricity_code END,
+    use_supply_code = CASE WHEN (cabd.use_supply_code is null and origin.use_supply_code IS NOT NULL) THEN origin.use_supply_code ELSE cabd.use_supply_code END,
+    use_floodcontrol_code = CASE WHEN (cabd.use_floodcontrol_code is null and origin.use_floodcontrol_code IS NOT NULL) THEN origin.use_floodcontrol_code ELSE cabd.use_floodcontrol_code END,
+    use_recreation_code = CASE WHEN (cabd.use_recreation_code is null and origin.use_recreation_code IS NOT NULL) THEN origin.use_recreation_code ELSE cabd.use_recreation_code END,
+    use_navigation_code = CASE WHEN (cabd.use_navigation_code is null and origin.use_navigation_code IS NOT NULL) THEN origin.use_navigation_code ELSE cabd.use_navigation_code END,
+    maintenance_last = CASE WHEN (cabd.maintenance_last is null and origin.maintenance_last IS NOT NULL) THEN origin.maintenance_last ELSE cabd.maintenance_last END,
+    construction_year = CASE WHEN (cabd.construction_year is null and origin.construction_year IS NOT NULL) THEN origin.construction_year ELSE cabd.construction_year END,
+    storage_capacity_mcm = CASE WHEN (cabd.storage_capacity_mcm is null and origin.storage_capacity_mcm IS NOT NULL) THEN origin.storage_capacity_mcm ELSE cabd.storage_capacity_mcm END,
+    reservoir_present = CASE WHEN (cabd.reservoir_present is null and origin.reservoir_present IS NOT NULL) THEN origin.reservoir_present ELSE cabd.reservoir_present END,
+    generating_capacity_mwh = CASE WHEN (cabd.generating_capacity_mwh is null and origin.generating_capacity_mwh IS NOT NULL) THEN origin.generating_capacity_mwh ELSE cabd.generating_capacity_mwh END        
 FROM
     {script.workingTable} AS origin
 WHERE

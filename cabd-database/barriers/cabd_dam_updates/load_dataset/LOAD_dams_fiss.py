@@ -56,7 +56,7 @@ SELECT
     data_source_id
 FROM {script.tempTable};
 
-delete extra fields from tempTable except data_source
+--delete extra fields from tempTable except data_source
 ALTER TABLE {script.tempTable}
     DROP COLUMN height_m,
     DROP COLUMN length_m,

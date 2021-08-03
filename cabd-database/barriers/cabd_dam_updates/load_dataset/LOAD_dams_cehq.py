@@ -151,7 +151,7 @@ SELECT
     "owner",
     maintenance_next,
     maintenance_last,
-    data_source
+    data_source,
     data_source_id
 FROM {script.tempTable};
 

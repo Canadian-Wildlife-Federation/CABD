@@ -314,7 +314,6 @@ SET
     lake_control_code_ds = CASE WHEN (cabd.lake_control_code IS NULL AND origin.lake_control_code IS NOT NULL) THEN origin.data_source ELSE cabdsource.lake_control_code_ds END,
     "comments_ds" = CASE WHEN (cabd."comments" IS NULL AND origin."comments" IS NOT NULL) THEN origin.data_source ELSE cabdsource.comments_ds END,
     
-    dam_name_en_dsfid = CASE WHEN (cabd.dam_name_en IS NULL AND origin.dam_name_en IS NOT NULL) THEN origin.data_source_id ELSE cabdsource.dam_name_en_dsfid END,    
     dam_name_en_dsfid = CASE WHEN (cabd.dam_name_en IS NULL AND origin.dam_name_en IS NOT NULL) THEN origin.data_source_id ELSE cabdsource.dam_name_en_dsfid END,
     reservoir_name_en_dsfid = CASE WHEN (cabd.reservoir_name_en IS NULL AND origin.reservoir_name_en IS NOT NULL) THEN origin.data_source_id ELSE cabdsource.reservoir_name_en_dsfid END,
     waterbody_name_en_dsfid = CASE WHEN (cabd.waterbody_name_en IS NULL AND origin.waterbody_name_en IS NOT NULL) THEN origin.data_source_id ELSE cabdsource.waterbody_name_en_dsfid END,
