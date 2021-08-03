@@ -2,7 +2,7 @@ import LOAD_dams_main as main
 
 script = main.DamLoadingScript("ab_basefeatures")
     
-mappingquery = f"""
+query = f"""
 
 --data source fields
 ALTER TABLE {script.tempTable} ADD COLUMN data_source uuid;
@@ -15,7 +15,7 @@ ALTER TABLE {script.tempTable} ADD COLUMN dam_name_en varchar(512);
 
 UPDATE {script.tempTable} SET dam_name_en = name;
 
-ALTER TABLE {script.tempTable} ALTER COLUMN data_source SET NOT NULL;
+ALTER TABLE {script.tempTable} ALTER COLUMN data_source_id SET NOT NULL;
 ALTER TABLE {script.tempTable} DROP CONSTRAINT {script.datasetname}_pkey;
 ALTER TABLE {script.tempTable} ADD PRIMARY KEY (data_source_id);
 ALTER TABLE {script.tempTable} DROP COLUMN fid;
@@ -67,10 +67,10 @@ VALUES('{script.dsUuid}', 'ab_basefeatures', now(), null, null, 'Data update - '
 
 --update existing features 
 UPDATE 
-    {script.damAttributeTable} as cabdsource
+    {script.damAttributeTable} AS cabdsource
 SET    
     dam_name_en_ds = CASE WHEN (cabd.dam_name_en IS NULL AND origin.dam_name_en IS NOT NULL) THEN origin.data_source ELSE cabdsource.dam_name_en_ds END,   
-        dam_name_en_dsfid = CASE WHEN (cabd.dam_name_en IS NULL AND origin.dam_name_en IS NOT NULL) THEN origin.data_source_id ELSE cabdsource.dam_name_en_dsfid END
+    dam_name_en_dsfid = CASE WHEN (cabd.dam_name_en IS NULL AND origin.dam_name_en IS NOT NULL) THEN origin.data_source_id ELSE cabdsource.dam_name_en_dsfid END
 FROM
     {script.damTable} AS cabd,
     {script.workingTable} AS origin    
@@ -91,4 +91,4 @@ WHERE
     
 """
 
-script.do_work(mappingquery, prodquery)
+script.do_work(query, prodquery)

@@ -26,7 +26,7 @@ UPDATE {script.tempTable} SET length_m =
     ELSE NULL END;
 UPDATE {script.tempTable} SET waterbody_name_en = gazetted_name;
 
-ALTER TABLE {script.tempTable} ALTER COLUMN data_source SET NOT NULL;
+ALTER TABLE {script.tempTable} ALTER COLUMN data_source_id SET NOT NULL;
 ALTER TABLE {script.tempTable} DROP CONSTRAINT {script.datasetname}_pkey;
 ALTER TABLE {script.tempTable} ADD PRIMARY KEY (data_source_id);
 ALTER TABLE {script.tempTable} DROP COLUMN fid;
@@ -82,7 +82,23 @@ prodquery = f"""
 INSERT INTO cabd.data_source (id, name, version_date, version_number, source, comments)
 VALUES('{script.dsUuid}', 'fiss', now(), null, null, 'Data update - ' || now());
 
---update existing features 
+--update existing features
+UPDATE 
+    {script.damAttributeTable} AS cabdsource
+SET    
+    height_m_ds = CASE WHEN (cabd.height_m IS NULL AND origin.height_m IS NOT NULL) THEN origin.data_source ELSE cabdsource.height_m_ds END,
+    length_m_ds = CASE WHEN (cabd.length_m IS NULL AND origin.length_m IS NOT NULL) THEN origin.data_source ELSE cabdsource.length_m_ds END,
+    waterbody_name_en_ds = CASE WHEN (cabd.waterbody_name_en IS NULL AND origin.waterbody_name_en IS NOT NULL) THEN origin.data_source ELSE cabdsource.waterbody_name_en_ds END,
+ 
+    height_m_dsfid = CASE WHEN (cabd.height_m IS NULL AND origin.height_m IS NOT NULL) THEN origin.data_source_id ELSE cabdsource.height_m_dsfid END,
+    length_m_dsfid = CASE WHEN (cabd.length_m IS NULL AND origin.length_m IS NOT NULL) THEN origin.data_source_id ELSE cabdsource.length_m_dsfid END,
+    waterbody_name_en_dsfid = CASE WHEN (cabd.waterbody_name_en IS NULL AND origin.waterbody_name_en IS NOT NULL) THEN origin.data_source_id ELSE cabdsource.waterbody_name_en_dsfid END    
+FROM
+    {script.damTable} AS cabd,
+    {script.workingTable} AS origin
+WHERE
+    cabdsource.cabd_id = origin.cabd_id and cabd.cabd_id = cabdsource.cabd_id;
+
 UPDATE
     {script.damTable} AS cabd
 SET
@@ -93,21 +109,6 @@ FROM
     {script.workingTable} AS origin
 WHERE
     cabd.cabd_id = origin.cabd_id;
-
-UPDATE 
-    {script.damAttributeTable} as cabd
-SET    
-    height_m_ds = CASE WHEN (cabd.height_m IS NULL AND origin.height_m IS NOT NULL) THEN origin.data_source ELSE cabd.height_m_ds END,
-    length_m_ds = CASE WHEN (cabd.length_m IS NULL AND origin.length_m IS NOT NULL) THEN origin.data_source ELSE cabd.length_m_ds END,
-    waterbody_name_en_ds = CASE WHEN (cabd.waterbody_name_en IS NULL AND origin.waterbody_name_en IS NOT NULL) THEN origin.data_source ELSE cabd.waterbody_name_en_ds END,
- 
-    height_m_dsfid = CASE WHEN (cabd.height_m IS NULL AND origin.height_m IS NOT NULL) THEN origin.data_source_id ELSE cabd.height_m_dsfid END,
-    length_m_dsfid = CASE WHEN (cabd.length_m IS NULL AND origin.length_m IS NOT NULL) THEN origin.data_source_id ELSE cabd.length_m_dsfid END,
-    waterbody_name_en_dsfid = CASE WHEN (cabd.waterbody_name_en IS NULL AND origin.waterbody_name_en IS NOT NULL) THEN origin.data_source_id ELSE cabd.waterbody_name_en_dsfid END    
-FROM
-    {script.workingTable} AS origin    
-WHERE
-    origin.cabd_id = cabd.cabd_id;
 
 --TODO: manage new features & duplicates table with new features
     

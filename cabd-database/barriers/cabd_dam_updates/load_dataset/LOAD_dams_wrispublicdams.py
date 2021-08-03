@@ -53,7 +53,7 @@ UPDATE {script.tempTable} SET operating_status_code =
     WHEN dam_operation_code IN ('Application', 'Not Constructed', 'Breached (Failed)') THEN 5
     ELSE NULL END; 
 
-ALTER TABLE {script.tempTable} ALTER COLUMN data_source SET NOT NULL;
+ALTER TABLE {script.tempTable} ALTER COLUMN data_source_id SET NOT NULL;
 ALTER TABLE {script.tempTable} DROP CONSTRAINT {script.datasetname}_pkey;
 ALTER TABLE {script.tempTable} ADD PRIMARY KEY (data_source_id);
 ALTER TABLE {script.tempTable} DROP COLUMN fid;

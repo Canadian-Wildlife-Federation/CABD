@@ -18,7 +18,7 @@ UPDATE {script.tempTable} SET dam_name_en = barrier_na;
 UPDATE {script.tempTable} SET waterbody_name_en = waterbody;
 UPDATE {script.tempTable} SET "comments" = comment;
 
-ALTER TABLE {script.tempTable} ALTER COLUMN data_source SET NOT NULL;
+ALTER TABLE {script.tempTable} ALTER COLUMN data_source_id SET NOT NULL;
 ALTER TABLE {script.tempTable} DROP CONSTRAINT {script.datasetname}_pkey;
 ALTER TABLE {script.tempTable} ADD PRIMARY KEY (data_source_id);
 ALTER TABLE {script.tempTable} DROP COLUMN fid; --only if it has fid
@@ -78,7 +78,7 @@ VALUES('{script.dsUuid}', 'ncc', now(), null, null, 'Data update - ' || now());
 
 --update existing features 
 UPDATE 
-    {script.damAttributeTable} as cabdsource
+    {script.damAttributeTable} AS cabdsource
 SET    
     dam_name_en_ds = CASE WHEN (cabd.dam_name_en IS NULL AND origin.dam_name_en IS NOT NULL) THEN origin.data_source ELSE cabdsource.dam_name_en_ds END,
     "comments_ds" = CASE WHEN (cabd.comments IS NULL AND origin.comments IS NOT NULL) THEN origin.data_source ELSE cabdsource.comments_ds END,

@@ -25,7 +25,7 @@ UPDATE {script.tempTable} SET operating_status_code =
     WHEN manmade_status = 2 then 1
     ELSE NULL END;
 
-ALTER TABLE {script.tempTable} ALTER COLUMN data_source SET NOT NULL;
+ALTER TABLE {script.tempTable} ALTER COLUMN data_source_id SET NOT NULL;
 ALTER TABLE {script.tempTable} DROP CONSTRAINT {script.datasetname}_pkey;
 ALTER TABLE {script.tempTable} ADD PRIMARY KEY (data_source_id);
 ALTER TABLE {script.tempTable} DROP COLUMN fid;
@@ -77,7 +77,21 @@ prodquery = f"""
 INSERT INTO cabd.data_source (id, name, version_date, version_number, source, comments)
 VALUES('{script.dsUuid}', 'nbhn', now(), null, null, 'Data update - ' || now());
 
---update existing features 
+--update existing features
+UPDATE 
+    {script.damAttributeTable} AS cabdsource
+SET    
+    dam_name_en_ds = CASE WHEN (cabd.dam_name_en IS NULL AND origin.dam_name_en IS NOT NULL) THEN origin.data_source ELSE cabdsource.dam_name_en_ds END,
+    operating_status_code_ds = CASE WHEN (cabd.operating_status_code IS NULL AND origin.operating_status_code IS NOT NULL) THEN origin.data_source ELSE cabdsource.operating_status_code_ds END,    
+    
+    dam_name_en_dsfid = CASE WHEN (cabd.dam_name_en IS NULL AND origin.dam_name_en IS NOT NULL) THEN origin.data_source_id ELSE cabdsource.dam_name_en_dsfid END,
+    operating_status_code_dsfid = CASE WHEN (cabd.operating_status_code IS NULL AND origin.operating_status_code IS NOT NULL) THEN origin.data_source_id ELSE cabdsource.operating_status_code_dsfid END
+FROM
+    {script.damTable} AS cabd,
+    {script.workingTable} AS origin 
+WHERE
+    cabdsource.cabd_id = origin.cabd_id and cabd.cabd_id = cabdsource.cabd_id;
+
 UPDATE
     {script.damTable} AS cabd
 SET
@@ -87,19 +101,6 @@ FROM
     {script.workingTable} AS origin
 WHERE
     cabd.cabd_id = origin.cabd_id;
-
-UPDATE 
-    {script.damAttributeTable} as cabd
-SET    
-    dam_name_en_ds = CASE WHEN (cabd.dam_name_en IS NULL AND origin.dam_name_en IS NOT NULL) THEN origin.data_source ELSE cabd.dam_name_en_ds END,
-    operating_status_code_ds = CASE WHEN (cabd.operating_status_code IS NULL AND origin.operating_status_code IS NOT NULL) THEN origin.data_source ELSE cabd.operating_status_code_ds END,    
-    
-    dam_name_en_dsfid = CASE WHEN (cabd.dam_name_en IS NULL AND origin.dam_name_en IS NOT NULL) THEN origin.data_source_id ELSE cabd.dam_name_en_dsfid END,
-    operating_status_code_dsfid = CASE WHEN (cabd.operating_status_code IS NULL AND origin.operating_status_code IS NOT NULL) THEN origin.data_source_id ELSE cabd.operating_status_code_dsfid END
-FROM
-    {script.workingTable} AS origin    
-WHERE
-    origin.cabd_id = cabd.cabd_id;
 
 --TODO: manage new features & duplicates table with new features
     

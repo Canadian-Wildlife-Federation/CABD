@@ -14,6 +14,7 @@ ALTER TABLE {script.tempTable} ADD COLUMN waterbody_name_en varchar(512);
 
 UPDATE {script.tempTable} SET waterbody_name_en = rivname_1;
 
+ALTER TABLE {script.tempTable} ALTER COLUMN data_source_id SET NOT NULL;
 ALTER TABLE {script.tempTable} DROP CONSTRAINT {script.datasetname}_pkey;
 ALTER TABLE {script.tempTable} DROP COLUMN fid;
 ALTER TABLE {script.tempTable} ADD PRIMARY KEY (data_source_id);
@@ -63,13 +64,13 @@ VALUES('{script.dsUuid}', 'nswf', now(), null, null, 'Data update - ' || now());
 
 --update existing features 
 UPDATE 
-    {script.damAttributeTable} as cabdsource
+    {script.damAttributeTable} AS cabdsource
 SET    
     waterbody_name_en_ds = CASE WHEN (cabd.waterbody_name_en IS NULL AND origin.waterbody_name_en IS NOT NULL) THEN origin.data_source ELSE cabdsource.waterbody_name_en_ds END,
     waterbody_name_en_dsfid = CASE WHEN (cabd.waterbody_name_en IS NULL AND origin.waterbody_name_en IS NOT NULL) THEN origin.data_source_id ELSE cabdsource.waterbody_name_en_dsfid END
 FROM
     {script.damTable} AS cabd,
-    {script.workingTable} AS origin    
+    {script.workingTable} AS origin
 WHERE
     cabdsource.cabd_id = origin.cabd_id and cabd.cabd_id = cabdsource.cabd_id;
 

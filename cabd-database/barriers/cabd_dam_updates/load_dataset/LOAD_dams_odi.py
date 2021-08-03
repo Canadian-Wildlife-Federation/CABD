@@ -25,12 +25,11 @@ UPDATE {script.tempTable} SET ownership_type_code =
     WHEN DAM_OWNERSHIP = 'Private' THEN 4
     WHEN DAM_OWNERSHIP = 'Provincial' THEN 5
     WHEN DAM_OWNERSHIP = 'Ontario Power Generation' THEN 5
-    WHEN DAM_OWNERSHIP IS NULL THEN 7 --new unknown ownership_type_code value
     ELSE NULL END;
 
 UPDATE {script.tempTable} SET "comments" = GENERAL_COMMENTS;
 
-ALTER TABLE {script.tempTable} ALTER COLUMN data_source SET NOT NULL;
+ALTER TABLE {script.tempTable} ALTER COLUMN data_source_id SET NOT NULL;
 ALTER TABLE {script.tempTable} DROP CONSTRAINT {script.datasetname}_pkey;
 ALTER TABLE {script.tempTable} DROP COLUMN fid;
 ALTER TABLE {script.tempTable} ADD PRIMARY KEY (data_source_id);
@@ -91,7 +90,7 @@ VALUES('{script.dsUuid}', 'odi', now(), null, null, 'Data update - ' || now());
 
 --update existing features 
 UPDATE 
-    {script.damAttributeTable} as cabdsource
+    {script.damAttributeTable} AS cabdsource
 SET 
     dam_name_en_ds = CASE WHEN (cabd.dam_name_en IS NULL AND origin.dam_name_en IS NOT NULL) THEN origin.data_source ELSE cabdsource.dam_name_en_ds END,
     dam_name_en_dsfid = CASE WHEN (cabd.dam_name_en IS NULL AND origin.dam_name_en IS NOT NULL) THEN origin.data_source_id ELSE cabdsource.dam_name_en_dsfid END,
