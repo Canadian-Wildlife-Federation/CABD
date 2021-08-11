@@ -76,9 +76,10 @@ UPDATE damcopy.dams AS cabd SET passability_status_code = 2 FROM fishways.fishwa
 UPDATE damcopy.dams SET passability_status_code = 1 WHERE passability_status_code IS NULL;
 
 --Various spatial joins to populate fields
-UPDATE damcopy.dams AS cabd SET province_territory_code = n.code FROM cabd.province_territory_codes AS n WHERE st_contains(n.geometry, cabd.snapped_point);
-UPDATE damcopy.dams AS cabd SET nhn_workunit_id = n.id FROM cabd.nhn_workunit AS n WHERE st_contains(n.polygon, cabd.snapped_point);
-UPDATE damcopy.dams AS cabd SET sub_sub_drainage_name = n.sub_sub_drainage_area FROM cabd.nhn_workunit AS n WHERE st_contains(n.polygon, cabd.snapped_point);
+UPDATE damcopy.dams AS dc SET province_territory_code = n.code FROM cabd.province_territory_codes AS n WHERE st_contains(n.geometry, dc.snapped_point);
+UPDATE damcopy.dams AS dc SET nhn_workunit_id = n.id FROM cabd.nhn_workunit AS n WHERE st_contains(n.polygon, dc.snapped_point);
+UPDATE damcopy.dams AS dc SET sub_sub_drainage_name = n.sub_sub_drainage_area FROM cabd.nhn_workunit AS n WHERE st_contains(n.polygon, dc.snapped_point);
+UPDATE damcopy.dams AS dc SET municipality = n.csdname FROM cabd.census_subdivisions AS n WHERE st_contains(n.geometry, dc.snapped_point);
 --Note the following line will only assign waterbody names for barriers on CHyF catchments and not flowpaths
 --UPDATE damcopy.dams AS cabd SET waterbody_name_en = c.lakeName1 FROM load.[name_of_chyf_data] AS c WHERE st_contains(c.polygon, cabd.geometry) AND waterbody_name_en IS NOT NULL;
 
