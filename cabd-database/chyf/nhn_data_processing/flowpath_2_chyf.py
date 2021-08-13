@@ -1,12 +1,5 @@
 import psycopg2 as pg2
 import sys
-import subprocess
-import tempfile
-import zipfile
-import shutil
-import re
-import os
-from nhn_data_qa import run_qa
 
 if len(sys.argv) != 7:
     print("Invalid Usage: flowpath_2_chyf.py <host> <port> <dbname> <dbuser> <dbpassword> <dataschema> ")

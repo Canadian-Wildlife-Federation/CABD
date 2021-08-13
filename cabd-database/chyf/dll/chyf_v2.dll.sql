@@ -15,7 +15,7 @@ create table chyf.shoreline(
 );
 
 create table chyf.names(
-  id uuid not null primary key,
+  name_id uuid not null primary key,
   name_en varchar,
   name_fr varchar,
   cgndb_id uuid
@@ -35,6 +35,7 @@ create table chyf.ecatchment(
   area double precision not null,
   aoi_id uuid not null references chyf.aoi(id),
   name_id uuid references chyf.names(id),
+  is_reservoir boolean,
   geometry geometry(POLYGON, 4617) not null
 );
   
@@ -48,7 +49,7 @@ create table chyf.nexus(
 create table chyf.eflowpath(
   id uuid not null primary key,
   ef_type smallint not null check (ef_type in (1,2,3,4)),
-  ef_subtype smallint,
+  ef_subtype smallint check ef_subtype in (10, 20, 99)),
   rank smallint not null,
   length double precision not null,
   name_id uuid references chyf.names(id),
