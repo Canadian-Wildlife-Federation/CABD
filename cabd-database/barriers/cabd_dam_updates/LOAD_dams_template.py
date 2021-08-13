@@ -100,12 +100,12 @@ query = f"""
 UPDATE
 	load.dams_[datasetid] AS [datasetid]
 SET
-	cabd_id = duplicates.cabd_dam_id
+	cabd_id = duplicates.cabd_id
 FROM
 	load.duplicates AS duplicates
 WHERE
-	[datasetid].data_source = duplicates.data_source
-	OR [datasetid].data_source = duplicates.dups_[datasetid];
+	([datasetid].data_source_id = duplicates.data_source_id AND duplicates.data_source = [datasetid])
+	OR [datasetid].data_source_id = duplicates.dups_[datasetid];
 """
 
 with conn.cursor() as cursor:

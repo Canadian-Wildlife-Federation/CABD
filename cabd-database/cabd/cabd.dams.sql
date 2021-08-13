@@ -83,13 +83,13 @@ COMMENT ON COLUMN dams.lake_control_codes."name" IS 'Control structure name';
 
 CREATE TABLE dams.operating_status_codes (
 	code int2 NOT NULL, -- Code referencing the operating status of the dam.
-	"name" varchar(32) NULL, -- The status of the dam indicating continued active operation or the type of ‘end-of-life’ action completed if operations have ceased; validity based on date from the ‘LAST_UPDATE’ field.
+	"name" varchar(32) NULL, -- The status of the dam indicating continued active operation or the type of ï¿½end-of-lifeï¿½ action completed if operations have ceased; validity based on date from the ï¿½LAST_MODIFIEDï¿½ field.
 	description text NULL,
 	CONSTRAINT dam_operating_status_pk PRIMARY KEY (code)
 );
 COMMENT ON TABLE dams.operating_status_codes IS 'Reference table for the operating status of the dam.';
 COMMENT ON COLUMN dams.operating_status_codes.code IS 'Code referencing the operating status of the dam.';
-COMMENT ON COLUMN dams.operating_status_codes."name" IS 'The status of the dam indicating continued active operation or the type of ‘end-of-life’ action completed if operations have ceased; validity based on date from the ‘LAST_UPDATE’ field.';
+COMMENT ON COLUMN dams.operating_status_codes."name" IS 'The status of the dam indicating continued active operation or the type of ï¿½end-of-lifeï¿½ action completed if operations have ceased; validity based on date from the ï¿½LAST_MODIFIEDï¿½ field.';
 
 CREATE TABLE dams.size_codes (
 	code int2 NOT NULL, -- Code referencing the size classification of the dam.
@@ -140,7 +140,7 @@ CREATE TABLE dams.passability_status_codes(
 	code int2 NOT NULL,
 	"name" varchar(32) NOT NULL,
 	description text NULL,
-	CONSTRAINT passability_sutatus_codes_pk PRIMARY KEY (code);
+	CONSTRAINT passability_status_codes_pk PRIMARY KEY (code)
 );
 COMMENT ON TABLE dams.passability_status_codes IS 'Reference table for the degree to which the structure acts as a barrier to fish in the upstream direction.';
 COMMENT ON COLUMN dams.passability_status_codes.code IS 'Code referencing the degree to which the structure acts as a barrier to fish in the upstream direction.';
@@ -158,7 +158,7 @@ CREATE TABLE dams.dams_medium_large (
 	watershed_group_code varchar(32) NULL,
 	nhn_workunit_id varchar(7) NULL,
 	province_territory_code varchar(2) NOT NULL,
-	nearest_municipality varchar(512) NULL, -- Name of nearest municipality.
+	municipality varchar(512) NULL, -- Name of nearest municipality.
 	"owner" varchar(512) NULL, -- Person, company, organization, government unit, public utility, corporation or other entity which either holds a water license to operate a dam or retains the legal property title on the dam site.
 	ownership_type_code int2 NULL,
 	province_compliance_status varchar(64) NULL, -- The status of regulatory compliance with provincial licensing body.
@@ -175,8 +175,8 @@ CREATE TABLE dams.dams_medium_large (
 	use_fish_code int2 NULL, -- Indicates the dam is used for fisheries purposes, and the extent to which fisheries are a planned use (i.e., main use, major use, or secondary use).
 	use_pollution_code int2 NULL, -- Indicates the dam is used for pollution control purposes, and the extent to which pollution control is a planned use (i.e., main use, major use, or secondary use).
 	use_invasivespecies_code int2 NULL, -- Indicates the dam is used in control invasive species and the extent to which invasive species control is a planned use (i.e., Main use, major use, or secondary use).
-	use_other_code int2 NULL, -- Indicates the dam is used for “other” purposes, and the extent to which it is a planned use (i.e., Main use, major use, or secondary use).
-	lake_control_code int2 NULL, -- Indicates whether a reservoir has been built at the location of an existing natural lake using a lake control structure; currently this column only contains limited entries; “Yes” = lake control structure raises original lake level; “Enlarged” = lake control structure enlarged the original lake surface area; “Maybe” = not sure, but data seems to indicate a lake control structure.
+	use_other_code int2 NULL, -- Indicates the dam is used for ï¿½otherï¿½ purposes, and the extent to which it is a planned use (i.e., Main use, major use, or secondary use).
+	lake_control_code int2 NULL, -- Indicates whether a reservoir has been built at the location of an existing natural lake using a lake control structure; currently this column only contains limited entries; ï¿½Yesï¿½ = lake control structure raises original lake level; ï¿½Enlargedï¿½ = lake control structure enlarged the original lake surface area; ï¿½Maybeï¿½ = not sure, but data seems to indicate a lake control structure.
 	construction_year numeric NULL, -- Year in which the dam was built (not further specified: year of construction; year of completion; year of commissioning; year of refurbishment/update; etc.)
 	assess_schedule varchar(100) NULL, -- Frequency at which the dam structure is assessed by ownership party or regulatory body.
 	expected_life int2 NULL, -- Number of years the dam structure is expected to last.
@@ -195,10 +195,10 @@ CREATE TABLE dams.dams_medium_large (
 	reservoir_depth_m float4 NULL, -- Average depth of reservoir in meters.
 	storage_capacity_mcm float8 NULL, -- Storage capacity of reservoir in million cubic meters.
 	avg_rate_of_discharge_ls float8 NULL, -- Average rate of discharge at dam location in liters per second.
-	degree_of_regulation_pc float4 NULL, -- Degree of Regulation (DOR) in percent; equivalent to “residence time” of water in the reservoir; calculated as ratio between storage capacity (‘Cap_mcm’) and total annual flow (derived from ‘Dis_avg_ls’); values capped at 10,000 indicate exceedingly high values, which may be due to inconsistencies in the data and/or incorrect allocation to the river network and the associated discharges.
+	degree_of_regulation_pc float4 NULL, -- Degree of Regulation (DOR) in percent; equivalent to ï¿½residence timeï¿½ of water in the reservoir; calculated as ratio between storage capacity (ï¿½Cap_mcmï¿½) and total annual flow (derived from ï¿½Dis_avg_lsï¿½); values capped at 10,000 indicate exceedingly high values, which may be due to inconsistencies in the data and/or incorrect allocation to the river network and the associated discharges.
 	provincial_flow_req float8 NULL, -- Legislated flow requirements for the dam structure in cubic meters per second regulated by the provincial licensing body.
 	federal_flow_req float8 NULL, -- Minimum flow recommendations for the dam structure in cubic meters per second. Based on assessments by Fisheries and Oceans Canada for the protection of fish and fish habitat.
-	catchment_area_skm float8 NULL, -- Area of upstream catchment draining into the reservoir in square kilometers. The area of upstream catchment is defined by “Elementary Catchment” units in the National Hydrography Network.
+	catchment_area_skm float8 NULL, -- Area of upstream catchment draining into the reservoir in square kilometers. The area of upstream catchment is defined by ï¿½Elementary Catchmentï¿½ units in the National Hydrography Network.
 	upstream_linear_km float8 NULL, --The amount of unobstructed linear kilometers upstream of the barrier that would become avaliable to aquatic species if the barrier were to be remediated.
 	hydro_peaking_system bool NULL, -- Indicates if the dam employs a hydro peaking system.
 	generating_capacity_mwh float8 NULL, -- The amount of electricity the hydroelectric facility can produce in megawatt hours.
@@ -208,8 +208,7 @@ CREATE TABLE dams.dams_medium_large (
 	down_passage_route_code int2 NULL,
 	passability_status_code int2 NULL, --Code referencing the degree to which the structure acts as a barrier to fish in the upstream direction
 	passability_status_note text NULL, -- Unstructrued notes to provide a context for the assigned passability status code (e.g., species restrictions)
-	capture_date date NULL, -- The capture date for a structure as documented in the original dataset, if provided.
-	last_update date NULL, -- Most recent date of the data source used to create, revise or confirm the dam record.
+	last_modified date NULL, -- The date that the record was last updated in the database.
 	data_source_id varchar(256) NULL, -- The unique id assigned to the dam record in the original data source.
 	data_source varchar(256) NULL, -- The original data source from which the dam record was obtained.
 	"comments" text NULL, -- Unstructured comments about the dam.
@@ -227,7 +226,7 @@ COMMENT ON COLUMN dams.dams_medium_large.waterbody_name_en IS 'Name of waterbody
 COMMENT ON COLUMN dams.dams_medium_large.waterbody_name_fr IS 'Name of waterbody in which the dam is recorded, French.';
 COMMENT ON COLUMN dams.dams_medium_large.reservoir_name_en IS 'Name of the reservoir or controlled lake (i.e., impounded waterbody), English.';
 COMMENT ON COLUMN dams.dams_medium_large.reservoir_name_fr IS 'Name of the reservoir or controlled lake (i.e., impounded waterbody), French.';
-COMMENT ON COLUMN dams.dams_medium_large.nearest_municipality IS 'Name of nearest municipality.';
+COMMENT ON COLUMN dams.dams_medium_large.municipality IS 'Name of nearest municipality.';
 COMMENT ON COLUMN dams.dams_medium_large."owner" IS 'Person, company, organization, government unit, public utility, corporation or other entity which either holds a water license to operate a dam or retains the legal property title on the dam site.';
 COMMENT ON COLUMN dams.dams_medium_large.province_compliance_status IS 'The status of regulatory compliance with provincial licensing body.';
 COMMENT ON COLUMN dams.dams_medium_large.federal_compliance_status IS 'The status of regulatory compliance with the federal licensing body.';
@@ -257,16 +256,15 @@ COMMENT ON COLUMN dams.dams_medium_large.reservoir_area_skm IS 'Representative s
 COMMENT ON COLUMN dams.dams_medium_large.reservoir_depth_m IS 'Average depth of reservoir in meters.';
 COMMENT ON COLUMN dams.dams_medium_large.storage_capacity_mcm IS 'Storage capacity of reservoir in million cubic meters.';
 COMMENT ON COLUMN dams.dams_medium_large.avg_rate_of_discharge_ls IS 'Average rate of discharge at dam location in liters per second.';
-COMMENT ON COLUMN dams.dams_medium_large.degree_of_regulation_pc IS 'Degree of Regulation (DOR) in percent; equivalent to "residence time" of water in the reservoir; calculated as ratio between storage capacity (‘Cap_mcm’) and total annual flow (derived from ‘Dis_avg_ls’); values capped at 10,000 indicate exceedingly high values, which may be due to inconsistencies in the data and/or incorrect allocation to the river network and the associated discharges.';
+COMMENT ON COLUMN dams.dams_medium_large.degree_of_regulation_pc IS 'Degree of Regulation (DOR) in percent; equivalent to "residence time" of water in the reservoir; calculated as ratio between storage capacity (ï¿½Cap_mcmï¿½) and total annual flow (derived from ï¿½Dis_avg_lsï¿½); values capped at 10,000 indicate exceedingly high values, which may be due to inconsistencies in the data and/or incorrect allocation to the river network and the associated discharges.';
 COMMENT ON COLUMN dams.dams_medium_large.provincial_flow_req IS 'Legislated flow requirements for the dam structure in cubic meters per second regulated by the provincial licensing body.';
 COMMENT ON COLUMN dams.dams_medium_large.federal_flow_req IS 'Minimum flow recommendations for the dam structure in cubic meters per second. Based on assessments by Fisheries and Oceans Canada for the protection of fish and fish habitat.';
 COMMENT ON COLUMN dams.dams_medium_large.catchment_area_skm IS 'Area of upstream catchment draining into the reservoir in square kilometers. The area of upstream catchment is defined by "Elementary Catchment" units in the National Hydrography Network.';
 COMMENT ON COLUMN dams.dams_medium_large.hydro_peaking_system IS 'Indicates if the dam employs a hydro peaking system.';
-COMMENT ON COLUMN dams.dams_medium_large.upstream_linear_km IS 'The amount of unobstructed linear kilometers upstream of the barrier that would become available to aquatic species if the barrier were to be remediated.' 
+COMMENT ON COLUMN dams.dams_medium_large.upstream_linear_km IS 'The amount of unobstructed linear kilometers upstream of the barrier that would become available to aquatic species if the barrier were to be remediated.'; 
 COMMENT ON COLUMN dams.dams_medium_large.generating_capacity_mwh IS 'The amount of electricity the hydroelectric facility can produce in megawatt hours.';
 COMMENT ON COLUMN dams.dams_medium_large.turbine_number IS 'The number of turbines in the dam structure.';
-COMMENT ON COLUMN dams.dams_medium_large.capture_date IS 'The capture date for a structure as documented in the original dataset, if provided.';
-COMMENT ON COLUMN dams.dams_medium_large.last_update IS 'Most recent date of the data source used to create, revise or confirm the dam record.';
+COMMENT ON COLUMN dams.dams_medium_large.last_modified IS 'The date that the record was last updated in the database.';
 COMMENT ON COLUMN dams.dams_medium_large.data_source_id IS 'The unique id assigned to the dam record in the original data source.';
 COMMENT ON COLUMN dams.dams_medium_large.data_source IS 'The original data source from which the dam record was obtained.';
 COMMENT ON COLUMN dams.dams_medium_large."comments" IS 'Unstructured comments about the dam.';
@@ -292,7 +290,6 @@ ALTER TABLE dams.dams_medium_large ADD CONSTRAINT dams_medium_large_fk_21 FOREIG
 ALTER TABLE dams.dams_medium_large ADD CONSTRAINT dams_medium_large_fk_22 FOREIGN KEY (turbine_type_code) REFERENCES dams.turbine_type_codes(code);
 ALTER TABLE dams.dams_medium_large ADD CONSTRAINT dams_medium_large_fk_23 FOREIGN KEY (complete_level_code) REFERENCES dams.dam_complete_level_codes(code);
 ALTER TABLE dams.dams_medium_large ADD CONSTRAINT dams_medium_large_fk_24 FOREIGN KEY (lake_control_code) REFERENCES dams.lake_control_codes(code);
-ALTER TABLE dams.dams_medium_large ADD CONSTRAINT dams_medium_large_fk_25 FOREIGN KEY (watershed_group_code) REFERENCES cabd.watershed_groups(code);
 ALTER TABLE dams.dams_medium_large ADD CONSTRAINT dams_medium_large_fk_3 FOREIGN KEY (operating_status_code) REFERENCES dams.operating_status_codes(code);
 ALTER TABLE dams.dams_medium_large ADD CONSTRAINT dams_medium_large_fk_4 FOREIGN KEY (use_code) REFERENCES dams.dam_use_codes(code);
 ALTER TABLE dams.dams_medium_large ADD CONSTRAINT dams_medium_large_fk_5 FOREIGN KEY (use_irrigation_code) REFERENCES dams.use_codes(code);
@@ -300,7 +297,7 @@ ALTER TABLE dams.dams_medium_large ADD CONSTRAINT dams_medium_large_fk_6 FOREIGN
 ALTER TABLE dams.dams_medium_large ADD CONSTRAINT dams_medium_large_fk_7 FOREIGN KEY (use_supply_code) REFERENCES dams.use_codes(code);
 ALTER TABLE dams.dams_medium_large ADD CONSTRAINT dams_medium_large_fk_8 FOREIGN KEY (use_floodcontrol_code) REFERENCES dams.use_codes(code);
 ALTER TABLE dams.dams_medium_large ADD CONSTRAINT dams_medium_large_fk_9 FOREIGN KEY (use_recreation_code) REFERENCES dams.use_codes(code);
-ALTER TABLE dams.dams_medium_large ADD CONSTRAINT dams_medium_large_fk_26 FOREIGN KEY (passability_status_code) REFERENCES dams.passability_status_codes(code);
+ALTER TABLE dams.dams_medium_large ADD CONSTRAINT dams_medium_large_fk_26 FOREIGN KEY (passability_status_code) REFERENCES cabd.passability_status_codes(code);
 
 
 INSERT INTO dams.operating_status_codes (code,"name",description) VALUES
@@ -323,12 +320,12 @@ INSERT INTO dams.function_codes (code,"name",description) VALUES
 	 (4,'Debris','A structure built across a waterway to retain debris (e.g., driftwood, gravel, sand etc.).'),
 	 (5,'Coffer','An enclosed temporary structure commonly used during construction. Water is pumped from the enclosure to provide a dry worksite. '),
 	 (6,'Saddle','An auxiliary structure constructed at low spots along the perimeter of a reservoir to limit its extent, or to allow for an increase in storage capacity.'),
-	 (10,'Hydro – Run-of-river','A facility that channels flowing water from a river through a canal or penstock to spin a turbine.'),
-	 (11,'Hydro – Tidal','A facility configured to intake and store water during high tide and slowly release it back into the ocean during low tide.'),
+	 (10,'Hydro ï¿½ Run-of-river','A facility that channels flowing water from a river through a canal or penstock to spin a turbine.'),
+	 (11,'Hydro ï¿½ Tidal','A facility configured to intake and store water during high tide and slowly release it back into the ocean during low tide.'),
 	 (12,'Other',NULL),
-	 (7,'Hydro – Closed-cycle pumped storage','A facility configured to pump water between two water reservoirs at different elevations; both reservoirs are isolated from a free-flowing water source.'),
-	 (8,'Hydro – Conventional storage','A facility that impounds water, which when released, flows through a turbine and generates electricity.'),
-	 (9,'Hydro – Open-cycle pumped storage','A facility configured to pump water between two water reservoirs at different elevations; a free-flowing water source is used for either the upper or lower reservoir.');
+	 (7,'Hydro ï¿½ Closed-cycle pumped storage','A facility configured to pump water between two water reservoirs at different elevations; both reservoirs are isolated from a free-flowing water source.'),
+	 (8,'Hydro ï¿½ Conventional storage','A facility that impounds water, which when released, flows through a turbine and generates electricity.'),
+	 (9,'Hydro ï¿½ Open-cycle pumped storage','A facility configured to pump water between two water reservoirs at different elevations; a free-flowing water source is used for either the upper or lower reservoir.');
 	 
 INSERT INTO dams.downstream_passage_route_codes (code,"name",description) VALUES
 	 (1,'Bypass','A fish screen is used to channel juvenile fish downstream of the structure, bypassing the turbine channel.'),
@@ -420,7 +417,7 @@ AS SELECT d.cabd_id,
     d.owner,
     d.ownership_type_code,
     ow.name AS ownership_type,
-    d.nearest_municipality,
+    d.municipality,
     d.province_compliance_status,
     d.federal_compliance_status,
     d.operating_note,
@@ -487,8 +484,7 @@ AS SELECT d.cabd_id,
     up.name AS up_passage_type,
     d.down_passage_route_code,
     down.name AS down_passage_route,
-    d.capture_date,
-    d.last_update,
+    d.last_modified,
     d.data_source_id,
     d.data_source,
     d.comments,
@@ -622,10 +618,9 @@ INSERT INTO cabd.feature_type_metadata (view_name,field_name,"name",description,
 	 ('cabd.dams_medium_large_view','turbine_type_code','Turbine Type Code',NULL,false, 'integer', null, 83),
 	 ('cabd.dams_medium_large_view','turbine_type','Turbine Type',NULL,false, 'varchar(32)', null, 84),
 	 ('cabd.dams_medium_large_view','upstream_linear_km','Upstream Linear Length (km)','The amount of unobstructed linear kilometers upstream of the barrier that would become avaliable to aquatic species if the barrier were to be removed.',false, 'double', null, 85),
-	 ('cabd.dams_medium_large_view','capture_date','Data Capture Date','The capture date for a structure as documented in the original dataset, if provided.',false, 'date', null, 86),
-	 ('cabd.dams_medium_large_view','last_update','Data Last Updated Date','Most recent date of the data source used to create, revise or confirm the dam record.',false, 'date', null, 87),
+	 ('cabd.dams_medium_large_view','last_modified','Data Capture Date','The date that the record was last updated in the database.',false, 'date', null, 86),
 	 ('cabd.dams_medium_large_view','comments','Comments','Unstructured comments about the dam.',false, 'text', null, 88),
-	 ('cabd.dams_medium_large_view','nearest_municipality','Nearest Municipality','Name of nearest municipality.',false, 'varchar(512)', null, 89),
+	 ('cabd.dams_medium_large_view','municipality','Municipality','Name of municipality.',false, 'varchar(512)', null, 89),
 	 ('cabd.dams_medium_large_view','watershed_group_code','Watershed Group Code',NULL,false, 'varchar(32)', null, 90),
 	 ('cabd.dams_medium_large_view','watershed_group_name','Watershed Group Name',NULL,false, 'varchar(512)', null, 91),
 	 ('cabd.dams_medium_large_view','nhn_workunit_id', 'NHN Work Unit', NULL, false, 'varchar(7)', null, 92),

@@ -21,7 +21,7 @@ CREATE TABLE waterfalls.waterfalls (
 	watershed_group_code varchar(32) NULL,
 	province_territory_code varchar(2) NOT NULL,
 	nhn_workunit_id varchar(7) NULL,
-	nearest_municipality varchar(512) NULL, -- Name of nearest municipality (i.e., a city or town that has corporate status and local government).
+	municipality varchar(512) NULL, -- Name of nearest municipality (i.e., a city or town that has corporate status and local government).
 	fall_height_m float4 NULL, -- Height of the waterfall in meters.
 	capture_date date NULL, -- The capture date for a structure as documented in the original dataset, if provided.
 	last_update date NULL, -- Most recent date of the data source used to create, revise or confirm the waterfall record.
@@ -40,7 +40,7 @@ COMMENT ON COLUMN waterfalls.waterfalls.fall_name_en IS 'English given or known 
 COMMENT ON COLUMN waterfalls.waterfalls.fall_name_fr IS 'French given or known name of the waterfall.';
 COMMENT ON COLUMN waterfalls.waterfalls.waterbody_name_en IS 'English name of waterbody in which the waterfall is recorded.';
 COMMENT ON COLUMN waterfalls.waterfalls.waterbody_name_fr IS 'French name of waterbody in which the waterfall is recorded.';
-COMMENT ON COLUMN waterfalls.waterfalls.nearest_municipality IS 'Name of nearest municipality (i.e., a city or town that has corporate status and local government).';
+COMMENT ON COLUMN waterfalls.waterfalls.municipality IS 'Name of nearest municipality (i.e., a city or town that has corporate status and local government).';
 COMMENT ON COLUMN waterfalls.waterfalls.fall_height_m IS 'Height of the waterfall in meters.';
 COMMENT ON COLUMN waterfalls.waterfalls.capture_date IS 'The capture date for a structure as documented in the original dataset, if provided.';
 COMMENT ON COLUMN waterfalls.waterfalls.last_update IS 'Most recent date of the data source used to create, revise or confirm the waterfall record.';
@@ -75,7 +75,7 @@ AS SELECT w.cabd_id,
     w.nhn_workunit_id,
     w.province_territory_code,
     pt.name AS province_territory,
-    w.nearest_municipality,
+    w.municipality,
     w.fall_height_m,
     w.capture_date,
     w.last_update,
@@ -120,6 +120,6 @@ INSERT INTO cabd.feature_type_metadata (view_name,field_name,"name",description,
 	 ('cabd.waterfalls_view','watershed_group_code','Watershed Group Code',NULL,false,'varchar(32)',null,18),
 	 ('cabd.waterfalls_view','watershed_group_name','Watershed Group Name',NULL,false,'varchar(512)',null,19),
 	 ('cabd.waterfalls_view','nhn_workunit_id','NHN Work Unit',NULL,false,'varchar(7)',null,20),
-	 ('cabd.waterfalls_view','nearest_municipality','Nearest Municipality','Name of nearest municipality (i.e., a city or town that has corporate status and local government).',false,'varchar(512)',null,21),
+	 ('cabd.waterfalls_view','municipality','Nearest Municipality','Name of nearest municipality (i.e., a city or town that has corporate status and local government).',false,'varchar(512)',null,21),
 	 ('cabd.waterfalls_view','feature_type','Feature Type',NULL,false,'text',null,22),
 	 ('cabd.waterfalls_view','geometry','Location',NULL,false,'geometry',null,null);

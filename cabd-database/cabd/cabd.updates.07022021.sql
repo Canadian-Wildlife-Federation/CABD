@@ -4,7 +4,6 @@
 -- information in the feature types, then removes the data source
 -- field from that table and corresponding view
 
-
 update cabd.feature_type_metadata set field_name = 'provincial_compliance_status'
 where view_name = 'cabd.dams_medium_large_view' and field_name = 'province_compliance_status';
 
@@ -872,10 +871,7 @@ update cabd.feature_type_metadata set vw_all_order = 25 where view_name = 'cabd.
 update cabd.feature_type_metadata set vw_all_order = vw_all_order+1 where view_name = 'cabd.dams_medium_large_view' and vw_all_order > 76;
 update cabd.feature_type_metadata set vw_all_order = 77 where view_name = 'cabd.dams_medium_large_view' and field_name = 'provincial_flow_req';
 
-
 alter table cabd.feature_types add column attribute_source_table varchar(500);
 update cabd.feature_types set attribute_source_table = 'dams.dams_medium_large_attribute_source' where type = 'dams_medium_large';
 update cabd.feature_types set attribute_source_table = 'fishways.fishways_attribute_source' where type = 'fishways';
 update cabd.feature_types set attribute_source_table = 'waterfalls.waterfalls_attribute_source' where type = 'waterfalls';
-
-
