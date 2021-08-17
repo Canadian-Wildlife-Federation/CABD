@@ -163,7 +163,41 @@ def run_qa(conn, workunit):
     with conn.cursor() as cursor:
         cursor.execute(qa2)
 
-
+    #touching waterbodies with different permanency attribute 
+    #qa2 = f"""
+    #    insert into {workingSchema}.qaerrors (type, message, geometry)
+    #     select distinct 'WARNING', 'WARNING: waterbodies with same subtype touch with different permanency value', st_pointonsurface(st_intersection(a.geometry, b.geometry)) 
+    #    FROM 
+    #    {workingSchema}.ecatchment a,
+    #    {workingSchema}.ecatchment b
+    #    WHERE 
+    #    a.ec_type = b.ec_type and a.ec_subtype = b.ec_subtype
+    #    and a.permanency != b.permanency 
+    #    and a.geometry && b.geometry
+    #    and st_intersects(a.geometry, b.geometry) ;                 
+    #"""
+    #log (qa2)
+    #with conn.cursor() as cursor:
+    #    cursor.execute(qa2)
+        
+        
+    #touching waterbodies with more than 3 shared vertices 
+    qa2 = f"""
+        insert into {workingSchema}.qaerrors (type, message, geometry)
+         select distinct 'WARNING', 'WARNING: waterbodies with same subtype touch and share more than 3 vertices', st_pointonsurface(st_intersection(a.geometry, b.geometry)) 
+        FROM 
+        {workingSchema}.ecatchment a,
+        {workingSchema}.ecatchment b
+        WHERE 
+        a.ec_type = b.ec_type and a.ec_subtype = b.ec_subtype
+        and a.permanency != b.permanency 
+        and a.geometry && b.geometry
+        and st_intersects(a.geometry, b.geometry)
+        and st_npoints(st_intersection(a.geometry, b.geometry)) > 3;
+    """
+    log (qa2)
+    with conn.cursor() as cursor:
+        cursor.execute(qa2)
 
     qa1 = f'SELECT type, message, st_astext(geometry) from {workingSchema}.qaerrors';
     with conn.cursor() as cursor:
