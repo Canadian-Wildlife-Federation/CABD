@@ -146,6 +146,7 @@ ALTER TABLE {workingSchema}.ecatchment add column is_reservoir boolean default f
 UPDATE {workingSchema}.ecatchment set ec_type = 4;
 
 --nhn 0 - not available, 1 - canal, 2-conduit, 3-ditch,4-lake,5-reservoir,6-watercourse,7-tidal river, 8-liquid waste
+--also found 10=sidechannel in nhn data but not documented
 --chyf 99 - unknown, 41 - canal, 50-conduit, 41-ditch,10-lake,40-watercourse,30-tidal river, 12-liquid waste
 UPDATE {workingSchema}.ecatchment set is_reservoir = true WHERE waterdefinition = 5;
 UPDATE {workingSchema}.ecatchment set ec_subtype = CASE 
@@ -158,6 +159,7 @@ WHEN waterdefinition = 5 then 10
 WHEN waterdefinition = 6 then 40
 WHEN waterdefinition = 7 then 30
 WHEN waterdefinition = 8 then 12
+WHEN waterdefinition = 10 then 40
 else 99 end;
  
 --snap to grid to deal with noding problems
