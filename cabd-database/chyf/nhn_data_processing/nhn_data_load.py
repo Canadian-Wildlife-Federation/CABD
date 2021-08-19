@@ -4,7 +4,7 @@ import subprocess
 import os
 from nhn_data_qa import run_qa
 
-ogr = "C:\\Program Files\\QGIS 3.12\\bin\\ogr2ogr.exe";
+ogr = "C:\\OSGeo4W64\\bin\\ogr2ogr.exe";
 
 
 if len(sys.argv) != 8:
@@ -131,7 +131,11 @@ ALTER TABLE {workingSchema}.eflowpath add column ef_type smallint CHECK (ef_type
 ALTER TABLE {workingSchema}.eflowpath add column ef_subtype smallint CHECK (ef_subtype BETWEEN 0 and 100);
 ALTER TABLE {workingSchema}.eflowpath add column direction_known smallint CHECK (direction_known IN (1, -1));
 UPDATE {workingSchema}.eflowpath set ef_type = CASE WHEN networkFlowType = 2 THEN 3 ELSE 1 END;
-UPDATE {workingSchema}.eflowpath set ef_subtype = CASE WHEN networkFlowType = 3 THEN 20 WHEN networkFlowType = 2 THEN null ELSE 10 END;  
+UPDATE {workingSchema}.eflowpath set ef_subtype = CASE
+  WHEN networkFlowType = 3 THEN 20
+  WHEN networkFlowType = 2 THEN null
+  WHEN networkFlowType IN (-1, 0) THEN 99
+  ELSE 10 END;
 
 
 --digitized in opposite direction
@@ -140,7 +144,7 @@ UPDATE {workingSchema}.eflowpath set direction_known = case when flowdirection =
 
 --ecatchment
 ALTER TABLE {workingSchema}.ecatchment add column ec_type smallint CHECK (ec_type IN (1,2,3,4,5));
-ALTER TABLE {workingSchema}.ecatchment add column ec_subtype smallint CHECK (ec_subtype BETWEEN 0 and 100);
+ALTER TABLE {workingSchema}.ecatchment add column ec_subtype smallint CHECK (ec_subtype IN (10, 11, 12, 20, 30, 40, 41, 50, 90, 99));
 ALTER TABLE {workingSchema}.ecatchment add column is_reservoir boolean default false;
 
 UPDATE {workingSchema}.ecatchment set ec_type = 4;
@@ -157,10 +161,10 @@ WHEN waterdefinition = 3 then 41
 WHEN waterdefinition = 4 then 10
 WHEN waterdefinition = 5 then 10
 WHEN waterdefinition = 6 then 40
-WHEN waterdefinition = 7 then 30
+WHEN waterdefinition = 7 then 20
 WHEN waterdefinition = 8 then 12
 WHEN waterdefinition = 10 then 40
-else 99 end;
+ELSE 99 END;
  
 --snap to grid to deal with noding problems
 UPDATE {workingSchema}.eflowpath set geometry = ST_RemoveRepeatedPoints(st_snaptogrid(geometry, {snaptogrid}));
