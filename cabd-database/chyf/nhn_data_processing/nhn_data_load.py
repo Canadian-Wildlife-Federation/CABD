@@ -128,7 +128,7 @@ ALTER TABLE {workingSchema}.eflowpath add column id uuid default uuid_generate_v
 --efsubtype  #10 - Observed, 20 - Inferred, 99 - Unspecified
 
 ALTER TABLE {workingSchema}.eflowpath add column ef_type smallint CHECK (ef_type IN (1,2,3,4));
-ALTER TABLE {workingSchema}.eflowpath add column ef_subtype smallint CHECK (ef_subtype BETWEEN 0 and 100);
+ALTER TABLE {workingSchema}.eflowpath add column ef_subtype smallint CHECK (ef_subtype IN (10, 20, 99));
 ALTER TABLE {workingSchema}.eflowpath add column direction_known smallint CHECK (direction_known IN (1, -1));
 UPDATE {workingSchema}.eflowpath set ef_type = CASE WHEN networkFlowType = 2 THEN 3 ELSE 1 END;
 UPDATE {workingSchema}.eflowpath set ef_subtype = CASE
