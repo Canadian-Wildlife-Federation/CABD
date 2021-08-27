@@ -4,7 +4,7 @@ import subprocess
 import os
 from nhn_data_qa import run_qa
 
-ogr = "C:\\OSGeo4W64\\bin\\ogr2ogr.exe";
+ogr = "C:\\Program Files\\QGIS 3.12\\bin\\ogr2ogr.exe";
 
 
 if len(sys.argv) != 8:
@@ -193,6 +193,30 @@ select uuid_generate_v4(), points.geometry
 from points where geometry in (select geometry from startend);
 
 --ecatchment intersections with aoi
+
+--point intersections
+INSERT INTO {workingSchema}.terminal_node(id, geometry) 
+SELECT uuid_generate_v4(), geometry
+FROM
+(
+  SELECT st_geometryn(geometry, generate_series(1, st_numgeometries(geometry)))  as geometry
+  FROM 
+  (
+    SELECT st_intersection(a.geometry, b.geometry) as geometry
+    FROM {workingSchema}.ecatchment a,  
+    (
+      select st_exteriorring(geometry) as geometry from {workingSchema}.aoi 
+      union
+      select st_interiorringn(geometry, generate_series(1, st_numinteriorrings(geometry)))  as geometry from {workingSchema}.aoi
+    ) b
+    WHERE a.ec_type in (4) and a.geometry && b.geometry and st_intersects(a.geometry, b.geometry)
+  ) foo
+) bar 
+WHERE upper(st_geometrytype(geometry)) = 'ST_POINT';
+
+
+    
+-- linear intersections
 INSERT INTO {workingSchema}.terminal_node(id, geometry) 
 with eintersect as (
   select st_Geometryn(geometry, generate_series(1, st_numgeometries(geometry))) as geometry, uuid_generate_v4() as uuid
