@@ -26,7 +26,7 @@ ALTER TABLE {script.tempTable} ADD COLUMN "owner" varchar(512);
 ALTER TABLE {script.tempTable} ADD COLUMN maintenance_next date;
 ALTER TABLE {script.tempTable} ADD COLUMN maintenance_last date;
 
-UPDATE {script.tempTable} SET dam_name_fr = "numéro_barrage";
+UPDATE {script.tempTable} SET dam_name_fr = "nom_du_barrage";
 UPDATE {script.tempTable} SET municipality = "municipalité";
 UPDATE {script.tempTable} SET reservoir_name_fr = "nom_du_réservoir";
 UPDATE {script.tempTable} SET reservoir_present =
