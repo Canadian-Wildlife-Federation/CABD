@@ -17,9 +17,11 @@ package org.refractions.cabd.controllers;
 
 import java.io.IOException;
 
+import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.CoordinateSequence;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.LineString;
+import org.locationtech.jts.geom.MultiPoint;
 import org.locationtech.jts.geom.MultiPolygon;
 import org.locationtech.jts.geom.Point;
 import org.locationtech.jts.geom.Polygon;
@@ -53,6 +55,9 @@ public enum GeoJsonUtils {
 		switch (g.getGeometryType()) {
 		case "Point":
 			coordinate(gen, ((Point) g).getX(), ((Point) g).getY());
+			break;
+		case "MultiPoint":
+			coordinates(gen, ((MultiPoint) g).getCoordinates());
 			break;
 		case "LineString":
 			coordinates(gen, ((LineString) g).getCoordinateSequence());
@@ -96,6 +101,14 @@ public enum GeoJsonUtils {
 		gen.writeEndArray();
 	}
 
+	private void coordinates(JsonGenerator gen, Coordinate[] cs) throws IOException {
+		gen.writeStartArray();
+		for (int i = 0; i < cs.length; i++) {
+			coordinate(gen, cs[i].x, cs[i].y);
+		}
+		gen.writeEndArray();
+	}
+	
 	private void coordinate(JsonGenerator gen, double x, double y) throws IOException {
 		gen.writeStartArray();
 		gen.writeNumber(x);

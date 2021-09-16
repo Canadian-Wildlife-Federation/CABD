@@ -19,6 +19,7 @@ import java.util.List;
 
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Envelope;
+import org.refractions.cabd.dao.filter.Filter;
 import org.refractions.cabd.model.FeatureType;
 
 public class ParsedRequestParameters {
@@ -27,18 +28,13 @@ public class ParsedRequestParameters {
 	private Envelope env = null;
 	private Coordinate searchPoint = null;
 	private List<FeatureType> ftypes = null;
+	private Filter filter;
 	
-	public ParsedRequestParameters(Envelope env, Coordinate searchPoint, Integer maxResults) {
+	public ParsedRequestParameters(Envelope env, Coordinate searchPoint, Integer maxResults, Filter filter) {
 		this.env  = env;
 		this.searchPoint = searchPoint;
 		this.maxResults = maxResults;
-	}
-	
-	public ParsedRequestParameters(List<FeatureType> types, Envelope env, Coordinate searchPoint, Integer maxResults) {
-		this.ftypes = types;
-		this.env  = env;
-		this.searchPoint = searchPoint;
-		this.maxResults = maxResults;
+		this.filter = filter;
 	}
 	
 	public Integer getMaxResults() {
@@ -61,6 +57,7 @@ public class ParsedRequestParameters {
 		this.ftypes = types;
 	}
 
-	
-	
+	public Filter getFilter() {
+		return this.filter;
+	}
 }
