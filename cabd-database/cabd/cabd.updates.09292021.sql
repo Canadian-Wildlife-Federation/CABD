@@ -3,8 +3,8 @@ update cabd.feature_types  set type = 'dams' where type = 'dams_medium_large';
 CREATE OR REPLACE VIEW cabd.dams_view
 AS SELECT d.cabd_id,
     'dams'::text AS feature_type,
-    st_y(d.spoint) AS latitude,
-    st_x(d.spoint) AS longitude,
+    st_y(d.snapped_point) AS latitude,
+    st_x(d.snapped_point) AS longitude,
     d.dam_name_en,
     d.dam_name_fr,
     d.waterbody_name_en,
@@ -19,9 +19,9 @@ AS SELECT d.cabd_id,
     d.ownership_type_code,
     ow.name AS ownership_type,
     d.municipality,
-    d.province_compliance_status,
+    d.provincial_compliance_status,
     d.federal_compliance_status,
-    d.operating_note,
+    d.operating_notes,
     d.operating_status_code,
     os.name AS operating_status,
     d.use_code,
@@ -119,7 +119,7 @@ AS SELECT d.cabd_id,
      LEFT JOIN dams.dam_complete_level_codes cl ON cl.code = d.complete_level_code
      LEFT JOIN dams.lake_control_codes lk ON lk.code = d.lake_control_code
      LEFT JOIN cabd.nhn_workunit nhn ON nhn.id::text = d.nhn_workunit_id::text
-     LEFT JOIN dams.passability_status_codes ps ON ps.code = d.passability_status_code;
+     LEFT JOIN cabd.passability_status_codes ps ON ps.code = d.passability_status_code;
      
      
 CREATE OR REPLACE VIEW cabd.barriers_view
@@ -151,7 +151,7 @@ AS SELECT barriers.cabd_id,
             dams.reservoir_name_en,
             dams.reservoir_name_fr,
             dams.passability_status_code,
-            dams.spoint AS snapped_point
+            dams.snapped_point
            FROM dams.dams
         UNION
          SELECT waterfalls.cabd_id,
@@ -203,7 +203,7 @@ AS SELECT barriers.cabd_id,
             dams.reservoir_name_en,
             dams.reservoir_name_fr,
             dams.passability_status_code,
-            dams.spoint AS snapped_point
+            dams.snapped_point
            FROM dams.dams
         UNION
          SELECT waterfalls.cabd_id,
@@ -237,4 +237,4 @@ AS SELECT barriers.cabd_id,
            FROM fishways.fishways) barriers
      JOIN cabd.province_territory_codes pt ON barriers.province_territory_code::text = pt.code::text
      LEFT JOIN cabd.nhn_workunit nhn ON nhn.id::text = barriers.nhn_workunit_id::text
-     LEFT JOIN cabd.passability_status_codes ps ON ps.code = barriers.passability_status_code;     
+     LEFT JOIN cabd.passability_status_codes ps ON ps.code = barriers.passability_status_code;    
