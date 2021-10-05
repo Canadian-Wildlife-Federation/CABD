@@ -16,12 +16,14 @@
 package org.refractions.cabd.dao;
 
 import java.text.MessageFormat;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Envelope;
+import org.refractions.cabd.dao.filter.Filter;
 import org.refractions.cabd.exceptions.InvalidDatabaseConfigException;
 import org.refractions.cabd.model.Feature;
 import org.refractions.cabd.model.FeatureType;
@@ -120,9 +122,9 @@ public class FeatureDao {
 	 * @param env the envelope to search, can be null
 	 * @return
 	 */
-	public List<Feature> getFeatures(List<FeatureType> types, Envelope env, int maxresults) {
+	public List<Feature> getFeatures(List<FeatureType> types, Envelope env, int maxresults, Filter filter) {
 		FeatureViewMetadata vmetadata = typeManager.getAllViewMetadata();
-		return getFeaturesInternal(vmetadata, types, env, maxresults);
+		return getFeaturesInternal(vmetadata, types, env, maxresults, filter);
 	}
 	
 	/**
@@ -134,9 +136,9 @@ public class FeatureDao {
 	 * @param env the envelope to search, can be null
 	 * @return
 	 */
-	public List<Feature> getFeatures(FeatureType type, Envelope env, int maxresults) {
+	public List<Feature> getFeatures(FeatureType type, Envelope env, int maxresults, Filter filter) {
 		FeatureViewMetadata vmetadata = type.getViewMetadata();
-		return getFeaturesInternal(vmetadata, null, env, maxresults);
+		return getFeaturesInternal(vmetadata, null, env, maxresults, filter);
 	}
 	
 	/**
@@ -149,9 +151,9 @@ public class FeatureDao {
 	 * @param maxResults the maximum number of results to return
 	 * @return
 	 */
-	public List<Feature> getFeatures(FeatureType type, Coordinate pnt, Integer maxResults) {
+	public List<Feature> getFeatures(FeatureType type, Coordinate pnt, Integer maxResults, Filter filter) {
 		FeatureViewMetadata vmetadata = type.getViewMetadata();
-		return getFeaturesInternal(vmetadata, null, pnt, maxResults);
+		return getFeaturesInternal(vmetadata, null, pnt, maxResults, filter);
 	}
 	
 	/**
@@ -163,17 +165,19 @@ public class FeatureDao {
 	 * @param maxResults the maximum number of results to return
 	 * @return
 	 */
-	public List<Feature> getFeatures(List<FeatureType> types, Coordinate pnt, Integer maxResults) {
+	public List<Feature> getFeatures(List<FeatureType> types, Coordinate pnt, Integer maxResults, Filter filter) {
 		FeatureViewMetadata vmetadata = typeManager.getAllViewMetadata();
-		return getFeaturesInternal(vmetadata, types, pnt, maxResults);
+		return getFeaturesInternal(vmetadata, types, pnt, maxResults, filter);
 	}
 	
 	/*
 	 * Searches metadata based on envelope
 	 */
+	@SuppressWarnings("unchecked")
 	private List<Feature> getFeaturesInternal(FeatureViewMetadata vmetadata,
 			List<FeatureType> types,
-			Envelope env, int maxresults){
+			Envelope env, int maxresults,
+			Filter filter){
 		
 		String geomField = null;
 		
@@ -193,25 +197,30 @@ public class FeatureDao {
 		sb.append(" FROM " );
 		sb.append(vmetadata.getFeatureView());
 		
-		if ((types != null && !types.isEmpty()) || 
-				(env != null && geomField != null)) {
-			sb.append(" WHERE ");
-		}
 		
-		String[] btypes = null;
+		List<Object> params = new ArrayList<>();
+		String and = null;
+		String where = " WHERE ";
+		
 		if (types != null && !types.isEmpty()) {
 		
-			btypes = new String[types.size()];
-			for (int i = 0; i < types.size(); i ++) btypes[i] = types.get(i).getType();
-			
+			for (FeatureType type : types) params.add(type.getType());
+		
+			if (where != null) sb.append(" WHERE ");
+			where = null;
+			and = " AND ";
+
 			sb.append(" feature_type IN (");
 			sb.append(String.join(",", Collections.nCopies(types.size(), "?")));
 			sb.append(")");
-			
-			if (env != null && geomField != null) sb.append(" AND ");
 		}
 		
 		if (env != null && geomField != null) {
+			if (where != null) sb.append(" WHERE ");
+			where = null;
+			if (and != null) sb.append(and);
+			and = " AND ";
+			
 			sb.append(" st_intersects(");
 			sb.append( geomField);
 			sb.append(", ST_MakeEnvelope(");
@@ -226,22 +235,32 @@ public class FeatureDao {
 			sb.append(DATABASE_SRID);
 			sb.append(" ) )" );
 		}
-		
+		if (filter != null) {
+			if (where != null) sb.append(" WHERE ");
+			where = null;
+			if (and != null) sb.append(and);
+			and = " AND ";
+			
+			Object[] fstr = filter.toSql(vmetadata);
+			sb.append(fstr[0]);
+			params.addAll((List<Object>)fstr[1]);
+		}
 		sb.append(" LIMIT ");
 		sb.append(maxresults);
 		
 		List<Feature> features = 
 				jdbcTemplate.query(sb.toString(), 
-						new FeatureRowMapper(vmetadata), btypes);
+						new FeatureRowMapper(vmetadata), params.toArray());
 		return features;
 	}
 	
 	
 	//nearest neighbour searching
 	//https://postgis.net/workshops/postgis-intro/knn.html
+	@SuppressWarnings("unchecked")
 	private List<Feature> getFeaturesInternal(FeatureViewMetadata vmetadata,
 			List<FeatureType> types,
-			Coordinate c, Integer maxResults){
+			Coordinate c, Integer maxResults, Filter filter){
 		
 		String geomField = null;
 		
@@ -265,15 +284,30 @@ public class FeatureDao {
 		sb.append(" FROM " );
 		sb.append(vmetadata.getFeatureView());
 		
-		String[] btypes = null;
+		List<Object> params = new ArrayList<>();
+		String and = null;
+		String where = " WHERE ";
 		if (types != null && !types.isEmpty()) {
-			btypes = new String[types.size()];
-			for (int i = 0; i < types.size(); i ++) btypes[i] = types.get(i).getType();
+			for (FeatureType type : types) params.add(type.getType());
 			
-			sb.append(" WHERE ");	
+			if (where != null) sb.append(" WHERE ");	
+			where = null;
+			and = " AND ";
 			sb.append(" feature_type IN (");
 			sb.append(String.join(",", Collections.nCopies(types.size(), "?")));
 			sb.append(")");
+			
+		}
+		
+		if (filter != null) {
+			if (where != null) sb.append(" WHERE ");	
+			where = null;
+			if (and != null) sb.append(and);
+			and = " AND ";
+			
+			Object[] fstr = filter.toSql(vmetadata);
+			sb.append(fstr[0]);
+			params.addAll((List<Object>)fstr[1]);
 		}
 		
 		sb.append(" ORDER BY ");
@@ -287,7 +321,7 @@ public class FeatureDao {
 			
 		List<Feature> features = 
 				jdbcTemplate.query(sb.toString(), 
-						new FeatureRowMapper(vmetadata), btypes);
+						new FeatureRowMapper(vmetadata), params.toArray());
 		return features;
 	}
 }

@@ -21,6 +21,7 @@ import java.text.MessageFormat;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Envelope;
 import org.refractions.cabd.dao.FeatureDao;
+import org.refractions.cabd.dao.filter.Filter;
 import org.refractions.cabd.exceptions.InvalidParameterException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,25 +46,29 @@ public class FeatureRequestParameters {
 	@Parameter(name="max-results", required = false, description = "The maximum number of search results to return.  Required if point is provided.  If not provided a system defined maximum is used.")
 	private Integer maxresults;
 
+	@Parameter(name="filter", required = false, description = "The feature filter.")
+	private String[] filter;
 	
 	//this is the only way I could figure out
 	//how to provide names for query parameters and
 	//use a POJO to represent these parameters
 	//I needed custom name for max-results
 	//https://stackoverflow.com/questions/56468760/how-to-collect-all-fields-annotated-with-requestparam-into-one-object
-	@ConstructorProperties({"bbox", "point","max-results"})
+	@ConstructorProperties({"bbox", "point","max-results", "filter"})
 	public FeatureRequestParameters(
 			String bbox, 
-			String point, Integer maxResults) {
+			String point, Integer maxResults, String[] filter) {
 
 		this.bbox = bbox;
 		this.point = point;
 	    this.maxresults = maxResults;
+	    this.filter = filter;
 	}
 	
 	public String getBbox() { return this.bbox; }
 	public String getPoint() { return this.point; }
 	public Integer getMaxresults() { return maxresults;	}
+	public String[] getFilter() { return filter;	}
 
 	
 	/**
@@ -106,7 +111,7 @@ public class FeatureRequestParameters {
 				throw new InvalidParameterException("The 'max-results' parameter must be larger than 0");
 			}
 		}
-		return new ParsedRequestParameters(env, searchPoint, maxresults);
+		return new ParsedRequestParameters(env, searchPoint, maxresults, parseFilter(filter));
 	}
 
 	private Envelope parseBbox() {
@@ -150,5 +155,9 @@ public class FeatureRequestParameters {
 		}
 	}
 	
+	private Filter parseFilter(String[] filters) {
+		if (filters == null || filters.length == 0) return null;
+		return Filter.parseFilter(filters);
+	}
 	
 }
