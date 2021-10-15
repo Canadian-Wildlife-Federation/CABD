@@ -13,7 +13,7 @@ dbPassword = sys.argv[5]
 
 schema = sys.argv[6]
 
-chyfschema = "chyf2"
+chyfschema = "chyf"
 
 def log(message):
     if (1):
@@ -283,7 +283,17 @@ def copy_to_production(conn):
         select internal_id, ef_type, ef_subtype, rank, st_length(geometry), chyf_name_id, 
           aoi_id, ecatchment_id, from_nexus_id, to_nexus_id, st_transform(geometry, 4617) 
         from {schema}.eflowpath ;
-      
+        
+        
+        --delete added fields for processing
+        alter table {schema}.eflowpath drop column if exists ecatchment_id;
+        alter table {schema}.eflowpath drop column if exists from_nexus_id;
+        alter table {schema}.eflowpath drop column if exists to_nexus_id;
+        alter table {schema}.eflowpath drop column if exists chyf_name_id;
+        alter table {schema}.ecatchment drop column if exists chyf_name_id;
+        drop table if exists {schema}.nexus;
+        drop table if exists {schema}.nexus_edge;
+
     """    
     log(query)
 
@@ -330,3 +340,17 @@ copy_to_production(conn)
 conn.commit()
 
 print ("LOAD DONE")
+
+cleanup = f"""
+delete from {schema}.errors ;
+delete from {schema}.construction_points ;
+delete from {schema}.eflowpath ;
+delete from {schema}.ecatchment;
+delete from {schema}.shoreline ;
+delete from {schema}.eflowpath ;
+delete from {schema}.terminal_node ;
+delete from {schema}.aoi;
+"""
+
+print ("To remove data from processing schema so it doesn't get copied a second time run the following db commands:")
+print (cleanup)
