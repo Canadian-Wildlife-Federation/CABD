@@ -75,6 +75,10 @@ create table chyf2.eflowpath_attributes(
 );
 
 
+create table chyf2.ecatchment_attributes(
+  id uuid not null primary key references chyf2.ecatchment(id)
+);
+
 CREATE TABLE chyf2.vector_tile_cache (
 	"key" varchar(32) NOT NULL,
 	tile bytea NULL,
