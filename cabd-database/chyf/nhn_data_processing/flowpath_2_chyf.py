@@ -268,7 +268,7 @@ def copy_to_production(conn):
         select id, aoi_id, st_transform(geometry, 4617) from {schema}.shoreline ;
 
         insert into {chyfschema}.ecatchment(id, ec_type, ec_subtype, area, aoi_id, name_id, geometry)
-        select internal_id, ec_type, ec_subtype, st_area(geometry), aoi_id, chyf_name_id, st_transform(geometry, 4617) 
+        select internal_id, ec_type, ec_subtype, st_area(geometry::geography), aoi_id, chyf_name_id, st_transform(geometry, 4617) 
         from {schema}.ecatchment ;
         
         update {chyfschema}.nexus set nexus_type = a.nexus_type
@@ -280,9 +280,9 @@ def copy_to_production(conn):
                 
         insert into {chyfschema}.eflowpath(id, ef_type, ef_subtype, rank, length, 
           name_id, aoi_id, ecatchment_id, from_nexus_id, to_nexus_id, geometry)
-        select internal_id, ef_type, ef_subtype, rank, st_length(geometry), chyf_name_id, 
+        select internal_id, ef_type, ef_subtype, rank, ST_LengthSpheroid(geometry, ss), chyf_name_id, 
           aoi_id, ecatchment_id, from_nexus_id, to_nexus_id, st_transform(geometry, 4617) 
-        from {schema}.eflowpath ;
+        from {schema}.eflowpath, CAST('SPHEROID["GRS_1980",6378137,298.257222101]' As spheroid) ss  ;
         
         
         --delete added fields for processing
