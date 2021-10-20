@@ -12,6 +12,7 @@ UPDATE {script.tempTable} SET data_source = '{script.dsUuid}';
 --add new columns and populate tempTable with mapped attributes
 ALTER TABLE {script.tempTable} ADD COLUMN dam_name_en varchar(512);
 ALTER TABLE {script.tempTable} ADD COLUMN "owner" varchar(512);
+ALTER TABLE {script.tempTable} ADD COLUMN ownership_type_code int2;
 ALTER TABLE {script.tempTable} ADD COLUMN construction_type_code int2;
 ALTER TABLE {script.tempTable} ADD COLUMN function_code int2;
 ALTER TABLE {script.tempTable} ADD COLUMN construction_year numeric;
@@ -25,6 +26,16 @@ UPDATE {script.tempTable} SET dam_name_en =
     WHEN dam_name IS NULL AND alternate_dam_name IS NOT NULL THEN alternate_dam_name
     ELSE NULL END;
 UPDATE {script.tempTable} SET "owner" = dam_owner; 
+
+--TO DO: add case statements to handle ownership_type_code assignments
+UPDATE {script.tempTable} SET ownership_type_code =
+    CASE
+    WHEN
+    WHEN
+    WHEN
+    WHEN
+    ELSE NULL END;
+
 UPDATE {script.tempTable} SET construction_type_code =
     CASE 
     WHEN dam_type = 'Concrete–arch' THEN 1
@@ -64,6 +75,7 @@ CREATE TABLE {script.workingTable}(
     cabd_id uuid,
     dam_name_en varchar(512),
     "owner" varchar(512),
+    ownership_type_code int2,
     construction_type_code int2,
     function_code int2,
     construction_year numeric,
@@ -76,6 +88,7 @@ CREATE TABLE {script.workingTable}(
 INSERT INTO {script.workingTable}(
     dam_name_en,
     "owner",
+    ownership_type_code,
     construction_type_code,
     function_code,
     construction_year,
@@ -88,6 +101,7 @@ INSERT INTO {script.workingTable}(
 SELECT
     dam_name_en,
     "owner",
+    ownership_type_code,
     construction_type_code,
     function_code,
     construction_year,
@@ -102,6 +116,7 @@ FROM {script.tempTable};
 ALTER TABLE {script.tempTable}
     DROP COLUMN dam_name_en,
     DROP COLUMN "owner",
+    DROP COLUMN ownership_type_code,
     DROP COLUMN construction_type_code,
     DROP COLUMN function_code,
     DROP COLUMN construction_year,
@@ -134,7 +149,8 @@ UPDATE
     {script.damAttributeTable} as cabd
 SET    
     dam_name_en_ds = CASE WHEN (cabd.dam_name_en IS NULL AND origin.dam_name_en IS NOT NULL) THEN origin.data_source ELSE cabdsource.dam_name_en_ds END,
-    "owner_ds" = CASE WHEN (cabd.owner IS NULL AND origin.owner IS NOT NULL) THEN origin.data_source ELSE cabdsource.owner_ds END,
+    owner_ds = CASE WHEN (cabd.owner IS NULL AND origin.owner IS NOT NULL) THEN origin.data_source ELSE cabdsource.owner_ds END,
+    ownership_type_code_ds = CASE WHEN (cabd.ownership_type_code IS NULL AND origin.ownership_type_code IS NOT NULL) THEN origin.data_source ELSE cabdsource.ownership_type_code_ds END,
     construction_type_code_ds = CASE WHEN (cabd.construction_type_code IS NULL AND origin.construction_type_code IS NOT NULL) THEN origin.data_source ELSE cabdsource.construction_type_code_ds END,
     function_code_ds = CASE WHEN (cabd.function_code IS NULL AND origin.function_code IS NOT NULL) THEN origin.data_source ELSE cabdsource.function_code_ds END,
     construction_year_ds = CASE WHEN (cabd.construction_year IS NULL AND origin.construction_year IS NOT NULL) THEN origin.data_source ELSE cabdsource.construction_year_ds END,
@@ -143,7 +159,8 @@ SET
     operating_status_code_ds = CASE WHEN (cabd.operating_status_code IS NULL AND origin.operating_status_code IS NOT NULL) THEN origin.data_source ELSE cabdsource.operating_status_code_ds END,    
     
     dam_name_en_dsfid = CASE WHEN (cabd.dam_name_en IS NULL AND origin.dam_name_en IS NOT NULL) THEN origin.data_source_id ELSE cabdsource.dam_name_en_dsfid END,
-    "owner_dsfid" = CASE WHEN (cabd.owner IS NULL AND origin.owner IS NOT NULL) THEN origin.data_source_id ELSE cabdsource.owner_dsfid END,
+    owner_dsfid = CASE WHEN (cabd.owner IS NULL AND origin.owner IS NOT NULL) THEN origin.data_source_id ELSE cabdsource.owner_dsfid END,
+    ownership_type_code_dsfid = CASE WHEN (cabd.ownership_type_code IS NULL AND origin.ownership_type_code IS NOT NULL) THEN origin.data_source ELSE cabdsource.ownership_type_code_dsfid END,
     construction_type_code_dsfid = CASE WHEN (cabd.construction_type_code IS NULL AND origin.construction_type_code IS NOT NULL) THEN origin.data_source_id ELSE cabdsource.construction_type_code_dsfid END,
     function_code_dsfid = CASE WHEN (cabd.function_code IS NULL AND origin.function_code IS NOT NULL) THEN origin.data_source_id ELSE cabdsource.function_code_dsfid END,
     construction_year_dsfid = CASE WHEN (cabd.construction_year IS NULL AND origin.construction_year IS NOT NULL) THEN origin.data_source_id ELSE cabdsource.construction_year_dsfid END,
@@ -162,6 +179,7 @@ UPDATE
 SET
     dam_name_en = CASE WHEN (cabd.dam_name_en IS NULL AND origin.dam_name_en IS NOT NULL) THEN origin.dam_name_en ELSE cabd.dam_name_en END,
     "owner" = CASE WHEN (cabd.owner IS NULL AND origin.owner IS NOT NULL) THEN origin.owner ELSE cabd.owner END,
+    ownership_type_code = CASE WHEN (cabd.ownership_type_code IS NULL AND origin.ownership_type_code IS NOT NULL) THEN origin.ownership_type_code ELSE cabd.ownership_type_code END,
     construction_type_code = CASE WHEN (cabd.construction_type_code IS NULL AND origin.construction_type_code IS NOT NULL) THEN origin.construction_type_code ELSE cabd.construction_type_code END,
     function_code = CASE WHEN (cabd.function_code IS NULL AND origin.function_code IS NOT NULL) THEN origin.function_code ELSE cabd.function_code END,
     construction_year = CASE WHEN (cabd.construction_year IS NULL AND origin.construction_year IS NOT NULL) THEN origin.construction_year ELSE cabd.construction_year END,

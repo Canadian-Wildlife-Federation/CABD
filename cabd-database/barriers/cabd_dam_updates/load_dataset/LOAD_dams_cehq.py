@@ -23,6 +23,7 @@ ALTER TABLE {script.tempTable} ADD COLUMN storage_capacity_mcm float8;
 ALTER TABLE {script.tempTable} ADD COLUMN length_m float4;
 ALTER TABLE {script.tempTable} ADD COLUMN reservoir_area_skm float4;
 ALTER TABLE {script.tempTable} ADD COLUMN "owner" varchar(512);
+ALTER TABLE {script.tempTable} ADD COLUMN ownership_type_code int2;
 ALTER TABLE {script.tempTable} ADD COLUMN maintenance_next date;
 ALTER TABLE {script.tempTable} ADD COLUMN maintenance_last date;
 
@@ -86,6 +87,16 @@ UPDATE {script.tempTable} SET storage_capacity_mcm = ("capacité_de_retenue_m3"/
 UPDATE {script.tempTable} SET length_m = "longueur_m";
 UPDATE {script.tempTable} SET reservoir_area_skm = ("sup_réservoir_ha"/100)::double precision;
 UPDATE {script.tempTable} SET "owner" = "propriétaire_mandataire";
+
+--TO DO: add case statements to handle ownership_type_code assignments
+UPDATE {script.tempTable} SET ownership_type_code =
+    CASE
+    WHEN
+    WHEN
+    WHEN
+    WHEN
+    ELSE NULL END;
+
 UPDATE {script.tempTable} SET maintenance_next = ('01-01-' || "année_prévue_étude")::date;
 UPDATE {script.tempTable} SET maintenance_last = ('01-01-' || "année_dernière_étude")::date;
 
@@ -111,6 +122,7 @@ CREATE TABLE {script.workingTable}(
     length_m float4,
     reservoir_area_skm float4,
     "owner" varchar(512),
+    ownership_type_code int2,
     maintenance_next date,
     maintenance_last date,
     data_source uuid not null,
@@ -130,6 +142,7 @@ INSERT INTO {script.workingTable}(
     length_m,
     reservoir_area_skm,
     "owner",
+    ownership_type_code,
     maintenance_next,
     maintenance_last,
     data_source,
@@ -149,6 +162,7 @@ SELECT
     length_m,
     reservoir_area_skm,
     "owner",
+    ownership_type_code,
     maintenance_next,
     maintenance_last,
     data_source,
@@ -170,6 +184,7 @@ ALTER TABLE {script.tempTable}
     DROP COLUMN length_m,
     DROP COLUMN reservoir_area_skm,
     DROP COLUMN "owner",
+    DROP COLUMN ownership_type_code,
     DROP COLUMN maintenance_next,
     DROP COLUMN maintenance_last;
 
@@ -211,6 +226,7 @@ SET
     length_m_ds = CASE WHEN (cabd.length_m IS NULL AND origin.length_m IS NOT NULL) THEN origin.data_source ELSE cabdsource.length_m_ds END,         
     reservoir_area_skm_ds = CASE WHEN (cabd.reservoir_area_skm IS NULL AND origin.reservoir_area_skm IS NOT NULL) THEN origin.data_source ELSE cabdsource.reservoir_area_skm_ds END,
     owner_ds = CASE WHEN (cabd.owner IS NULL AND origin.owner IS NOT NULL) THEN origin.data_source ELSE cabdsource.owner_ds END,
+    ownership_type_code_ds = CASE WHEN (cabd.ownership_type_code IS NULL AND origin.ownership_type_code IS NOT NULL) THEN origin.data_source ELSE cabdsource.ownership_type_code_ds END,
     maintenance_next_ds = CASE WHEN (cabd.maintenance_next IS NULL AND origin.maintenance_next IS NOT NULL) THEN origin.data_source ELSE cabdsource.maintenance_next_ds END,
     maintenance_last_ds = CASE WHEN (cabd.maintenance_last IS NULL AND origin.maintenance_last IS NOT NULL) THEN origin.data_source ELSE cabdsource.maintenance_last_ds END,
     
@@ -227,6 +243,7 @@ SET
     length_m_dsfid = CASE WHEN (cabd.length_m IS NULL AND origin.length_m IS NOT NULL) THEN origin.data_source_id ELSE cabdsource.length_m_dsfid END,         
     reservoir_area_skm_dsfid = CASE WHEN (cabd.reservoir_area_skm IS NULL AND origin.reservoir_area_skm IS NOT NULL) THEN origin.data_source_id ELSE cabdsource.reservoir_area_skm_dsfid END,
     owner_dsfid = CASE WHEN (cabd.owner IS NULL AND origin.owner IS NOT NULL) THEN origin.data_source_id ELSE cabdsource.owner_dsfid END,
+    ownership_type_code_dsfid = CASE WHEN (cabd.ownership_type_code IS NULL AND origin.ownership_type_code IS NOT NULL) THEN origin.data_source ELSE cabdsource.ownership_type_code_dsfid END,
     maintenance_next_dsfid = CASE WHEN (cabd.maintenance_next IS NULL AND origin.maintenance_next IS NOT NULL) THEN origin.data_source_id ELSE cabdsource.maintenance_next_dsfid END,
     maintenance_last_dsfid = CASE WHEN (cabd.maintenance_last IS NULL AND origin.maintenance_last IS NOT NULL) THEN origin.data_source_id ELSE cabdsource.maintenance_last_dsfid END
         
@@ -251,7 +268,8 @@ SET
     storage_capacity_mcm = CASE WHEN (cabd.storage_capacity_mcm IS NULL AND origin.storage_capacity_mcm IS NOT NULL) THEN origin.storage_capacity_mcm ELSE cabd.storage_capacity_mcm END,
     length_m = CASE WHEN (cabd.length_m IS NULL AND origin.length_m IS NOT NULL) THEN origin.length_m ELSE cabd.length_m END,         
     reservoir_area_skm = CASE WHEN (cabd.reservoir_area_skm IS NULL AND origin.reservoir_area_skm IS NOT NULL) THEN origin.reservoir_area_skm ELSE cabd.reservoir_area_skm END,
-    owner = CASE WHEN (cabd.owner IS NULL AND origin.owner IS NOT NULL) THEN origin.owner ELSE cabd.owner END,
+    "owner" = CASE WHEN (cabd.owner IS NULL AND origin.owner IS NOT NULL) THEN origin.owner ELSE cabd.owner END,
+    ownership_type_code = CASE WHEN (cabd.ownership_type_code IS NULL AND origin.ownership_type_code IS NOT NULL) THEN origin.ownership_type_code ELSE cabd.ownership_type_code END,
     maintenance_next = CASE WHEN (cabd.maintenance_next IS NULL AND origin.maintenance_next IS NOT NULL) THEN origin.maintenance_next ELSE cabd.maintenance_next END,
     maintenance_last = CASE WHEN (cabd.maintenance_last IS NULL AND origin.maintenance_next IS NOT NULL) THEN origin.maintenance_last ELSE cabd.maintenance_last END
 FROM

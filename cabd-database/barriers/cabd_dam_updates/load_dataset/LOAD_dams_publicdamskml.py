@@ -14,6 +14,7 @@ ALTER TABLE {script.tempTable} RENAME COLUMN height_m TO height_m_orig;
 ALTER TABLE {script.tempTable} ADD COLUMN dam_name_en varchar(512);
 ALTER TABLE {script.tempTable} ADD COLUMN construction_year numeric;
 ALTER TABLE {script.tempTable} ADD COLUMN "owner" varchar(512);
+ALTER TABLE {script.tempTable} ADD COLUMN ownership_type_code int2;
 ALTER TABLE {script.tempTable} ADD COLUMN operating_status_code int2;
 ALTER TABLE {script.tempTable} ADD COLUMN construction_type_code int2;
 ALTER TABLE {script.tempTable} ADD COLUMN height_m float4;
@@ -22,6 +23,16 @@ ALTER TABLE {script.tempTable} ADD COLUMN length_m float4;
 UPDATE {script.tempTable} SET dam_name_en = dam_name;
 UPDATE {script.tempTable} SET construction_year = commissioned_year::numeric;
 UPDATE {script.tempTable} SET "owner" = dam_owner;
+
+--TO DO: add case statements to handle ownership_type_code assignments
+UPDATE {script.tempTable} SET ownership_type_code =
+    CASE
+    WHEN
+    WHEN
+    WHEN
+    WHEN
+    ELSE NULL END;
+
 UPDATE {script.tempTable} SET operating_status_code =
     CASE 
     WHEN dam_operation_code = 'Abandoned' THEN 1
@@ -56,6 +67,7 @@ CREATE TABLE {script.workingTable}(
     dam_name_en varchar(512),
     construction_year numeric,
     "owner" varchar(512),
+    ownership_type_code int2,
     operating_status_code int2,
     construction_type_code int2,
     height_m float4,
@@ -67,6 +79,7 @@ INSERT INTO {script.workingTable}(
     dam_name_en,
     construction_year,
     "owner",
+    ownership_type_code,
     operating_status_code,
     construction_type_code,
     height_m,
@@ -78,6 +91,7 @@ SELECT
     dam_name_en,
     construction_year,
     "owner",
+    ownership_type_code
     operating_status_code,
     construction_type_code,
     height_m,
@@ -91,6 +105,7 @@ ALTER TABLE {script.tempTable}
     DROP COLUMN dam_name_en,
     DROP COLUMN construction_year,
     DROP COLUMN "owner",
+    DROP COLUMN ownership_type_code,
     DROP COLUMN operating_status_code,
     DROP COLUMN construction_type_code,
     DROP COLUMN height_m,
@@ -121,7 +136,8 @@ UPDATE
     {script.damAttributeTable} AS cabdsource
 SET    
     dam_name_en_ds = CASE WHEN (cabd.dam_name_en IS NULL AND origin.dam_name_en IS NOT NULL) THEN origin.data_source ELSE cabdsource.dam_name_en_ds END,
-    "owner_ds" = CASE WHEN (cabd.owner IS NULL AND origin.owner IS NOT NULL) THEN origin.data_source ELSE cabdsource.owner_ds END,
+    owner_ds = CASE WHEN (cabd.owner IS NULL AND origin.owner IS NOT NULL) THEN origin.data_source ELSE cabdsource.owner_ds END,
+    ownership_type_code_ds = CASE WHEN (cabd.ownership_type_code IS NULL AND origin.ownership_type_code IS NOT NULL) THEN origin.data_source ELSE cabdsource.ownership_type_code_ds END,
     construction_type_code_ds = CASE WHEN (cabd.construction_type_code IS NULL AND origin.construction_type_code IS NOT NULL) THEN origin.data_source ELSE cabdsource.construction_type_code_ds END,
     construction_year_ds = CASE WHEN (cabd.construction_year IS NULL AND origin.construction_year IS NOT NULL) THEN origin.data_source ELSE cabdsource.construction_year_ds END,
     height_m_ds = CASE WHEN (cabd.height_m IS NULL AND origin.height_m IS NOT NULL) THEN origin.data_source ELSE cabdsource.height_m_ds END,
@@ -129,7 +145,8 @@ SET
     operating_status_code_ds = CASE WHEN (cabd.operating_status_code IS NULL AND origin.operating_status_code IS NOT NULL) THEN origin.data_source ELSE cabdsource.operating_status_code_ds END,    
     
     dam_name_en_dsfid = CASE WHEN (cabd.dam_name_en IS NULL AND origin.dam_name_en IS NOT NULL) THEN origin.data_source_id ELSE cabdsource.dam_name_en_dsfid END,
-    "owner_dsfid" = CASE WHEN (cabd.owner IS NULL AND origin.owner IS NOT NULL) THEN origin.data_source_id ELSE cabdsource.owner_dsfid END,
+    owner_dsfid = CASE WHEN (cabd.owner IS NULL AND origin.owner IS NOT NULL) THEN origin.data_source_id ELSE cabdsource.owner_dsfid END,
+    ownership_type_code_dsfid = CASE WHEN (cabd.ownership_type_code IS NULL AND origin.ownership_type_code IS NOT NULL) THEN origin.data_source ELSE cabdsource.ownership_type_code_dsfid END,
     construction_type_code_dsfid = CASE WHEN (cabd.construction_type_code IS NULL AND origin.construction_type_code IS NOT NULL) THEN origin.data_source_id ELSE cabdsource.construction_type_code_dsfid END,
     construction_year_dsfid = CASE WHEN (cabd.construction_year IS NULL AND origin.construction_year IS NOT NULL) THEN origin.data_source_id ELSE cabdsource.construction_year_dsfid END,
     height_m_dsfid = CASE WHEN (cabd.height_m IS NULL AND origin.height_m IS NOT NULL) THEN origin.data_source_id ELSE cabdsource.height_m_dsfid END,
@@ -146,6 +163,7 @@ UPDATE
 SET
     dam_name_en = CASE WHEN (cabd.dam_name_en IS NULL AND origin.dam_name_en IS NOT NULL) THEN origin.dam_name_en ELSE cabd.dam_name_en END,
     "owner" = CASE WHEN (cabd.owner IS NULL AND origin.owner IS NOT NULL) THEN origin.owner ELSE cabd.owner END,
+    ownership_type_code = CASE WHEN (cabd.ownership_type_code IS NULL AND origin.ownership_type_code IS NOT NULL) THEN origin.ownership_type_code ELSE cabd.ownership_type_code END,
     construction_year = CASE WHEN (cabd.construction_year IS NULL AND origin.construction_year IS NOT NULL) THEN origin.construction_year ELSE cabd.construction_year END,
     operating_status_code = CASE WHEN (cabd.operating_status_code IS NULL AND origin.operating_status_code IS NOT NULL) THEN origin.operating_status_code ELSE cabd.operating_status_code END,
     construction_type_code = CASE WHEN (cabd.construction_type_code IS NULL AND origin.construction_type_code IS NOT NULL) THEN origin.construction_type_code ELSE cabd.construction_type_code END,
