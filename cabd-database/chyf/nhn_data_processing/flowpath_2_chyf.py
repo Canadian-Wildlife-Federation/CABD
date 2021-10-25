@@ -13,7 +13,7 @@ dbPassword = sys.argv[5]
 
 schema = sys.argv[6]
 
-chyfschema = "chyf"
+chyfschema = "chyf2"
 
 def log(message):
     if (1):
