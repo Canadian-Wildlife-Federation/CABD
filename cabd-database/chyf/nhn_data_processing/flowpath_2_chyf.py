@@ -28,228 +28,298 @@ def populate_nexus(conn):
     
     print ("generating nexus for schema: " + schema)
     
-    query = f"""
-
-    --clear existing data
-    drop table if exists {schema}.nexus;
-    drop table if exists {schema}.nexus_edge;
+    queries = [
+        f"""
+        --clear existing data
+        drop table if exists {schema}.nexus;
+        drop table if exists {schema}.nexus_edge;
+        """,
+         
+        
+        f"""
+        --populate ecatchmentid for eflowpath
+        update {schema}.eflowpath_extra set ecatchment_id = a.internal_id
+        from {schema}.ecatchment a, {schema}.eflowpath b 
+        where  
+            b.internal_id = {schema}.eflowpath_extra.internal_id and 
+            a.geometry && b.geometry and 
+            ST_Relate(a.geometry, b.geometry,'1********');
+            
+        commit;
+        """,
     
-    --populate ecatchmentid for eflowpath
+        
+        f"""
+        --create & populate a table for nexus
+        create table {schema}.nexus(
+          id uuid not null primary key, 
+          nexus_type smallint, 
+          bank_ecatchment_id uuid, 
+          geometry geometry(POINT, 4617)
+        );
+        create index {schema}_nexus_geomidx on {schema}.nexus using gist(geometry);
+        commit;
+        """,
+        
+        f"""
+        insert into {schema}.nexus(id, geometry)
+        select uuid_generate_v4(), geometry 
+          from (
+            select distinct geometry from (
+              select st_startpoint(a.geometry) as geometry from {schema}.eflowpath a join {schema}.aoi b on a.aoi_id = b.id and b.status = '{readystatus}'
+              union
+              select st_endpoint(a.geometry) as geometry from {schema}.eflowpath a join {schema}.aoi b on a.aoi_id = b.id and b.status = '{readystatus}'
+          ) b ) as unq;
+
+        commit;
+        """,
+     
+        
+        f"""
+            --update with id with existing chyf nodes (these are nodes as aoi boundaries)
+            with mappingpart as (
+              select a.id as chyfid, b.id as thisid
+              from {chyfschema}.nexus a, {schema}.nexus b
+              where a.geometry && b.geometry and
+              st_x(a.geometry) = st_x(b.geometry) and
+              st_y(a.geometry) = st_y(b.geometry)
+            )
+            update {schema}.nexus set id = mappingpart.chyfid
+            from mappingpart 
+            where mappingpart.thisid = {schema}.nexus.id;
     
-    update {schema}.eflowpath_extra set ecatchment_id = a.internal_id
-    from {schema}.ecatchment a, {schema}.eflowpath b 
-    where  
-        b.internal_id = {schema}.eflowpath_extra.internal_id and 
-        a.geometry && b.geometry and 
-        ST_Relate(a.geometry, b.geometry,'1********');
+            commit;
+        """,
+        
+        f"""
+            --create a temporary nexus_edge table
+            create table {schema}.nexus_edge(eflowpath_id uuid, nexus_id uuid, type integer);
+         commit;
+        """,
+        
+        f"""
+            insert into {schema}.nexus_edge(eflowpath_id, nexus_id, type)
+            select a.internal_id, b.id, 1 
+            from {schema}.eflowpath a join {schema}.aoi c on a.aoi_id = c.id, {schema}.nexus b
+            where c.status = '{readystatus}' and a.geometry && b.geometry and st_equals(st_startpoint(a.geometry), b.geometry)
+            union
+            select a.internal_id, b.id, 2
+            from {schema}.eflowpath a join {schema}.aoi c on a.aoi_id = c.id, {schema}.nexus b
+            where c.status = '{readystatus}' and a.geometry && b.geometry and st_equals(st_endpoint(a.geometry), b.geometry)
+            union
+            select a.id, b.id, 2
+            from {chyfschema}.eflowpath a, {schema}.nexus b
+            where a.from_nexus_id = b.id
+            union
+            select a.id, b.id, 2
+            from {chyfschema}.eflowpath a, {schema}.nexus b
+            where a.to_nexus_id = b.id;
 
-    -- create & populate a table for nexus
-    create table {schema}.nexus(
-      id uuid not null primary key, 
-      nexus_type smallint, 
-      bank_ecatchment_id uuid, 
-      geometry geometry(POINT, 4617)
-    );
-    create index {schema}_nexus_geomidx on {schema}.nexus using gist(geometry);
-
-    insert into {schema}.nexus(id, geometry)
-    select uuid_generate_v4(), geometry 
-      from (
-        select distinct geometry from (
-          select st_startpoint(a.geometry) as geometry from {schema}.eflowpath a join {schema}.aoi b on a.aoi_id = b.id and b.status = '{readystatus}'
-          union
-          select st_endpoint(a.geometry) as geometry from {schema}.eflowpath a join {schema}.aoi b on a.aoi_id = b.id and b.status = '{readystatus}'
-      ) b ) as unq;
-
-    --update with id with existing chyf nodes (these are nodes as aoi boundaries)
-    with mappingpart as (
-      select a.id as chyfid, b.id as thisid
-      from {chyfschema}.nexus a, {schema}.nexus b
-      where a.geometry && b.geometry and
-      st_x(a.geometry) = st_x(b.geometry) and
-      st_y(a.geometry) = st_y(b.geometry)
-    )
-    update {schema}.nexus set id = mappingpart.chyfid
-    from mappingpart 
-    where mappingpart.thisid = {schema}.nexus.id;
-    
-    --create a temporary nexus_edge table
-    create table {schema}.nexus_edge(eflowpath_id uuid, nexus_id uuid, type integer);
-
-    insert into {schema}.nexus_edge(eflowpath_id, nexus_id, type)
-    select a.internal_id, b.id, 1 
-    from {schema}.eflowpath a join {schema}.aoi c on a.aoi_id = c.id, {schema}.nexus b
-    where c.status = '{readystatus}' and a.geometry && b.geometry and st_equals(st_startpoint(a.geometry), b.geometry)
-    union
-    select a.internal_id, b.id, 2
-    from {schema}.eflowpath a join {schema}.aoi c on a.aoi_id = c.id, {schema}.nexus b
-    where c.status = '{readystatus}' and a.geometry && b.geometry and st_equals(st_endpoint(a.geometry), b.geometry)
-    union
-    select a.id, b.id, 2
-    from {chyfschema}.eflowpath a, {schema}.nexus b
-    where a.from_nexus_id = b.id
-    union
-    select a.id, b.id, 2
-    from {chyfschema}.eflowpath a, {schema}.nexus b
-    where a.to_nexus_id = b.id;
-
-
-
-    --bank nexus
-    update {schema}.nexus set nexus_type = 6 where id in (
-    select hw.nexus_id from (
-      select distinct nexus_id from {schema}.nexus_edge where type = 1
-      except
-      select distinct nexus_id from {schema}.nexus_edge where type = 2
-    ) hw
-    join {schema}.nexus_edge e on hw.nexus_id = e.nexus_id 
-    join {schema}.eflowpath e2 on e2.internal_id  = e.eflowpath_id 
-    where e2.ef_type = 2
-    );
-
-    --headwaters
-    update {schema}.nexus set nexus_type = 1 where nexus_type is null and id in (
-    select hw.nexus_id from (
-      select distinct nexus_id from {schema}.nexus_edge where type = 1
-      except
-        ( 
-          select distinct nexus_id from {schema}.nexus_edge where type = 2
-          union
-          select id from {chyfschema}.nexus
-        )
-    ) hw );
-
-    --terminal boundary nodes
-    update {schema}.nexus set nexus_type = 3 where nexus_type is null and id in (
-    select hw.nexus_id from 
-    (
-    select distinct nexus_id from {schema}.nexus_edge where type = 2
-    except
-      (
-        select distinct nexus_id from {schema}.nexus_edge where type = 1
-        union
-        select id from {chyfschema}.nexus
-      )
-    ) hw join {schema}.nexus n on n.id = hw.nexus_id
-    where n.geometry in (select a.geometry from {schema}.terminal_node a join {schema}.aoi b on a.aoi_id = b.id where b.status = '{readystatus}')
-    );
-
-    --terminal isolated nodes
-    update {schema}.nexus set nexus_type = 2 where nexus_type is null and id in (
-    select hw.nexus_id from (
-      select distinct nexus_id from {schema}.nexus_edge where type = 2
-      except
-        (
+            commit;
+        """,
+        f"""
+        --bank nexus
+        update {schema}.nexus set nexus_type = 6 where id in (
+        select hw.nexus_id from (
           select distinct nexus_id from {schema}.nexus_edge where type = 1
-          union
-          select id from {chyfschema}.nexus
-        )
-    ) hw );
+          except
+          select distinct nexus_id from {schema}.nexus_edge where type = 2
+        ) hw
+        join {schema}.nexus_edge e on hw.nexus_id = e.nexus_id 
+        join {schema}.eflowpath e2 on e2.internal_id  = e.eflowpath_id 
+        where e2.ef_type = 2
+        );
 
-    --flowpath
-    with flowpaths as (
-       select a.internal_id, a.ef_type from {schema}.eflowpath a join {schema}.aoi b on a.aoi_id = b.id WHERE b.status = '{readystatus}' 
-       union
-       select id, ef_type from {chyfschema}.eflowpath
-    ) 
-    update {schema}.nexus set nexus_type = 4 where nexus_type is null and id in (
-    select distinct nexus_id from {schema}.nexus_edge b
-    join flowpaths e on b.eflowpath_id  = e.internal_id 
-    where e.ef_type  = 1 and nexus_id not in
-    (select id from {schema}.nexus where nexus_type is not null));
+        commit;
+        """,
+        
+        f"""
+        --headwaters
+        update {schema}.nexus set nexus_type = 1 where nexus_type is null and id in (
+        select hw.nexus_id from (
+          select distinct nexus_id from {schema}.nexus_edge where type = 1
+          except
+            ( 
+              select distinct nexus_id from {schema}.nexus_edge where type = 2
+              union
+              select id from {chyfschema}.nexus
+            )
+        ) hw );
 
-    --water
-    with flowpaths as (
-       select a.internal_id, a.ef_type, c.ecatchment_id 
-       from {schema}.eflowpath a join {schema}.eflowpath_extra c on a.internal_id = c.internal_id join {schema}.aoi b on a.aoi_id = b.id 
-       WHERE b.status = '{readystatus}' 
-       union
-       select id, ef_type, ecatchment_id from {chyfschema}.eflowpath
-    ) 
-    update {schema}.nexus set nexus_type = 5 where nexus_type is null and id in (
-    select cnt.nexus_id from (
-      select distinct b.nexus_id, e.ecatchment_id
-      from {schema}.nexus_edge b join flowpaths e on b.eflowpath_id  = e.internal_id 
-      where b.nexus_id in (select id from {schema}.nexus where nexus_type is null)) cnt
-      group by cnt.nexus_id having count(*) > 1
-    );
+        commit;
+        """,
+        
+        f"""
+        --terminal boundary nodes
+        update {schema}.nexus set nexus_type = 3 where nexus_type is null and id in (
+        select hw.nexus_id from 
+        (
+        select distinct nexus_id from {schema}.nexus_edge where type = 2
+        except
+          (
+            select distinct nexus_id from {schema}.nexus_edge where type = 1
+            union
+            select id from {chyfschema}.nexus
+          )
+        ) hw join {schema}.nexus n on n.id = hw.nexus_id
+        where n.geometry in (select a.geometry from {schema}.terminal_node a join {schema}.aoi b on a.aoi_id = b.id where b.status = '{readystatus}')
+        );
 
-    --everything else is inferred
-    update {schema}.nexus set nexus_type = 7 where nexus_type is null;
+        commit;
+        """,
+        
+        f"""
+        --terminal isolated nodes
+        update {schema}.nexus set nexus_type = 2 where nexus_type is null and id in (
+        select hw.nexus_id from (
+          select distinct nexus_id from {schema}.nexus_edge where type = 2
+          except
+            (
+              select distinct nexus_id from {schema}.nexus_edge where type = 1
+              union
+              select id from {chyfschema}.nexus
+            )
+        ) hw );
 
-    --ADD NEXUS INFO TO EFLOWPATH
-    update {schema}.eflowpath_extra set from_nexus_id = a.nexus_id
-    from {schema}.nexus_edge a where a.eflowpath_id = {schema}.eflowpath_extra.internal_id
-    and a.type = 1;
+        commit;
+        """,
+        
+        f"""
+        --flowpath
+        with flowpaths as (
+           select a.internal_id, a.ef_type from {schema}.eflowpath a join {schema}.aoi b on a.aoi_id = b.id WHERE b.status = '{readystatus}' 
+           union
+           select id, ef_type from {chyfschema}.eflowpath
+        ) 
+        update {schema}.nexus set nexus_type = 4 where nexus_type is null and id in (
+        select distinct nexus_id from {schema}.nexus_edge b
+        join flowpaths e on b.eflowpath_id  = e.internal_id 
+        where e.ef_type  = 1 and nexus_id not in
+        (select id from {schema}.nexus where nexus_type is not null));
 
-    update {schema}.eflowpath_extra set to_nexus_id = a.nexus_id
-    from {schema}.nexus_edge a where a.eflowpath_id = {schema}.eflowpath_extra.internal_id
-    and a.type = 2;
+        commit;
+        """,
+        
+        f"""
+        --water
+        with flowpaths as (
+           select a.internal_id, a.ef_type, c.ecatchment_id 
+           from {schema}.eflowpath a join {schema}.eflowpath_extra c on a.internal_id = c.internal_id join {schema}.aoi b on a.aoi_id = b.id 
+           WHERE b.status = '{readystatus}' 
+           union
+           select id, ef_type, ecatchment_id from {chyfschema}.eflowpath
+        ) 
+        update {schema}.nexus set nexus_type = 5 where nexus_type is null and id in (
+        select cnt.nexus_id from (
+          select distinct b.nexus_id, e.ecatchment_id
+          from {schema}.nexus_edge b join flowpaths e on b.eflowpath_id  = e.internal_id 
+          where b.nexus_id in (select id from {schema}.nexus where nexus_type is null)) cnt
+          group by cnt.nexus_id having count(*) > 1
+        );
 
-    drop table {schema}.nexus_edge;
-"""
-    log(query)
-    with conn.cursor() as cursor:
-        cursor.execute(query)
+        commit;
+        """,
+    
+        f"""
+        --everything else is inferred
+        update {schema}.nexus set nexus_type = 7 where nexus_type is null;
+        commit;
+        """,
+        
+        f"""
+        --ADD NEXUS INFO TO EFLOWPATH
+        update {schema}.eflowpath_extra set from_nexus_id = a.nexus_id
+        from {schema}.nexus_edge a where a.eflowpath_id = {schema}.eflowpath_extra.internal_id
+        and a.type = 1;
+
+        update {schema}.eflowpath_extra set to_nexus_id = a.nexus_id
+        from {schema}.nexus_edge a where a.eflowpath_id = {schema}.eflowpath_extra.internal_id
+        and a.type = 2;
+
+        commit;
+        """,
+        
+        f"""
+        drop table {schema}.nexus_edge;
+        commit;
+        """
+    ]
+    for query in queries:
+        log(query)
+        with conn.cursor() as cursor:
+            cursor.execute(query)
 
 
 def populate_names(conn):
     
     print ("populating names for schema: " + schema)
     
-    query = f"""
+    queries = [
+          f"""
 
-    --add any new names to the names table that aren't there
-    -- for eflowpaths
-    insert into {chyfschema}.names (name_id, name_en, name_fr, cgndb_id)
-    select uuid_generate_v4(), name, null, name_id::uuid
-    from (
-        select distinct a.name, a.name_id 
-        from {schema}.eflowpath a join {schema}.aoi b on a.aoi_id = b.id  
-        where b.status = '{readystatus}'
-            and a.name_id is not null
-            and a.name_id != ''
-            and a.geodbname = 'CGNDB' 
-            and a.name_id::uuid not in (select cgndb_id from {chyfschema}.names )
-        ) foo;
-    
-    --update reference
-    update {schema}.eflowpath_extra set chyf_name_id = a.name_id
-    from {chyfschema}.names a, {schema}.eflowpath b 
-    where 
-      b.internal_id = {schema}.eflowpath_extra.internal_id and
-      a.cgndb_id = b.name_id::uuid and
-      b.name_id is not null and
-      b.name_id != '';
-
-    --add any new names to the names table that aren't there
-    -- for ecatchments
-    insert into {chyfschema}.names (name_id, name_en, name_fr, cgndb_id)
-    select uuid_generate_v4(), name, null, name_id::uuid
-    from (
-        select distinct a.name, a.name_id
-        from {schema}.ecatchment a join {schema}.aoi b on a.aoi_id = b.id
-        where b.status = '{readystatus}'
-            and a.name_id is not null 
-            and a.name_id != ''
-            and a.geodbname = 'CGNDB' 
-            and a.name_id::uuid not in (select cgndb_id from {chyfschema}.names )
-        ) foo;
-
-    --update reference
-    update {schema}.ecatchment_extra set chyf_name_id = a.name_id
-    from {chyfschema}.names a, {schema}.ecatchment b
-    where 
-        b.internal_id = {schema}.ecatchment_extra.internal_id and
-        b.name_id is not null and 
-        b.name_id != '' and
-        a.cgndb_id = b.name_id::uuid;
+        --add any new names to the names table that aren't there
+        -- for eflowpaths
+        insert into {chyfschema}.names (name_id, name_en, name_fr, cgndb_id)
+        select uuid_generate_v4(), name, null, name_id::uuid
+        from (
+            select distinct a.name, a.name_id 
+            from {schema}.eflowpath a join {schema}.aoi b on a.aoi_id = b.id  
+            where b.status = '{readystatus}'
+                and a.name_id is not null
+                and a.name_id != ''
+                and a.geodbname = 'CGNDB' 
+                and a.name_id::uuid not in (select cgndb_id from {chyfschema}.names )
+            ) foo;
+        commit;
+        """,
+        
+        f"""
+        --update reference
+        update {schema}.eflowpath_extra set chyf_name_id = a.name_id
+        from {chyfschema}.names a, {schema}.eflowpath b 
+        where 
+          b.internal_id = {schema}.eflowpath_extra.internal_id and
+          a.cgndb_id = b.name_id::uuid and
+          b.name_id is not null and
+          b.name_id != '';
+        commit;
+        """,
+        
+        f"""
+        --add any new names to the names table that aren't there
+        -- for ecatchments
+        insert into {chyfschema}.names (name_id, name_en, name_fr, cgndb_id)
+        select uuid_generate_v4(), name, null, name_id::uuid
+        from (
+            select distinct a.name, a.name_id
+            from {schema}.ecatchment a join {schema}.aoi b on a.aoi_id = b.id
+            where b.status = '{readystatus}'
+                and a.name_id is not null 
+                and a.name_id != ''
+                and a.geodbname = 'CGNDB' 
+                and a.name_id::uuid not in (select cgndb_id from {chyfschema}.names )
+            ) foo;
+        commit;
+        """,
+        
+        f"""
+        --update reference
+        update {schema}.ecatchment_extra set chyf_name_id = a.name_id
+        from {chyfschema}.names a, {schema}.ecatchment b
+        where 
+            b.internal_id = {schema}.ecatchment_extra.internal_id and
+            b.name_id is not null and 
+            b.name_id != '' and
+            a.cgndb_id = b.name_id::uuid;
          
-    """
-    log(query)
-
-    with conn.cursor() as cursor:
-        cursor.execute(query)
+        commit;
+        """
+    ]
+             
+    for query in queries:
+        log(query)
+        with conn.cursor() as cursor:
+            cursor.execute(query)
 
 def copy_to_production(conn):
     
@@ -301,6 +371,7 @@ def copy_to_production(conn):
         drop table if exists {schema}.nexus;
         drop table if exists {schema}.nexus_edge;
 
+        commit;
     """    
     log(query)
 
@@ -309,8 +380,6 @@ def copy_to_production(conn):
     
     
 def delete_current(connt):
-    
-    
     
     print(f"copying the following aoi's into {chyfschema}: ");
     query = f"SELECT name FROM {schema}.aoi WHERE status = '{readystatus}'";
@@ -339,6 +408,16 @@ def delete_current(connt):
           select to_nexus_id from {chyfschema}.eflowpath
         ));
         
+    """    
+       
+    log(query)
+    with conn.cursor() as cursor:
+        cursor.execute(query);
+    conn.commit()
+    
+    query = f""" 
+        drop table if exists {schema}.eflowpath_extra;
+        drop table if exists {schema}.ecatchment_extra;
         
         create table {schema}.eflowpath_extra (internal_id uuid references {schema}.eflowpath(internal_id), ecatchment_id uuid, from_nexus_id uuid, to_nexus_id uuid, chyf_name_id uuid, primary key(internal_id));
         create table {schema}.ecatchment_extra (internal_id uuid references {schema}.ecatchment(internal_id), chyf_name_id uuid, primary key(internal_id));
@@ -347,9 +426,9 @@ def delete_current(connt):
         insert into {schema}.ecatchment_extra (internal_id) select a.internal_id from {schema}.ecatchment a join {schema}.aoi b on a.aoi_id = b.id and b.status = '{readystatus}';
     """
     log(query)
-    
     with conn.cursor() as cursor:
-        cursor.execute(query);    
+        cursor.execute(query);
+    conn.commit()    
     
 #--- MAIN FUNCTION ----
 conn = pg2.connect(database=dbName, 
