@@ -256,9 +256,8 @@ def populate_names(conn):
     
     queries = [
           f"""
-
         --add any new names to the names table that aren't there
-        -- for eflowpaths
+        -- for eflowpaths cgndb
         insert into {chyfschema}.names (name_id, name_en, name_fr, cgndb_id)
         select uuid_generate_v4(), name, null, name_id::uuid
         from (
@@ -274,17 +273,18 @@ def populate_names(conn):
         """,
         
         f"""
-        --update reference
+        --update reference for cgndb
         update {schema}.eflowpath_extra set chyf_name_id = a.name_id
         from {chyfschema}.names a, {schema}.eflowpath b 
         where 
           b.internal_id = {schema}.eflowpath_extra.internal_id and
+          b.geodbname = 'CGNDB' and 
           a.cgndb_id = b.name_id::uuid and
           b.name_id is not null and
           b.name_id != '';
         commit;
         """,
-        
+                
         f"""
         --add any new names to the names table that aren't there
         -- for ecatchments
@@ -308,6 +308,7 @@ def populate_names(conn):
         from {chyfschema}.names a, {schema}.ecatchment b
         where 
             b.internal_id = {schema}.ecatchment_extra.internal_id and
+            b.geodbname = 'CGNDB' and 
             b.name_id is not null and 
             b.name_id != '' and
             a.cgndb_id = b.name_id::uuid;
