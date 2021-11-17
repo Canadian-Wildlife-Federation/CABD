@@ -11,7 +11,13 @@ dbName = "cabd"
 damTable = "featurecopy.dams"
 damAttributeTable = "featurecopy.dams_attribute_source"
 
-class DamMappingScript:
+waterfallTable = "featurecopy.waterfalls"
+waterfallAttributeTable = "featurecopy.waterfalls_attribute_source"
+
+fishwayTable = "featurecopy.fishways"
+fishwayAttributeTable = "featurecopy.fishways_attribute_source"
+
+class MappingScript:
 
     workingSchema = "featurecopy"
     
@@ -20,14 +26,16 @@ class DamMappingScript:
     datasetname = ""
     
     def __init__(self, datasetname):
-        self.datasetname = datasetname
-        self.workingTable = self.workingSchema + ".dams_" + datasetname
 
-        self.dbUser = sys.argv[1]
-        self.dbPassword = sys.argv[2]
+        self.featureType = sys.argv[1]
+        self.dbUser = sys.argv[2]
+        self.dbPassword = sys.argv[3]
+
+        self.datasetname = datasetname
+        self.workingTable = self.workingSchema + "." + self.featureType + "_" + datasetname
             
         if len(sys.argv) != 3:
-            print("Invalid usage: MAP_dams_<datasetid>.py <dbUser> <dbPassword>")
+            print("Invalid usage: MAP_<featureType>_<datasetid>.py <featureType> <dbUser> <dbPassword>")
             sys.exit()
 
     def do_work(self, mappingquery):       
@@ -44,7 +52,7 @@ class DamMappingScript:
         self.conn.close()
         
         print("Script complete")
-        print("Attributes mapped from: " + self.datasetname)
+        print("Attributes mapped to " + self.featureType + " from: " + self.datasetname)
 
     def run_mapping_query(self, mappingquery):
         with self.conn.cursor() as cursor:

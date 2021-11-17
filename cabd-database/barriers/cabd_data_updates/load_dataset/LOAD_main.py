@@ -8,13 +8,13 @@ dbHost = "localhost"
 dbPort = "5432"
 dbName = "cabd"
 
-damDuplicates = "featurecopy.dams_duplicates"
-fallDuplicates = "featurecopy.waterfalls_duplicates"
-fishDuplicates = "featurecopy.fishways_duplicates"
+damDuplicates = "featurecopy.dams"
+fallDuplicates = "featurecopy.waterfalls"
+fishDuplicates = "featurecopy.fishways"
 
 class LoadingScript:
 
-    #create temporary table and table to be inserted into CABD dataset
+    #create source data table and tables to be mapped into CABD dataset
     sourceSchema = "source_data"
     workingSchema = "featurecopy"
     

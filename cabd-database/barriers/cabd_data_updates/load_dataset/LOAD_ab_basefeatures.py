@@ -9,7 +9,8 @@ ALTER TABLE {script.sourceTable} ADD COLUMN data_source uuid;
 ALTER TABLE {script.sourceTable} ADD COLUMN data_source_id varchar;
 ALTER TABLE {script.sourceTable} DROP COLUMN geometry;
 UPDATE {script.sourceTable} SET data_source_id = bf_id;
-UPDATE {script.sourceTable} SET data_source = 85e725a2-bb6d-45d5-a6c5-1bf7ceed28db;
+UPDATE {script.sourceTable} SET data_source = '85e725a2-bb6d-45d5-a6c5-1bf7ceed28db';
+ALTER TABLE {script.sourceTable} ADD CONSTRAINT data_source_fkey FOREIGN KEY (data_source) REFERENCES cabd.data_source (id);
 ALTER TABLE {script.sourceTable} DROP CONSTRAINT {script.datasetname}_pkey;
 ALTER TABLE {script.sourceTable} ADD PRIMARY KEY (data_source_id);
 ALTER TABLE {script.sourceTable} DROP COLUMN fid;
@@ -26,6 +27,7 @@ UPDATE {script.damWorkingTable} SET dam_name_en = name;
 ALTER TABLE {script.damWorkingTable} ALTER COLUMN data_source_id SET NOT NULL;
 ALTER TABLE {script.damWorkingTable} ADD PRIMARY KEY (data_source_id);
 ALTER TABLE {script.damWorkingTable} ADD COLUMN cabd_id uuid;
+ALTER TABLE {script.damWorkingTable} ADD CONSTRAINT data_source_fkey FOREIGN KEY (data_source) REFERENCES cabd.data_source (id);
 
 ALTER TABLE {script.damWorkingTable}
     DROP COLUMN name;
@@ -38,7 +40,7 @@ SET
 FROM
     {script.damDuplicates} AS duplicates
 WHERE
-    ({script.datasetname}.data_source_id = duplicates.data_source_id AND duplicates.data_source = {script.datasetname}) 
+    ({script.datasetname}.data_source_id = duplicates.data_source_id AND duplicates.data_source_text = {script.datasetname}) 
     OR {script.datasetname}.data_source_id = duplicates.dups_{script.datasetname};  
 
 --split into waterfalls and map attributes
@@ -53,6 +55,7 @@ UPDATE {script.fallWorkingTable} SET fall_name_en = name;
 ALTER TABLE {script.fallWorkingTable} ALTER COLUMN data_source_id SET NOT NULL;
 ALTER TABLE {script.fallWorkingTable} ADD PRIMARY KEY (data_source_id);
 ALTER TABLE {script.fallWorkingTable} ADD COLUMN cabd_id uuid;
+ALTER TABLE {script.fallWorkingTable} ADD CONSTRAINT data_source_fkey FOREIGN KEY (data_source) REFERENCES cabd.data_source (id);
 
 ALTER TABLE {script.fallWorkingTable}
     DROP COLUMN name;
@@ -65,7 +68,7 @@ SET
 FROM
     {script.fallDuplicates} AS duplicates
 WHERE
-    ({script.datasetname}.data_source_id = duplicates.data_source_id AND duplicates.data_source = {script.datasetname}) 
+    ({script.datasetname}.data_source_id = duplicates.data_source_id AND duplicates.data_source_text = {script.datasetname}) 
     OR {script.datasetname}.data_source_id = duplicates.dups_{script.datasetname};  
 """
 

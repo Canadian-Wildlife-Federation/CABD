@@ -133,7 +133,8 @@ ALTER TABLE {workingTable} ADD COLUMN original_point geometry(POINT, 4617);
 ALTER TABLE {workingTable} ADD COLUMN snapped_point geometry(POINT, 4617);
 
 ALTER TABLE {workingTable} ALTER COLUMN data_source TYPE varchar;
-UPDATE {workingTable} SET data_source = 
+ALTER TABLE {workingTable} RENAME COLUMN data_source TO data_source_text;
+UPDATE {workingTable} SET data_source_text = 
     CASE
     WHEN data_source = '1' THEN 'ncc'
     WHEN data_source = '2' THEN 'nswf'
@@ -164,6 +165,39 @@ UPDATE {workingTable} SET data_source =
     WHEN data_source = '27' THEN 'bc_hydro_wiki'
     WHEN data_source = '28' THEN 'lsds'
     ELSE NULL END;
+
+ALTER TABLE {workingTable} ADD COLUMN data_source uuid;
+UPDATE {workingTable} SET data_source = 
+    CASE
+    WHEN data_source_text = 'ab_basefeatures' THEN '85e725a2-bb6d-45d5-a6c5-1bf7ceed28db'
+    WHEN data_source_text = 'bc_hydro_wiki' THEN 'ed6b7f22-10ad-4dcb-bdd3-163ce895805e'
+    WHEN data_source_text = 'canfishpass' THEN '7fe9e701-d804-40e6-8113-6b2c3656d1bd'
+    WHEN data_source_text = 'canvec' THEN '4bb309bf-be07-47bf-b134-9a43834001c2'
+    WHEN data_source_text = 'cehq' THEN '217bf7db-be4d-4f86-9e53-a1a6499da46a'
+    WHEN data_source_text = 'cgndb' THEN 'bc77aaa4-7a4e-43a1-84f1-9c5f6ea24912'
+    WHEN data_source_text = 'cwf' THEN 'd9918f2c-2b1d-47ac-918d-8aa026c4849f'
+    WHEN data_source_text = 'fao' THEN '53645b80-17df-4d0c-9e83-93ab7bbb4420'
+    WHEN data_source_text = 'fishwerks' THEN '2f486903-b777-464d-891c-6581400b2788'
+    WHEN data_source_text = 'fiss' THEN '67ecfa8f-e156-45ef-81b5-fb93bd5b23c4'
+    WHEN data_source_text = 'fwa' THEN 'd794807d-a816-49dd-a76f-3490c0abd317'
+    WHEN data_source_text = 'gfielding' THEN '41b947a0-867d-4dd1-aa08-3609bf5679de'
+    WHEN data_source_text = 'goodd' THEN '8c7b28eb-164a-4dc6-a121-0f8cb8005215'
+    WHEN data_source_text = 'grand' THEN 'f5b5b26b-05b1-45e6-829f-ba9c4199f6be'
+    WHEN data_source_text = 'lsds' THEN '35155b7e-d08e-4dd8-8588-780b5d1f7f2b'
+    WHEN data_source_text = 'mbprov' THEN '187f9524-8a06-4553-a7a7-316755101110'
+    WHEN data_source_text = 'nbhn' THEN '41fef339-840f-40c8-b048-5dfc5ae395d0'
+    WHEN data_source_text = 'ncc' THEN 'ce45dfdb-26d1-47ae-9f9c-2b353f3676d1'
+    WHEN data_source_text = 'nhn' THEN '9417da74-5cc8-4efa-8f43-0524fa47996d'
+    WHEN data_source_text = 'nlprov' THEN '2bab6e19-ef39-4973-b9e2-f4c47617ff2c'
+    WHEN data_source_text = 'npdp' THEN '6a9ca7af-1ae6-4b98-b79a-c207eeaf2bd9'
+    WHEN data_source_text = 'nswf' THEN '3f5c9d6e-4d4f-48af-b57d-cb2a1e2671a0'
+    WHEN data_source_text = 'odi' THEN '3f1e088a-03e3-4a6f-a4c0-38196d34efe8'
+    WHEN data_source_text = 'ohn' THEN 'eb1e7314-7de8-46b8-94a6-1be8bfef17d1'
+    WHEN data_source_text = 'publicdamskml' THEN 'eb825594-cd3f-4323-8e3d-ea92af0bf0f9'
+    WHEN data_source_text = 'sk_hydro' THEN 'a855a3c9-3fed-4c0e-b123-48e0b0a93914'
+    WHEN data_source_text = 'wrispublicdams' THEN 'eb1d2553-7535-4b8c-99c3-06487214ccae'
+    WHEN data_source_text = 'wsa_sk' THEN '1d5038f4-40ef-4ace-9aaf-213dd3a1e616'
+    END;
 """
 with conn.cursor() as cursor:
     cursor.execute(loadQuery)
@@ -215,16 +249,7 @@ snapQuery = f"""
 UPDATE {workingTable} SET original_point = ST_GeometryN(geometry, 1);
 SELECT featurecopy.snap_to_network('{workingSchema}', '{workingTableRaw}', 'original_point', 'snapped_point', {snappingDistance});
 UPDATE {workingTable} SET snapped_point = original_point WHERE snapped_point IS NULL;
-
 CREATE INDEX {workingTableRaw}_idx ON {workingTable} USING gist (snapped_point);
-
---CREATE TABLE featurecopy.dams_snapped_check AS
---(SELECT cabd.cabd_id, cabd.dam_name_en, cabd.dam_name_fr, cabd.snapped_point
-    --FROM {workingTable} AS cabd, fpoutput.eflowpath AS fp
-    --WHERE
-        --(ST_Intersects(cabd.snapped_point, fp.geometry) AND cabd.use_analysis IS FALSE)
-        --OR (ST_Disjoint(cabd.snapped_point, fp.geometry) AND cabd.use_analysis IS TRUE)
---);
 """
 
 with conn.cursor() as cursor:
@@ -235,4 +260,3 @@ conn.close()
 
 print("Script complete")
 print("Data loaded into table: " + workingTable)
-##print("Check featurecopy.dams_snapped_check for improperly-snapped points")

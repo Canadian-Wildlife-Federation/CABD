@@ -1,6 +1,6 @@
-import MAP_dams_main as main
+import MAP_attributes_main as main
 
-script = main.DamMappingScript("ab_basefeatures")
+script = main.MappingScript("ab_basefeatures")
 
 mappingquery = f"""
 
