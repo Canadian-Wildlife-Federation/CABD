@@ -10,12 +10,13 @@ dbName = "cabd"
 
 dataFile = ""
 dataFile = sys.argv[1]
-print(dataFile)
-dbUser = sys.argv[2]
-dbPassword = sys.argv[3]
+#provinceCode should be 'ab', 'bc', etc.
+provinceCode = sys.argv[2]
+dbUser = sys.argv[3]
+dbPassword = sys.argv[4]
 
 if dataFile == '':
-    print("Data file required. Usage: LOAD_dam_review.py <datafile> <dbUser> <dbPassword>")
+    print("Data file required. Usage: LOAD_dam_review.py <datafile> <provinceCode> <dbUser> <dbPassword>")
     sys.exit()
 
 #this is the temporary table the data is loaded into
@@ -49,7 +50,7 @@ conn.commit()
 
 #load data using ogr
 orgDb="dbname='" + dbName + "' host='"+ dbHost+"' port='"+dbPort+"' user='"+dbUser+"' password='"+ dbPassword+"'"
-pycmd = '"' + ogr + '" -f "PostgreSQL" PG:"' + orgDb + '" -nln "' + workingTable + '" -lco GEOMETRY_NAME=geometry -nlt PROMOTE_TO_MULTI ' '"' + dataFile + '" ' + "ab_dam_review"
+pycmd = '"' + ogr + '" -f "PostgreSQL" PG:"' + orgDb + '" -nln "' + workingTable + '" -lco GEOMETRY_NAME=geometry -nlt PROMOTE_TO_MULTI ' '"' + dataFile + '" ' + provinceCode + "_dam_review"
 print(pycmd)
 subprocess.run(pycmd)
 
@@ -72,7 +73,7 @@ ALTER TABLE {workingTable} ADD COLUMN reservoir_name_en varchar(512);
 ALTER TABLE {workingTable} ADD COLUMN reservoir_name_fr varchar(512);
 ALTER TABLE {workingTable} ADD COLUMN watershed_group_code varchar(32);
 ALTER TABLE {workingTable} ALTER COLUMN nhn_workunit_id TYPE varchar(7);
-ALTER TABLE {workingTable} DROP COLUMN province;
+ALTER TABLE {workingTable} DROP COLUMN IF EXISTS province;
 ALTER TABLE {workingTable} ADD COLUMN province_territory_code varchar(2);
 ALTER TABLE {workingTable} ADD COLUMN nearest_municipality varchar(512);
 ALTER TABLE {workingTable} ADD COLUMN "owner" varchar(512);
@@ -168,15 +169,40 @@ with conn.cursor() as cursor:
     cursor.execute(loadQuery)
 conn.commit()
 
+print("Fetching constraints...")
 loadQuery = f"""
 
 INSERT INTO {attributeTable} (cabd_id) SELECT cabd_id FROM {workingTable};
 
-ALTER TABLE {attributeTable}
-    ADD CONSTRAINT dams_cabd_id_fkey FOREIGN KEY (cabd_id) 
-    REFERENCES {workingTable} (cabd_id) MATCH SIMPLE
-    ON UPDATE NO ACTION
-    ON DELETE NO ACTION;
+ALTER TABLE {attributeTable} ADD CONSTRAINT {workingTableRaw}_cabd_id_fkey FOREIGN KEY (cabd_id) REFERENCES {workingTable} (cabd_id);
+
+ALTER TABLE {workingTable}
+    ADD CONSTRAINT dams_medium_large_fk FOREIGN KEY (province_territory_code) REFERENCES cabd.province_territory_codes (code),
+    ADD CONSTRAINT dams_medium_large_fk_10 FOREIGN KEY (use_navigation_code) REFERENCES dams.use_codes (code),
+    ADD CONSTRAINT dams_medium_large_fk_11 FOREIGN KEY (use_fish_code) REFERENCES dams.use_codes (code),
+    ADD CONSTRAINT dams_medium_large_fk_12 FOREIGN KEY (use_pollution_code) REFERENCES dams.use_codes (code),
+    ADD CONSTRAINT dams_medium_large_fk_13 FOREIGN KEY (use_invasivespecies_code) REFERENCES dams.use_codes (code),
+    ADD CONSTRAINT dams_medium_large_fk_14 FOREIGN KEY (use_other_code) REFERENCES dams.use_codes (code),
+    ADD CONSTRAINT dams_medium_large_fk_15 FOREIGN KEY (condition_code) REFERENCES dams.condition_codes (code),
+    ADD CONSTRAINT dams_medium_large_fk_16 FOREIGN KEY (function_code) REFERENCES dams.function_codes (code),
+    ADD CONSTRAINT dams_medium_large_fk_17 FOREIGN KEY (construction_type_code) REFERENCES dams.construction_type_codes (code),
+    ADD CONSTRAINT dams_medium_large_fk_18 FOREIGN KEY (size_class_code) REFERENCES dams.size_codes (code),
+    ADD CONSTRAINT dams_medium_large_fk_19 FOREIGN KEY (spillway_type_code) REFERENCES dams.spillway_type_codes (code),
+    ADD CONSTRAINT dams_medium_large_fk_2 FOREIGN KEY (ownership_type_code) REFERENCES cabd.barrier_ownership_type_codes (code),
+    ADD CONSTRAINT dams_medium_large_fk_20 FOREIGN KEY (up_passage_type_code) REFERENCES cabd.upstream_passage_type_codes (code),
+    ADD CONSTRAINT dams_medium_large_fk_21 FOREIGN KEY (down_passage_route_code) REFERENCES dams.downstream_passage_route_codes (code), 
+    ADD CONSTRAINT dams_medium_large_fk_22 FOREIGN KEY (turbine_type_code) REFERENCES dams.turbine_type_codes (code),
+    ADD CONSTRAINT dams_medium_large_fk_23 FOREIGN KEY (complete_level_code) REFERENCES dams.dam_complete_level_codes (code),
+    ADD CONSTRAINT dams_medium_large_fk_24 FOREIGN KEY (lake_control_code) REFERENCES dams.lake_control_codes (code),
+    ADD CONSTRAINT dams_medium_large_fk_26 FOREIGN KEY (passability_status_code) REFERENCES cabd.passability_status_codes (code),
+    ADD CONSTRAINT dams_medium_large_fk_3 FOREIGN KEY (operating_status_code) REFERENCES dams.operating_status_codes (code),
+    ADD CONSTRAINT dams_medium_large_fk_4 FOREIGN KEY (use_code) REFERENCES dams.dam_use_codes (code),
+    ADD CONSTRAINT dams_medium_large_fk_5 FOREIGN KEY (use_irrigation_code) REFERENCES dams.use_codes (code),
+    ADD CONSTRAINT dams_medium_large_fk_6 FOREIGN KEY (use_electricity_code) REFERENCES dams.use_codes (code),
+    ADD CONSTRAINT dams_medium_large_fk_7 FOREIGN KEY (use_supply_code) REFERENCES dams.use_codes (code),
+    ADD CONSTRAINT dams_medium_large_fk_8 FOREIGN KEY (use_floodcontrol_code) REFERENCES dams.use_codes (code),
+    ADD CONSTRAINT dams_medium_large_fk_9 FOREIGN KEY (use_recreation_code) REFERENCES dams.use_codes (code)    
+;
 
 """
 with conn.cursor() as cursor:
@@ -189,6 +215,8 @@ snapQuery = f"""
 UPDATE {workingTable} SET original_point = ST_GeometryN(geometry, 1);
 SELECT featurecopy.snap_to_network('{workingSchema}', '{workingTableRaw}', 'original_point', 'snapped_point', {snappingDistance});
 UPDATE {workingTable} SET snapped_point = original_point WHERE snapped_point IS NULL;
+
+CREATE INDEX {workingTableRaw}_idx ON {workingTable} USING gist (snapped_point);
 
 --CREATE TABLE featurecopy.dams_snapped_check AS
 --(SELECT cabd.cabd_id, cabd.dam_name_en, cabd.dam_name_fr, cabd.snapped_point
