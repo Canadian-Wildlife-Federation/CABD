@@ -32,17 +32,6 @@ ALTER TABLE {script.damWorkingTable} ADD CONSTRAINT data_source_fkey FOREIGN KEY
 ALTER TABLE {script.damWorkingTable}
     DROP COLUMN name;
 
---find CABD IDs
-UPDATE
-    {script.damWorkingTable} AS {script.datasetname}
-SET
-    cabd_id = duplicates.cabd_id
-FROM
-    {script.damDuplicates} AS duplicates
-WHERE
-    ({script.datasetname}.data_source_id = duplicates.data_source_id AND duplicates.data_source_text = {script.datasetname}) 
-    OR {script.datasetname}.data_source_id = duplicates.dups_{script.datasetname};  
-
 --split into waterfalls and map attributes
 
 DROP TABLE IF EXISTS {script.fallWorkingTable};
@@ -59,17 +48,6 @@ ALTER TABLE {script.fallWorkingTable} ADD CONSTRAINT data_source_fkey FOREIGN KE
 
 ALTER TABLE {script.fallWorkingTable}
     DROP COLUMN name;
-
---find CABD IDs
-UPDATE
-    {script.fallWorkingTable} AS {script.datasetname}
-SET
-    cabd_id = duplicates.cabd_id
-FROM
-    {script.fallDuplicates} AS duplicates
-WHERE
-    ({script.datasetname}.data_source_id = duplicates.data_source_id AND duplicates.data_source_text = {script.datasetname}) 
-    OR {script.datasetname}.data_source_id = duplicates.dups_{script.datasetname};  
 """
 
 script.do_work(query)

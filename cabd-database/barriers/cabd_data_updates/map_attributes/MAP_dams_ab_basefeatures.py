@@ -4,8 +4,19 @@ script = main.MappingScript("ab_basefeatures")
 
 mappingquery = f"""
 
+--find CABD IDs
+UPDATE
+    {script.workingTable} AS {script.datasetname}
+SET
+    cabd_id = duplicates.cabd_id
+FROM
+    {script.damTable} AS duplicates
+WHERE
+    ({script.datasetname}.data_source_id = duplicates.data_source_id AND duplicates.data_source_text = {script.datasetname}) 
+    OR {script.datasetname}.data_source_id = duplicates.dups_{script.datasetname};  
+
 --update existing features 
-UPDATE 
+UPDATE
     {script.damAttributeTable} AS cabdsource
 SET    
     dam_name_en_ds = CASE WHEN (cabd.dam_name_en IS NULL AND {script.datasetname}.dam_name_en IS NOT NULL) THEN {script.datasetname}.data_source ELSE cabdsource.dam_name_en_ds END,   
