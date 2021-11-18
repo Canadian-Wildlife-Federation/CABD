@@ -4,13 +4,11 @@ import sys
 
 ogr = "C:\\OSGeo4W64\\bin\\ogr2ogr.exe";
 
-dbHost = "localhost"
+dbHost = "cabd-postgres-dev.postgres.database.azure.com"
 dbPort = "5432"
 dbName = "cabd"
-
-damDuplicates = "featurecopy.dams"
-fallDuplicates = "featurecopy.waterfalls"
-fishDuplicates = "featurecopy.fishways"
+dbUser = sys.argv[2]
+dbPassword = sys.argv[3]
 
 class LoadingScript:
 
@@ -37,16 +35,14 @@ class LoadingScript:
         self.fishWorkingTable = self.workingSchema + ".fishways_" + datasetname
         
         self.datafile = sys.argv[1]
-        self.dbUser = sys.argv[2]
-        self.dbPassword = sys.argv[3]
-            
+        
         if len(sys.argv) != 4:
-            print("Invalid usage: LOAD_<datasetid>.py <datafile> <dbUser> <dbPassword>")
+            print("Invalid usage: py LOAD_<datasetid>.py <datafile> <dbUser> <dbPassword>")
             sys.exit()
 
-    def do_work(self, loadquery):       
+    def do_work(self, loadquery):    
         print("Loading data from file " +  self.datafile)
-         
+
         self.conn = pg2.connect(database=dbName, 
                    user=dbUser, 
                    host=dbHost, 
@@ -78,10 +74,10 @@ class LoadingScript:
 
     def initdb(self):
         query = f"""
-CREATE SCHEMA IF NOT EXISTS {self.sourceSchema};
-CREATE SCHEMA IF NOT EXISTS {self.workingSchema};
-DROP TABLE IF EXISTS {self.sourceTable};
-"""
+        CREATE SCHEMA IF NOT EXISTS {self.sourceSchema};
+        CREATE SCHEMA IF NOT EXISTS {self.workingSchema};
+        DROP TABLE IF EXISTS {self.sourceTable};
+        """
         with self.conn.cursor() as cursor:
-            cursor.execute(query);
-        self.conn.commit();
+            cursor.execute(query)
+        self.conn.commit()
