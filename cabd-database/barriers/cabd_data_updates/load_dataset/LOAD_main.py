@@ -37,7 +37,7 @@ class LoadingScript:
         self.datafile = sys.argv[1]
         
         if len(sys.argv) != 4:
-            print("Invalid usage: py LOAD_<datasetid>.py <datafile> <dbUser> <dbPassword>")
+            print("Invalid usage: py LOAD_<datasetid>.py "<datafile>" <dbUser> <dbPassword>")
             sys.exit()
 
     def do_work(self, loadquery):    

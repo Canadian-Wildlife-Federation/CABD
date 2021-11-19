@@ -16,7 +16,7 @@ dbUser = sys.argv[3]
 dbPassword = sys.argv[4]
 
 if dataFile == '':
-    print("Data file required. Usage: py LOAD_dam_review.py <datafile> <provinceCode> <dbUser> <dbPassword>")
+    print("Data file required. Usage: py LOAD_dam_review.py "<datafile>" <provinceCode> <dbUser> <dbPassword>")
     sys.exit()
 
 #this is the temporary table the data is loaded into
