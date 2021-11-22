@@ -63,7 +63,8 @@ UPDATE {workingTable} SET cabd_id = uuid_generate_v4();
 ALTER TABLE {workingTable} DROP CONSTRAINT {workingTableRaw}_pkey;
 ALTER TABLE {workingTable} ADD PRIMARY KEY (cabd_id);
 
-ALTER TABLE {workingTable} ADD COLUMN cabd_id uuid NOT NULL;
+ALTER TABLE {workingTable} ADD COLUMN latitude double precision;
+ALTER TABLE {workingTable} ADD COLUMN longitude double precision;
 ALTER TABLE {workingTable} ADD COLUMN fall_name_en character varying(512);
 ALTER TABLE {workingTable} ADD COLUMN fall_name_fr character varying(512);
 ALTER TABLE {workingTable} ADD COLUMN waterbody_name_en character varying(512);

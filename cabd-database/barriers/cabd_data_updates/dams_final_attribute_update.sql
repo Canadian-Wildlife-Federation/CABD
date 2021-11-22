@@ -72,11 +72,19 @@ SET
 UPDATE featurecopy.dams AS cabd SET passability_status_code = 2 FROM fishways.fishways AS f WHERE cabd.cabd_id = f.dam_id;
 UPDATE featurecopy.dams SET passability_status_code = 1 WHERE passability_status_code IS NULL;
 
---Various spatial joins to populate fields
-UPDATE featurecopy.dams AS dc SET province_territory_code = n.code FROM cabd.province_territory_codes AS n WHERE st_contains(n.geometry, dc.snapped_point);
-UPDATE featurecopy.dams AS dc SET nhn_workunit_id = n.id FROM cabd.nhn_workunit AS n WHERE st_contains(n.polygon, dc.snapped_point);
-UPDATE featurecopy.dams AS dc SET sub_sub_drainage_name = n.sub_sub_drainage_area FROM cabd.nhn_workunit AS n WHERE st_contains(n.polygon, dc.snapped_point);
-UPDATE featurecopy.dams AS dc SET municipality = n.csdname FROM cabd.census_subdivisions AS n WHERE st_contains(n.geometry, dc.snapped_point);
+--Various spatial joins/queries to populate fields
+--TO DO: Change original_point, snapped_point to EPSG:4326, populate lat/long fields, drop column geometry
+UPDATE featurecopy.dams AS dams SET original_point = ST_Transform(dams.original_point, 4326);
+UPDATE featurecopy.dams AS dams SET snapped_point = ST_Transform(dams.snapped_point, 4326);
+UPDATE featurecopy.dams AS dams SET longitude = ST_X(dams.snapped_point);
+UPDATE featurecopy.dams AS dams SET latitude = ST_Y(dams.snapped_point);
+UPDATE featurecopy.dams AS dams DROP INDEX dams_geometry_geom_idx;
+UPDATE featurecopy.dams AS dams DROP COLUMN geometry;
+UPDATE featurecopy.dams AS dams REINDEX INDEX dams_idx;
+UPDATE featurecopy.dams AS dams SET province_territory_code = n.code FROM cabd.province_territory_codes AS n WHERE st_contains(n.geometry, dams.snapped_point);
+UPDATE featurecopy.dams AS dams SET nhn_workunit_id = n.id FROM cabd.nhn_workunit AS n WHERE st_contains(n.polygon, dams.snapped_point);
+UPDATE featurecopy.dams AS dams SET sub_sub_drainage_name = n.sub_sub_drainage_area FROM cabd.nhn_workunit AS n WHERE st_contains(n.polygon, dams.snapped_point);
+UPDATE featurecopy.dams AS dams SET municipality = n.csdname FROM cabd.census_subdivisions AS n WHERE st_contains(n.geometry, dams.snapped_point);
 
 --TO DO: Add foreign table to reference ecatchment and eflowpath tables, make sure 2 lines below work
 --Should waterbody name simply be overwritten here as long as we have a value from the chyf networks?
