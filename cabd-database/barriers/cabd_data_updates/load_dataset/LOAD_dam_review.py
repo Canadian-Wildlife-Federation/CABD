@@ -16,7 +16,7 @@ dbUser = sys.argv[3]
 dbPassword = sys.argv[4]
 
 if dataFile == '':
-    print("Data file required. Usage: py LOAD_dam_review.py "<datafile>" <provinceCode> <dbUser> <dbPassword>")
+    print('Data file required. Usage: py LOAD_dam_review.py "<datafile>" <provinceCode> <dbUser> <dbPassword>')
     sys.exit()
 
 #this is the temporary table the data is loaded into
@@ -37,6 +37,7 @@ conn = pg2.connect(database=dbName,
                    password=dbPassword, 
                    port=dbPort)
 
+#note that the attribute table has been created ahead of time with all constraints from production attribute table
 query = f"""
 CREATE SCHEMA IF NOT EXISTS {workingSchema};
 ALTER TABLE {attributeTable} DROP CONSTRAINT IF EXISTS dams_medium_large_attribute_source_cabd_id_fkey;
