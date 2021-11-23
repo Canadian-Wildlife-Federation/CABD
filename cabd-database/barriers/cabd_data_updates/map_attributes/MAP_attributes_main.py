@@ -35,6 +35,11 @@ class MappingScript:
         if len(sys.argv) != 4:
             print("Invalid usage: MAP_<featureType>_<datasetid>.py <featureType> <dbUser> <dbPassword>")
             sys.exit()
+        
+        if sys.argv[1] not in ["dams", "waterfalls", "fishways"]:
+            print("Invalid usage: featureType must be either dams, waterfalls, or fishways.")
+            print("Correct usage is: MAP_<featureType>_<datasetid>.py <featureType> <dbUser> <dbPassword>")
+            sys.exit()
 
     def do_work(self, mappingquery):
         print("Mapping attributes from " +  self.datasetname)

@@ -16,37 +16,47 @@ ALTER TABLE {script.sourceTable} ADD PRIMARY KEY (data_source_id);
 ALTER TABLE {script.sourceTable} DROP COLUMN fid;
 ALTER TABLE {script.sourceTable} DROP COLUMN geometry;
 
---split into dams and map attributes
 
+--split into dams, add new columns, and map attributes
 DROP TABLE IF EXISTS {script.damWorkingTable};
 CREATE TABLE {script.damWorkingTable} AS
-    SELECT name, data_source, data_source_id FROM {script.sourceTable} WHERE feature_type IN ('DAM-MAJ','DAM-MIN');
-
-ALTER TABLE {script.damWorkingTable} ADD COLUMN dam_name_en varchar(512);
-UPDATE {script.damWorkingTable} SET dam_name_en = name;
+    SELECT 
+        name,
+        data_source,
+        data_source_id
+    FROM {script.sourceTable} WHERE feature_type IN ('DAM-MAJ','DAM-MIN');
 
 ALTER TABLE {script.damWorkingTable} ALTER COLUMN data_source_id SET NOT NULL;
 ALTER TABLE {script.damWorkingTable} ADD PRIMARY KEY (data_source_id);
 ALTER TABLE {script.damWorkingTable} ADD COLUMN cabd_id uuid;
 ALTER TABLE {script.damWorkingTable} ADD CONSTRAINT data_source_fkey FOREIGN KEY (data_source) REFERENCES cabd.data_source (id);
 
+ALTER TABLE {script.damWorkingTable} ADD COLUMN dam_name_en varchar(512);
+UPDATE {script.damWorkingTable} SET dam_name_en = name;
+
+--delete extra fields so only mapped fields remain
 ALTER TABLE {script.damWorkingTable}
     DROP COLUMN name;
 
---split into waterfalls and map attributes
 
+--split into waterfalls, add new columns, and map attributes
 DROP TABLE IF EXISTS {script.fallWorkingTable};
 CREATE TABLE {script.fallWorkingTable} AS
-    SELECT name, data_source, data_source_id FROM {script.sourceTable} WHERE feature_type = 'FALLS';
-
-ALTER TABLE {script.fallWorkingTable} ADD COLUMN fall_name_en varchar(512);
-UPDATE {script.fallWorkingTable} SET fall_name_en = name;
+    SELECT
+        name,
+        data_source,
+        data_source_id
+    FROM {script.sourceTable} WHERE feature_type = 'FALLS';
 
 ALTER TABLE {script.fallWorkingTable} ALTER COLUMN data_source_id SET NOT NULL;
 ALTER TABLE {script.fallWorkingTable} ADD PRIMARY KEY (data_source_id);
 ALTER TABLE {script.fallWorkingTable} ADD COLUMN cabd_id uuid;
 ALTER TABLE {script.fallWorkingTable} ADD CONSTRAINT data_source_fkey FOREIGN KEY (data_source) REFERENCES cabd.data_source (id);
 
+ALTER TABLE {script.fallWorkingTable} ADD COLUMN fall_name_en varchar(512);
+UPDATE {script.fallWorkingTable} SET fall_name_en = name;
+
+--delete extra fields so only mapped fields remain
 ALTER TABLE {script.fallWorkingTable}
     DROP COLUMN name;
 """
