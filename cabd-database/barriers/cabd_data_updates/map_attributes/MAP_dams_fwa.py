@@ -1,6 +1,6 @@
 import MAP_attributes_main as main
 
-script = main.MappingScript("ab_basefeatures")
+script = main.MappingScript("fwa")
 
 mappingquery = f"""
 
@@ -15,9 +15,9 @@ FROM
     {script.damTable} AS duplicates
 WHERE
     ({script.datasetname}.data_source_id = duplicates.data_source_id AND duplicates.data_source_text = '{script.datasetname}') 
-    OR {script.datasetname}.data_source_id = duplicates.dups_{script.datasetname};  
+    OR {script.datasetname}.data_source_id = duplicates.dups_{script.datasetname};
 
---update existing features 
+--update existing features
 UPDATE
     {script.damAttributeTable} AS cabdsource
 SET    
@@ -37,7 +37,7 @@ FROM
     {script.workingTable} AS {script.datasetname}
 WHERE
     cabd.cabd_id = {script.datasetname}.cabd_id;
-
+    
 """
 
 script.do_work(mappingquery)

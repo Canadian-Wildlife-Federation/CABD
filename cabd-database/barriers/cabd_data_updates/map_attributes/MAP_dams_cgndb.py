@@ -1,6 +1,6 @@
 import MAP_attributes_main as main
 
-script = main.MappingScript("ab_basefeatures")
+script = main.MappingScript("cgndb")
 
 mappingquery = f"""
 

@@ -1,6 +1,6 @@
 import MAP_attributes_main as main
 
-script = main.MappingScript("ab_basefeatures")
+script = main.MappingScript("fwa")
 
 mappingquery = f"""
 
@@ -37,6 +37,7 @@ FROM
     {script.workingTable} AS {script.datasetname}
 WHERE
     cabd.cabd_id = {script.datasetname}.cabd_id;
+    
 """
 
 script.do_work(mappingquery)

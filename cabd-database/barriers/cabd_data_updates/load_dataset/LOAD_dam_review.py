@@ -152,7 +152,7 @@ UPDATE {workingTable} SET data_source_text =
     WHEN data_source_text = '13' THEN 'publicdamskml'
     WHEN data_source_text = '14' THEN 'nlprov'
     WHEN data_source_text = '15' THEN 'npdp'
-    WHEN data_source_text = '16' THEN 'canvec'
+    WHEN data_source_text = '16' THEN 'canvec_manmade'
     WHEN data_source_text = '17' THEN 'nhn'
     WHEN data_source_text = '18' THEN 'goodd'
     WHEN data_source_text = '19' THEN 'grand'
@@ -165,6 +165,7 @@ UPDATE {workingTable} SET data_source_text =
     WHEN data_source_text = '26' THEN 'sk_hydro'
     WHEN data_source_text = '27' THEN 'bc_hydro_wiki'
     WHEN data_source_text = '28' THEN 'lsds'
+    WHEN data_source_text = '29' THEN 'canvec_hy_obstacles'
     ELSE NULL END;
 
 ALTER TABLE {workingTable} ADD COLUMN data_source uuid;
@@ -173,7 +174,8 @@ UPDATE {workingTable} SET data_source =
     WHEN data_source_text = 'ab_basefeatures' THEN '85e725a2-bb6d-45d5-a6c5-1bf7ceed28db'::uuid
     WHEN data_source_text = 'bc_hydro_wiki' THEN 'ed6b7f22-10ad-4dcb-bdd3-163ce895805e'::uuid
     WHEN data_source_text = 'canfishpass' THEN '7fe9e701-d804-40e6-8113-6b2c3656d1bd'::uuid
-    WHEN data_source_text = 'canvec' THEN '4bb309bf-be07-47bf-b134-9a43834001c2'::uuid
+    WHEN data_source_text = 'canvec_hy_obstacles' THEN 'fe3928a3-0514-49bc-8759-7e85b75cbda2':uuid
+    WHEN data_source_text = 'canvec_manmade' THEN '4bb309bf-be07-47bf-b134-9a43834001c2'::uuid
     WHEN data_source_text = 'cehq' THEN '217bf7db-be4d-4f86-9e53-a1a6499da46a'::uuid
     WHEN data_source_text = 'cgndb' THEN 'bc77aaa4-7a4e-43a1-84f1-9c5f6ea24912'::uuid
     WHEN data_source_text = 'cwf' THEN 'd9918f2c-2b1d-47ac-918d-8aa026c4849f'::uuid

@@ -40,7 +40,7 @@ class LoadingScript:
             print('Invalid usage: py LOAD_<datasetid>.py "<datafile>" <dbUser> <dbPassword>')
             sys.exit()
 
-    def do_work(self, loadquery):    
+    def do_work(self, loadquery):
         print("Loading data from file " +  self.datafile)
 
         self.conn = pg2.connect(database=dbName, 
@@ -58,7 +58,7 @@ class LoadingScript:
         self.conn.close()
         
         print("Script complete")
-        print("Data loaded into tables: " + self.damWorkingTable + ", " + self.fallWorkingTable + ", " + self.fishWorkingTable)
+        print("Data loaded into schemas: " + self.sourceSchema + " (original data), " + self.workingSchema + " (mapped data)")
 
     #load data from geopackage file into the database
     def load_data(self, filename):

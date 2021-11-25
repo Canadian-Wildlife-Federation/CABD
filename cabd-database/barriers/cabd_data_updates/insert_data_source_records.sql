@@ -21,3 +21,6 @@ VALUES(uuid_generate_v4(), 'sk_hydro', now(), null, null, 'Data update - ' || no
 
 INSERT INTO cabd.data_source (id, name, version_date, version_number, source, comments)
 VALUES(uuid_generate_v4(), 'wsa_sk', now(), null, null, 'Data update - ' || now());
+
+INSERT INTO cabd.data_source (id, name, version_date, version_number, source, comments)
+VALUES(uuid_generate_v4(), 'canvec_hy_obstacles', now(), null, null, 'Data update - ' || now());
