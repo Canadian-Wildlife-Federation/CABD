@@ -42,3 +42,27 @@ UPDATE waterfalls.waterfalls SET complete_level_code =
     ELSE 1 END;
 
 COMMIT;
+
+--drop original fields we no longer need
+BEGIN;
+
+ALTER TABLE featurecopy.waterfalls
+    DROP COLUMN fid,
+    DROP COLUMN data_source,
+    DROP COLUMN data_source_text,
+    DROP COLUMN data_source_id,
+    DROP COLUMN decommissioned_yn,
+    DROP COLUMN duplicates_yn,
+    DROP COLUMN reference_url,
+    DROP COLUMN reviewer_classification,
+    DROP COLUMN reviewer_comments,
+    DROP COLUMN IF EXISTS dups_fwa,
+    DROP COLUMN IF EXISTS dups_fiss,
+    DROP COLUMN IF EXISTS dups_ab_basefeatures,
+    DROP COLUMN IF EXISTS dups_nhn,
+    DROP COLUMN IF EXISTS dups_cgndb,
+    DROP COLUMN IF EXISTS dups_canvec_hy_obstacles,
+    DROP COLUMN IF EXISTS dups_wiki,
+    DROP COLUMN IF EXISTS dups_wwd;
+
+COMMIT;

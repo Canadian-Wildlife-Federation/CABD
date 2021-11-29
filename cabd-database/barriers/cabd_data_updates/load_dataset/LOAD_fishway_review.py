@@ -104,36 +104,18 @@ ALTER TABLE {workingTable} ADD COLUMN complete_level_code smallint;
 ALTER TABLE {workingTable} ADD COLUMN original_point geometry(Point, 4617);
 
 ALTER TABLE {workingTable} ALTER COLUMN data_source TYPE varchar;
-UPDATE {workingTable} SET data_source = 
+ALTER TABLE {workingTable} RENAME COLUMN data_source TO data_source_text;
+UPDATE {workingTable} SET data_source_text = 
     CASE
-    WHEN data_source = '1' THEN 'ncc'
-    WHEN data_source = '2' THEN 'nswf'
-    WHEN data_source = '3' THEN 'odi'
-    WHEN data_source = '4' THEN 'wrispublicdams'
-    WHEN data_source = '5' THEN 'fwa'
-    WHEN data_source = '6' THEN 'ab_basefeatures'
-    WHEN data_source = '7' THEN 'cehq'
-    WHEN data_source = '8' THEN 'ohn'
-    WHEN data_source = '9' THEN 'nbhn'
-    WHEN data_source = '10' THEN 'gfielding'
-    WHEN data_source = '11' THEN 'fishwerks'
-    WHEN data_source = '12' THEN 'fiss'
-    WHEN data_source = '13' THEN 'publicdamskml'
-    WHEN data_source = '14' THEN 'nlprov'
-    WHEN data_source = '15' THEN 'npdp'
-    WHEN data_source = '16' THEN 'canvec'
-    WHEN data_source = '17' THEN 'nhn'
-    WHEN data_source = '18' THEN 'goodd'
-    WHEN data_source = '19' THEN 'grand'
-    WHEN data_source = '20' THEN 'fao'
     WHEN data_source = '21' THEN 'cwf'
     WHEN data_source = '22' THEN 'canfishpass'
-    WHEN data_source = '23' THEN 'mbprov'
-    WHEN data_source = '24' THEN 'cgndb'
-    WHEN data_source = '25' THEN 'wsa_sk'
-    WHEN data_source = '26' THEN 'sk_hydro'
-    WHEN data_source = '27' THEN 'bc_hydro_wiki'
-    WHEN data_source = '28' THEN 'lsds'
+    ELSE NULL END;
+
+ALTER TABLE {workingTable} ADD COLUMN data_source uuid;
+UPDATE {workingTable} SET data_source = 
+    CASE
+    WHEN data_source_text = 'cwf' THEN 'd9918f2c-2b1d-47ac-918d-8aa026c4849f'::uuid
+    WHEN data_source_text = 'canfishpass' THEN '7fe9e701-d804-40e6-8113-6b2c3656d1bd'::uuid
     ELSE NULL END;
 
 UPDATE {workingTable} SET original_point = ST_GeometryN(geometry, 1);
@@ -157,8 +139,7 @@ ALTER TABLE {workingTable}
     ADD CONSTRAINT fishpass_fk_3 FOREIGN KEY (entrance_location_code) REFERENCES fishways.entrance_location_codes (code),
     ADD CONSTRAINT fishpass_fk_4 FOREIGN KEY (entrance_position_code) REFERENCES fishways.entrance_position_codes (code),
     ADD CONSTRAINT fishways_fk FOREIGN KEY (dam_id) REFERENCES {workingSchema}.dams (cabd_id),
-    ADD CONSTRAINT fishways_fk_8 FOREIGN KEY (complete_level_code) REFERENCES fishways.fishway_complete_level_codes (code)
-;
+    ADD CONSTRAINT fishways_fk_8 FOREIGN KEY (complete_level_code) REFERENCES fishways.fishway_complete_level_codes (code);
 
 """
 with conn.cursor() as cursor:

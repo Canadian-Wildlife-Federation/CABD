@@ -23,6 +23,8 @@ class LoadingScript:
     fallWorkingTable = ""
 
     fishWorkingTable = ""
+
+    speciesMapping = "fishmapping"
     
     datasetname = ""
     datafile = ""
@@ -33,6 +35,7 @@ class LoadingScript:
         self.damWorkingTable = self.workingSchema + ".dams_" + datasetname
         self.fallWorkingTable = self.workingSchema + ".waterfalls_" + datasetname
         self.fishWorkingTable = self.workingSchema + ".fishways_" + datasetname
+        self.speciesMappingTable = self.workingSchema + "." + self.speciesMapping
         
         self.datafile = sys.argv[1]
         

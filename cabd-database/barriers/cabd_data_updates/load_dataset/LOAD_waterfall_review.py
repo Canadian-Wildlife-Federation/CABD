@@ -82,37 +82,76 @@ ALTER TABLE {workingTable} ADD COLUMN original_point geometry(Point, 4617);
 ALTER TABLE {workingTable} ADD COLUMN passability_status_code smallint;
 
 ALTER TABLE {workingTable} ALTER COLUMN data_source TYPE varchar;
+ALTER TABLE {workingTable} RENAME COLUMN data_source TO data_source_text;
+UPDATE {workingTable} SET data_source_text = 
+    CASE
+    WHEN data_source_text = '1' THEN 'ncc'
+    WHEN data_source_text = '2' THEN 'nswf'
+    WHEN data_source_text = '3' THEN 'odi'
+    WHEN data_source_text = '4' THEN 'wrispublicdams'
+    WHEN data_source_text = '5' THEN 'fwa'
+    WHEN data_source_text = '6' THEN 'ab_basefeatures'
+    WHEN data_source_text = '7' THEN 'cehq'
+    WHEN data_source_text = '8' THEN 'ohn'
+    WHEN data_source_text = '9' THEN 'nbhn'
+    WHEN data_source_text = '10' THEN 'gfielding'
+    WHEN data_source_text = '11' THEN 'fishwerks'
+    WHEN data_source_text = '12' THEN 'fiss'
+    WHEN data_source_text = '13' THEN 'publicdamskml'
+    WHEN data_source_text = '14' THEN 'nlprov'
+    WHEN data_source_text = '15' THEN 'npdp'
+    WHEN data_source_text = '16' THEN 'canvec_manmade'
+    WHEN data_source_text = '17' THEN 'nhn'
+    WHEN data_source_text = '18' THEN 'goodd'
+    WHEN data_source_text = '19' THEN 'grand'
+    WHEN data_source_text = '20' THEN 'fao'
+    WHEN data_source_text = '21' THEN 'cwf'
+    WHEN data_source_text = '22' THEN 'canfishpass'
+    WHEN data_source_text = '23' THEN 'mbprov'
+    WHEN data_source_text = '24' THEN 'cgndb'
+    WHEN data_source_text = '25' THEN 'wsa_sk'
+    WHEN data_source_text = '26' THEN 'sk_hydro'
+    WHEN data_source_text = '27' THEN 'bc_hydro_wiki'
+    WHEN data_source_text = '28' THEN 'lsds'
+    WHEN data_source_text = '29' THEN 'canvec_hy_obstacles'
+    WHEN data_source_text = '30' THEN 'wikipedia'
+    ELSE NULL END;
+
+ALTER TABLE {workingTable} ADD COLUMN data_source uuid;
 UPDATE {workingTable} SET data_source = 
     CASE
-    WHEN data_source = '1' THEN 'ncc'
-    WHEN data_source = '2' THEN 'nswf'
-    WHEN data_source = '3' THEN 'odi'
-    WHEN data_source = '4' THEN 'wrispublicdams'
-    WHEN data_source = '5' THEN 'fwa'
-    WHEN data_source = '6' THEN 'ab_basefeatures'
-    WHEN data_source = '7' THEN 'cehq'
-    WHEN data_source = '8' THEN 'ohn'
-    WHEN data_source = '9' THEN 'nbhn'
-    WHEN data_source = '10' THEN 'gfielding'
-    WHEN data_source = '11' THEN 'fishwerks'
-    WHEN data_source = '12' THEN 'fiss'
-    WHEN data_source = '13' THEN 'publicdamskml'
-    WHEN data_source = '14' THEN 'nlprov'
-    WHEN data_source = '15' THEN 'npdp'
-    WHEN data_source = '16' THEN 'canvec'
-    WHEN data_source = '17' THEN 'nhn'
-    WHEN data_source = '18' THEN 'goodd'
-    WHEN data_source = '19' THEN 'grand'
-    WHEN data_source = '20' THEN 'fao'
-    WHEN data_source = '21' THEN 'cwf'
-    WHEN data_source = '22' THEN 'canfishpass'
-    WHEN data_source = '23' THEN 'mbprov'
-    WHEN data_source = '24' THEN 'cgndb'
-    WHEN data_source = '25' THEN 'wsa_sk'
-    WHEN data_source = '26' THEN 'sk_hydro'
-    WHEN data_source = '27' THEN 'bc_hydro_wiki'
-    WHEN data_source = '28' THEN 'lsds'
-    ELSE NULL END;
+    WHEN data_source_text = 'ab_basefeatures' THEN '85e725a2-bb6d-45d5-a6c5-1bf7ceed28db'::uuid
+    WHEN data_source_text = 'bc_hydro_wiki' THEN 'ed6b7f22-10ad-4dcb-bdd3-163ce895805e'::uuid
+    WHEN data_source_text = 'canfishpass' THEN '7fe9e701-d804-40e6-8113-6b2c3656d1bd'::uuid
+    WHEN data_source_text = 'canvec_hy_obstacles' THEN 'fe3928a3-0514-49bc-8759-7e85b75cbda2':uuid
+    WHEN data_source_text = 'canvec_manmade' THEN '4bb309bf-be07-47bf-b134-9a43834001c2'::uuid
+    WHEN data_source_text = 'cehq' THEN '217bf7db-be4d-4f86-9e53-a1a6499da46a'::uuid
+    WHEN data_source_text = 'cgndb' THEN 'bc77aaa4-7a4e-43a1-84f1-9c5f6ea24912'::uuid
+    WHEN data_source_text = 'cwf' THEN 'd9918f2c-2b1d-47ac-918d-8aa026c4849f'::uuid
+    WHEN data_source_text = 'fao' THEN '53645b80-17df-4d0c-9e83-93ab7bbb4420'::uuid
+    WHEN data_source_text = 'fishwerks' THEN '2f486903-b777-464d-891c-6581400b2788'::uuid
+    WHEN data_source_text = 'fiss' THEN '67ecfa8f-e156-45ef-81b5-fb93bd5b23c4'::uuid
+    WHEN data_source_text = 'fwa' THEN 'd794807d-a816-49dd-a76f-3490c0abd317'::uuid
+    WHEN data_source_text = 'gfielding' THEN '41b947a0-867d-4dd1-aa08-3609bf5679de'::uuid
+    WHEN data_source_text = 'goodd' THEN '8c7b28eb-164a-4dc6-a121-0f8cb8005215'::uuid
+    WHEN data_source_text = 'grand' THEN 'f5b5b26b-05b1-45e6-829f-ba9c4199f6be'::uuid
+    WHEN data_source_text = 'lsds' THEN '35155b7e-d08e-4dd8-8588-780b5d1f7f2b'::uuid
+    WHEN data_source_text = 'mbprov' THEN '187f9524-8a06-4553-a7a7-316755101110'::uuid
+    WHEN data_source_text = 'nbhn' THEN '41fef339-840f-40c8-b048-5dfc5ae395d0'::uuid
+    WHEN data_source_text = 'ncc' THEN 'ce45dfdb-26d1-47ae-9f9c-2b353f3676d1'::uuid
+    WHEN data_source_text = 'nhn' THEN '9417da74-5cc8-4efa-8f43-0524fa47996d'::uuid
+    WHEN data_source_text = 'nlprov' THEN '2bab6e19-ef39-4973-b9e2-f4c47617ff2c'::uuid
+    WHEN data_source_text = 'npdp' THEN '6a9ca7af-1ae6-4b98-b79a-c207eeaf2bd9'::uuid
+    WHEN data_source_text = 'nswf' THEN '3f5c9d6e-4d4f-48af-b57d-cb2a1e2671a0'::uuid
+    WHEN data_source_text = 'odi' THEN '3f1e088a-03e3-4a6f-a4c0-38196d34efe8'::uuid
+    WHEN data_source_text = 'ohn' THEN 'eb1e7314-7de8-46b8-94a6-1be8bfef17d1'::uuid
+    WHEN data_source_text = 'publicdamskml' THEN 'eb825594-cd3f-4323-8e3d-ea92af0bf0f9'::uuid
+    WHEN data_source_text = 'sk_hydro' THEN 'a855a3c9-3fed-4c0e-b123-48e0b0a93914'::uuid
+    WHEN data_source_text = 'wikipedia' THEN '1ec6c575-04da-4416-b870-0af2cba15206'::uuid
+    WHEN data_source_text = 'wrispublicdams' THEN 'eb1d2553-7535-4b8c-99c3-06487214ccae'::uuid
+    WHEN data_source_text = 'wsa_sk' THEN '1d5038f4-40ef-4ace-9aaf-213dd3a1e616'::uuid
+    END;
+
 """
 with conn.cursor() as cursor:
     cursor.execute(loadQuery)

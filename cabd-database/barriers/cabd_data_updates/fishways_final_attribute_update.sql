@@ -5,15 +5,15 @@ BEGIN;
 --Various spatial joins/queries to populate fields
 --TO DO: Change original_point to EPSG:4326, populate lat/long fields, drop column geometry
 UPDATE featurecopy.fishways AS fish SET original_point = ST_Transform(fish.original_point, 4326);
-UPDATE featurecopy.fishways AS fish SET longitude = ST_X(fish.snapped_point);
-UPDATE featurecopy.fishways AS fish SET latitude = ST_Y(fish.snapped_point);
+UPDATE featurecopy.fishways AS fish SET longitude = ST_X(fish.original_point);
+UPDATE featurecopy.fishways AS fish SET latitude = ST_Y(fish.original_point);
 UPDATE featurecopy.fishways AS fish DROP INDEX fishways_geometry_geom_idx;
 UPDATE featurecopy.fishways AS fish DROP COLUMN geometry;
 UPDATE featurecopy.fishways AS fish REINDEX INDEX fishways_idx;
-UPDATE featurecopy.fishways AS fish SET province_territory_code = n.code FROM cabd.province_territory_codes AS n WHERE st_contains(n.geometry, fish.snapped_point);
-UPDATE featurecopy.fishways AS fish SET nhn_workunit_id = n.id FROM cabd.nhn_workunit AS n WHERE st_contains(n.polygon, fish.snapped_point);
-UPDATE featurecopy.fishways AS fish SET sub_sub_drainage_name = n.sub_sub_drainage_area FROM cabd.nhn_workunit AS n WHERE st_contains(n.polygon, fish.snapped_point);
-UPDATE featurecopy.fishways AS fish SET municipality = n.csdname FROM cabd.census_subdivisions AS n WHERE st_contains(n.geometry, fish.snapped_point);
+UPDATE featurecopy.fishways AS fish SET province_territory_code = n.code FROM cabd.province_territory_codes AS n WHERE st_contains(n.geometry, fish.original_point);
+UPDATE featurecopy.fishways AS fish SET nhn_workunit_id = n.id FROM cabd.nhn_workunit AS n WHERE st_contains(n.polygon, fish.original_point);
+UPDATE featurecopy.fishways AS fish SET sub_sub_drainage_name = n.sub_sub_drainage_area FROM cabd.nhn_workunit AS n WHERE st_contains(n.polygon, fish.original_point);
+UPDATE featurecopy.fishways AS fish SET municipality = n.csdname FROM cabd.census_subdivisions AS n WHERE st_contains(n.geometry, fish.original_point);
 
 --TO DO: Add foreign table to reference ecatchment and eflowpath tables, make sure 2 lines below work
 --Should waterbody name simply be overwritten here as long as we have a value from the chyf networks?
@@ -70,10 +70,10 @@ WHERE
 
 COMMIT;
 
---TO DO: Change null values to "unknown" for user benefit - are there any cases where we want to do this for fishways?
+--TO DO: Change null values to "unknown" for user benefit
 BEGIN;
 
-UPDATE featurecopy.fishways SET ...
+UPDATE featurecopy.fishways SET fishpass_type_code = 9 WHERE fishpass_type_code IS NULL;
 
 COMMIT;
 
@@ -86,5 +86,47 @@ UPDATE featurecopy.fishways SET complete_level_code =
     WHEN
     WHEN
     ELSE 1 END;
+
+COMMIT;
+
+--drop original fields we no longer need
+BEGIN;
+
+ALTER TABLE featurecopy.fishways
+    DROP COLUMN fid,
+    DROP COLUMN data_source,
+    DROP COLUMN data_source_text,
+    DROP COLUMN data_source_id,
+    DROP COLUMN decommissioned_yn,
+    DROP COLUMN duplicates_yn,
+    DROP COLUMN fishway_yn,
+    DROP COLUMN canfishpass_id,
+    DROP COLUMN barrier_ind,
+    DROP COLUMN IF EXISTS dups_ab_basefeatures,
+    DROP COLUMN IF EXISTS dups_canvec_manmade,
+    DROP COLUMN IF EXISTS dups_cdai,
+    DROP COLUMN IF EXISTS dups_cehq,
+    DROP COLUMN IF EXISTS dups_cgndb,
+    DROP COLUMN IF EXISTS dups_fao,
+    DROP COLUMN IF EXISTS dups_fishwerks,
+    DROP COLUMN IF EXISTS dups_fwa,
+    DROP COLUMN IF EXISTS dups_gfielding,
+    DROP COLUMN IF EXISTS dups_goodd,
+    DROP COLUMN IF EXISTS dups_grand,
+    DROP COLUMN IF EXISTS dups_lsds,
+    DROP COLUMN IF EXISTS dups_nbhn,
+    DROP COLUMN IF EXISTS dups_ncc,
+    DROP COLUMN IF EXISTS dups_nhn,
+    DROP COLUMN IF EXISTS dups_nlprov,
+    DROP COLUMN IF EXISTS dups_npdp,
+    DROP COLUMN IF EXISTS dups_nswf,
+    DROP COLUMN IF EXISTS dups_odi,
+    DROP COLUMN IF EXISTS dups_ohn,
+    DROP COLUMN IF EXISTS dups_publicdamskml,
+    DROP COLUMN IF EXISTS dups_wrispublicdams,
+    DROP COLUMN reference_url,
+    DROP COLUMN reviewer_classification,
+    DROP COLUMN reviewer_comments,
+    DROP COLUMN multipoint_yn;
 
 COMMIT;
