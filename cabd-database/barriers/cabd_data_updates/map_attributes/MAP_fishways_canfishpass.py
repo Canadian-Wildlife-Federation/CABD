@@ -14,14 +14,14 @@ SET
 FROM
     {script.fishwayTable} AS duplicates
 WHERE
-    ({script.datasetname}.data_source_id = duplicates.data_source_id AND duplicates.data_source_text = '{script.datasetname}') 
-    OR {script.datasetname}.data_source_id = duplicates.dups_{script.datasetname};  
+    ({script.datasetname}.data_source_id = duplicates.data_source_id AND duplicates.data_source_text = '{script.datasetname}');
 
 --update existing features 
 UPDATE
     {script.fishwayAttributeTable} AS cabdsource
 SET    
     dam_name_en_ds = CASE WHEN (cabd.dam_name_en IS NULL AND {script.datasetname}.dam_name_en IS NOT NULL) THEN {script.datasetname}.data_source ELSE cabdsource.dam_name_en_ds END,   
+    river_name_en_ds = CASE WHEN (cabd.river_name_en IS NULL AND {script.datasetname}.river_name_en IS NOT NULL) THEN {script.datasetname}.data_source ELSE cabdsource.river_name_en_ds END,   
     fishpass_type_code_ds = CASE WHEN (cabd.fishpass_type_code IS NULL AND {script.datasetname}.fishpass_type_code IS NOT NULL) THEN {script.datasetname}.data_source ELSE cabdsource.fishpass_type_code_ds END,
     monitoring_equipment_ds = CASE WHEN (cabd.monitoring_equipment IS NULL AND {script.datasetname}.monitoring_equipment IS NOT NULL) THEN {script.datasetname}.data_source ELSE cabdsource.monitoring_equipment_ds END,
     contracted_by_ds = CASE WHEN (cabd.contracted_by IS NULL AND {script.datasetname}.contracted_by IS NOT NULL) THEN {script.datasetname}.data_source ELSE cabdsource.contracted_by_ds END,
@@ -31,7 +31,7 @@ SET
     designed_on_biology_ds = CASE WHEN (cabd.designed_on_biology IS NULL AND {script.datasetname}.designed_on_biology IS NOT NULL) THEN {script.datasetname}.data_source ELSE cabdsource.designed_on_biology_ds END,
     length_m_ds = CASE WHEN (cabd.length_m IS NULL AND {script.datasetname}.length_m IS NOT NULL) THEN {script.datasetname}.data_source ELSE cabdsource.length_m_ds END,
     elevation_m_ds = CASE WHEN (cabd.elevation_m IS NULL AND {script.datasetname}.elevation_m IS NOT NULL) THEN {script.datasetname}.data_source ELSE cabdsource.elevation_m_ds END,
-    inclination_pct_ds = CASE WHEN (cabd.inclination_pct IS NULL AND {script.datasetname}.inclination_pct IS NOT NULL) THEN {script.datasetname}.data_source ELSE cabdsource.inclination_pct_ds END,
+    gradient_ds = CASE WHEN (cabd.gradient IS NULL AND {script.datasetname}.gradient IS NOT NULL) THEN {script.datasetname}.data_source ELSE cabdsource.gradient_ds END,
     depth_m_ds = CASE WHEN (cabd.depth_m IS NULL AND {script.datasetname}.depth_m IS NOT NULL) THEN {script.datasetname}.data_source ELSE cabdsource.depth_m_ds END,
     entrance_location_code_ds = CASE WHEN (cabd.entrance_location_code IS NULL AND {script.datasetname}.entrance_location_code IS NOT NULL) THEN {script.datasetname}.data_source ELSE cabdsource.entrance_location_code_ds END,
     entrance_position_code_ds = CASE WHEN (cabd.entrance_position_code IS NULL AND {script.datasetname}.entrance_position_code IS NOT NULL) THEN {script.datasetname}.data_source ELSE cabdsource.entrance_position_code_ds END,
@@ -47,6 +47,7 @@ SET
     operating_notes_ds = CASE WHEN (cabd.operating_notes IS NULL AND {script.datasetname}.operating_notes IS NOT NULL) THEN {script.datasetname}.data_source ELSE cabdsource.operating_notes_ds END,
 
     dam_name_en_dsfid = CASE WHEN (cabd.dam_name_en IS NULL AND {script.datasetname}.dam_name_en IS NOT NULL) THEN {script.datasetname}.data_source_id ELSE cabdsource.dam_name_en_dsfid END,
+    river_name_en_dsfid = CASE WHEN (cabd.river_name_en IS NULL AND {script.datasetname}.river_name_en IS NOT NULL) THEN {script.datasetname}.data_source_id ELSE cabdsource.river_name_en_dsfid END,
     fishpass_type_code_dsfid = CASE WHEN (cabd.fishpass_type_code IS NULL AND {script.datasetname}.fishpass_type_code IS NOT NULL) THEN {script.datasetname}.data_source_id ELSE cabdsource.fishpass_type_code_dsfid END,
     monitoring_equipment_dsfid = CASE WHEN (cabd.monitoring_equipment IS NULL AND {script.datasetname}.monitoring_equipment IS NOT NULL) THEN {script.datasetname}.data_source_id ELSE cabdsource.monitoring_equipment_dsfid END,
     contracted_by_dsfid = CASE WHEN (cabd.contracted_by IS NULL AND {script.datasetname}.contracted_by IS NOT NULL) THEN {script.datasetname}.data_source_id ELSE cabdsource.contracted_by_dsfid END,
@@ -56,7 +57,7 @@ SET
     designed_on_biology_dsfid = CASE WHEN (cabd.designed_on_biology IS NULL AND {script.datasetname}.designed_on_biology IS NOT NULL) THEN {script.datasetname}.data_source_id ELSE cabdsource.designed_on_biology_dsfid END,
     length_m_dsfid = CASE WHEN (cabd.length_m IS NULL AND {script.datasetname}.length_m IS NOT NULL) THEN {script.datasetname}.data_source_id ELSE cabdsource.length_m_dsfid END,
     elevation_m_dsfid = CASE WHEN (cabd.elevation_m IS NULL AND {script.datasetname}.elevation_m IS NOT NULL) THEN {script.datasetname}.data_source_id ELSE cabdsource.elevation_m_dsfid END,
-    inclination_pct_dsfid = CASE WHEN (cabd.inclination_pct IS NULL AND {script.datasetname}.inclination_pct IS NOT NULL) THEN {script.datasetname}.data_source_id ELSE cabdsource.inclination_pct_dsfid END,
+    gradient_dsfid = CASE WHEN (cabd.gradient IS NULL AND {script.datasetname}.gradient IS NOT NULL) THEN {script.datasetname}.data_source_id ELSE cabdsource.gradient_dsfid END,
     depth_m_dsfid = CASE WHEN (cabd.depth_m IS NULL AND {script.datasetname}.depth_m IS NOT NULL) THEN {script.datasetname}.data_source_id ELSE cabdsource.depth_m_dsfid END,
     entrance_location_code_dsfid = CASE WHEN (cabd.entrance_location_code IS NULL AND {script.datasetname}.entrance_location_code IS NOT NULL) THEN {script.datasetname}.data_source_id ELSE cabdsource.entrance_location_code_dsfid END,
     entrance_position_code_dsfid = CASE WHEN (cabd.entrance_position_code IS NULL AND {script.datasetname}.entrance_position_code IS NOT NULL) THEN {script.datasetname}.data_source_id ELSE cabdsource.entrance_position_code_dsfid END,
@@ -79,30 +80,31 @@ WHERE
 UPDATE
     {script.fishwayTable} AS cabd
 SET
-    dam_name_en = CASE WHEN (cabd.dam_name_en IS NULL AND {script.datasetname}.dam_name_en IS NOT NULL) THEN {script.datasetname}.dam_name_en ELSE cabd.dam_name_en END
-    fishpass_type_code = CASE WHEN (cabd.fishpass_type_code IS NULL AND {script.datasetname}.fishpass_type_code IS NOT NULL) THEN {script.datasetname}.fishpass_type_code ELSE cabdsource.fishpass_type_code END,
-    monitoring_equipment = CASE WHEN (cabd.monitoring_equipment IS NULL AND {script.datasetname}.monitoring_equipment IS NOT NULL) THEN {script.datasetname}.monitoring_equipment ELSE cabdsource.monitoring_equipment END,
-    contracted_by = CASE WHEN (cabd.contracted_by IS NULL AND {script.datasetname}.contracted_by IS NOT NULL) THEN {script.datasetname}.contracted_by ELSE cabdsource.contracted_by END,
-    constructed_by = CASE WHEN (cabd.constructed_by IS NULL AND {script.datasetname}.constructed_by IS NOT NULL) THEN {script.datasetname}.constructed_by ELSE cabdsource.constructed_by END,
-    plans_held_by = CASE WHEN (cabd.plans_held_by IS NULL AND {script.datasetname}.plans_held_by IS NOT NULL) THEN {script.datasetname}.plans_held_by ELSE cabdsource.plans_held_by END,
-    purpose = CASE WHEN (cabd.purpose IS NULL AND {script.datasetname}.purpose IS NOT NULL) THEN {script.datasetname}.purpose ELSE cabdsource.purpose END,
-    designed_on_biology = CASE WHEN (cabd.designed_on_biology IS NULL AND {script.datasetname}.designed_on_biology IS NOT NULL) THEN {script.datasetname}.designed_on_biology ELSE cabdsource.designed_on_biology END,
-    length_m = CASE WHEN (cabd.length_m IS NULL AND {script.datasetname}.length_m IS NOT NULL) THEN {script.datasetname}.length_m ELSE cabdsource.length_m END,
-    elevation_m = CASE WHEN (cabd.elevation_m IS NULL AND {script.datasetname}.elevation_m IS NOT NULL) THEN {script.datasetname}.elevation_m ELSE cabdsource.elevation_m END,
-    inclination_pct = CASE WHEN (cabd.inclination_pct IS NULL AND {script.datasetname}.inclination_pct IS NOT NULL) THEN {script.datasetname}.inclination_pct ELSE cabdsource.inclination_pct END,
-    depth_m = CASE WHEN (cabd.depth_m IS NULL AND {script.datasetname}.depth_m IS NOT NULL) THEN {script.datasetname}.depth_m ELSE cabdsource.depth_m END,
-    entrance_location_code = CASE WHEN (cabd.entrance_location_code IS NULL AND {script.datasetname}.entrance_location_code IS NOT NULL) THEN {script.datasetname}.entrance_location_code ELSE cabdsource.entrance_location_code END,
-    entrance_position_code = CASE WHEN (cabd.entrance_position_code IS NULL AND {script.datasetname}.entrance_position_code IS NOT NULL) THEN {script.datasetname}.entrance_position_code ELSE cabdsource.entrance_position_code END,
-    modified = CASE WHEN (cabd.modified IS NULL AND {script.datasetname}.modified IS NOT NULL) THEN {script.datasetname}.modified ELSE cabdsource.modified END,
-    modification_year = CASE WHEN (cabd.modification_year IS NULL AND {script.datasetname}.modification_year IS NOT NULL) THEN {script.datasetname}.modification_year ELSE cabdsource.modification_year END,
-    modification_purpose = CASE WHEN (cabd.modification_purpose IS NULL AND {script.datasetname}.modification_purpose IS NOT NULL) THEN {script.datasetname}.modification_purpose ELSE cabdsource.modification_purpose END,
-    year_constructed = CASE WHEN (cabd.year_constructed IS NULL AND {script.datasetname}.year_constructed IS NOT NULL) THEN {script.datasetname}.year_constructed ELSE cabdsource.year_constructed END,
-    operated_by = CASE WHEN (cabd.operated_by IS NULL AND {script.datasetname}.operated_by IS NOT NULL) THEN {script.datasetname}.operated_by ELSE cabdsource.operated_by END,
-    operation_period = CASE WHEN (cabd.operation_period IS NULL AND {script.datasetname}.operation_period IS NOT NULL) THEN {script.datasetname}.operation_period ELSE cabdsource.operation_period END,
-    has_evaluating_studies = CASE WHEN (cabd.has_evaluating_studies IS NULL AND {script.datasetname}.has_evaluating_studies IS NOT NULL) THEN {script.datasetname}.has_evaluating_studies ELSE cabdsource.has_evaluating_studies END,
-    nature_of_evaluation_studies = CASE WHEN (cabd.nature_of_evaluation_studies IS NULL AND {script.datasetname}.nature_of_evaluation_studies IS NOT NULL) THEN {script.datasetname}.nature_of_evaluation_studies ELSE cabdsource.nature_of_evaluation_studies END,
-    engineering_notes = CASE WHEN (cabd.engineering_notes IS NULL AND {script.datasetname}.engineering_notes IS NOT NULL) THEN {script.datasetname}.engineering_notes ELSE cabdsource.engineering_notes END,
-    operating_notes = CASE WHEN (cabd.operating_notes IS NULL AND {script.datasetname}.operating_notes IS NOT NULL) THEN {script.datasetname}.operating_notes ELSE cabdsource.operating_notes END
+    dam_name_en = CASE WHEN (cabd.dam_name_en IS NULL AND {script.datasetname}.dam_name_en IS NOT NULL) THEN {script.datasetname}.dam_name_en ELSE cabd.dam_name_en END,
+    river_name_en = CASE WHEN (cabd.river_name_en IS NULL AND {script.datasetname}.river_name_en IS NOT NULL) THEN {script.datasetname}.river_name_en ELSE cabd.river_name_en END,
+    fishpass_type_code = CASE WHEN (cabd.fishpass_type_code IS NULL AND {script.datasetname}.fishpass_type_code IS NOT NULL) THEN {script.datasetname}.fishpass_type_code ELSE cabd.fishpass_type_code END,
+    monitoring_equipment = CASE WHEN (cabd.monitoring_equipment IS NULL AND {script.datasetname}.monitoring_equipment IS NOT NULL) THEN {script.datasetname}.monitoring_equipment ELSE cabd.monitoring_equipment END,
+    contracted_by = CASE WHEN (cabd.contracted_by IS NULL AND {script.datasetname}.contracted_by IS NOT NULL) THEN {script.datasetname}.contracted_by ELSE cabd.contracted_by END,
+    constructed_by = CASE WHEN (cabd.constructed_by IS NULL AND {script.datasetname}.constructed_by IS NOT NULL) THEN {script.datasetname}.constructed_by ELSE cabd.constructed_by END,
+    plans_held_by = CASE WHEN (cabd.plans_held_by IS NULL AND {script.datasetname}.plans_held_by IS NOT NULL) THEN {script.datasetname}.plans_held_by ELSE cabd.plans_held_by END,
+    purpose = CASE WHEN (cabd.purpose IS NULL AND {script.datasetname}.purpose IS NOT NULL) THEN {script.datasetname}.purpose ELSE cabd.purpose END,
+    designed_on_biology = CASE WHEN (cabd.designed_on_biology IS NULL AND {script.datasetname}.designed_on_biology IS NOT NULL) THEN {script.datasetname}.designed_on_biology ELSE cabd.designed_on_biology END,
+    length_m = CASE WHEN (cabd.length_m IS NULL AND {script.datasetname}.length_m IS NOT NULL) THEN {script.datasetname}.length_m ELSE cabd.length_m END,
+    elevation_m = CASE WHEN (cabd.elevation_m IS NULL AND {script.datasetname}.elevation_m IS NOT NULL) THEN {script.datasetname}.elevation_m ELSE cabd.elevation_m END,
+    gradient = CASE WHEN (cabd.gradient IS NULL AND {script.datasetname}.gradient IS NOT NULL) THEN {script.datasetname}.gradient ELSE cabd.gradient END,
+    depth_m = CASE WHEN (cabd.depth_m IS NULL AND {script.datasetname}.depth_m IS NOT NULL) THEN {script.datasetname}.depth_m ELSE cabd.depth_m END,
+    entrance_location_code = CASE WHEN (cabd.entrance_location_code IS NULL AND {script.datasetname}.entrance_location_code IS NOT NULL) THEN {script.datasetname}.entrance_location_code ELSE cabd.entrance_location_code END,
+    entrance_position_code = CASE WHEN (cabd.entrance_position_code IS NULL AND {script.datasetname}.entrance_position_code IS NOT NULL) THEN {script.datasetname}.entrance_position_code ELSE cabd.entrance_position_code END,
+    modified = CASE WHEN (cabd.modified IS NULL AND {script.datasetname}.modified IS NOT NULL) THEN {script.datasetname}.modified ELSE cabd.modified END,
+    modification_year = CASE WHEN (cabd.modification_year IS NULL AND {script.datasetname}.modification_year IS NOT NULL) THEN {script.datasetname}.modification_year ELSE cabd.modification_year END,
+    modification_purpose = CASE WHEN (cabd.modification_purpose IS NULL AND {script.datasetname}.modification_purpose IS NOT NULL) THEN {script.datasetname}.modification_purpose ELSE cabd.modification_purpose END,
+    year_constructed = CASE WHEN (cabd.year_constructed IS NULL AND {script.datasetname}.year_constructed IS NOT NULL) THEN {script.datasetname}.year_constructed ELSE cabd.year_constructed END,
+    operated_by = CASE WHEN (cabd.operated_by IS NULL AND {script.datasetname}.operated_by IS NOT NULL) THEN {script.datasetname}.operated_by ELSE cabd.operated_by END,
+    operation_period = CASE WHEN (cabd.operation_period IS NULL AND {script.datasetname}.operation_period IS NOT NULL) THEN {script.datasetname}.operation_period ELSE cabd.operation_period END,
+    has_evaluating_studies = CASE WHEN (cabd.has_evaluating_studies IS NULL AND {script.datasetname}.has_evaluating_studies IS NOT NULL) THEN {script.datasetname}.has_evaluating_studies ELSE cabd.has_evaluating_studies END,
+    nature_of_evaluation_studies = CASE WHEN (cabd.nature_of_evaluation_studies IS NULL AND {script.datasetname}.nature_of_evaluation_studies IS NOT NULL) THEN {script.datasetname}.nature_of_evaluation_studies ELSE cabd.nature_of_evaluation_studies END,
+    engineering_notes = CASE WHEN (cabd.engineering_notes IS NULL AND {script.datasetname}.engineering_notes IS NOT NULL) THEN {script.datasetname}.engineering_notes ELSE cabd.engineering_notes END,
+    operating_notes = CASE WHEN (cabd.operating_notes IS NULL AND {script.datasetname}.operating_notes IS NOT NULL) THEN {script.datasetname}.operating_notes ELSE cabd.operating_notes END
 FROM
     {script.workingTable} AS {script.datasetname}
 WHERE

@@ -105,18 +105,10 @@ ALTER TABLE {workingTable} ADD COLUMN original_point geometry(Point, 4617);
 
 ALTER TABLE {workingTable} ALTER COLUMN data_source TYPE varchar;
 ALTER TABLE {workingTable} RENAME COLUMN data_source TO data_source_text;
-UPDATE {workingTable} SET data_source_text = 
-    CASE
-    WHEN data_source = '21' THEN 'cwf'
-    WHEN data_source = '22' THEN 'canfishpass'
-    ELSE NULL END;
+UPDATE {workingTable} SET data_source_text = 'canfishpass' WHERE data_source_text = '22';
 
 ALTER TABLE {workingTable} ADD COLUMN data_source uuid;
-UPDATE {workingTable} SET data_source = 
-    CASE
-    WHEN data_source_text = 'cwf' THEN 'd9918f2c-2b1d-47ac-918d-8aa026c4849f'::uuid
-    WHEN data_source_text = 'canfishpass' THEN '7fe9e701-d804-40e6-8113-6b2c3656d1bd'::uuid
-    ELSE NULL END;
+UPDATE {workingTable} SET data_source = '7fe9e701-d804-40e6-8113-6b2c3656d1bd'::uuid WHERE data_source_text = 'canfishpass';
 
 UPDATE {workingTable} SET original_point = ST_GeometryN(geometry, 1);
 CREATE INDEX {workingTableRaw}_idx ON {workingTable} USING gist (original_point);

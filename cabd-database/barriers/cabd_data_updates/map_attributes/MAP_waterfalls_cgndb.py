@@ -22,7 +22,11 @@ UPDATE
     {script.waterfallAttributeTable} AS cabdsource
 SET    
     fall_name_en_ds = CASE WHEN (cabd.fall_name_en IS NULL AND {script.datasetname}.fall_name_en IS NOT NULL) THEN {script.datasetname}.data_source ELSE cabdsource.fall_name_en_ds END,   
-    fall_name_en_dsfid = CASE WHEN (cabd.fall_name_en IS NULL AND {script.datasetname}.fall_name_en IS NOT NULL) THEN {script.datasetname}.data_source_id ELSE cabdsource.fall_name_en_dsfid END
+    fall_name_fr_ds = CASE WHEN (cabd.fall_name_fr IS NULL AND {script.datasetname}.fall_name_fr IS NOT NULL) THEN {script.datasetname}.data_source ELSE cabdsource.fall_name_fr_ds END,       
+    
+    fall_name_en_dsfid = CASE WHEN (cabd.fall_name_en IS NULL AND {script.datasetname}.fall_name_en IS NOT NULL) THEN {script.datasetname}.data_source_id ELSE cabdsource.fall_name_en_dsfid END,
+    fall_name_fr_dsfid = CASE WHEN (cabd.fall_name_fr IS NULL AND {script.datasetname}.fall_name_fr IS NOT NULL) THEN {script.datasetname}.data_source_id ELSE cabdsource.fall_name_fr_dsfid END
+
 FROM
     {script.waterfallTable} AS cabd,
     {script.workingTable} AS {script.datasetname}
@@ -32,7 +36,8 @@ WHERE
 UPDATE
     {script.waterfallTable} AS cabd
 SET
-    fall_name_en = CASE WHEN (cabd.fall_name_en IS NULL AND {script.datasetname}.fall_name_en IS NOT NULL) THEN {script.datasetname}.fall_name_en ELSE cabd.fall_name_en END
+    fall_name_en = CASE WHEN (cabd.fall_name_en IS NULL AND {script.datasetname}.fall_name_en IS NOT NULL) THEN {script.datasetname}.fall_name_en ELSE cabd.fall_name_en END,
+    fall_name_fr = CASE WHEN (cabd.fall_name_fr IS NULL AND {script.datasetname}.fall_name_fr IS NOT NULL) THEN {script.datasetname}.fall_name_fr ELSE cabd.fall_name_fr END
 FROM
     {script.workingTable} AS {script.datasetname}
 WHERE

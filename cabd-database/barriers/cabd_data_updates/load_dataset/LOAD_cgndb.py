@@ -32,8 +32,10 @@ ALTER TABLE {script.damWorkingTable} ADD COLUMN cabd_id uuid;
 ALTER TABLE {script.damWorkingTable} ADD CONSTRAINT data_source_fkey FOREIGN KEY (data_source) REFERENCES cabd.data_source (id);
 
 ALTER TABLE {script.damWorkingTable} ADD COLUMN dam_name_en varchar(512);
+ALTER TABLE {script.damWorkingTable} ADD COLUMN dam_name_fr varchar(512);
 
 UPDATE {script.damWorkingTable} SET dam_name_en = geoname;
+UPDATE {script.damWorkingTable} SET dam_name_fr = geoname WHERE geoname ILIKE '%Barrage%';
 
 --delete extra fields so only mapped fields remain
 ALTER TABLE {script.damWorkingTable}
@@ -55,8 +57,10 @@ ALTER TABLE {script.fallWorkingTable} ADD COLUMN cabd_id uuid;
 ALTER TABLE {script.fallWorkingTable} ADD CONSTRAINT data_source_fkey FOREIGN KEY (data_source) REFERENCES cabd.data_source (id);
 
 ALTER TABLE {script.fallWorkingTable} ADD COLUMN fall_name_en varchar(512);
+ALTER TABLE {script.fallWorkingTable} ADD COLUMN fall_name_fr varchar(512);
 
 UPDATE {script.fallWorkingTable} SET fall_name_en = geoname;
+UPDATE {script.fallWorkingTable} SET fall_name_fr = geoname WHERE geoname ILIKE 'Chute%';
 
 --delete extra fields so only mapped fields remain
 ALTER TABLE {script.fallWorkingTable}

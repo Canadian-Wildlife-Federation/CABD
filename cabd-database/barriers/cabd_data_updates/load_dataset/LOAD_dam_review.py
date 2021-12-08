@@ -165,7 +165,6 @@ UPDATE {workingTable} SET data_source_text =
     WHEN data_source_text = '26' THEN 'sk_hydro'
     WHEN data_source_text = '27' THEN 'bc_hydro_wiki'
     WHEN data_source_text = '28' THEN 'lsds'
-    WHEN data_source_text = '29' THEN 'canvec_hy_obstacles'
     ELSE NULL END;
 
 ALTER TABLE {workingTable} ADD COLUMN data_source uuid;
@@ -174,7 +173,6 @@ UPDATE {workingTable} SET data_source =
     WHEN data_source_text = 'ab_basefeatures' THEN '85e725a2-bb6d-45d5-a6c5-1bf7ceed28db'::uuid
     WHEN data_source_text = 'bc_hydro_wiki' THEN 'ed6b7f22-10ad-4dcb-bdd3-163ce895805e'::uuid
     WHEN data_source_text = 'canfishpass' THEN '7fe9e701-d804-40e6-8113-6b2c3656d1bd'::uuid
-    WHEN data_source_text = 'canvec_hy_obstacles' THEN 'fe3928a3-0514-49bc-8759-7e85b75cbda2':uuid
     WHEN data_source_text = 'canvec_manmade' THEN '4bb309bf-be07-47bf-b134-9a43834001c2'::uuid
     WHEN data_source_text = 'cehq' THEN '217bf7db-be4d-4f86-9e53-a1a6499da46a'::uuid
     WHEN data_source_text = 'cgndb' THEN 'bc77aaa4-7a4e-43a1-84f1-9c5f6ea24912'::uuid
@@ -200,7 +198,7 @@ UPDATE {workingTable} SET data_source =
     WHEN data_source_text = 'sk_hydro' THEN 'a855a3c9-3fed-4c0e-b123-48e0b0a93914'::uuid
     WHEN data_source_text = 'wrispublicdams' THEN 'eb1d2553-7535-4b8c-99c3-06487214ccae'::uuid
     WHEN data_source_text = 'wsa_sk' THEN '1d5038f4-40ef-4ace-9aaf-213dd3a1e616'::uuid
-    END;
+    ELSE NULL END;
 """
 with conn.cursor() as cursor:
     cursor.execute(loadQuery)
@@ -247,16 +245,16 @@ with conn.cursor() as cursor:
 conn.commit()
 
 #snap points
-print("Snapping to CHyF network...")
-snapQuery = f"""
-UPDATE {workingTable} SET original_point = ST_GeometryN(geometry, 1);
-SELECT featurecopy.snap_to_network('{workingSchema}', '{workingTableRaw}', 'original_point', 'snapped_point', {snappingDistance});
-UPDATE {workingTable} SET snapped_point = original_point WHERE snapped_point IS NULL;
-CREATE INDEX {workingTableRaw}_idx ON {workingTable} USING gist (snapped_point);
-"""
+# print("Snapping to CHyF network...")
+# snapQuery = f"""
+# UPDATE {workingTable} SET original_point = ST_GeometryN(geometry, 1);
+# SELECT featurecopy.snap_to_network('{workingSchema}', '{workingTableRaw}', 'original_point', 'snapped_point', {snappingDistance});
+# UPDATE {workingTable} SET snapped_point = original_point WHERE snapped_point IS NULL;
+# CREATE INDEX {workingTableRaw}_idx ON {workingTable} USING gist (snapped_point);
+# """
 
-with conn.cursor() as cursor:
-    cursor.execute(snapQuery)
+# with conn.cursor() as cursor:
+#     cursor.execute(snapQuery)
 
 conn.commit()
 conn.close()

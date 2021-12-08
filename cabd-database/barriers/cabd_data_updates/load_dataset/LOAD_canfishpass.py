@@ -21,6 +21,7 @@ DROP TABLE IF EXISTS {script.fishWorkingTable};
 CREATE TABLE {script.fishWorkingTable} AS
     SELECT 
         "name of dam/barrier",
+        "stream/river",
         "fishway type",
         "monitoring equipment",
         "contracted by",
@@ -57,7 +58,8 @@ ALTER TABLE {script.fishWorkingTable} ADD CONSTRAINT data_source_fkey FOREIGN KE
 
 ALTER TABLE {script.fishWorkingTable} ADD COLUMN dam_id uuid;
 ALTER TABLE {script.fishWorkingTable} ADD COLUMN dam_name_en varchar(512);
-ALTER TABLE {script.fishWorkingTable} ADD COLUMN fishpass_type_code int2 ;
+ALTER TABLE {script.fishWorkingTable} ADD COLUMN river_name_en varchar(512);
+ALTER TABLE {script.fishWorkingTable} ADD COLUMN fishpass_type_code int2;
 ALTER TABLE {script.fishWorkingTable} ADD COLUMN monitoring_equipment text;
 ALTER TABLE {script.fishWorkingTable} ADD COLUMN contracted_by text;
 ALTER TABLE {script.fishWorkingTable} ADD COLUMN constructed_by text;
@@ -84,6 +86,7 @@ ALTER TABLE {script.fishWorkingTable} ADD COLUMN species_known_to_use_fishway va
 ALTER TABLE {script.fishWorkingTable} ADD COLUMN species_known_not_to_use_fishway varchar;
 
 UPDATE {script.fishWorkingTable} SET dam_name_en = "name of dam/barrier";
+UPDATE {script.fishWorkingTable} SET river_name_en = "stream/river";
 UPDATE {script.fishWorkingTable} SET fishpass_type_code = 
     CASE 
     WHEN "fishway type" IN ('Denil', 'denil', 'Steep pass', 'Alaska steep pass') THEN 1
@@ -145,6 +148,7 @@ UPDATE {script.fishWorkingTable} SET
 --delete extra fields so only mapped fields remain
  ALTER TABLE {script.fishWorkingTable}
     DROP COLUMN "name of dam/barrier",
+    DROP COLUMN "stream/river",
     DROP COLUMN "fishway type",
     DROP COLUMN "monitoring equipment",
     DROP COLUMN "contracted by",

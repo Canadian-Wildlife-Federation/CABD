@@ -77,18 +77,6 @@ UPDATE featurecopy.fishways SET fishpass_type_code = 9 WHERE fishpass_type_code 
 
 COMMIT;
 
---TO DO: Establish criteria for fishways completeness level code
-BEGIN;
-
-UPDATE featurecopy.fishways SET complete_level_code = 
-    CASE 
-    WHEN
-    WHEN
-    WHEN
-    ELSE 1 END;
-
-COMMIT;
-
 --drop original fields we no longer need
 BEGIN;
 
