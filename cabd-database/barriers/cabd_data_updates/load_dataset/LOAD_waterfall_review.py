@@ -65,14 +65,14 @@ ALTER TABLE {workingTable} ADD PRIMARY KEY (cabd_id);
 
 ALTER TABLE {workingTable} ADD COLUMN latitude double precision;
 ALTER TABLE {workingTable} ADD COLUMN longitude double precision;
-ALTER TABLE {workingTable} ADD COLUMN fall_name_en character varying(512);
-ALTER TABLE {workingTable} ADD COLUMN fall_name_fr character varying(512);
-ALTER TABLE {workingTable} ADD COLUMN waterbody_name_en character varying(512);
-ALTER TABLE {workingTable} ADD COLUMN waterbody_name_fr character varying(512);
+ALTER TABLE {workingTable} ADD COLUMN fall_name_en varchar(512);
+ALTER TABLE {workingTable} ADD COLUMN fall_name_fr varchar(512);
+ALTER TABLE {workingTable} ADD COLUMN waterbody_name_en varchar(512);
+ALTER TABLE {workingTable} ADD COLUMN waterbody_name_fr varchar(512);
 ALTER TABLE {workingTable} DROP COLUMN IF EXISTS province;
-ALTER TABLE {workingTable} ADD COLUMN province_territory_code character varying(2) NOT NULL;
+ALTER TABLE {workingTable} ADD COLUMN province_territory_code varchar(2);
 ALTER TABLE {workingTable} ALTER COLUMN nhn_workunit_id TYPE varchar(7);
-ALTER TABLE {workingTable} ADD COLUMN municipality character varying(512);
+ALTER TABLE {workingTable} ADD COLUMN municipality varchar(512);
 ALTER TABLE {workingTable} ADD COLUMN fall_height_m real;
 ALTER TABLE {workingTable} ADD COLUMN last_modified date;
 ALTER TABLE {workingTable} ADD COLUMN comments text;
@@ -123,7 +123,7 @@ UPDATE {workingTable} SET data_source =
     WHEN data_source_text = 'ab_basefeatures' THEN '85e725a2-bb6d-45d5-a6c5-1bf7ceed28db'::uuid
     WHEN data_source_text = 'bc_hydro_wiki' THEN 'ed6b7f22-10ad-4dcb-bdd3-163ce895805e'::uuid
     WHEN data_source_text = 'canfishpass' THEN '7fe9e701-d804-40e6-8113-6b2c3656d1bd'::uuid
-    WHEN data_source_text = 'canvec_hy_obstacles' THEN 'fe3928a3-0514-49bc-8759-7e85b75cbda2':uuid
+    WHEN data_source_text = 'canvec_hy_obstacles' THEN 'fe3928a3-0514-49bc-8759-7e85b75cbda2'::uuid
     WHEN data_source_text = 'canvec_manmade' THEN '4bb309bf-be07-47bf-b134-9a43834001c2'::uuid
     WHEN data_source_text = 'cehq' THEN '217bf7db-be4d-4f86-9e53-a1a6499da46a'::uuid
     WHEN data_source_text = 'cgndb' THEN 'bc77aaa4-7a4e-43a1-84f1-9c5f6ea24912'::uuid
@@ -166,7 +166,7 @@ ALTER TABLE {attributeTable} ADD CONSTRAINT {workingTableRaw}_cabd_id_fkey FOREI
 
 ALTER TABLE {workingTable}
     ADD CONSTRAINT waterfalls_fk_1 FOREIGN KEY (province_territory_code) REFERENCES cabd.province_territory_codes (code),
-    ADD CONSTRAINT waterfalls_fk_2 FOREIGN KEY (complete_level_code) REFERENCES waterfalls.waterfall_complete_level_codes (code).
+    ADD CONSTRAINT waterfalls_fk_2 FOREIGN KEY (complete_level_code) REFERENCES waterfalls.waterfall_complete_level_codes (code),
     ADD CONSTRAINT waterfalls_fk_4 FOREIGN KEY (passability_status_code) REFERENCES cabd.passability_status_codes (code)
 ;
 
@@ -175,17 +175,17 @@ with conn.cursor() as cursor:
     cursor.execute(loadQuery)
 
 #snap points
-print("Snapping to CHyF network...")
-snapQuery = f"""
-UPDATE {workingTable} SET original_point = ST_GeometryN(geometry, 1);
-SELECT featurecopy.snap_to_network('{workingSchema}', '{workingTableRaw}', 'original_point', 'snapped_point', {snappingDistance});
-UPDATE {workingTable} SET snapped_point = original_point WHERE snapped_point IS NULL;
+# print("Snapping to CHyF network...")
+# snapQuery = f"""
+# UPDATE {workingTable} SET original_point = ST_GeometryN(geometry, 1);
+# SELECT featurecopy.snap_to_network('{workingSchema}', '{workingTableRaw}', 'original_point', 'snapped_point', {snappingDistance});
+# UPDATE {workingTable} SET snapped_point = original_point WHERE snapped_point IS NULL;
 
-CREATE INDEX {workingTableRaw}_idx ON {workingTable} USING gist (snapped_point);
-"""
+# CREATE INDEX {workingTableRaw}_idx ON {workingTable} USING gist (snapped_point);
+# """
 
-with conn.cursor() as cursor:
-    cursor.execute(snapQuery)
+# with conn.cursor() as cursor:
+#     cursor.execute(snapQuery)
 
 conn.commit()
 conn.close()
