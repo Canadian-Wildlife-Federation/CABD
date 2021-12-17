@@ -14,7 +14,7 @@ SET
 FROM
     {script.waterfallTable} AS duplicates
 WHERE
-    ({script.datasetname}.data_source_id = duplicates.data_source_id AND duplicates.data_source_text = {script.datasetname}) 
+    ({script.datasetname}.data_source_id = duplicates.data_source_id AND duplicates.data_source_text = '{script.datasetname}') 
     OR {script.datasetname}.data_source_id = duplicates.dups_{script.datasetname};  
 
 --update existing features 

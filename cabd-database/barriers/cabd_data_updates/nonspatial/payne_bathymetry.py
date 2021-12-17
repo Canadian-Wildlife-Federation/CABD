@@ -9,8 +9,8 @@ INSERT INTO cabd.data_source (id, name, version_date, version_number, source, co
 VALUES('{script.dsUuid}', 'Payne Lake Bathymetry', now(), null, 'Alberta Environment and Parks', 'Data update - ' || now());
 
 --add data source to the table
-UPDATE TABLE {script.workingTable} ADD COLUMN data_source varchar(512);
-UPDATE TABLE {script.workingTable} SET data_source = {script.dsUuid};
+ALTER TABLE {script.workingTable} ADD COLUMN data_source uuid;
+UPDATE {script.workingTable} SET data_source = '{script.dsUuid}';
 
 --update existing features 
 UPDATE

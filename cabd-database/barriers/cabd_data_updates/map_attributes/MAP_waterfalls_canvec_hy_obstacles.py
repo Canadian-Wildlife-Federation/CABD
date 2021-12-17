@@ -43,3 +43,5 @@ WHERE
     cabd.cabd_id = {script.datasetname}.cabd_id;
     
 """
+
+script.do_work(mappingquery)

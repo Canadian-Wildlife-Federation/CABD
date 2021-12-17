@@ -6,11 +6,11 @@ mappingquery = f"""
 
 --create new data source record
 INSERT INTO cabd.data_source (id, name, version_date, version_number, source, comments)
-VALUES('{script.dsUuid}', 'Little Bow Lake Reservoir', now(), null, 'Wikipedia', 'Data update - ' || now());
+VALUES('{script.dsUuid}', 'Wikipedia - Little Bow Lake Reservoir', now(), null, 'Wikipedia', 'Data update - ' || now());
 
 --add data source to the table
-UPDATE TABLE {script.workingTable} ADD COLUMN data_source varchar(512);
-UPDATE TABLE {script.workingTable} SET data_source = {script.dsUuid};
+ALTER TABLE {script.workingTable} ADD COLUMN data_source uuid;
+UPDATE {script.workingTable} SET data_source = '{script.dsUuid}';
 
 --update existing features 
 UPDATE

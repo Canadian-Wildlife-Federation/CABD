@@ -8,8 +8,8 @@ ogr = "C:\\OSGeo4W64\\bin\\ogr2ogr.exe"
 dbHost = "cabd-postgres-dev.postgres.database.azure.com"
 dbPort = "5432"
 dbName = "cabd"
-dbUser = sys.argv[2]
-dbPassword = sys.argv[3]
+dbUser = sys.argv[1]
+dbPassword = sys.argv[2]
 
 class MappingScript:
 
@@ -30,10 +30,8 @@ class MappingScript:
         self.datasetname = datasetname
         self.workingTable = self.workingSchema + "." + datasetname
 
-        self.dataFile = sys.argv[1]
-
-        if len(sys.argv) != 4:
-            print("Invalid usage: MAP_<featureType>_<datasetid>.py <filepath> <dbUser> <dbPassword>")
+        if len(sys.argv) != 3:
+            print("Invalid usage: MAP_<featureType>_<datasetid>.py <dbUser> <dbPassword>")
             sys.exit()
 
     def do_work(self, mappingquery):

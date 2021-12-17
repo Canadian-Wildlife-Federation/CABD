@@ -9,8 +9,8 @@ INSERT INTO cabd.data_source (id, name, version_date, version_number, source, co
 VALUES('{script.dsUuid}', 'TransAlta - Pocaterra Plant', now(), null, 'TransAlta', 'Data update - ' || now());
 
 --add data source to the table
-UPDATE TABLE {script.workingTable} ADD COLUMN data_source varchar(512);
-UPDATE TABLE {script.workingTable} SET data_source = {script.dsUuid};
+ALTER TABLE {script.workingTable} ADD COLUMN data_source uuid;
+UPDATE {script.workingTable} SET data_source = '{script.dsUuid}';
 
 --update existing features 
 UPDATE
@@ -23,7 +23,7 @@ SET
    owner_ds = CASE WHEN {script.datasetname}.owner IS NOT NULL THEN {script.datasetname}.data_source ELSE cabdsource.owner_ds END,   
    ownership_type_code_ds = CASE WHEN {script.datasetname}.ownership_type_code IS NOT NULL THEN {script.datasetname}.data_source ELSE cabdsource.ownership_type_code_ds END,   
    use_electricity_code_ds = CASE WHEN {script.datasetname}.use_electricity_code IS NOT NULL THEN {script.datasetname}.data_source ELSE cabdsource.use_electricity_code_ds END,   
-   operating_status_code_ds = CASE WHEN {script.datasetname}.operating_status_code IS NOT NULL THEN {script.datasetname}.data_source ELSE cabdsource.operating_status_code_ds END,
+   operating_status_code_ds = CASE WHEN {script.datasetname}.operating_status_code IS NOT NULL THEN {script.datasetname}.data_source ELSE cabdsource.operating_status_code_ds END
 FROM
    {script.damTable} AS cabd,
    {script.workingTable} AS {script.datasetname}

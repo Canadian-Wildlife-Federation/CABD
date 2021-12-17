@@ -9,15 +9,14 @@ INSERT INTO cabd.data_source (id, name, version_date, version_number, source, co
 VALUES('{script.dsUuid}', 'Stafford Reservoir Bathymetry', now(), null, 'Alberta Environment and Parks', 'Data update - ' || now());
 
 --add data source to the table
-UPDATE TABLE {script.workingTable} ADD COLUMN data_source varchar(512);
-UPDATE TABLE {script.workingTable} SET data_source = {script.dsUuid};
+ALTER TABLE {script.workingTable} ADD COLUMN data_source uuid;
+UPDATE {script.workingTable} SET data_source = '{script.dsUuid}';
 
 --update existing features 
 UPDATE
     {script.damAttributeTable} AS cabdsource
 SET    
     dam_name_en_ds = CASE WHEN {script.datasetname}.dam_name_en IS NOT NULL THEN {script.datasetname}.data_source ELSE cabdsource.dam_name_en_ds END,
-    waterbody_name_en_ds = CASE WHEN (cabd.waterbody_name_en IS NULL AND {script.datasetname}.waterbody_name_en IS NOT NULL) THEN {script.datasetname}.data_source ELSE cabdsource.waterbody_name_en_ds END,
     reservoir_name_en_ds = CASE WHEN (cabd.reservoir_name_en IS NULL AND {script.datasetname}.reservoir_name_en IS NOT NULL) THEN {script.datasetname}.data_source ELSE cabdsource.reservoir_name_en_ds END,
     reservoir_present_ds = CASE WHEN (cabd.reservoir_present IS NULL AND {script.datasetname}.reservoir_present IS NOT NULL) THEN {script.datasetname}.data_source ELSE cabdsource.reservoir_present_ds END,
     reservoir_area_skm_ds = CASE WHEN {script.datasetname}.reservoir_area_skm IS NOT NULL THEN {script.datasetname}.data_source ELSE cabdsource.reservoir_area_skm_ds END,
@@ -33,7 +32,6 @@ UPDATE
     {script.damTable} AS cabd
 SET
     dam_name_en = CASE WHEN {script.datasetname}.dam_name_en IS NOT NULL THEN {script.datasetname}.dam_name_en ELSE cabd.dam_name_en END,
-    waterbody_name_en = CASE WHEN (cabd.waterbody_name_en IS NULL AND {script.datasetname}.waterbody_name_en IS NOT NULL) THEN {script.datasetname}.waterbody_name_en ELSE cabd.waterbody_name_en END,
     reservoir_name_en = CASE WHEN (cabd.reservoir_name_en IS NULL AND {script.datasetname}.reservoir_name_en IS NOT NULL) THEN {script.datasetname}.reservoir_name_en ELSE cabd.reservoir_name_en END,
     reservoir_present = CASE WHEN (cabd.reservoir_present IS NULL AND {script.datasetname}.reservoir_present IS NOT NULL) THEN {script.datasetname}.reservoir_present ELSE cabd.reservoir_present END,
     reservoir_area_skm = CASE WHEN {script.datasetname}.reservoir_area_skm IS NOT NULL THEN {script.datasetname}.reservoir_area_skm ELSE cabd.reservoir_area_skm END,

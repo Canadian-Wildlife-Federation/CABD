@@ -9,8 +9,8 @@ INSERT INTO cabd.data_source (id, name, version_date, version_number, source, co
 VALUES('{script.dsUuid}', 'McGregor Lake Bathymetry', now(), null, 'Alberta Environment and Parks', 'Data update - ' || now());
 
 --add data source to the table
-UPDATE TABLE {script.workingTable} ADD COLUMN data_source varchar(512);
-UPDATE TABLE {script.workingTable} SET data_source = {script.dsUuid};
+ALTER TABLE {script.workingTable} ADD COLUMN data_source uuid;
+UPDATE {script.workingTable} SET data_source = '{script.dsUuid}';
 
 --update existing features 
 UPDATE
@@ -20,7 +20,7 @@ SET
     waterbody_name_en_ds = CASE WHEN (cabd.waterbody_name_en IS NULL AND {script.datasetname}.waterbody_name_en IS NOT NULL) THEN {script.datasetname}.data_source ELSE cabdsource.waterbody_name_en_ds END,
     reservoir_name_en_ds = CASE WHEN (cabd.reservoir_name_en IS NULL AND {script.datasetname}.reservoir_name_en IS NOT NULL) THEN {script.datasetname}.data_source ELSE cabdsource.reservoir_name_en_ds END,
     reservoir_present_ds = CASE WHEN (cabd.reservoir_present IS NULL AND {script.datasetname}.reservoir_present IS NOT NULL) THEN {script.datasetname}.data_source ELSE cabdsource.reservoir_present_ds END,
-    reservoir_area_skm_ds = {script.datasetname}.reservoir_area_skm IS NOT NULL THEN {script.datasetname}.data_source ELSE cabdsource.reservoir_area_skm_ds END,
+    reservoir_area_skm_ds = CASE WHEN {script.datasetname}.reservoir_area_skm IS NOT NULL THEN {script.datasetname}.data_source ELSE cabdsource.reservoir_area_skm_ds END,
     reservoir_depth_m_ds = CASE WHEN {script.datasetname}.reservoir_depth_m IS NOT NULL THEN {script.datasetname}.data_source ELSE cabdsource.reservoir_depth_m_ds END,
     construction_year_ds = CASE WHEN (cabd.construction_year IS NULL AND {script.datasetname}.construction_year IS NOT NULL) THEN {script.datasetname}.data_source ELSE cabdsource.construction_year_ds END
 FROM

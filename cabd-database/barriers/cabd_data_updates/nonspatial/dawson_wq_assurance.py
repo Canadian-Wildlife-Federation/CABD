@@ -10,8 +10,8 @@ VALUES('{script.dsUuid}', 'City of Dawson Creek Water Quality Assurance Plan Upd
 now(), null, 'City of Dawson Creek', 'Data update - ' || now());
 
 --add data source to the table
-UPDATE TABLE {script.workingTable} ADD COLUMN data_source varchar(512);
-UPDATE TABLE {script.workingTable} SET data_source = {script.dsUuid};
+ALTER TABLE {script.workingTable} ADD COLUMN data_source uuid;
+UPDATE {script.workingTable} SET data_source = '{script.dsUuid}';
 
 --update existing features 
 UPDATE

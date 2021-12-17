@@ -7,11 +7,11 @@ mappingquery = f"""
 --create new data source record
 INSERT INTO cabd.data_source (id, name, version_date, version_number, source, comments)
 VALUES('{script.dsUuid}', 'Monitoring and performance of an earth-fill dam in central Alberta',
-now(), null, 'D. R. Williams, L. A. Balanko, and R. L. Martin', 'Data update - ' || now());
+now(), null, 'D. R. Williams, L. A. Balanko, and R. L. Martin, 1983', 'Data update - ' || now());
 
 --add data source to the table
-UPDATE TABLE {script.workingTable} ADD COLUMN data_source varchar(512);
-UPDATE TABLE {script.workingTable} SET data_source = {script.dsUuid};
+ALTER TABLE {script.workingTable} ADD COLUMN data_source uuid;
+UPDATE {script.workingTable} SET data_source = '{script.dsUuid}';
 
 --update existing features 
 UPDATE

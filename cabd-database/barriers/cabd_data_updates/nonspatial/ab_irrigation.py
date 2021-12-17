@@ -9,8 +9,8 @@ INSERT INTO cabd.data_source (id, name, version_date, version_number, source, co
 VALUES('{script.dsUuid}', 'Alberta Irrigation Information 2017', now(), null, 'Ministry of Agriculture, Forestry and Rural Economic Development', 'Data update - ' || now());
 
 --add data source to the table
-UPDATE TABLE {script.workingTable} ADD COLUMN data_source varchar(512);
-UPDATE TABLE {script.workingTable} SET data_source = {script.dsUuid};
+ALTER TABLE {script.workingTable} ADD COLUMN data_source uuid;
+UPDATE {script.workingTable} SET data_source = '{script.dsUuid}';
 
 --update existing features 
 UPDATE
@@ -24,7 +24,7 @@ SET
     reservoir_name_en_ds = CASE WHEN {script.datasetname}.reservoir_name_en IS NOT NULL THEN {script.datasetname}.data_source ELSE cabdsource.reservoir_name_en_ds END,   
     use_irrigation_code_ds = CASE WHEN {script.datasetname}.use_irrigation_code IS NOT NULL THEN {script.datasetname}.data_source ELSE cabdsource.use_irrigation_code_ds END,   
     use_electricity_code_ds = CASE WHEN {script.datasetname}.use_electricity_code IS NOT NULL THEN {script.datasetname}.data_source ELSE cabdsource.use_electricity_code_ds END,   
-    generating_capacity_mw_ds = CASE WHEN {script.datasetname}.generating_capacity_mw IS NOT NULL THEN {script.datasetname}.data_source ELSE cabdsource.generating_capacity_mw_ds END,   
+    generating_capacity_mwh_ds = CASE WHEN {script.datasetname}.generating_capacity_mwh IS NOT NULL THEN {script.datasetname}.data_source ELSE cabdsource.generating_capacity_mwh_ds END,   
     construction_year_ds = CASE WHEN {script.datasetname}.construction_year IS NOT NULL THEN {script.datasetname}.data_source ELSE cabdsource.construction_year_ds END,   
     storage_capacity_mcm_ds = CASE WHEN {script.datasetname}.storage_capacity_mcm IS NOT NULL THEN {script.datasetname}.data_source ELSE cabdsource.storage_capacity_mcm_ds END   
 FROM
@@ -44,8 +44,8 @@ SET
     reservoir_name_en = CASE WHEN {script.datasetname}.reservoir_name_en IS NOT NULL THEN {script.datasetname}.reservoir_name_en ELSE cabd.reservoir_name_en END,
     use_irrigation_code = CASE WHEN {script.datasetname}.use_irrigation_code IS NOT NULL THEN {script.datasetname}.use_irrigation_code ELSE cabd.use_irrigation_code END,
     use_electricity_code = CASE WHEN {script.datasetname}.use_electricity_code IS NOT NULL THEN {script.datasetname}.use_electricity_code ELSE cabd.use_electricity_code END,
-    generating_capacity_mw = CASE WHEN {script.datasetname}.generating_capacity_mw IS NOT NULL THEN {script.datasetname}.generating_capacity_mw ELSE cabdsource.generating_capacity_mw END,   
-    construction_year = CASE WHEN {script.datasetname}.construction_year IS NOT NULL THEN {script.datasetname}.cabdsource.construction_year ELSE cabdsource.construction_year END,
+    generating_capacity_mwh = CASE WHEN {script.datasetname}.generating_capacity_mwh IS NOT NULL THEN {script.datasetname}.generating_capacity_mwh ELSE cabd.generating_capacity_mwh END,   
+    construction_year = CASE WHEN {script.datasetname}.construction_year IS NOT NULL THEN {script.datasetname}.construction_year ELSE cabd.construction_year END,
     storage_capacity_mcm = CASE WHEN {script.datasetname}.storage_capacity_mcm IS NOT NULL THEN {script.datasetname}.storage_capacity_mcm ELSE cabd.storage_capacity_mcm END
 FROM
     {script.workingTable} AS {script.datasetname}
