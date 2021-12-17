@@ -4,22 +4,23 @@
 
 BEGIN TRANSACTION;
 --push to production table
-INSERT INTO fishways.fishways 
-(cabd_id, dam_id, dam_name_en, dam_name_fr, waterbody_name_en, waterbody_name_fr, river_name_en, river_name_fr,
-nhn_workunit_id, province_territory_code, municipality, fishpass_type_code, monitoring_equipment, architect, 
-contracted_by, constructed_by, plans_held_by, purpose, designed_on_biology, length_m, elevation_m, gradient, 
-depth_m, entrance_location_code, entrance_position_code, modified, modification_year, modification_purpose, 
-year_constructed, operated_by, operation_period, has_evaluating_studies, nature_of_evaluation_studies, engineering_notes,
-operating_notes, mean_fishway_velocity_ms, max_fishway_velocity_ms, estimate_of_attraction_pct, 
-estimate_of_passage_success_pct, fishway_reference_id, complete_level_code, original_point)
+INSERT INTO fishways.fishways(
+    cabd_id, dam_id, dam_name_en, dam_name_fr, waterbody_name_en, waterbody_name_fr, river_name_en, river_name_fr,
+    nhn_workunit_id, province_territory_code, municipality, fishpass_type_code, monitoring_equipment, architect, 
+    contracted_by, constructed_by, plans_held_by, purpose, designed_on_biology, length_m, elevation_m, gradient, 
+    depth_m, entrance_location_code, entrance_position_code, modified, modification_year, modification_purpose, 
+    year_constructed, operated_by, operation_period, has_evaluating_studies, nature_of_evaluation_studies, engineering_notes,
+    operating_notes, mean_fishway_velocity_ms, max_fishway_velocity_ms, estimate_of_attraction_pct, 
+    estimate_of_passage_success_pct, fishway_reference_id, complete_level_code, original_point
+)
 SELECT
-cabd_id, dam_id, dam_name_en, dam_name_fr, waterbody_name_en, waterbody_name_fr, river_name_en, river_name_fr,
-nhn_workunit_id, province_territory_code, municipality, fishpass_type_code, monitoring_equipment, architect, 
-contracted_by, constructed_by, plans_held_by, purpose, designed_on_biology, length_m, elevation_m, gradient, 
-depth_m, entrance_location_code, entrance_position_code, modified, modification_year, modification_purpose, 
-year_constructed, operated_by, operation_period, has_evaluating_studies, nature_of_evaluation_studies, engineering_notes,
-operating_notes, mean_fishway_velocity_ms, max_fishway_velocity_ms, estimate_of_attraction_pct, 
-estimate_of_passage_success_pct, fishway_reference_id, complete_level_code, original_point
+    cabd_id, dam_id, dam_name_en, dam_name_fr, waterbody_name_en, waterbody_name_fr, river_name_en, river_name_fr,
+    nhn_workunit_id, province_territory_code, municipality, fishpass_type_code, monitoring_equipment, architect, 
+    contracted_by, constructed_by, plans_held_by, purpose, designed_on_biology, length_m, elevation_m, gradient, 
+    depth_m, entrance_location_code, entrance_position_code, modified, modification_year, modification_purpose, 
+    year_constructed, operated_by, operation_period, has_evaluating_studies, nature_of_evaluation_studies, engineering_notes,
+    operating_notes, mean_fishway_velocity_ms, max_fishway_velocity_ms, estimate_of_attraction_pct, 
+    estimate_of_passage_success_pct, fishway_reference_id, complete_level_code, original_point
 FROM featurecopy.fishways;
 
 --create records in species mapping table for fishways indicating species that do/do not use it
