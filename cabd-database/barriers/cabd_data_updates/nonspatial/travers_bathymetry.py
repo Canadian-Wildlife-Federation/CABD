@@ -1,12 +1,12 @@
 import nonspatial as main
 
-script = main.MappingScript("forty_mile_bathymetry")
+script = main.MappingScript("travers_bathymetry")
 
 mappingquery = f"""
 
 --create new data source record
 INSERT INTO cabd.data_source (id, name, version_date, version_number, source, comments)
-VALUES('{script.dsUuid}', 'Forty Mile Coulee Reservoir Bathymetry', now(), null, 'Alberta Environment and Parks', 'Data update - ' || now());
+VALUES('{script.dsUuid}', 'Travers Reservoir Bathymetry', now(), null, 'Alberta Environment and Parks', 'Data update - ' || now());
 
 --add data source to the table
 UPDATE TABLE {script.workingTable} ADD COLUMN data_source varchar(512);

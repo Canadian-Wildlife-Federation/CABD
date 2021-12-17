@@ -1,12 +1,12 @@
 import nonspatial as main
 
-script = main.MappingScript("forty_mile_bathymetry")
+script = main.MappingScript("wiki_little_bow")
 
 mappingquery = f"""
 
 --create new data source record
 INSERT INTO cabd.data_source (id, name, version_date, version_number, source, comments)
-VALUES('{script.dsUuid}', 'Forty Mile Coulee Reservoir Bathymetry', now(), null, 'Alberta Environment and Parks', 'Data update - ' || now());
+VALUES('{script.dsUuid}', 'Little Bow Lake Reservoir', now(), null, 'Wikipedia', 'Data update - ' || now());
 
 --add data source to the table
 UPDATE TABLE {script.workingTable} ADD COLUMN data_source varchar(512);
@@ -21,8 +21,7 @@ SET
     reservoir_name_en_ds = CASE WHEN (cabd.reservoir_name_en IS NULL AND {script.datasetname}.reservoir_name_en IS NOT NULL) THEN {script.datasetname}.data_source ELSE cabdsource.reservoir_name_en_ds END,
     reservoir_present_ds = CASE WHEN (cabd.reservoir_present IS NULL AND {script.datasetname}.reservoir_present IS NOT NULL) THEN {script.datasetname}.data_source ELSE cabdsource.reservoir_present_ds END,
     reservoir_area_skm_ds = CASE WHEN {script.datasetname}.reservoir_area_skm IS NOT NULL THEN {script.datasetname}.data_source ELSE cabdsource.reservoir_area_skm_ds END,
-    reservoir_depth_m_ds = CASE WHEN {script.datasetname}.reservoir_depth_m IS NOT NULL THEN {script.datasetname}.data_source ELSE cabdsource.reservoir_depth_m_ds END,
-    construction_year_ds = CASE WHEN (cabd.construction_year IS NULL AND {script.datasetname}.construction_year IS NOT NULL) THEN {script.datasetname}.data_source ELSE cabdsource.construction_year_ds END
+    reservoir_depth_m_ds = CASE WHEN {script.datasetname}.reservoir_depth_m IS NOT NULL THEN {script.datasetname}.data_source ELSE cabdsource.reservoir_depth_m_ds END
 FROM
     {script.damTable} AS cabd,
     {script.workingTable} AS {script.datasetname}
@@ -37,8 +36,7 @@ SET
     reservoir_name_en = CASE WHEN (cabd.reservoir_name_en IS NULL AND {script.datasetname}.reservoir_name_en IS NOT NULL) THEN {script.datasetname}.reservoir_name_en ELSE cabd.reservoir_name_en END,
     reservoir_present = CASE WHEN (cabd.reservoir_present IS NULL AND {script.datasetname}.reservoir_present IS NOT NULL) THEN {script.datasetname}.reservoir_present ELSE cabd.reservoir_present END,
     reservoir_area_skm = CASE WHEN {script.datasetname}.reservoir_area_skm IS NOT NULL THEN {script.datasetname}.reservoir_area_skm ELSE cabd.reservoir_area_skm END,
-    reservoir_depth_m = CASE WHEN {script.datasetname}.reservoir_depth_m IS NOT NULL THEN {script.datasetname}.reservoir_depth_m ELSE cabd.reservoir_depth_m END,
-    construction_year = CASE WHEN (cabd.construction_year IS NULL AND {script.datasetname}.construction_year IS NOT NULL) THEN {script.datasetname}.construction_year ELSE cabd.construction_year END
+    reservoir_depth_m = CASE WHEN {script.datasetname}.reservoir_depth_m IS NOT NULL THEN {script.datasetname}.reservoir_depth_m ELSE cabd.reservoir_depth_m END
 FROM
     {script.workingTable} AS {script.datasetname}
 WHERE
