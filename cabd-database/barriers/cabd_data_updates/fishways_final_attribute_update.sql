@@ -7,7 +7,7 @@ BEGIN;
 UPDATE featurecopy.fishways AS fish SET original_point = ST_Transform(fish.original_point, 4326);
 UPDATE featurecopy.fishways AS fish SET longitude = ST_X(fish.original_point);
 UPDATE featurecopy.fishways AS fish SET latitude = ST_Y(fish.original_point);
-UPDATE featurecopy.fishways AS fish DROP INDEX fishways_geometry_geom_idx;
+UPDATE featurecopy.fishways AS fish DROP INDEX IF EXISTS fishways_geometry_geom_idx;
 UPDATE featurecopy.fishways AS fish DROP COLUMN geometry;
 UPDATE featurecopy.fishways AS fish REINDEX INDEX fishways_idx;
 UPDATE featurecopy.fishways AS fish SET province_territory_code = n.code FROM cabd.province_territory_codes AS n WHERE st_contains(n.geometry, fish.original_point);

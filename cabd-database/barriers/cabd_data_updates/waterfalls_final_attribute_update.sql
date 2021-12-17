@@ -17,7 +17,7 @@ UPDATE featurecopy.waterfalls AS falls SET original_point = ST_Transform(falls.o
 UPDATE featurecopy.waterfalls AS falls SET snapped_point = ST_Transform(falls.snapped_point, 4326);
 UPDATE featurecopy.waterfalls AS falls SET longitude = ST_X(falls.snapped_point);
 UPDATE featurecopy.waterfalls AS falls SET latitude = ST_Y(falls.snapped_point);
-UPDATE featurecopy.waterfalls AS falls DROP INDEX waterfalls_geometry_geom_idx;
+UPDATE featurecopy.waterfalls AS falls DROP INDEX IF EXISTS waterfalls_geometry_geom_idx;
 UPDATE featurecopy.waterfalls AS falls DROP COLUMN geometry;
 UPDATE featurecopy.waterfalls AS falls REINDEX INDEX waterfalls_idx;
 UPDATE featurecopy.waterfalls AS falls SET province_territory_code = n.code FROM cabd.province_territory_codes AS n WHERE st_contains(n.geometry, falls.snapped_point);
@@ -62,7 +62,7 @@ ALTER TABLE featurecopy.waterfalls
     DROP COLUMN IF EXISTS dups_nhn,
     DROP COLUMN IF EXISTS dups_cgndb,
     DROP COLUMN IF EXISTS dups_canvec_hy_obstacles,
-    DROP COLUMN IF EXISTS dups_wiki,
+    DROP COLUMN IF EXISTS dups_wikipedia,
     DROP COLUMN IF EXISTS dups_wwd;
 
 COMMIT;

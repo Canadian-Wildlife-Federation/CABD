@@ -14,56 +14,6 @@ SET
     WHEN "height_m" >= 15 THEN 3
     ELSE 4 END,
 
-    use_irrigation_code = 
-    CASE
-    WHEN use_code = 1 THEN 1
-    ELSE use_irrigation_code END,
-
-    use_electricity_code = 
-    CASE
-    WHEN use_code = 2 THEN 1
-    ELSE use_electricity_code END,
-
-    use_supply_code = 
-    CASE
-    WHEN use_code = 3 THEN 1
-    ELSE use_supply_code END,
-
-    use_floodcontrol_code = 
-    CASE
-    WHEN use_code = 4 THEN 1
-    ELSE use_floodcontrol_code END,
-
-    use_recreation_code =
-    CASE
-    WHEN use_code = 5 THEN 1
-    ELSE use_recreation_code END,
-
-    use_navigation_code =
-    CASE
-    WHEN use_code = 6 THEN 1
-    ELSE use_navigation_code END,
-
-    use_fish_code =
-    CASE
-    WHEN use_code = 7 THEN 1
-    ELSE use_fish_code END,
-
-    use_pollution_code =
-    CASE
-    WHEN use_code = 8 THEN 1
-    ELSE use_pollution_code END,
-
-    use_invasivespecies_code = 
-    CASE
-    WHEN use_code = 9 THEN 1
-    ELSE use_invasivespecies_code END,
-
-    use_other_code =
-    CASE
-    WHEN use_code = 10 THEN 1
-    ELSE use_other_code END,
-
     reservoir_present =
     CASE
     WHEN reservoir_area_skm IS NOT NULL OR reservoir_depth_m IS NOT NULL THEN TRUE
@@ -78,7 +28,7 @@ UPDATE featurecopy.dams AS dams SET original_point = ST_Transform(dams.original_
 UPDATE featurecopy.dams AS dams SET snapped_point = ST_Transform(dams.snapped_point, 4326);
 UPDATE featurecopy.dams AS dams SET longitude = ST_X(dams.snapped_point);
 UPDATE featurecopy.dams AS dams SET latitude = ST_Y(dams.snapped_point);
-UPDATE featurecopy.dams AS dams DROP INDEX dams_geometry_geom_idx;
+UPDATE featurecopy.dams AS dams DROP INDEX IF EXISTS dams_geometry_geom_idx;
 UPDATE featurecopy.dams AS dams DROP COLUMN geometry;
 UPDATE featurecopy.dams AS dams REINDEX INDEX dams_idx;
 UPDATE featurecopy.dams AS dams SET province_territory_code = n.code FROM cabd.province_territory_codes AS n WHERE st_contains(n.geometry, dams.snapped_point);
