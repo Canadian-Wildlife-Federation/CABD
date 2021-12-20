@@ -23,7 +23,7 @@ INSERT INTO dams.dams(
     federal_flow_req, catchment_area_skm, hydro_peaking_system,
     generating_capacity_mwh, turbine_number, turbine_type_code,
     up_passage_type_code, down_passage_route_code, last_modified,
-    comments, complete_level_code, original_point, snapped_point,
+    "comments", complete_level_code, original_point, snapped_point,
     nhn_workunit_id, upstream_linear_km, passability_status_code,
     passability_status_note, use_analysis
 )
@@ -46,7 +46,7 @@ SELECT
     federal_flow_req, catchment_area_skm, hydro_peaking_system,
     generating_capacity_mwh, turbine_number, turbine_type_code,
     up_passage_type_code, down_passage_route_code, last_modified,
-    comments, complete_level_code, original_point, snapped_point,
+    "comments", complete_level_code, original_point, snapped_point,
     nhn_workunit_id, upstream_linear_km, passability_status_code,
     passability_status_note, use_analysis
 FROM featurecopy.dams;

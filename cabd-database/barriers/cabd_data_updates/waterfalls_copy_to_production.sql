@@ -15,7 +15,7 @@ INSERT INTO waterfalls.waterfalls(
     municipality,
     fall_height_m,
     last_modified,
-    comments,
+    "comments",
     complete_level_code,
     snapped_point,
     original_point,
@@ -33,7 +33,7 @@ SELECT
     municipality,
     fall_height_m,
     last_modified,
-    comments,
+    "comments",
     complete_level_code,
     snapped_point,
     original_point,
@@ -87,5 +87,6 @@ FROM featurecopy.waterfalls_attribute_source;
 --do whatever qa checks you want to do here?
 
 SELECT COUNT(*) FROM waterfalls.waterfalls;
+SELECT COUNT(*) FROM waterfalls.waterfalls_attribute_source;
 
 --COMMIT;

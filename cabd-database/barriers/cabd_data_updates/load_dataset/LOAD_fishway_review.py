@@ -99,6 +99,8 @@ ALTER TABLE {workingTable} ADD COLUMN mean_fishway_velocity_ms real;
 ALTER TABLE {workingTable} ADD COLUMN max_fishway_velocity_ms real;
 ALTER TABLE {workingTable} ADD COLUMN estimate_of_attraction_pct real;
 ALTER TABLE {workingTable} ADD COLUMN estimate_of_passage_success_pct real;
+ALTER TABLE {workingTable} ADD COLUMN species_known_to_use_fishway varchar;
+ALTER TABLE {workingTable} ADD COLUMN species_known_not_to_use_fishway varchar;
 ALTER TABLE {workingTable} ADD COLUMN fishway_reference_id character varying(256);
 ALTER TABLE {workingTable} ADD COLUMN complete_level_code smallint;
 ALTER TABLE {workingTable} ADD COLUMN original_point geometry(Point, 4617);

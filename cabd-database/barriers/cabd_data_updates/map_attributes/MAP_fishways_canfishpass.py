@@ -44,7 +44,7 @@ SET
     has_evaluating_studies_ds = CASE WHEN (cabd.has_evaluating_studies IS NULL AND {script.datasetname}.has_evaluating_studies IS NOT NULL) THEN {script.datasetname}.data_source ELSE cabdsource.has_evaluating_studies_ds END,
     nature_of_evaluation_studies_ds = CASE WHEN (cabd.nature_of_evaluation_studies IS NULL AND {script.datasetname}.nature_of_evaluation_studies IS NOT NULL) THEN {script.datasetname}.data_source ELSE cabdsource.nature_of_evaluation_studies_ds END,
     engineering_notes_ds = CASE WHEN (cabd.engineering_notes IS NULL AND {script.datasetname}.engineering_notes IS NOT NULL) THEN {script.datasetname}.data_source ELSE cabdsource.engineering_notes_ds END,
-    operating_notes_ds = CASE WHEN (cabd.operating_notes IS NULL AND {script.datasetname}.operating_notes IS NOT NULL) THEN {script.datasetname}.data_source ELSE cabdsource.operating_notes_ds END,
+    operating_notes_ds = CASE WHEN (cabd.operating_notes IS NULL AND {script.datasetname}.operating_notes IS NOT NULL) THEN {script.datasetname}.data_source ELSE cabdsource.operating_notes_ds END,    
 
     dam_name_en_dsfid = CASE WHEN (cabd.dam_name_en IS NULL AND {script.datasetname}.dam_name_en IS NOT NULL) THEN {script.datasetname}.data_source_id ELSE cabdsource.dam_name_en_dsfid END,
     river_name_en_dsfid = CASE WHEN (cabd.river_name_en IS NULL AND {script.datasetname}.river_name_en IS NOT NULL) THEN {script.datasetname}.data_source_id ELSE cabdsource.river_name_en_dsfid END,
@@ -104,7 +104,9 @@ SET
     has_evaluating_studies = CASE WHEN (cabd.has_evaluating_studies IS NULL AND {script.datasetname}.has_evaluating_studies IS NOT NULL) THEN {script.datasetname}.has_evaluating_studies ELSE cabd.has_evaluating_studies END,
     nature_of_evaluation_studies = CASE WHEN (cabd.nature_of_evaluation_studies IS NULL AND {script.datasetname}.nature_of_evaluation_studies IS NOT NULL) THEN {script.datasetname}.nature_of_evaluation_studies ELSE cabd.nature_of_evaluation_studies END,
     engineering_notes = CASE WHEN (cabd.engineering_notes IS NULL AND {script.datasetname}.engineering_notes IS NOT NULL) THEN {script.datasetname}.engineering_notes ELSE cabd.engineering_notes END,
-    operating_notes = CASE WHEN (cabd.operating_notes IS NULL AND {script.datasetname}.operating_notes IS NOT NULL) THEN {script.datasetname}.operating_notes ELSE cabd.operating_notes END
+    operating_notes = CASE WHEN (cabd.operating_notes IS NULL AND {script.datasetname}.operating_notes IS NOT NULL) THEN {script.datasetname}.operating_notes ELSE cabd.operating_notes END,
+    species_known_to_use_fishway = CASE WHEN (cabd.species_known_to_use_fishway IS NULL AND {script.datasetname}.species_known_to_use_fishway IS NOT NULL) THEN {script.datasetname}.species_known_to_use_fishway ELSE cabd.species_known_to_use_fishway END,
+    species_known_not_to_use_fishway = CASE WHEN (cabd.species_known_not_to_use_fishway IS NULL AND {script.datasetname}.species_known_not_to_use_fishway IS NOT NULL) THEN {script.datasetname}.species_known_not_to_use_fishway ELSE cabd.species_known_not_to_use_fishway END
 FROM
     {script.workingTable} AS {script.datasetname}
 WHERE

@@ -181,7 +181,7 @@ with conn.cursor() as cursor:
 # SELECT featurecopy.snap_to_network('{workingSchema}', '{workingTableRaw}', 'original_point', 'snapped_point', {snappingDistance});
 # UPDATE {workingTable} SET snapped_point = original_point WHERE snapped_point IS NULL;
 
-# CREATE INDEX {workingTableRaw}_idx ON {workingTable} USING gist (snapped_point);
+# CREATE INDEX {workingTableRaw}_idx ON {workingTable} USING gist(snapped_point);
 # """
 
 # with conn.cursor() as cursor:

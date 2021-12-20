@@ -4,15 +4,11 @@
 BEGIN;
 --Various spatial joins/queries to populate fields
 --TO DO: Change original_point to EPSG:4326, populate lat/long fields, drop column geometry
-UPDATE featurecopy.fishways AS fish SET original_point = ST_Transform(fish.original_point, 4326);
-UPDATE featurecopy.fishways AS fish SET longitude = ST_X(fish.original_point);
-UPDATE featurecopy.fishways AS fish SET latitude = ST_Y(fish.original_point);
-UPDATE featurecopy.fishways AS fish DROP INDEX IF EXISTS fishways_geometry_geom_idx;
-UPDATE featurecopy.fishways AS fish DROP COLUMN geometry;
-UPDATE featurecopy.fishways AS fish REINDEX INDEX fishways_idx;
+ALTER TABLE featurecopy.fishways
+    ALTER COLUMN original_point TYPE geometry(Point, 4326)
+        USING ST_Transform(ST_SetSRID(original_point, 4326), 4326);
 UPDATE featurecopy.fishways AS fish SET province_territory_code = n.code FROM cabd.province_territory_codes AS n WHERE st_contains(n.geometry, fish.original_point);
 UPDATE featurecopy.fishways AS fish SET nhn_workunit_id = n.id FROM cabd.nhn_workunit AS n WHERE st_contains(n.polygon, fish.original_point);
-UPDATE featurecopy.fishways AS fish SET sub_sub_drainage_name = n.sub_sub_drainage_area FROM cabd.nhn_workunit AS n WHERE st_contains(n.polygon, fish.original_point);
 UPDATE featurecopy.fishways AS fish SET municipality = n.csdname FROM cabd.census_subdivisions AS n WHERE st_contains(n.geometry, fish.original_point);
 
 --TO DO: Add foreign table to reference ecatchment and eflowpath tables, make sure 2 lines below work
@@ -25,11 +21,20 @@ COMMIT;
 --associate fishways with dams
 BEGIN;
 
+--change dams original_point, snapped_point columns to EPSG:4326 so we can use queries on them
+ALTER TABLE featurecopy.dams
+    ALTER COLUMN original_point TYPE geometry(Point, 4326)
+        USING ST_Transform(ST_SetSRID(original_point, 4326), 4326);
+ALTER TABLE featurecopy.dams
+    ALTER COLUMN snapped_point TYPE geometry(Point, 4326)
+        USING ST_Transform(ST_SetSRID(snapped_point, 4326), 4326);
+
+--associate fishways with dams
 UPDATE featurecopy.fishways SET dam_id = foo.dam_id FROM (SELECT DISTINCT ON (cabd_id) cabd_id, dam_id
     FROM (
         SELECT
             fish.cabd_id,
-            dam.cabd_id as dam_id
+            dams.cabd_id as dam_id
        FROM
             featurecopy.fishways AS fish,
             featurecopy.dams AS dams,
@@ -37,7 +42,7 @@ UPDATE featurecopy.fishways SET dam_id = foo.dam_id FROM (SELECT DISTINCT ON (ca
        WHERE
             ST_Distance(fish.original_point, dams.original_point) < 0.01 and
             ST_Distance(fish.original_point::geography,
-            dam.original_point::geography) < 150
+            dams.original_point::geography) < 200
        ORDER BY cabd_id, distance
    ) bar
    ) foo
@@ -47,9 +52,9 @@ UPDATE featurecopy.fishways SET dam_id = foo.dam_id FROM (SELECT DISTINCT ON (ca
 UPDATE
     featurecopy.dams_attribute_source AS cabdsource
 SET    
-    up_passage_type_code_ds = CASE WHEN (cabd.up_passage_type_code = 9 AND fish.fishpass_type_code IS NOT NULL) THEN fishsource.fishpass_type_code_ds ELSE cabdsource.up_passage_type_code_ds END, 
+    up_passage_type_code_ds = CASE WHEN ((cabd.up_passage_type_code IS NULL OR cabd.up_passage_type_code = 9) AND fish.fishpass_type_code IS NOT NULL) THEN fishsource.fishpass_type_code_ds ELSE cabdsource.up_passage_type_code_ds END, 
 
-    up_passage_type_code_dsfid = CASE WHEN (cabd.up_passage_type_code = 9 AND fish.fishpass_type_code IS NOT NULL) THEN fish.cabd_id::varchar ELSE cabdsource.up_passage_type_code_dsfid END    
+    up_passage_type_code_dsfid = CASE WHEN ((cabd.up_passage_type_code IS NULL OR cabd.up_passage_type_code = 9) AND fish.fishpass_type_code IS NOT NULL) THEN fish.cabd_id::varchar ELSE cabdsource.up_passage_type_code_dsfid END    
 FROM
     featurecopy.dams AS cabd,
     featurecopy.fishways AS fish,
@@ -62,7 +67,7 @@ WHERE
 UPDATE 
     featurecopy.dams AS cabd
 SET 
-    up_passage_type_code = CASE WHEN (cabd.up_passage_type_code = 9 AND fish.fishpass_type_code IS NOT NULL) THEN fish.fishpass_type_code ELSE cabd.up_passage_type_code END
+    up_passage_type_code = CASE WHEN ((cabd.up_passage_type_code IS NULL OR cabd.up_passage_type_code = 9) AND fish.fishpass_type_code IS NOT NULL) THEN fish.fishpass_type_code ELSE cabd.up_passage_type_code END
 FROM
     featurecopy.fishways AS fish
 WHERE 
@@ -70,7 +75,7 @@ WHERE
 
 COMMIT;
 
---TO DO: Change null values to "unknown" for user benefit
+--Change null values to "unknown" for user benefit
 BEGIN;
 
 UPDATE featurecopy.fishways SET fishpass_type_code = 9 WHERE fishpass_type_code IS NULL;
@@ -115,6 +120,7 @@ ALTER TABLE featurecopy.fishways
     DROP COLUMN reference_url,
     DROP COLUMN reviewer_classification,
     DROP COLUMN reviewer_comments,
-    DROP COLUMN multipoint_yn;
+    DROP COLUMN multipoint_yn
+    DROP COLUMN geometry;
 
 COMMIT;
