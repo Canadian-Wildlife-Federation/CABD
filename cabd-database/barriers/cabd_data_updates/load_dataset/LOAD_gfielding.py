@@ -1,4 +1,4 @@
-import LOAD_dams_main as main
+import LOAD_main as main
 
 script = main.LoadingScript("gfielding")
 
