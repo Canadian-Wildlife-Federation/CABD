@@ -57,6 +57,10 @@ public class FeatureDao {
 	 * ID Field for features
 	 */
 	public static final String ID_FIELD = "cabd_id";
+	/**
+	 * Feature type column name for features
+	 */
+	public static final String FEATURE_TYPE_FIELD = "feature_type";
 
     private Logger logger = LoggerFactory.getLogger(FeatureDao.class);
     

@@ -15,6 +15,10 @@
  */
 package org.refractions.cabd.model;
 
+import java.time.LocalDate;
+
+import org.locationtech.jts.geom.Geometry;
+
 /**
  * Contains details about a feature
  * view field.
@@ -51,6 +55,17 @@ public class FeatureViewMetadataField {
 	public String getDataType() {
 		return this.datatype;
 	}
+	
+	public Class<?> getDataTypeAsClass(){
+		String ldt = datatype.toLowerCase();
+		if (ldt.equals("boolean")) return Boolean.class;
+		if (ldt.equals("integer")) return Integer.class;
+		if (ldt.equals("double")) return Double.class;
+		if (ldt.equals("date")) return LocalDate.class;
+		if (ldt.equals("geometry")) return Geometry.class;
+		return String.class;
+	}
+	
 	
 	public Integer getAllOrder() {
 		return this.allOrder;

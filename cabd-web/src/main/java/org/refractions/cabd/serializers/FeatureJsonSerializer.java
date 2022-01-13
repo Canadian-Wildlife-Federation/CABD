@@ -17,8 +17,8 @@ package org.refractions.cabd.serializers;
 
 import java.io.IOException;
 import java.sql.SQLException;
-import java.util.UUID;
 import java.util.Map.Entry;
+import java.util.UUID;
 
 import org.postgresql.jdbc.PgArray;
 import org.refractions.cabd.controllers.FeatureController;

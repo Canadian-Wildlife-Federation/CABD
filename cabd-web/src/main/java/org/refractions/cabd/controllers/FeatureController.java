@@ -21,6 +21,7 @@ import java.util.UUID;
 
 import javax.servlet.http.HttpServletRequest;
 
+import org.refractions.cabd.CabdApplication;
 import org.refractions.cabd.CabdConfigurationProperties;
 import org.refractions.cabd.dao.FeatureDao;
 import org.refractions.cabd.dao.FeatureTypeManager;
@@ -31,6 +32,7 @@ import org.refractions.cabd.model.FeatureList;
 import org.refractions.cabd.model.FeatureType;
 import org.springdoc.api.annotations.ParameterObject;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -122,7 +124,11 @@ public class FeatureController {
 			 			content = {
 						@Content(mediaType = "application/json", schema = @Schema(implementation = ApiError.class))}),			 
 			 })
-	@GetMapping(value = "/{type:[a-zA-Z0-9_]+}")
+	@GetMapping(value = "/{type:[a-zA-Z0-9_]+}",
+			produces = {MediaType.APPLICATION_JSON_VALUE, "application/geo+json", 
+					CabdApplication.GEOPKG_MEDIA_TYPE_STR,
+					CabdApplication.SHP_MEDIA_TYPE_STR, 
+					CabdApplication.KML_MEDIA_TYPE_STR})
 	public ResponseEntity<FeatureList> getFeatureByType(
 			@Parameter(description = "the feature type to search") @PathVariable("type") String type,
 			@ParameterObject FeatureRequestParameters params, HttpServletRequest request) {
@@ -154,7 +160,7 @@ public class FeatureController {
 	 * @return
 	 */
 	@Operation(summary = "Searches for features of any type.")
-	@ApiResponses(value = { 
+	@ApiResponses(value = { 			
 			@ApiResponse(responseCode = "200",
 						description = "Return all feature features that match search parameters as a GeoJson feature collection. Feature will contain a limited set of shared attributes associated with all attribute types.",
 						content = {
@@ -163,13 +169,18 @@ public class FeatureController {
 					 	description = "If one of the feature types is not found or the parameters are not in the expected format. ", 
 			 			content = {
 						@Content(mediaType = "application/json", schema = @Schema(implementation = ApiError.class))})})
-	@GetMapping(value = "")
+	@GetMapping(value = "",
+		produces = {MediaType.APPLICATION_JSON_VALUE, "application/geo+json", 
+				CabdApplication.GEOPKG_MEDIA_TYPE_STR,
+				CabdApplication.SHP_MEDIA_TYPE_STR, 
+				CabdApplication.KML_MEDIA_TYPE_STR})
+	
 	public ResponseEntity<FeatureList> getFeatures(
 			@ParameterObject FeatureRequestTypeParameters params, 
 			HttpServletRequest request) {
 
 		ParsedRequestParameters parameters = params.parseAndValidate(typeManager);
-		
+
 		if (parameters.getSearchPoint() != null) {
 			return ResponseEntity.ok(new FeatureList(featureDao.getFeatures(parameters.getFeatureTypes(), parameters.getSearchPoint(), parameters.getMaxResults(), parameters.getFilter())));
 		}
@@ -177,7 +188,9 @@ public class FeatureController {
 		int maxresults = properties.getMaxresults();
 		if (parameters.getMaxResults() != null) maxresults = parameters.getMaxResults();
 		
-		return ResponseEntity.ok(new FeatureList(featureDao.getFeatures(parameters.getFeatureTypes(), parameters.getEnvelope(), maxresults, parameters.getFilter())));
+		FeatureList flist = new FeatureList(featureDao.getFeatures(parameters.getFeatureTypes(), parameters.getEnvelope(), maxresults, parameters.getFilter()));
+		
+		return ResponseEntity.ok(flist);
 	}
-	
+		
 }

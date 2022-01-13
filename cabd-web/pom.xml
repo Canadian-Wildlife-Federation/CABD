@@ -9,7 +9,7 @@
 		<version>2.4.0</version>
 		<relativePath /> <!-- lookup parent from repository -->
 	</parent>
-	
+
 	<groupId>org.refractions.cabd</groupId>
 	<artifactId>cabd-api</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
@@ -19,6 +19,7 @@
 
 	<properties>
 		<java.version>11</java.version>
+		<geotools.version>26.1</geotools.version>
 	</properties>
 
 	<repositories>
@@ -72,6 +73,28 @@
 			<groupId>org.springdoc</groupId>
 			<artifactId>springdoc-openapi-ui</artifactId>
 			<version>1.5.0</version>
+		</dependency>
+
+		<!-- geotools dependency -->
+		<dependency>
+			<groupId>org.geotools</groupId>
+			<artifactId>gt-geopkg</artifactId>
+			<version>${geotools.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.geotools</groupId>
+			<artifactId>gt-epsg-hsql</artifactId>
+			<version>${geotools.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.geotools</groupId>
+			<artifactId>gt-shapefile</artifactId>
+			<version>${geotools.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.geotools.xsd</groupId>
+			<artifactId>gt-xsd-kml</artifactId>
+			<version>${geotools.version}</version>
 		</dependency>
 	</dependencies>
 

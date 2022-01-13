@@ -35,16 +35,23 @@ public class Feature {
 	private HashMap<String, Object> attributes;
 	private HashMap<String, UUID> links;
 
-	public Feature(UUID id) {
+	private String featureType;
+	
+	public Feature(UUID id, String featureType) {
 		this.id = id;
 		attributes = new HashMap<>();
 		links = new HashMap<>();
+		this.featureType = featureType;
 	}
-
+	
 	public UUID getId() {
 		return this.id;
 	}
 
+	public String getFeatureType() {
+		return this.featureType;
+	}
+	
 	public void addAttribute(String key, Object value)  {
 		attributes.put(key, value);
 	}
