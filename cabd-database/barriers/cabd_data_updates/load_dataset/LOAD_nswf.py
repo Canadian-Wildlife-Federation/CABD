@@ -23,7 +23,7 @@ CREATE TABLE {script.damWorkingTable} AS
         rivname_1,
         data_source,
         data_source_id
-    FROM {script.sourceTable} WHERE _____ = ______;
+    FROM {script.sourceTable} WHERE feat_code LIKE 'WADM%';
 
 ALTER TABLE {script.damWorkingTable} ADD COLUMN waterbody_name_en varchar(512);
 
@@ -41,7 +41,7 @@ CREATE TABLE {script.fallWorkingTable} AS
         rivname_1,
         data_source,
         data_source_id
-    FROM {script.sourceTable} WHERE _____ = ______;
+    FROM {script.sourceTable} WHERE feat_code LIKE 'WAFA%';
 
 ALTER TABLE {script.fallWorkingTable} ADD COLUMN waterbody_name_en varchar(512);
 
@@ -52,14 +52,14 @@ ALTER TABLE {script.fallWorkingTable}
     DROP COLUMN rivname_1;
 
 
---split into waterfalls, add new columns, and map attributes
+--split into fishways, add new columns, and map attributes
 DROP TABLE IF EXISTS {script.fishWorkingTable};
 CREATE TABLE {script.fishWorkingTable} AS
     SELECT 
         rivname_1,
         data_source,
         data_source_id
-    FROM {script.sourceTable} WHERE _____ = ______;
+    FROM {script.sourceTable} WHERE feat_code LIKE 'WAFI%';
 
 ALTER TABLE {script.fishWorkingTable} ADD COLUMN waterbody_name_en varchar(512);
 
@@ -68,7 +68,6 @@ UPDATE {script.fishWorkingTable} SET waterbody_name_en = rivname_1;
 --delete extra fields so only mapped fields remain
 ALTER TABLE {script.fishWorkingTable}
     DROP COLUMN rivname_1;
-
 
 """
 
