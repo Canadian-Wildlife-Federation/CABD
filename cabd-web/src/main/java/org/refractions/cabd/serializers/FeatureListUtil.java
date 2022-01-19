@@ -83,10 +83,17 @@ public class FeatureListUtil {
 		return new ImmutablePair<>(type,nameMapping);
 	}
 	
+	/*
+	 * truncates field names to 10 characters for shapefiles
+	 * also removes all _ characters in names longer than 10 chars.
+	 */
 	private static String computeFieldName(String name, Set<String> current) {
 		if (name.length() <= 10) return name;
 		
-		String fname =name.substring(0, 10);
+		name = name.replaceAll("_", "");
+		if (name.length() <= 10 && !current.contains(name)) return name;
+		
+		String fname = name.substring(0, 10);
 		if (current.contains(fname)) {
 			int i = 1;
 			while(current.contains(fname)) {

@@ -29,6 +29,9 @@ public class CabdConfigurationProperties {
 
 	private int maxresults = 10000;
 	
+	private long vectorcachesize = 0;
+	private long cachefree = 0;
+	
 	/**
 	 * The system defined maximum number of search results
 	 * @return
@@ -39,5 +42,30 @@ public class CabdConfigurationProperties {
 	
 	public void setMaxresults(int maxresults) {
 		this.maxresults = maxresults;
+	}
+	
+	/**
+	 * The maximum size of vector tiles in the cache table
+	 * @return
+	 */
+	public long getVectorcachesize() {
+		return this.vectorcachesize;
+	}
+	
+	public void setVectorcachesize(long vectorcachesize) {
+		this.vectorcachesize = vectorcachesize;
+	}
+	
+	/**
+	 * The amount of space that should be free in the
+	 * cache after cleaning out old items
+	 * @return
+	 */
+	public long getCachefree() {
+		return this.cachefree;
+	}
+	
+	public void setCachefree(long cachefree) {
+		this.cachefree = cachefree;
 	}
 }

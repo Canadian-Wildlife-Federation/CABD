@@ -37,6 +37,8 @@ import org.refractions.cabd.CabdApplication;
 import org.refractions.cabd.dao.FeatureTypeManager;
 import org.refractions.cabd.model.FeatureList;
 import org.refractions.cabd.model.FeatureViewMetadata;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpInputMessage;
@@ -47,7 +49,8 @@ import org.springframework.http.converter.HttpMessageNotWritableException;
 import org.springframework.stereotype.Component;
 
 /**
- * Serializes a list of Feature features to a GeoJson FeatureCollection.
+ * Serializes a list of Features to shapefile (zip file containing all associated
+ * files)
  * 
  * @author Emily
  *
@@ -57,6 +60,10 @@ public class FeatureListShpSerializer extends AbstractHttpMessageConverter<Featu
 
 	@Autowired
 	private FeatureTypeManager typeManager;
+
+	private Logger logger = LoggerFactory.getLogger(FeatureListShpSerializer.class);
+
+	private static final String FILENAME = "features";
 	
 	public FeatureListShpSerializer() {
 		super(CabdApplication.SHP_MEDIA_TYPE);
@@ -92,33 +99,43 @@ public class FeatureListShpSerializer extends AbstractHttpMessageConverter<Featu
 		Path temp = Files.createTempFile("cadbshp", ".shp");
 		
 		ShapefileDataStore datastore = new ShapefileDataStore(temp.toUri().toURL());
-		datastore.createSchema(type);
-		
-		try(DefaultTransaction tx = new DefaultTransaction()){
-			try(FeatureWriter<SimpleFeatureType, SimpleFeature> writer = datastore.getFeatureWriterAppend(tx)){
-				FeatureListUtil.writeFeatures(writer, features, metadata, e->nameMapping.get(e));
+		try {
+			datastore.createSchema(type);
+			
+			try(DefaultTransaction tx = new DefaultTransaction()){
+				try(FeatureWriter<SimpleFeatureType, SimpleFeature> writer = datastore.getFeatureWriterAppend(tx)){
+					FeatureListUtil.writeFeatures(writer, features, metadata, e->nameMapping.get(e));
+				}
+				tx.commit();
 			}
-			tx.commit();
+		}finally {
+			datastore.dispose();
 		}
 		
-		outputMessage.getHeaders().set(HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=features.zip");
-		outputMessage.getHeaders().set(HttpHeaders.CONTENT_TYPE, CabdApplication.SHP_MEDIA_TYPE.getType());
-
 		//file all files with same name as temp and zip them up
 		Path parent = temp.getParent();
 		String rootFileName = FilenameUtils.getBaseName(temp.getFileName().toString());
-		
 		List<Path> filesToZip = Files.find(parent, 1, (p,a)->FilenameUtils.getBaseName(p.getFileName().toString()).equals(rootFileName)).collect(Collectors.toList());
-		
+				
+		outputMessage.getHeaders().set(HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=" + FILENAME + ".zip");
+		outputMessage.getHeaders().set(HttpHeaders.CONTENT_TYPE, CabdApplication.SHP_MEDIA_TYPE.getType());
+
 		//zip file
 		try(ZipOutputStream out = new ZipOutputStream(outputMessage.getBody())){
 			for (Path file : filesToZip) {
-				ZipEntry entry = new ZipEntry("features." + FilenameUtils.getExtension(file.getFileName().toString()));
+				ZipEntry entry = new ZipEntry(FILENAME + "." + FilenameUtils.getExtension(file.getFileName().toString()));
 				out.putNextEntry(entry);
 				Files.copy(file, out);
 			}
 		}
-		//TODO: delete temporary files
+
+		for (Path p : filesToZip) {
+			try {
+				Files.delete(p);
+			}catch (Exception ex) {
+				logger.warn("Unable to delete temporary file: " + p.toString(), ex);
+			}
+		}
 		
 	}
 

@@ -34,6 +34,8 @@ import org.refractions.cabd.CabdApplication;
 import org.refractions.cabd.dao.FeatureTypeManager;
 import org.refractions.cabd.model.FeatureList;
 import org.refractions.cabd.model.FeatureViewMetadata;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpInputMessage;
@@ -44,7 +46,7 @@ import org.springframework.http.converter.HttpMessageNotWritableException;
 import org.springframework.stereotype.Component;
 
 /**
- * Serializes a list of Feature features to a GeoJson FeatureCollection.
+ * Serializes a list of Feature features geopackage file.
  * 
  * @author Emily
  *
@@ -54,6 +56,10 @@ public class FeatureListGeoPkgSerializer extends AbstractHttpMessageConverter<Fe
 
 	@Autowired
 	private FeatureTypeManager typeManager;
+	
+	private Logger logger = LoggerFactory.getLogger(FeatureListGeoPkgSerializer.class);
+
+	private static final String FILENAME = "features";
 	
 	public FeatureListGeoPkgSerializer() {
 		super(CabdApplication.GEOPKG_MEDIA_TYPE);
@@ -84,27 +90,34 @@ public class FeatureListGeoPkgSerializer extends AbstractHttpMessageConverter<Fe
 		Envelope env = metadataitems.getRight();
 		
 		Path temp = Files.createTempFile("cabdgeopkg", ".gpkg");
-		GeoPackage geopkg = new GeoPackage(temp.toFile());
 		
-		FeatureEntry entry = new FeatureEntry();
-		entry.setTableName("features");
-		entry.setBounds(new ReferencedEnvelope(env, type.getCoordinateReferenceSystem()));
-		entry.setDataType(DataType.Feature);
-		geopkg.create(entry, type);
-		
-		try(DefaultTransaction tx = new DefaultTransaction()){
-			try(FeatureWriter<SimpleFeatureType, SimpleFeature> writer = geopkg.writer(entry, true, Filter.INCLUDE, tx)){
-				FeatureListUtil.writeFeatures(writer, features, metadata, e->e);
+		try(GeoPackage geopkg = new GeoPackage(temp.toFile())){
+			
+			FeatureEntry entry = new FeatureEntry();
+			entry.setTableName("features");
+			entry.setBounds(new ReferencedEnvelope(env, type.getCoordinateReferenceSystem()));
+			entry.setDataType(DataType.Feature);
+			geopkg.create(entry, type);
+			
+			try(DefaultTransaction tx = new DefaultTransaction()){
+				try(FeatureWriter<SimpleFeatureType, SimpleFeature> writer = geopkg.writer(entry, true, Filter.INCLUDE, tx)){
+					FeatureListUtil.writeFeatures(writer, features, metadata, e->e);
+				}
+				tx.commit();
 			}
-			tx.commit();
+			
+			outputMessage.getHeaders().set(HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=" + FILENAME + ".gpkg");
+			outputMessage.getHeaders().set(HttpHeaders.CONTENT_TYPE, CabdApplication.GEOPKG_MEDIA_TYPE_STR);
+	
+			Files.copy(temp, outputMessage.getBody());
+			outputMessage.getBody().flush();
 		}
 		
-		outputMessage.getHeaders().set(HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=features.gpkg");
-		outputMessage.getHeaders().set(HttpHeaders.CONTENT_TYPE, CabdApplication.GEOPKG_MEDIA_TYPE_STR);
-
-		Files.copy(temp, outputMessage.getBody());
-		//TODO: delete temporary file
-		
+		try {
+			Files.delete(temp);
+		}catch (Exception ex) {
+			logger.warn("Unable to delete temporary file: " + temp.toString(), ex);
+		}
 	}
 
 }

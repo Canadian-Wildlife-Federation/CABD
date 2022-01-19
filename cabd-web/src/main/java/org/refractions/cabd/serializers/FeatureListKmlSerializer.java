@@ -40,7 +40,7 @@ import org.springframework.http.converter.HttpMessageNotWritableException;
 import org.springframework.stereotype.Component;
 
 /**
- * Serializes a list of Feature features to a GeoJson FeatureCollection.
+ * Serializes a list of Feature to kml dataset
  * 
  * @author Emily
  *
@@ -50,6 +50,8 @@ public class FeatureListKmlSerializer extends AbstractHttpMessageConverter<Featu
 
 	@Autowired
 	private FeatureTypeManager typeManager;
+	
+	private static final String FILENAME = "features";
 	
 	public FeatureListKmlSerializer() {
 		super(CabdApplication.KML_MEDIA_TYPE);
@@ -95,7 +97,7 @@ public class FeatureListKmlSerializer extends AbstractHttpMessageConverter<Featu
 			cfeatures.add(sf);
 		}
 		
-		outputMessage.getHeaders().set(HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=features.kml");
+		outputMessage.getHeaders().set(HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=" + FILENAME + ".kml");
 		outputMessage.getHeaders().set(HttpHeaders.CONTENT_TYPE, CabdApplication.KML_MEDIA_TYPE.getType());
 		
 		Encoder encoder = new Encoder(new org.geotools.kml.v22.KMLConfiguration());
