@@ -41,7 +41,7 @@ create table chyf2.ecatchment(
   geometry geometry(POLYGON, 4617) not null
 );
 create index ecatchment_aoi_id_idx on chyf2.ecatchment (aoi_id);
-  
+
 create table chyf2.nexus(
   id uuid not null primary key,
   nexus_type smallint not null check (nexus_type in (1,2,3,4,5,6,7,99)),
