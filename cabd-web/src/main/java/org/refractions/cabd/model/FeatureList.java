@@ -31,7 +31,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 //feature collection
 public class FeatureList {
 
-	public List<Feature> features;
+	private List<Feature> features;
 	
 	public FeatureList(List<Feature> features) {
 		this.features = features;		

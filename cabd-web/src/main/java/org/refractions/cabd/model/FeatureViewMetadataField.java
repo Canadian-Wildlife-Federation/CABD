@@ -15,6 +15,10 @@
  */
 package org.refractions.cabd.model;
 
+import java.sql.Date;
+
+import org.locationtech.jts.geom.Geometry;
+
 /**
  * Contains details about a feature
  * view field.
@@ -33,12 +37,14 @@ public class FeatureViewMetadataField {
 	private Integer allOrder;
 	
 	private boolean isLink = false;
+	private boolean includeVectorTile = false;
 	
 	private boolean isGeometry = false;
 	private Integer srid = null;
 	
 	public FeatureViewMetadataField(String fieldName, String name, String description, 
-			boolean isLink, String datatype, Integer simpleOrder, Integer allOrder) {
+			boolean isLink, String datatype, Integer simpleOrder, Integer allOrder,
+			boolean includeVectorTile) {
 		this.fieldName = fieldName;
 		this.name = name;
 		this.description = description;
@@ -46,11 +52,26 @@ public class FeatureViewMetadataField {
 		this.datatype = datatype;
 		this.simpleOrder = simpleOrder;
 		this.allOrder = allOrder;
+		this.includeVectorTile = includeVectorTile;
 	}
 	
+	public boolean includeVectorTile() {
+		return this.includeVectorTile;
+	}
 	public String getDataType() {
 		return this.datatype;
 	}
+	
+	public Class<?> getDataTypeAsClass(){
+		String ldt = datatype.toLowerCase();
+		if (ldt.equals("boolean")) return Boolean.class;
+		if (ldt.equals("integer")) return Integer.class;
+		if (ldt.equals("double")) return Double.class;
+		if (ldt.equals("date")) return Date.class;
+		if (ldt.equals("geometry")) return Geometry.class;
+		return String.class;
+	}
+	
 	
 	public Integer getAllOrder() {
 		return this.allOrder;

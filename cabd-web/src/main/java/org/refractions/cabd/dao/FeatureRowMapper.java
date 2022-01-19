@@ -47,7 +47,9 @@ public class FeatureRowMapper implements RowMapper<Feature> {
 	@Override
 	public Feature mapRow(ResultSet rs, int rowNum) throws SQLException {
 		UUID buuid = (UUID) rs.getObject(FeatureDao.ID_FIELD);
-		Feature feature = new Feature(buuid);
+		String featureType = (String)rs.getString(FeatureDao.FEATURE_TYPE_FIELD);
+		
+		Feature feature = new Feature(buuid, featureType);
 		
 		for (FeatureViewMetadataField field : metadata.getFields()) {
 			if (field.isGeometry()) {

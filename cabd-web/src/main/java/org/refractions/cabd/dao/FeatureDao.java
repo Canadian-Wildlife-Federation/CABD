@@ -15,6 +15,8 @@
  */
 package org.refractions.cabd.dao;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -23,6 +25,7 @@ import java.util.UUID;
 
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Envelope;
+import org.refractions.cabd.controllers.VectorTileController;
 import org.refractions.cabd.dao.filter.Filter;
 import org.refractions.cabd.exceptions.InvalidDatabaseConfigException;
 import org.refractions.cabd.model.Feature;
@@ -34,6 +37,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Component;
 
 /**
@@ -57,6 +61,10 @@ public class FeatureDao {
 	 * ID Field for features
 	 */
 	public static final String ID_FIELD = "cabd_id";
+	/**
+	 * Feature type column name for features
+	 */
+	public static final String FEATURE_TYPE_FIELD = "feature_type";
 
     private Logger logger = LoggerFactory.getLogger(FeatureDao.class);
     
@@ -68,7 +76,7 @@ public class FeatureDao {
 	
 	
 	/**
-	 * Finds the feature wtih the given uuid.  Will return null
+	 * Finds the feature with the given uuid.  Will return null
 	 * if no feature is found.
 	 * 
 	 * @param uuid
@@ -323,5 +331,97 @@ public class FeatureDao {
 				jdbcTemplate.query(sb.toString(), 
 						new FeatureRowMapper(vmetadata), params.toArray());
 		return features;
+	}
+	
+	/**
+	 * Get the vector tile for the features in the given feature type
+	 * 
+	 * @param z
+	 * @param x
+	 * @param y
+	 * @param ftype feature type or null for all features
+	 * @return
+	 */
+	public byte[] getVectorTile(int z, int x, int y, FeatureType ftype) {
+		
+		//TODO: update to use st_tileenvelope in postgis 3
+		int numtiles = (int) Math.pow(2, z);
+
+		double xtilesize = (VectorTileController.BOUNDS.getMaxX() - VectorTileController.BOUNDS.getMinX()) / numtiles;
+		double tilexmin = xtilesize * x + VectorTileController.BOUNDS.getMinX();
+		
+		double ytilesize = (VectorTileController.BOUNDS.getMaxY() - VectorTileController.BOUNDS.getMinY()) / numtiles;
+		double tileymax = VectorTileController.BOUNDS.getMaxY() - ytilesize * y;
+		
+		Envelope env = new Envelope(tilexmin, tilexmin + xtilesize, tileymax - ytilesize, tileymax );
+		int srid = VectorTileController.SRID;
+		
+		String stenv = "ST_MakeEnvelope(" + env.getMinX() + "," + env.getMinY() + "," + env.getMaxX() + "," + env.getMaxY() + "," + srid + ")";
+		
+		
+		StringBuilder sb = new StringBuilder();
+		sb.append("	WITH");
+		sb.append("	bounds AS (");
+		sb.append("	SELECT st_transform(" + stenv + ", 4326) AS geom, ");
+		sb.append( stenv + "::box2d AS b2d  ");
+		sb.append(" ), ");
+		sb.append("	mvtgeom AS (");
+		
+		
+		if (ftype != null) {
+			sb.append("	SELECT ST_AsMVTGeom(ST_Transform(t.geometry, " + srid + "), bounds.b2d) AS geom,");
+			for (FeatureViewMetadataField field : ftype.getViewMetadata().getFields()) {
+				if(field.includeVectorTile()) {
+					sb.append(field.getFieldName());
+					sb.append(",");
+				}
+			}
+			sb.deleteCharAt(sb.length() - 1);
+			sb.append("	FROM " + ftype.getDataView() + " t, bounds ");
+			sb.append("	WHERE st_intersects(t.geometry,  bounds.geom) ");
+			
+		} else {
+			//all feature types 
+			for (FeatureType ft : typeManager.getFeatureTypes()) {
+				//only include "raw" feature types in this vector tile
+				//"raw" feature types are determined for now if there is
+				//an attribute source table.
+				//for example the "All Barriers" feature type is comprised of
+				//waterfalls and dams so we don't want to include that one
+				if (ft.getAttributeSourceTable() == null) continue;
+				
+				sb.append("	SELECT ST_AsMVTGeom(ST_Transform(t.geometry, " + srid + "), bounds.b2d) AS geom,");
+				sb.append(" jsonb_build_object(");
+				for (FeatureViewMetadataField field : ft.getViewMetadata().getFields()) {
+					if(field.includeVectorTile()) {
+						sb.append("'" + field.getFieldName() + "'");
+						sb.append(",");
+						sb.append(field.getFieldName());
+						sb.append(",");
+					}
+				}
+				sb.deleteCharAt(sb.length() - 1);
+				sb.append(" )");
+				sb.append("	FROM " + ft.getDataView() + " t, bounds ");
+				sb.append("	WHERE st_intersects(t.geometry,  bounds.geom) ");
+				sb.append(" UNION ALL ");
+			}
+			sb.delete(sb.length() - " UNION ALL ".length(), sb.length() - 1);
+		}
+		
+		sb.append(")");
+		sb.append("	SELECT ST_AsMVT(mvtgeom.*) FROM mvtgeom");
+		
+		List<byte[]> tiles = 
+				jdbcTemplate.query(sb.toString(), 
+						new RowMapper<byte[]>() {
+							@Override
+							public byte[] mapRow(ResultSet rs, int rowNum) throws SQLException {
+								return rs.getBytes(1);
+							}
+							
+						});
+		
+		return tiles.get(0);
 	}
 }
