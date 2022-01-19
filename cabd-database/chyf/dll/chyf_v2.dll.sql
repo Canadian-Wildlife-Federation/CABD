@@ -82,6 +82,7 @@ create table chyf2.ecatchment_attributes(
 CREATE TABLE chyf2.vector_tile_cache (
 	"key" varchar(32) NOT NULL,
 	tile bytea NULL,
+	last_accessed timestamp not null  default now(),
 	CONSTRAINT vector_tile_cache_pkey PRIMARY KEY (key)
 );
 
