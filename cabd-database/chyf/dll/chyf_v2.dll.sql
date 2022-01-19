@@ -171,4 +171,21 @@ create index ecatchment_geometry_idx on chyf2.ecatchment using gist(geometry);
 create index eflowpath_geometry_idx on chyf2.eflowpath using gist(geometry);
 create index shoreline_geometry_idx on chyf2.shoreline using gist(geometry);
 create index nexus_geometry_idx on chyf2.nexus using gist(geometry);
+
+alter schema chyf2 owner to chyf;
+ALTER TABLE chyf2.aoi OWNER TO chyf;
+alter table chyf2.ec_subtype_codes OWNER TO chyf;
+alter table chyf2.ec_type_codes OWNER TO chyf;
+alter table chyf2.ecatchment OWNER TO chyf;
+alter table chyf2.ecatchment_attributes OWNER TO chyf;
+alter table chyf2.ef_subtype_codes OWNER TO chyf;
+alter table chyf2.ef_type_codes OWNER TO chyf;
+alter table chyf2.eflowpath OWNER TO chyf;
+alter table chyf2.eflowpath_attributes OWNER TO chyf;
+alter table chyf2.names OWNER TO chyf;
+alter table chyf2.nexus OWNER TO chyf;
+alter table chyf2.nexus_type_codes OWNER TO chyf;
+alter table chyf2.shoreline OWNER TO chyf;
+alter table chyf2.terminal_point OWNER TO chyf;
+alter table chyf2.vector_tile_cache OWNER TO chyf;
 	

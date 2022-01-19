@@ -6,6 +6,9 @@ CREATE TABLE cabd.vector_tile_cache (
 	CONSTRAINT vector_tile_cache_pkey PRIMARY KEY (key)
 );
 
+alter table cabd.vector_tile_cache OWNER TO cabd;
+
+
 create function clear_cache() returns trigger as $a$ begin truncate cabd.vector_tile_cache; return NULL; end; $a$ language plpgsql ;
 
 CREATE TRIGGER trg_clear_cache_dams AFTER INSERT or update or delete ON dams.dams FOR EACH STATEMENT execute procedure clear_cache();
