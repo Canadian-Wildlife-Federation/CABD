@@ -51,22 +51,23 @@ public class VectorTileCacheDao {
 
 	/**
 	 * Gets the total size of the vector tile cache
+	 * in MB
 	 * 
 	 * @return
 	 */
-	public long getCacheSize() {
+	public double getCacheSize() {
 		// pg_relation_size('" + VECTOR_TILE_CACHE + "') 
 		StringBuilder sb = new StringBuilder();
 		sb.append("SELECT sum(length(");
 		sb.append(TILECOL);
-		sb.append(")) / 1000 FROM ");
+		sb.append(")) / 1000000.0 FROM ");
 		sb.append(VECTOR_TILE_CACHE);
 		
-		List<Long> data = jdbcTemplate.query(sb.toString(),
-				new RowMapper<Long>() {
+		List<Double> data = jdbcTemplate.query(sb.toString(),
+				new RowMapper<Double>() {
 					@Override
-					public Long mapRow(ResultSet rs, int rowNum) throws SQLException {
-						return rs.getLong(1);
+					public Double mapRow(ResultSet rs, int rowNum) throws SQLException {
+						return rs.getDouble(1);
 					}
 				});
 		if (data.size() > 0)
@@ -79,9 +80,10 @@ public class VectorTileCacheDao {
 	 * 
 	 * @param sizeToDelete size to delete in mb
 	 */
-	public void cleanCache(long sizeToDelete) {
+	public void cleanCache(double sizeToDeleteMb) {
 
-		long target = sizeToDelete * 1000;
+		//kb
+		double targetKb = sizeToDeleteMb * 1000;
 		
 		// list tiles by size and add up until the required total is reached
 		StringBuilder sb = new StringBuilder();
@@ -101,10 +103,10 @@ public class VectorTileCacheDao {
 
 					@Override
 					public Timestamp extractData(ResultSet rs) throws SQLException, DataAccessException {
-						Long cnt = 0l;
+						Double cnt = 0.0;
 						while (rs.next()) {
-							cnt += rs.getLong(1);
-							if (cnt > target) {
+							cnt += (rs.getLong(1) / 1_000.0);
+							if (cnt > targetKb) {
 								return rs.getTimestamp(2);
 							}
 						}
@@ -159,7 +161,7 @@ public class VectorTileCacheDao {
 	}
 
 	public void removeTile(String key) {
-		jdbcTemplate.update("delete from " + VECTOR_TILE_CACHE + " set " + TILECOL + " = ? ", key);
+		jdbcTemplate.update("delete from " + VECTOR_TILE_CACHE + " set " + KEYCOL + " = ? ", key);
 	}
 
 	public void clear() {

@@ -97,19 +97,16 @@ public class VectorTileCache extends AbstractValueAdaptingCache {
 		dao.clear();
 	}
 
-	
 	/**
 	 * Determines the total size of the cache and if exceeds the maximum
 	 * specified cache size, clean out tiles until less than max size.
 	 */
 	public void cleanUpCache() {
 		//clear oldest tiles until cache is under the required size
-		long cacheSize = dao.getCacheSize();
-		System.out.println("current size:" + cacheSize);
+		double cacheSize = dao.getCacheSize();
 		if (cacheSize < properties.getVectorcachesize()) return;
 		
-		long todelete = cacheSize - properties.getVectorcachesize() + properties.getCachefree();
-		System.out.println("todelete: " +todelete);
+		double todelete = cacheSize - properties.getVectorcachesize() + properties.getCachefree();
 		dao.cleanCache(todelete);	
 	}
 }
