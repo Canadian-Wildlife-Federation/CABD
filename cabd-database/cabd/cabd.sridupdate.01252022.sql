@@ -57,10 +57,10 @@ DECLARE
   fp_rec RECORD;
 BEGIN
 
-	FOR pnt_rec IN EXECUTE format('SELECT cabd_id, %I as rawg FROM %I.%I WHERE %I is not null', raw_geom, src_schema, src_table,raw_geom) 
+	FOR pnt_rec IN EXECUTE format('SELECT cabd_id, %I as rawg FROM %I.%I WHERE %I is not null AND (use_analysis = true or use_analysis is null)', raw_geom, src_schema, src_table,raw_geom) 
 	LOOP 
 		--RAISE NOTICE '%s: %s', pnt_rec.cabd_id, pnt_rec.rawg;
-		FOR fp_rec IN EXECUTE format ('SELECT fp.geometry as geometry, st_distance(%L::geometry::geography, fp.geometry::geography) AS distance FROM chyf_flowpath fp WHERE st_expand(%L::geometry, 0.01) && fp.geometry and st_distance(%L::geometry::geography, fp.geometry::geography) < 50 ORDER BY distance ', pnt_rec.rawg, pnt_rec.rawg, pnt_rec.rawg)
+		FOR fp_rec IN EXECUTE format ('SELECT fp.geometry as geometry, st_distance(%L::geometry::geography, fp.geometry::geography) AS distance FROM chyf_flowpath fp WHERE st_expand(%L::geometry, 0.01) && fp.geometry and st_distance(%L::geometry::geography, fp.geometry::geography) < %s ORDER BY distance ', pnt_rec.rawg, pnt_rec.rawg, pnt_rec.rawg, max_distance_m)
 		LOOP
 			EXECUTE format('UPDATE %I.%I SET %I = ST_LineInterpolatePoint(%L::geometry, ST_LineLocatePoint(%L::geometry, %L::geometry) ) WHERE cabd_id = %L', src_schema, src_table, snapped_geom,fp_rec.geometry, fp_rec.geometry, pnt_rec.rawg, pnt_rec.cabd_id);
 			--RAISE NOTICE '%s', fp_rec.distance;	
@@ -75,8 +75,8 @@ $$ LANGUAGE plpgsql;
 update cabd.feature_type_metadata set field_name = 'feature_type' where view_name  = 'cabd.barriers_view' and field_name = 'barrier_type'
 
 --resnap
-select cabd.snap_to_network('dams', 'dams', 'original_point', 'snapped_point', 100);
-select cabd.snap_to_network('waterfalls', 'waterfalls', 'original_point', 'snapped_point', 100);
+select cabd.snap_to_network('dams', 'dams', 'original_point', 'snapped_point', 150);
+select cabd.snap_to_network('waterfalls', 'waterfalls', 'original_point', 'snapped_point', 150);
 
 --recreate view
 CREATE OR REPLACE VIEW cabd.dams_view
@@ -421,4 +421,10 @@ AS SELECT w.cabd_id,
      LEFT JOIN cabd.nhn_workunit nhn ON nhn.id::text = w.nhn_workunit_id::text
      LEFT JOIN cabd.passability_status_codes ps ON ps.code = w.passability_status_code;
 
+     
+GRANT ALL PRIVILEGES ON cabd.dams_view to cabd;
+GRANT ALL PRIVILEGES ON cabd.barriers_view to cabd;
+GRANT ALL PRIVILEGES ON cabd.fishways_view to cabd;
+GRANT ALL PRIVILEGES ON cabd.waterfalls_view to cabd;
+GRANT ALL PRIVILEGES ON cabd.all_features_view to cabd;
           
