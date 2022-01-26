@@ -19,10 +19,10 @@ CREATE FOREIGN TABLE chyf_flowpath (
  length double precision ,        
  name character varying,         
  nameid character varying ,        
- geometry geometry(LineString,4326) 
+ geometry geometry(LineString,4617) 
 )
 SERVER chyf_server
-OPTIONS (schema_name 'chyf', table_name 'flowpath');  
+OPTIONS (schema_name 'chyf2', table_name 'eflowpath');  
 
 grant select on chyf_flowpath to public;
 
@@ -44,5 +44,4 @@ BEGIN
 		END LOOP;
 	END LOOP;
 END;
-$$ LANGUAGE plpgsql; 
-
+$$ LANGUAGE plpgsql;

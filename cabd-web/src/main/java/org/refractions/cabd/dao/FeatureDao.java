@@ -52,7 +52,7 @@ public class FeatureDao {
 	/**
 	 * SRID of geometry in database
 	 */
-	public static int DATABASE_SRID = 4326;
+	public static int DATABASE_SRID = 4617;
 	/**
 	 * Valid bounds for SRID
 	 */
@@ -85,7 +85,7 @@ public class FeatureDao {
 	public Feature getFeature(UUID uuid) {
 		String type = null;
 		try {
-			String query = "SELECT feature_type FROM " + FeatureViewMetadata.ALL_FEATURES_VIEW + " WHERE " + ID_FIELD + " = ? ";
+			String query = "SELECT " + FEATURE_TYPE_FIELD  + " FROM " + FeatureViewMetadata.ALL_FEATURES_VIEW + " WHERE " + ID_FIELD + " = ? ";
 			type = jdbcTemplate.queryForObject(query, String.class, uuid);
 		}catch(EmptyResultDataAccessException ex) {
 			return null;
@@ -218,7 +218,8 @@ public class FeatureDao {
 			where = null;
 			and = " AND ";
 
-			sb.append(" feature_type IN (");
+			sb.append(FEATURE_TYPE_FIELD );
+			sb.append(" IN (");
 			sb.append(String.join(",", Collections.nCopies(types.size(), "?")));
 			sb.append(")");
 		}
@@ -301,7 +302,8 @@ public class FeatureDao {
 			if (where != null) sb.append(" WHERE ");	
 			where = null;
 			and = " AND ";
-			sb.append(" feature_type IN (");
+			sb.append( FEATURE_TYPE_FIELD );
+			sb.append(" IN (");
 			sb.append(String.join(",", Collections.nCopies(types.size(), "?")));
 			sb.append(")");
 			
@@ -362,7 +364,7 @@ public class FeatureDao {
 		StringBuilder sb = new StringBuilder();
 		sb.append("	WITH");
 		sb.append("	bounds AS (");
-		sb.append("	SELECT st_transform(" + stenv + ", 4326) AS geom, ");
+		sb.append("	SELECT st_transform(" + stenv + ", " + DATABASE_SRID + ") AS geom, ");
 		sb.append( stenv + "::box2d AS b2d  ");
 		sb.append(" ), ");
 		sb.append("	mvtgeom AS (");
