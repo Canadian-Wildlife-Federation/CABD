@@ -37,7 +37,7 @@ USING ST_Transform(polygon, 4617) ;
 
 drop foreign table chyf_flowpath;
 
-CREATE OR REPLACE FOREIGN TABLE chyf_flowpath (
+CREATE FOREIGN TABLE chyf_flowpath (
  region_id character varying(32),     
  type character varying,    
  rank character varying,        
