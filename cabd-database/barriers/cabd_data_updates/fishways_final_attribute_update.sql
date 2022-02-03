@@ -3,7 +3,8 @@
 
 BEGIN;
 --Various spatial joins/queries to populate fields
---TO DO: Change original_point to EPSG:4326, populate lat/long fields, drop column geometry
+
+--Change original_point to EPSG:4326, populate lat/long fields, drop column geometry
 ALTER TABLE featurecopy.fishways
     ALTER COLUMN original_point TYPE geometry(Point, 4326)
         USING ST_Transform(ST_SetSRID(original_point, 4326), 4326);
@@ -83,44 +84,44 @@ UPDATE featurecopy.fishways SET fishpass_type_code = 9 WHERE fishpass_type_code 
 COMMIT;
 
 --drop original fields we no longer need
-BEGIN;
+-- BEGIN;
 
-ALTER TABLE featurecopy.fishways
-    DROP COLUMN fid,
-    DROP COLUMN data_source,
-    DROP COLUMN data_source_text,
-    DROP COLUMN data_source_id,
-    DROP COLUMN decommissioned_yn,
-    DROP COLUMN duplicates_yn,
-    DROP COLUMN fishway_yn,
-    DROP COLUMN canfishpass_id,
-    DROP COLUMN barrier_ind,
-    DROP COLUMN IF EXISTS dups_ab_basefeatures,
-    DROP COLUMN IF EXISTS dups_canvec_manmade,
-    DROP COLUMN IF EXISTS dups_cdai,
-    DROP COLUMN IF EXISTS dups_cehq,
-    DROP COLUMN IF EXISTS dups_cgndb,
-    DROP COLUMN IF EXISTS dups_fao,
-    DROP COLUMN IF EXISTS dups_fishwerks,
-    DROP COLUMN IF EXISTS dups_fwa,
-    DROP COLUMN IF EXISTS dups_gfielding,
-    DROP COLUMN IF EXISTS dups_goodd,
-    DROP COLUMN IF EXISTS dups_grand,
-    DROP COLUMN IF EXISTS dups_lsds,
-    DROP COLUMN IF EXISTS dups_nbhn,
-    DROP COLUMN IF EXISTS dups_ncc,
-    DROP COLUMN IF EXISTS dups_nhn,
-    DROP COLUMN IF EXISTS dups_nlprov,
-    DROP COLUMN IF EXISTS dups_npdp,
-    DROP COLUMN IF EXISTS dups_nswf,
-    DROP COLUMN IF EXISTS dups_odi,
-    DROP COLUMN IF EXISTS dups_ohn,
-    DROP COLUMN IF EXISTS dups_publicdamskml,
-    DROP COLUMN IF EXISTS dups_wrispublicdams,
-    DROP COLUMN reference_url,
-    DROP COLUMN reviewer_classification,
-    DROP COLUMN reviewer_comments,
-    DROP COLUMN multipoint_yn
-    DROP COLUMN geometry;
+-- ALTER TABLE featurecopy.fishways
+--     DROP COLUMN fid,
+--     DROP COLUMN data_source,
+--     DROP COLUMN data_source_text,
+--     DROP COLUMN data_source_id,
+--     DROP COLUMN decommissioned_yn,
+--     DROP COLUMN duplicates_yn,
+--     DROP COLUMN fishway_yn,
+--     DROP COLUMN canfishpass_id,
+--     DROP COLUMN barrier_ind,
+--     DROP COLUMN IF EXISTS dups_ab_basefeatures,
+--     DROP COLUMN IF EXISTS dups_canvec_manmade,
+--     DROP COLUMN IF EXISTS dups_cdai,
+--     DROP COLUMN IF EXISTS dups_cehq,
+--     DROP COLUMN IF EXISTS dups_cgndb,
+--     DROP COLUMN IF EXISTS dups_fao,
+--     DROP COLUMN IF EXISTS dups_fishwerks,
+--     DROP COLUMN IF EXISTS dups_fwa,
+--     DROP COLUMN IF EXISTS dups_gfielding,
+--     DROP COLUMN IF EXISTS dups_goodd,
+--     DROP COLUMN IF EXISTS dups_grand,
+--     DROP COLUMN IF EXISTS dups_lsds,
+--     DROP COLUMN IF EXISTS dups_nbhn,
+--     DROP COLUMN IF EXISTS dups_ncc,
+--     DROP COLUMN IF EXISTS dups_nhn,
+--     DROP COLUMN IF EXISTS dups_nlprov,
+--     DROP COLUMN IF EXISTS dups_npdp,
+--     DROP COLUMN IF EXISTS dups_nswf,
+--     DROP COLUMN IF EXISTS dups_odi,
+--     DROP COLUMN IF EXISTS dups_ohn,
+--     DROP COLUMN IF EXISTS dups_publicdamskml,
+--     DROP COLUMN IF EXISTS dups_wrispublicdams,
+--     DROP COLUMN reference_url,
+--     DROP COLUMN reviewer_classification,
+--     DROP COLUMN reviewer_comments,
+--     DROP COLUMN multipoint_yn
+--     DROP COLUMN geometry;
 
-COMMIT;
+-- COMMIT;

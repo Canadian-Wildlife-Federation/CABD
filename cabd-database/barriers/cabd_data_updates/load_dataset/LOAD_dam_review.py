@@ -10,7 +10,8 @@ dbName = "cabd"
 
 dataFile = ""
 dataFile = sys.argv[1]
-#provinceCode should be 'ab', 'bc', etc.
+#provinceCode should be 'ab', 'bc', etc. but this is just to grab the correct layer from gpkg
+#e.g., provinceCode of 'atlantic' is fine if the layer you want is named 'atlantic_dam_review'
 provinceCode = sys.argv[2]
 dbUser = sys.argv[3]
 dbPassword = sys.argv[4]
@@ -244,7 +245,7 @@ with conn.cursor() as cursor:
     cursor.execute(loadQuery)
 conn.commit()
 
-#snap points
+#snap points - commented out until we have chyf networks ready
 # print("Snapping to CHyF network...")
 # snapQuery = f"""
 # UPDATE {workingTable} SET original_point = ST_GeometryN(geometry, 1);

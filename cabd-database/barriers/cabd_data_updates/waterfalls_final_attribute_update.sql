@@ -12,7 +12,7 @@ UPDATE featurecopy.waterfalls SET passability_status_code =
     ELSE NULL END;
 
 --Various spatial joins/queries to populate fields
---TO DO: Change original_point, snapped_point to EPSG:4326, populate lat/long fields, drop column geometry
+--Change original_point, snapped_point to EPSG:4326, populate lat/long fields, drop column geometry
 ALTER TABLE featurecopy.waterfalls
     ALTER COLUMN original_point TYPE geometry(Point, 4326)
         USING ST_Transform(ST_SetSRID(original_point, 4326), 4326);

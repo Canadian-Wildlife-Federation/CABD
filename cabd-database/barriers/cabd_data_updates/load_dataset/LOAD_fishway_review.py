@@ -10,7 +10,8 @@ dbName = "cabd"
 
 dataFile = ""
 dataFile = sys.argv[1]
-#provinceCode should be 'ab', 'bc', etc.
+#provinceCode should be 'ab', 'bc', etc. but this is just to grab the correct layer from gpkg
+#e.g., provinceCode of 'atlantic' is fine if the layer you want is named 'atlantic_dam_review'
 provinceCode = sys.argv[2]
 dbUser = sys.argv[3]
 dbPassword = sys.argv[4]

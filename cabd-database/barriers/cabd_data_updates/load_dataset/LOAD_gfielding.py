@@ -103,7 +103,7 @@ UPDATE {script.damWorkingTable} SET operating_status_code =
 UPDATE {script.damWorkingTable} SET "comments" = main_purpose_of_dam;
 
 --delete extra fields so only mapped fields remain
-ALTER TABLE {script.tempTable}
+ALTER TABLE {script.damWorkingTable}
     DROP COLUMN name_of_structure,
     DROP COLUMN year_constructed,
     DROP COLUMN main_purpose_of_dam,

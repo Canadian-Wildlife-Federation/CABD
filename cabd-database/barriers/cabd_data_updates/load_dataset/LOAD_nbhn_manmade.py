@@ -26,6 +26,11 @@ CREATE TABLE {script.damWorkingTable} AS
         data_source_id
     FROM {script.sourceTable};
 
+ALTER TABLE {script.damWorkingTable} ALTER COLUMN data_source_id SET NOT NULL;
+ALTER TABLE {script.damWorkingTable} ADD PRIMARY KEY (data_source_id);
+ALTER TABLE {script.damWorkingTable} ADD COLUMN cabd_id uuid;
+ALTER TABLE {script.damWorkingTable} ADD CONSTRAINT data_source_fkey FOREIGN KEY (data_source) REFERENCES cabd.data_source (id);
+
 ALTER TABLE {script.damWorkingTable} ADD COLUMN dam_name_en varchar(512);
 ALTER TABLE {script.damWorkingTable} ADD COLUMN operating_status_code int2;
 

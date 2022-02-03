@@ -22,7 +22,6 @@ UPDATE
     {script.damAttributeTable} AS cabdsource
 SET    
     dam_name_fr_ds = CASE WHEN (cabd.dam_name_fr IS NULL AND {script.datasetname}.dam_name_fr IS NOT NULL) THEN {script.datasetname}.data_source ELSE cabdsource.dam_name_fr_ds END,
-    municipality_ds = CASE WHEN (cabd.municipality IS NULL AND {script.datasetname}.municipality IS NOT NULL) THEN {script.datasetname}.data_source ELSE cabdsource.municipality_ds END,
     reservoir_name_fr_ds = CASE WHEN (cabd.reservoir_name_fr IS NULL AND {script.datasetname}.reservoir_name_fr IS NOT NULL) THEN {script.datasetname}.data_source ELSE cabdsource.reservoir_name_fr_ds END,
     reservoir_present_ds = CASE WHEN (cabd.reservoir_present IS NULL AND {script.datasetname}.reservoir_present IS NOT NULL) THEN {script.datasetname}.data_source ELSE cabdsource.reservoir_present_ds END,
     waterbody_name_fr_ds = CASE WHEN (cabd.waterbody_name_fr IS NULL AND {script.datasetname}.waterbody_name_fr IS NOT NULL) THEN {script.datasetname}.data_source ELSE cabdsource.waterbody_name_fr_ds END,
@@ -39,7 +38,6 @@ SET
     maintenance_last_ds = CASE WHEN (cabd.maintenance_last IS NULL AND {script.datasetname}.maintenance_last IS NOT NULL) THEN {script.datasetname}.data_source ELSE cabdsource.maintenance_last_ds END,
     
     dam_name_fr_dsfid = CASE WHEN (cabd.dam_name_fr IS NULL AND {script.datasetname}.dam_name_fr IS NOT NULL) THEN {script.datasetname}.data_source_id ELSE cabdsource.dam_name_fr_dsfid END,
-    municipality_dsfid = CASE WHEN (cabd.municipality IS NULL AND {script.datasetname}.municipality IS NOT NULL) THEN {script.datasetname}.data_source_id ELSE cabdsource.municipality_dsfid END,
     reservoir_name_fr_dsfid = CASE WHEN (cabd.reservoir_name_fr IS NULL AND {script.datasetname}.reservoir_name_fr IS NOT NULL) THEN {script.datasetname}.data_source_id ELSE cabdsource.reservoir_name_fr_dsfid END,
     reservoir_present_dsfid = CASE WHEN (cabd.reservoir_present IS NULL AND {script.datasetname}.reservoir_present IS NOT NULL) THEN {script.datasetname}.data_source_id ELSE cabdsource.reservoir_present_dsfid END,
     waterbody_name_fr_dsfid = CASE WHEN (cabd.waterbody_name_fr IS NULL AND {script.datasetname}.waterbody_name_fr IS NOT NULL) THEN {script.datasetname}.data_source_id ELSE cabdsource.waterbody_name_fr_dsfid END,
@@ -65,7 +63,6 @@ UPDATE
     {script.damTable} AS cabd
 SET
     dam_name_fr = CASE WHEN (cabd.dam_name_fr IS NULL AND {script.datasetname}.dam_name_fr IS NOT NULL) THEN {script.datasetname}.dam_name_fr ELSE cabd.dam_name_fr END,
-    municipality = CASE WHEN (cabd.municipality IS NULL AND {script.datasetname}.municipality IS NOT NULL) THEN {script.datasetname}.municipality ELSE cabd.municipality END,
     reservoir_name_fr = CASE WHEN (cabd.reservoir_name_fr IS NULL AND {script.datasetname}.reservoir_name_fr IS NOT NULL) THEN {script.datasetname}.reservoir_name_fr ELSE cabd.reservoir_name_fr END,
     reservoir_present = CASE WHEN (cabd.reservoir_present IS NULL AND {script.datasetname}.reservoir_present IS NOT NULL) THEN {script.datasetname}.reservoir_present ELSE cabd.reservoir_present END,
     waterbody_name_fr = CASE WHEN (cabd.waterbody_name_fr IS NULL AND {script.datasetname}.waterbody_name_fr IS NOT NULL) THEN {script.datasetname}.waterbody_name_fr ELSE cabd.waterbody_name_fr END,
