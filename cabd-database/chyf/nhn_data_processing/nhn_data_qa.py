@@ -116,6 +116,18 @@ def run_qa(conn, workunit):
     with conn.cursor() as cursor:
         cursor.execute(qa2)
 
+    #FLOWPATHS NEAR (but not noded)
+    qa2 = f"""
+        insert into {workingSchema}.qaerrors (type, message, geometry)
+        select 'WARNING', 'flowpaths near but not noded ' || a.id || ' ' || b.id, st_closestpoint(a.geometry,b.geometry) as pnt
+        from {workingSchema}.eflowpath a, {workingSchema}.eflowpath b
+        where  a.id != b.id and 
+        st_dwithin(a.geometry, b.geometry, 0.000001) and 
+        st_disjoint(a.geometry, b.geometry) 
+    """
+    log (qa2)
+    with conn.cursor() as cursor:
+        cursor.execute(qa2)
             
     #NON_SEKELETON FLOWPATH IN WATERBODY
     qa2 = f"""
