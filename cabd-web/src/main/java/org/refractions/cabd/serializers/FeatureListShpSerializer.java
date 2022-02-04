@@ -85,7 +85,7 @@ public class FeatureListShpSerializer extends AbstractHttpMessageConverter<Featu
 	protected void writeInternal(FeatureList features, HttpOutputMessage outputMessage)
 			throws IOException, HttpMessageNotWritableException {
 	
-		if (features.getFeatures().isEmpty()) return;
+		if (features.getItems().isEmpty()) return;
 		
 		ImmutableTriple<String, FeatureViewMetadata, Envelope> metadataitems = FeatureListUtil.getMetadata(features, typeManager);
 		

@@ -17,8 +17,8 @@ package org.refractions.cabd.serializers;
 
 import java.io.IOException;
 
-import org.refractions.cabd.model.Feature;
-import org.refractions.cabd.model.FeatureList;
+import org.refractions.cabd.model.FeatureDataSourceDetails;
+import org.refractions.cabd.model.FeatureDataSourceList;
 import org.springframework.boot.jackson.JsonComponent;
 
 import com.fasterxml.jackson.core.JsonGenerator;
@@ -26,27 +26,22 @@ import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 
 /**
- * Serializes a list of Feature features to a GeoJson FeatureCollection.
+ * Serializes a list of Feature data source fields to a json.
  * 
  * @author Emily
  *
  */
 @JsonComponent
-public class FeatureListJsonSerializer extends JsonSerializer<FeatureList> {
+public class FeatureDataSourceListJsonSerializer extends JsonSerializer<FeatureDataSourceList> {
 
 	@Override
-	public void serialize(FeatureList value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+	public void serialize(FeatureDataSourceList value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
 
-		gen.writeStartObject();
-		gen.writeStringField("type", "FeatureCollection");
-		// features
-		gen.writeFieldName("features");
 		gen.writeStartArray();
-		for (Feature b : value.getItems()) {
+		for (FeatureDataSourceDetails b : value.getItems()) {
 			gen.writeObject(b);
 		}
 		gen.writeEndArray();
-		gen.writeEndObject();
 	}
 
 }
