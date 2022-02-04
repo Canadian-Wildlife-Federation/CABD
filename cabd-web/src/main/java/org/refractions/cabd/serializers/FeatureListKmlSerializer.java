@@ -38,6 +38,7 @@ import org.springframework.http.converter.AbstractHttpMessageConverter;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.http.converter.HttpMessageNotWritableException;
 import org.springframework.stereotype.Component;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 /**
  * Serializes a list of Feature to kml dataset
@@ -73,7 +74,7 @@ public class FeatureListKmlSerializer extends AbstractHttpMessageConverter<Featu
 	protected void writeInternal(FeatureList features, HttpOutputMessage outputMessage)
 			throws IOException, HttpMessageNotWritableException {
 	
-		if (features.getFeatures().isEmpty()) return;
+		if (features.getItems().isEmpty()) return;
 		
 		ImmutableTriple<String, FeatureViewMetadata, Envelope> metadataitems = FeatureListUtil.getMetadata(features, typeManager);
 		
@@ -84,14 +85,24 @@ public class FeatureListKmlSerializer extends AbstractHttpMessageConverter<Featu
 		ListFeatureCollection cfeatures = new ListFeatureCollection(type);
 		
 		SimpleFeatureBuilder builder = new SimpleFeatureBuilder(type);
-		
-		for (Feature f : features.getFeatures()) {
+
+		String rooturl = ServletUriComponentsBuilder.fromCurrentContextPath().path("/").build().toUriString();
+		for (Feature f : features.getItems()) {
 			for (FeatureViewMetadataField field : metadata.getFields()) {
-				Object value = f.getAttribute(field.getFieldName());
-				if (field.isGeometry()) {
-					value = f.getGeometry();
+				if (f.getAttributes().containsKey(field.getFieldName())) {
+					Object value = f.getAttribute(field.getFieldName());
+					if (field.isGeometry()) {
+						value = f.getGeometry();
+					}
+					builder.set(field.getFieldName(), value);
+				}else if (f.getLinkAttributes().containsKey(field.getFieldName())) {
+					String value = f.getLinkAttributes().get(field.getFieldName());
+					if (value != null) {
+						builder.set(field.getFieldName(), rooturl + value);
+					}else {
+						builder.set(field.getFieldName(), null);
+					}
 				}
-				builder.set(field.getFieldName(), value);
 			}
 			SimpleFeature sf = builder.buildFeature(f.getId().toString());
 			cfeatures.add(sf);

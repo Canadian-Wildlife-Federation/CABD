@@ -87,7 +87,8 @@ public class FeatureController {
 					 	description = "feature not found", 
 			 			content = {
 						@Content(mediaType = "application/json", schema = @Schema(implementation = ApiError.class))})})
-	@GetMapping(value = "/{id:[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}}")
+	@GetMapping(value = "/{id:[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}}",
+			produces = {MediaType.APPLICATION_JSON_VALUE, "application/geo+json",  CabdApplication.GEOPKG_MEDIA_TYPE_STR})
 	public ResponseEntity<Feature> getFeature(
 			@Parameter(description = "unique feature identifier") 
 			@PathVariable("id") UUID id,

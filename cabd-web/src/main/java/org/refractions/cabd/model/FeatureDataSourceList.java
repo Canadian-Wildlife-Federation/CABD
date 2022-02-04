@@ -17,26 +17,23 @@ package org.refractions.cabd.model;
 
 import java.util.List;
 
-import org.refractions.cabd.controllers.FeatureController;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
-
 /**
- * A collection of Features.
+ * List of details about a feature attribute source
  * 
  * @author Emily
  *
  */
-//I created this class to make it simple to
-//serialize a list of features to a GeoJson
-//feature collection
-public class FeatureList extends ItemList<Feature>{
+public class FeatureDataSourceList extends ItemList<FeatureDataSourceDetails> {
 
-	public FeatureList(List<Feature> features) {
-		super(features);
-		
-		//add url attribute to link to individual feature
-		String rooturl = ServletUriComponentsBuilder.fromCurrentContextPath().path("/").path(FeatureController.PATH).build().toUriString();		
-		features.forEach(f->f.addAttribute(FeatureViewMetadata.URL_ATTRIBUTE, rooturl + "/" + f.getId().toString()));
+	private boolean includeAllAttributes = false;
+	
+	public FeatureDataSourceList(List<FeatureDataSourceDetails> items, boolean includeAllAttributes) {
+		super(items);
+		this.includeAllAttributes = includeAllAttributes;
+	}
+	
+	public boolean getIncludeAllAttributes() {
+		return this.includeAllAttributes;
 	}
 
 }

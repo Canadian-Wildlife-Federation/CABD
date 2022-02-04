@@ -1,3 +1,18 @@
+/*
+ * Copyright 2021 Canadian Wildlife Federation
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License"); 
+ * you may not use this file except in compliance with the License. 
+ * You may obtain a copy of the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software 
+ * distributed under the License is distributed on an "AS IS" BASIS, 
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
+ * See the License for the specific language governing permissions and 
+ * limitations under the License.
+ */
 package org.refractions.cabd.serializers;
 
 import java.io.IOException;
@@ -21,14 +36,22 @@ import org.refractions.cabd.model.Feature;
 import org.refractions.cabd.model.FeatureList;
 import org.refractions.cabd.model.FeatureViewMetadata;
 import org.refractions.cabd.model.FeatureViewMetadataField;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+/**
+ * Utilities for feature lists, primarily for converting
+ * feature lists into geotools feature collections.
+ *  
+ * @author Emily
+ *
+ */
 public class FeatureListUtil {
 
 	public static ImmutableTriple<String, FeatureViewMetadata, Envelope> getMetadata(FeatureList features, FeatureTypeManager typeManager) throws IOException{
 
 		Set<String> ftypes = new HashSet<>();
 		Envelope env = null;
-		for (Feature feature : features.getFeatures()) {
+		for (Feature feature : features.getItems()) {
 			ftypes.add(feature.getFeatureType());
 			if (env == null) {
 				env = feature.getGeometry().getEnvelopeInternal();
@@ -109,14 +132,25 @@ public class FeatureListUtil {
 	public static void writeFeatures(FeatureWriter<SimpleFeatureType, SimpleFeature> writer, FeatureList features, 
 			FeatureViewMetadata metadata, Function<String, String> attributeNameMapper ) throws IOException{
 		//create features
-		for (Feature f : features.getFeatures()) {
+		String rooturl = ServletUriComponentsBuilder.fromCurrentContextPath().path("/").build().toUriString();
+
+		for (Feature f : features.getItems()) {
 			SimpleFeature sfeature = writer.next();
 			for (FeatureViewMetadataField field : metadata.getFields()) {
-				Object value = f.getAttribute(field.getFieldName());
-				if (field.isGeometry()) {
-					sfeature.setDefaultGeometry(f.getGeometry());
-				}else {
-					sfeature.setAttribute(attributeNameMapper.apply(field.getFieldName()), value);
+				if (f.getAttributes().containsKey(field.getFieldName())) {
+					Object value = f.getAttribute(field.getFieldName());
+					if (field.isGeometry()) {
+						sfeature.setDefaultGeometry(f.getGeometry());
+					}else {
+						sfeature.setAttribute(attributeNameMapper.apply(field.getFieldName()), value);
+					}
+				}else if (f.getLinkAttributes().containsKey(field.getFieldName())) {
+					String value = f.getLinkAttributes().get(field.getFieldName());
+					if (value != null) {
+						sfeature.setAttribute(attributeNameMapper.apply(field.getFieldName()), rooturl + value);
+					}else {
+						sfeature.setAttribute(attributeNameMapper.apply(field.getFieldName()), null);
+					}
 				}
 			}
 			writer.write();

@@ -17,10 +17,15 @@ package org.refractions.cabd.dao;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Types;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import org.locationtech.jts.geom.Coordinate;
@@ -28,7 +33,9 @@ import org.locationtech.jts.geom.Envelope;
 import org.refractions.cabd.controllers.VectorTileController;
 import org.refractions.cabd.dao.filter.Filter;
 import org.refractions.cabd.exceptions.InvalidDatabaseConfigException;
+import org.refractions.cabd.model.DataSource;
 import org.refractions.cabd.model.Feature;
+import org.refractions.cabd.model.FeatureDataSourceDetails;
 import org.refractions.cabd.model.FeatureType;
 import org.refractions.cabd.model.FeatureViewMetadata;
 import org.refractions.cabd.model.FeatureViewMetadataField;
@@ -38,6 +45,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
+import org.springframework.jdbc.core.SqlTypeValue;
 import org.springframework.stereotype.Component;
 
 /**
@@ -426,4 +434,139 @@ public class FeatureDao {
 		
 		return tiles.get(0);
 	}
+	
+	/**
+	 * Finds all the attribute source details for a given feature.
+	 * 
+	 * @param featureId the feature id
+	 * @param ftype the feature type
+	 * @return
+	 */
+	public List<FeatureDataSourceDetails> getFeatureSourceDetails(UUID featureId, FeatureType ftype) {
+		
+		StringBuilder sb = new StringBuilder();
+		sb.append("SELECT substring(column_name, 0, length(column_name) - length('_ds') + 1)");
+		sb.append(" FROM information_schema.columns ");
+		sb.append("WHERE table_schema = ? and table_name = ? and column_name like '%_ds'");
+		String[] parts = ftype.getAttributeSourceTable().split("\\.");
+		
+		String sname = parts[0];
+		String tname = parts[1];
+		
+		List<String> columns = jdbcTemplate.query(sb.toString(), 
+				new Object[] {sname, tname}, 
+				new int[] {Types.VARCHAR, Types.VARCHAR}, new RowMapper<String>() {
+			@Override
+			public String mapRow(ResultSet rs, int rowNum) throws SQLException {
+				return rs.getString(1);
+			}});
+		
+		sb = new StringBuilder();
+		sb.append("SELECT ");
+		for (String field : columns) {
+			sb.append(field + "_ds,");
+			sb.append(field + "_dsfid,");
+		}
+		sb.deleteCharAt(sb.length() - 1);
+		sb.append(" FROM ");
+		sb.append(ftype.getAttributeSourceTable());
+		sb.append(" WHERE cabd_id = ?");
+		
+		Set<UUID> dataSources = new HashSet<>();
+		
+		List<Map<String,Object>> fieldData = jdbcTemplate.query(sb.toString(),
+				new Object[] {featureId}, new int[] {SqlTypeValue.TYPE_UNKNOWN}, 
+				new RowMapper<Map<String, Object>>() {
+			@Override
+			public Map<String,Object> mapRow(ResultSet rs, int rowNum) throws SQLException {
+				HashMap<String, Object> columnData = new HashMap<>();
+				for (String field:columns) {
+					UUID dsuuid = (UUID) rs.getObject(field + "_ds");
+					String dsfid = rs.getString(field + "_dsfid");
+					
+					if (dsuuid != null) {
+						columnData.put(field + "_ds", dsuuid);
+						columnData.put(field + "_dsfid", dsfid);
+						dataSources.add(dsuuid);
+					}
+				}
+				return columnData;
+			}});
+		
+		RowMapper<DataSource> dsRowMapper = new RowMapper<DataSource>() {
+			@Override
+			public DataSource mapRow(ResultSet rs, int rowNum) throws SQLException {
+				return new DataSource((UUID)rs.getObject("id"), rs.getString("name"), rs.getDate("version_date"), rs.getString("version_number"));
+			}
+		};
+		
+		sb = new StringBuilder();
+		sb.append("SELECT id, name, version_date, version_number ");
+		sb.append(" FROM cabd.data_source ");
+		sb.append(" WHERE id = ? ");
+		
+		Map<UUID, DataSource> sources = new HashMap<>();
+		for (UUID ds : dataSources) {
+			List<DataSource> ds1 = 
+					jdbcTemplate.query(sb.toString(), new Object[] {ds}, new int[] {SqlTypeValue.TYPE_UNKNOWN}, dsRowMapper);
+			if (ds1.size() == 1) {
+				sources.put(ds, ds1.get(0));
+			}
+		}
+		
+		Map<String,Object> fData = fieldData.isEmpty() ? new HashMap<>() :  fieldData.get(0);
+		
+		Map<String,String> attToName = new HashMap<>();
+		for (FeatureViewMetadataField field :  ftype.getViewMetadata().getFields()) {
+			attToName.put(field.getFieldName(), field.getName());
+		}
+		
+		List<FeatureDataSourceDetails> all = new ArrayList<>();
+		for(String field : columns) {
+			FeatureDataSourceDetails details = new FeatureDataSourceDetails(featureId);
+			
+			details.setAttributeFieldName(field);
+			details.setAttributeName(attToName.get(field));
+			
+			details.setDataSource(sources.get( (UUID)fData.get(field+"_ds") ));
+			details.setDsFeatureId((String) fData.get(field + "_dsfid"));
+			
+			
+			all.add(details);
+		}
+		
+		return all;
+	}
+	
+	/**
+	 * Finds the feature type for the given return.  Returns null if no feature type found.
+	 * 
+	 * @param uuid
+	 * @return
+	 */
+	public FeatureType getFeatureType(UUID uuid) {
+		String type = null;
+		try {
+			StringBuilder sb = new StringBuilder();
+			sb.append("SELECT ");
+			sb.append(FEATURE_TYPE_FIELD);
+			sb.append(" FROM ");
+			sb.append( FeatureViewMetadata.ALL_FEATURES_VIEW);
+			sb.append(" WHERE ");
+			sb.append( ID_FIELD);
+			sb.append( " = ? ");
+			
+			type = jdbcTemplate.queryForObject(sb.toString(), String.class, uuid);
+		}catch(EmptyResultDataAccessException ex) {
+			return null;
+		}
+		
+		FeatureType btype = typeManager.getFeatureType(type);
+		if (btype == null) {
+			logger.error(MessageFormat.format("Database Error: No entry for feature type ''{0}'' in the feature_types database table.",type));
+			return null;
+		}
+		return btype;
+	}
+	
 }

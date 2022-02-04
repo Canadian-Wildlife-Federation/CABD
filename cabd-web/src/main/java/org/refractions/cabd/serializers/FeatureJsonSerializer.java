@@ -18,10 +18,8 @@ package org.refractions.cabd.serializers;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.Map.Entry;
-import java.util.UUID;
 
 import org.postgresql.jdbc.PgArray;
-import org.refractions.cabd.controllers.FeatureController;
 import org.refractions.cabd.controllers.GeoJsonUtils;
 import org.refractions.cabd.dao.FeatureDao;
 import org.refractions.cabd.model.Feature;
@@ -72,10 +70,10 @@ public class FeatureJsonSerializer extends JsonSerializer<Feature> {
 			}
 			
 			//links
-			String rooturl = ServletUriComponentsBuilder.fromCurrentContextPath().path("/").path(FeatureController.PATH).build().toUriString();
-			for (Entry<String, UUID> link : value.getLinkAttributes().entrySet()) {
+			String rooturl = ServletUriComponentsBuilder.fromCurrentContextPath().path("/").build().toUriString();
+			for (Entry<String, String> link : value.getLinkAttributes().entrySet()) {
 				if (link.getValue() != null) {
-					gen.writeObjectField(link.getKey(), rooturl + "/" + link.getValue().toString());
+					gen.writeObjectField(link.getKey(), rooturl + link.getValue());
 				}else {
 					gen.writeObjectField(link.getKey(), null);
 				}

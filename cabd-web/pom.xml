@@ -20,6 +20,8 @@
 	<properties>
 		<java.version>11</java.version>
 		<geotools.version>26.1</geotools.version>
+		<jts.version>1.17.1</jts.version>
+		<springdoc.version>1.5.0</springdoc.version>
 	</properties>
 
 	<repositories>
@@ -47,7 +49,6 @@
 		<dependency>
 			<groupId>org.postgresql</groupId>
 			<artifactId>postgresql</artifactId>
-			<version>42.2.19</version>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -62,7 +63,7 @@
 		<dependency>
 			<groupId>org.locationtech.jts</groupId>
 			<artifactId>jts-core</artifactId>
-			<version>1.17.1</version>
+			<version>${jts.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -72,9 +73,13 @@
 		<dependency>
 			<groupId>org.springdoc</groupId>
 			<artifactId>springdoc-openapi-ui</artifactId>
-			<version>1.5.0</version>
+			<version>${springdoc.version}</version>
 		</dependency>
-
+		<!-- jackson csv library -->
+		<dependency>
+			<groupId>com.fasterxml.jackson.dataformat</groupId>
+			<artifactId>jackson-dataformat-csv</artifactId>
+		</dependency>
 		<!-- geotools dependency -->
 		<dependency>
 			<groupId>org.geotools</groupId>

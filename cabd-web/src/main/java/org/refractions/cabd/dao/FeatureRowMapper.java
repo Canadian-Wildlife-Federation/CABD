@@ -63,7 +63,7 @@ public class FeatureRowMapper implements RowMapper<Feature> {
 					throw new SQLException(ex);
 				}
 			}else if (field.isLink()) {
-				UUID oo = (UUID)rs.getObject(field.getFieldName());
+				String oo = (String)rs.getObject(field.getFieldName());
 				feature.addLinkAttribute(field.getFieldName(), oo);
 			}else {
 				Object oo = rs.getObject(field.getFieldName());
