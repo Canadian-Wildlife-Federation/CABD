@@ -143,11 +143,7 @@ public class FeatureController {
 			return ResponseEntity.ok(new FeatureList(featureDao.getFeatures(btype, parameters.getSearchPoint(), parameters.getMaxResults(), parameters.getFilter())));
 		}
 		
-		int maxresults = properties.getMaxresults();
-		if (parameters.getMaxResults() != null) maxresults = parameters.getMaxResults();
-		
-		
-		List<Feature> features = featureDao.getFeatures(btype, parameters.getEnvelope(), maxresults, parameters.getFilter());
+		List<Feature> features = featureDao.getFeatures(btype, parameters.getEnvelope(), parameters.getMaxResults(), parameters.getFilter());
 		return ResponseEntity.ok(new FeatureList(features));
 	}
 	
@@ -186,10 +182,7 @@ public class FeatureController {
 			return ResponseEntity.ok(new FeatureList(featureDao.getFeatures(parameters.getFeatureTypes(), parameters.getSearchPoint(), parameters.getMaxResults(), parameters.getFilter())));
 		}
 		
-		int maxresults = properties.getMaxresults();
-		if (parameters.getMaxResults() != null) maxresults = parameters.getMaxResults();
-		
-		FeatureList flist = new FeatureList(featureDao.getFeatures(parameters.getFeatureTypes(), parameters.getEnvelope(), maxresults, parameters.getFilter()));
+		FeatureList flist = new FeatureList(featureDao.getFeatures(parameters.getFeatureTypes(), parameters.getEnvelope(), parameters.getMaxResults(), parameters.getFilter()));
 		
 		return ResponseEntity.ok(flist);
 	}
