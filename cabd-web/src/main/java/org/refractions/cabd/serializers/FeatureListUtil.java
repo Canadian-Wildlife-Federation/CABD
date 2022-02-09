@@ -137,13 +137,11 @@ public class FeatureListUtil {
 		for (Feature f : features.getItems()) {
 			SimpleFeature sfeature = writer.next();
 			for (FeatureViewMetadataField field : metadata.getFields()) {
-				if (f.getAttributes().containsKey(field.getFieldName())) {
+				if (field.isGeometry()) {
+					sfeature.setDefaultGeometry(f.getGeometry());
+				}else if (f.getAttributes().containsKey(field.getFieldName())) {
 					Object value = f.getAttribute(field.getFieldName());
-					if (field.isGeometry()) {
-						sfeature.setDefaultGeometry(f.getGeometry());
-					}else {
-						sfeature.setAttribute(attributeNameMapper.apply(field.getFieldName()), value);
-					}
+					sfeature.setAttribute(attributeNameMapper.apply(field.getFieldName()), value);
 				}else if (f.getLinkAttributes().containsKey(field.getFieldName())) {
 					String value = f.getLinkAttributes().get(field.getFieldName());
 					if (value != null) {

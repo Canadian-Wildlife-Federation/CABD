@@ -89,11 +89,11 @@ public class FeatureListKmlSerializer extends AbstractHttpMessageConverter<Featu
 		String rooturl = ServletUriComponentsBuilder.fromCurrentContextPath().path("/").build().toUriString();
 		for (Feature f : features.getItems()) {
 			for (FeatureViewMetadataField field : metadata.getFields()) {
+				if (field.isGeometry()) {
+					builder.set(field.getFieldName(), f.getGeometry());
+				}
 				if (f.getAttributes().containsKey(field.getFieldName())) {
 					Object value = f.getAttribute(field.getFieldName());
-					if (field.isGeometry()) {
-						value = f.getGeometry();
-					}
 					builder.set(field.getFieldName(), value);
 				}else if (f.getLinkAttributes().containsKey(field.getFieldName())) {
 					String value = f.getLinkAttributes().get(field.getFieldName());

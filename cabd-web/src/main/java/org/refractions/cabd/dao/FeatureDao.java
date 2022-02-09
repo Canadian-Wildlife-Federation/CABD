@@ -30,6 +30,8 @@ import java.util.UUID;
 
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Envelope;
+import org.refractions.cabd.CabdConfigurationProperties;
+import org.refractions.cabd.controllers.TooManyFeaturesException;
 import org.refractions.cabd.controllers.VectorTileController;
 import org.refractions.cabd.dao.filter.Filter;
 import org.refractions.cabd.exceptions.InvalidDatabaseConfigException;
@@ -82,6 +84,8 @@ public class FeatureDao {
 	@Autowired
 	private FeatureTypeManager typeManager;
 	
+	@Autowired
+	CabdConfigurationProperties properties;
 	
 	/**
 	 * Finds the feature with the given uuid.  Will return null
@@ -138,7 +142,7 @@ public class FeatureDao {
 	 * @param env the envelope to search, can be null
 	 * @return
 	 */
-	public List<Feature> getFeatures(List<FeatureType> types, Envelope env, int maxresults, Filter filter) {
+	public List<Feature> getFeatures(List<FeatureType> types, Envelope env, Integer maxresults, Filter filter) {
 		FeatureViewMetadata vmetadata = typeManager.getAllViewMetadata();
 		return getFeaturesInternal(vmetadata, types, env, maxresults, filter);
 	}
@@ -152,7 +156,7 @@ public class FeatureDao {
 	 * @param env the envelope to search, can be null
 	 * @return
 	 */
-	public List<Feature> getFeatures(FeatureType type, Envelope env, int maxresults, Filter filter) {
+	public List<Feature> getFeatures(FeatureType type, Envelope env, Integer maxresults, Filter filter) {
 		FeatureViewMetadata vmetadata = type.getViewMetadata();
 		return getFeaturesInternal(vmetadata, null, env, maxresults, filter);
 	}
@@ -176,6 +180,10 @@ public class FeatureDao {
 	 * Returns the N-nearest features of the given types to the point.  
 	 * This will return only attributes shared accross all feature types.
 	 * 
+	 * 
+	 * Throws a TooManyFeatureException if more than the maximum results are returned
+	 * from the query
+	 * 
 	 * @param types the feature types to search
 	 * @param pnt the center point
 	 * @param maxResults the maximum number of results to return
@@ -192,7 +200,7 @@ public class FeatureDao {
 	@SuppressWarnings("unchecked")
 	private List<Feature> getFeaturesInternal(FeatureViewMetadata vmetadata,
 			List<FeatureType> types,
-			Envelope env, int maxresults,
+			Envelope env, Integer maxresults,
 			Filter filter){
 		
 		String geomField = null;
@@ -263,15 +271,37 @@ public class FeatureDao {
 			params.addAll((List<Object>)fstr[1]);
 		}
 		sb.append(" LIMIT ");
-		sb.append(maxresults);
+		sb.append(getMaxResults(maxresults));
 		
 		List<Feature> features = 
 				jdbcTemplate.query(sb.toString(), 
 						new FeatureRowMapper(vmetadata), params.toArray());
+		
+		if (features.size() > properties.getMaxresults()) {
+			throw new TooManyFeaturesException();
+		}
 		return features;
 	}
 	
+	private int getMaxResults(Integer maxresults) {
+		int mr = properties.getMaxresults() + 1;
+		if (maxresults != null) {
+			mr = Math.min(maxresults, properties.getMaxresults() + 1);
+		}
+		return mr;
+	}
 	
+	/**
+	 * throws a TooManyFeatureException if more than the maximum results are returned
+	 * from the query 
+	 * 
+	 * @param vmetadata
+	 * @param types
+	 * @param c
+	 * @param maxResults
+	 * @param filter
+	 * @return
+	 */
 	//nearest neighbour searching
 	//https://postgis.net/workshops/postgis-intro/knn.html
 	@SuppressWarnings("unchecked")
@@ -335,11 +365,14 @@ public class FeatureDao {
 		sb.append(DATABASE_SRID);
 		sb.append(")");
 		sb.append(" LIMIT " );
-		sb.append(maxResults);
-			
+		sb.append(getMaxResults(maxResults));
+		
 		List<Feature> features = 
 				jdbcTemplate.query(sb.toString(), 
 						new FeatureRowMapper(vmetadata), params.toArray());
+		if (features.size() > properties.getMaxresults()) {
+			throw new TooManyFeaturesException();
+		}
 		return features;
 	}
 	
