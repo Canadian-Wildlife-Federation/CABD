@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.refractions.cabd.model.FeatureType;
+import org.refractions.cabd.model.FeatureTypeListValue;
 import org.refractions.cabd.model.FeatureViewMetadata;
 import org.refractions.cabd.model.FeatureViewMetadataField;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -56,9 +57,13 @@ public class FeatureTypeDao {
 				rs.getString("field_name"), rs.getString("name"), 
 				rs.getString("description"), rs.getBoolean("is_link"),
 				rs.getString("data_type"), (Integer)rs.getObject("vw_simple_order"),
-				(Integer)rs.getObject("vw_all_order"), rs.getBoolean("include_vector_tile"));
+				(Integer)rs.getObject("vw_all_order"), rs.getBoolean("include_vector_tile"), 
+				rs.getString("value_options_reference"));
 
 	
+	private RowMapper<FeatureTypeListValue> validValueMapper = (rs, rownum) ->
+		new FeatureTypeListValue(rs.getObject("value"), rs.getString("name"), rs.getString("description"));
+		
 	public FeatureTypeDao() {
 	}
 	
@@ -78,11 +83,15 @@ public class FeatureTypeDao {
 	 * @return
 	 */
 	public FeatureViewMetadata getViewMetadata(String view) {
+
+		StringBuilder sb = new StringBuilder();
+		sb.append("SELECT field_name, name, description, is_link, data_type, ");
+		sb.append("vw_simple_order, vw_all_order, include_vector_tile, value_options_reference ");
+		sb.append(" FROM ");
+		sb.append(FEATURE_METADATA_TABLE);
+		sb.append(" WHERE view_name = ?");
 		
-		String query = "SELECT field_name, name, description, is_link, data_type, vw_simple_order, vw_all_order, include_vector_tile FROM " +
-					FEATURE_METADATA_TABLE + " WHERE view_name = ?";
-		
-		List<FeatureViewMetadataField> fields = jdbcTemplate.query(query, viewMetadataMapper, view);
+		List<FeatureViewMetadataField> fields = jdbcTemplate.query(sb.toString(), viewMetadataMapper, view);
 		
 		//get the geometry columns
 		String schema = "public";
@@ -95,8 +104,11 @@ public class FeatureTypeDao {
 			tablename = view;
 		}
 		
-		String geomquery = "SELECT f_geometry_column, srid FROM public.geometry_columns where f_table_schema = ? and f_table_name = ?";
-		List<Map<String, Object>> columns = jdbcTemplate.queryForList(geomquery, schema, tablename);
+		sb = new StringBuilder();
+		sb.append("SELECT f_geometry_column, srid ");
+		sb.append("FROM public.geometry_columns ");
+		sb.append("WHERE f_table_schema = ? and f_table_name = ?");
+		List<Map<String, Object>> columns = jdbcTemplate.queryForList(sb.toString(), schema, tablename);
 		
 		for (FeatureViewMetadataField f : fields) {
 			
@@ -108,6 +120,41 @@ public class FeatureTypeDao {
 					f.setGeometry(true, srid);
 				}
 			}
+		}
+		
+		//load any list references
+		for (FeatureViewMetadataField f : fields) {
+			if (f.getValidValuesReference() == null) continue;
+			
+			bits = f.getValidValuesReference().split(";");
+			String listtable = bits[0].trim();
+			if (listtable.isBlank()) listtable = null;
+			String valuefield = bits[1].trim();
+			if (valuefield.isBlank()) valuefield = null;
+			String namefield = bits[2].trim();
+			if (namefield.isBlank()) namefield = null;
+			String descfield = null;
+			if (bits.length > 3 && !bits[3].trim().isBlank()) descfield = bits[3].trim();
+			
+			sb = new StringBuilder();
+			sb.append("SELECT ");
+			sb.append(valuefield);
+			sb.append(" as value, ");
+			sb.append(namefield);
+			sb.append(" as name, ");
+			if (descfield != null) {
+				sb.append(descfield);
+				sb.append(" as description ");
+			}else {
+				sb.append("null as description ");
+			}
+			sb.append(" FROM ");
+			sb.append(listtable);
+			
+			List<FeatureTypeListValue> validValues = 
+					jdbcTemplate.query(sb.toString(), validValueMapper);
+			
+			f.setValueOptions(validValues);
 		}
 		
 		//return the metadata

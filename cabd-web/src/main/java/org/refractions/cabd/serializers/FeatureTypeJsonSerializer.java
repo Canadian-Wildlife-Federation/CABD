@@ -22,6 +22,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.refractions.cabd.model.FeatureType;
+import org.refractions.cabd.model.FeatureTypeListValue;
 import org.refractions.cabd.model.FeatureViewMetadata;
 import org.refractions.cabd.model.FeatureViewMetadataField;
 import org.springframework.boot.jackson.JsonComponent;
@@ -57,7 +58,24 @@ public class FeatureTypeJsonSerializer extends JsonSerializer<FeatureType> {
 			gen.writeStringField("name", field.getName());
 			gen.writeStringField("description", field.getDescription());
 			gen.writeStringField("type", field.getDataType());
+		
 			
+			if (field.getValueOptions() != null) {
+				gen.writeFieldName("values");
+				gen.writeStartArray();
+				for (FeatureTypeListValue listitem : field.getValueOptions()) {
+					gen.writeStartObject();
+					gen.writeObjectField("value", listitem.getValue());
+					gen.writeStringField("name", listitem.getName());
+					if(listitem.getDescription() != null) {
+						gen.writeStringField("description", listitem.getDescription());
+					}
+					gen.writeEndObject();
+				}
+				
+				
+				gen.writeEndArray();
+			}
 			gen.writeEndObject();
 		}
 		

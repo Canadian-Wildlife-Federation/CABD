@@ -16,6 +16,7 @@
 package org.refractions.cabd.model;
 
 import java.sql.Date;
+import java.util.List;
 
 import org.locationtech.jts.geom.Geometry;
 
@@ -35,6 +36,7 @@ public class FeatureViewMetadataField {
 	private String datatype;
 	private Integer simpleOrder;
 	private Integer allOrder;
+	private String valueOptionsRef;
 	
 	private boolean isLink = false;
 	private boolean includeVectorTile = false;
@@ -42,9 +44,11 @@ public class FeatureViewMetadataField {
 	private boolean isGeometry = false;
 	private Integer srid = null;
 	
+	private List<FeatureTypeListValue> valueOptions;
+	
 	public FeatureViewMetadataField(String fieldName, String name, String description, 
 			boolean isLink, String datatype, Integer simpleOrder, Integer allOrder,
-			boolean includeVectorTile) {
+			boolean includeVectorTile, String validValues) {
 		this.fieldName = fieldName;
 		this.name = name;
 		this.description = description;
@@ -53,6 +57,8 @@ public class FeatureViewMetadataField {
 		this.simpleOrder = simpleOrder;
 		this.allOrder = allOrder;
 		this.includeVectorTile = includeVectorTile;
+		this.valueOptionsRef = validValues;
+		this.valueOptions = null;
 	}
 	
 	public boolean includeVectorTile() {
@@ -60,6 +66,14 @@ public class FeatureViewMetadataField {
 	}
 	public String getDataType() {
 		return this.datatype;
+	}
+	
+	public List<FeatureTypeListValue> getValueOptions(){
+		return this.valueOptions;
+	}
+	
+	public void setValueOptions(List<FeatureTypeListValue>  valueOptions){
+		this.valueOptions = valueOptions;
 	}
 	
 	public Class<?> getDataTypeAsClass(){
@@ -72,7 +86,9 @@ public class FeatureViewMetadataField {
 		return String.class;
 	}
 	
-	
+	public String getValidValuesReference() {
+		return this.valueOptionsRef;
+	}
 	public Integer getAllOrder() {
 		return this.allOrder;
 	}
