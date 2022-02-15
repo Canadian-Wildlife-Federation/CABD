@@ -602,4 +602,108 @@ public class FeatureDao {
 		return btype;
 	}
 	
+	
+	/**
+	 * Get the vector tile for the features in the given feature type
+	 * 
+	 * @param z
+	 * @param x
+	 * @param y
+	 * @param ftype feature type or null for all features
+	 * @return
+	 */
+	public byte[] getClusterVectorTile(int z, int x, int y, FeatureType ftype) {
+		
+		int numtiles = (int) Math.pow(2, z);
+
+		double xtilesize = (VectorTileController.BOUNDS.getMaxX() - VectorTileController.BOUNDS.getMinX()) / numtiles;
+		double tilexmin = xtilesize * x + VectorTileController.BOUNDS.getMinX();
+		
+		double ytilesize = (VectorTileController.BOUNDS.getMaxY() - VectorTileController.BOUNDS.getMinY()) / numtiles;
+		double tileymax = VectorTileController.BOUNDS.getMaxY() - ytilesize * y;
+		
+		Envelope env = new Envelope(tilexmin, tilexmin + xtilesize, tileymax - ytilesize, tileymax );
+		int srid = VectorTileController.SRID;
+		
+		String stenv = "ST_MakeEnvelope(" + env.getMinX() + "," + env.getMinY() + "," + env.getMaxX() + "," + env.getMaxY() + "," + srid + ")";
+
+		//cluster radius
+		double distance = 1 / Math.pow(2, z - 5) ;
+		
+		StringBuilder sb = new StringBuilder();
+		sb.append("	WITH");
+		sb.append("	bounds AS (");
+		sb.append("	SELECT st_transform(" + stenv + ", " + DATABASE_SRID + ") AS geom, ");
+		sb.append( stenv + "::box2d AS b2d  ");
+		sb.append(" ), ");
+		sb.append("	mvtgeom AS (");
+		
+		String schema = FeatureViewMetadata.ALL_FEATURES_VIEW .split("\\.")[0];
+		String table = FeatureViewMetadata.ALL_FEATURES_VIEW .split("\\.")[1];
+		
+		if (ftype != null) {
+			schema = ftype.getDataView().split("\\.")[0];
+			table = ftype.getDataView().split("\\.")[1];
+		}
+		sb.append("	SELECT ST_AsMVTGeom(ST_Transform(bar.geometry, " + srid + ") , bounds.b2d) AS geom, bar.feature_count ");
+		sb.append(" FROM ( ");
+		sb.append("SELECT result_geometry as geometry, result_cnt as feature_count FROM cabd.cluster_features('" +schema + "','" + table + "', " + distance + "," + env.getMinX() + "," + env.getMinY() +"," + env.getMaxX() + "," + env.getMaxY() + "," + srid + ")" );
+		sb.append(" ) bar, bounds ");
+		sb.append(")");
+		sb.append("	SELECT ST_AsMVT(mvtgeom.*, 'cabd_cluster_point') FROM mvtgeom");
+
+		List<byte[]> tiles2 = 
+				jdbcTemplate.query(sb.toString(), 
+						new RowMapper<byte[]>() {
+							@Override
+							public byte[] mapRow(ResultSet rs, int rowNum) throws SQLException {
+								return rs.getBytes(1);
+							}
+							
+						});
+		
+		jdbcTemplate.execute(sb.toString());
+		
+		return tiles2.get(0);
+	}
+	
+	
+	
+//	CREATE OR REPLACE FUNCTION cabd.cluster_features(
+//			  viewschema character varying,  viewname character varying, 
+//			  distance double precision, xmin double precision,
+//			  ymin double precision, xmax double precision,
+//			  ymax double precision, srid integer)
+//			returns table (result_geometry geometry(point, 4617), result_cnt integer)
+//			LANGUAGE plpgsql
+//			AS $function$
+//			declare
+//				tcenter geometry(point, 4617);
+//				currentpoint geometry(point, 4617);
+//				currentcnt integer;
+//				_deletecnt integer;
+//			begin
+//				EXECUTE format('CREATE TEMPORARY TABLE cluster_temp AS WITH bounds AS (SELECT st_Transform(st_makeenvelope($1,$2,$3,$4,$5), 4617) as geom) SELECT geometry as geom FROM %I.%I, bounds WHERE st_intersects(geometry, bounds.geom)', viewschema,viewname) using xmin, ymin, xmax, ymax, srid;
+//				tcenter := st_centroid(st_transform(st_makeenvelope(xmin,ymin,xmax,ymax,srid), 4617));
+//				currentcnt := 0;
+//				LOOP 
+//					select count(*) from cluster_temp into currentcnt;
+//					if currentcnt = 0 then
+//						exit;
+//					end if;
+//					--find nearest point to  center
+//					select geom from cluster_temp order by geom <-> tcenter limit 1 into currentpoint;
+//					delete from cluster_temp where st_intersects(geom, st_buffer(currentpoint, distance));
+//					GET DIAGNOSTICS _deletecnt = ROW_COUNT;
+//					result_geometry := currentpoint;
+//					result_cnt := _deletecnt;
+//					return next;
+//				END LOOP;
+//				EXECUTE format('DROP TABLE cluster_temp');
+//			END;
+//			$function$
+//			;
+//
+
+
 }
