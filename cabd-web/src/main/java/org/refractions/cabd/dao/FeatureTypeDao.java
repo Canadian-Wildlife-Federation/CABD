@@ -15,6 +15,12 @@
  */
 package org.refractions.cabd.dao;
 
+import java.sql.Date;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -22,8 +28,12 @@ import org.refractions.cabd.model.FeatureType;
 import org.refractions.cabd.model.FeatureTypeListValue;
 import org.refractions.cabd.model.FeatureViewMetadata;
 import org.refractions.cabd.model.FeatureViewMetadataField;
+import org.refractions.cabd.model.FeatureViewMetadataFieldData;
+import org.refractions.cabd.model.FeatureViewMetadataFieldData.MetadataValue;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Component;
 
@@ -159,5 +169,54 @@ public class FeatureTypeDao {
 		
 		//return the metadata
 		return new FeatureViewMetadata(view, fields);
+	}
+	
+	
+	/**
+	 * Compute the data metadata associated with a feature type (min, max values etc). This is not
+	 * static and will change as the data changes
+	 * 
+	 * @param type feature type to compute data metadata for
+	 * @return
+	 */
+	public Map<FeatureViewMetadataField, FeatureViewMetadataFieldData> computeDataMetadata(FeatureType type) {
+		
+		//compute min/max values for numeric and date fields
+		List<FeatureViewMetadataField> dataFields = new ArrayList<>();
+		StringBuilder sb = new StringBuilder();
+		sb.append("SELECT ");
+		for (FeatureViewMetadataField field : type.getViewMetadata().getFields()) {
+			if (field.getValidValuesReference() != null) continue;
+
+			Class<?> datatype =field.getDataTypeAsClass();
+			if (datatype.equals(Double.class) || datatype.equals(Integer.class) || datatype.equals(Date.class)) {
+				//compute min/max value
+				sb.append("min(" + field.getFieldName() + "), max("+field.getFieldName() + "), ");
+				dataFields.add(field);
+			}
+		}
+		if (dataFields.isEmpty()) return Collections.emptyMap();
+		sb.delete(sb.length()-2, sb.length());
+		sb.append(" FROM ");
+		sb.append(type.getDataView());
+		
+		Map<FeatureViewMetadataField, FeatureViewMetadataFieldData> data = jdbcTemplate.query(sb.toString(), new ResultSetExtractor<Map<FeatureViewMetadataField, FeatureViewMetadataFieldData>>() {
+
+			@Override
+			public Map<FeatureViewMetadataField, FeatureViewMetadataFieldData> extractData(ResultSet rs) throws SQLException, DataAccessException {
+				if (!rs.next()) return Collections.emptyMap();
+				Map<FeatureViewMetadataField, FeatureViewMetadataFieldData> map = new HashMap<>();
+				for (int i = 0; i < dataFields.size(); i ++) {
+					Object min = rs.getObject(i*2+1);
+					Object max = rs.getObject(i*2+2);
+					FeatureViewMetadataFieldData data = new FeatureViewMetadataFieldData(dataFields.get(i));
+					data.addData(MetadataValue.MIN, min);
+					data.addData(MetadataValue.MAX, max);
+					map.put(data.getField(),data);	
+				}
+				return map;
+			}});
+		return data;
+		
 	}
 }

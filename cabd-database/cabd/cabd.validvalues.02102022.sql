@@ -92,6 +92,10 @@ update cabd.feature_type_metadata set value_options_reference = 'fishways.fishwa
 update cabd.feature_type_metadata set value_options_reference = 'fishways.fishway_complete_level_codes;code;name;description' where field_name = 'complete_level_code' and view_name = 'cabd.fishways_view';
 
 
+update cabd.feature_type_metadata set value_options_reference = 'cabd.upstream_passage_type_codes;name;name;description' where field_name = 'fishpass_type' and view_name = 'cabd.fishways_view';
+update cabd.feature_type_metadata set value_options_reference = 'cabd.upstream_passage_type_codes;code;name;description' where field_name = 'fishpass_type_code' and view_name = 'cabd.fishways_view';
+
+
 --waterfalls
 update cabd.feature_type_metadata set value_options_reference = 'waterfalls.waterfall_complete_level_codes;name;name;description' where field_name = 'entrance_location' and view_name = 'cabd.waterfalls_view';
 update cabd.feature_type_metadata set value_options_reference = 'waterfalls.waterfall_complete_level_codes;code;name;description' where field_name = 'entrance_location_code' and view_name = 'cabd.waterfalls_view';

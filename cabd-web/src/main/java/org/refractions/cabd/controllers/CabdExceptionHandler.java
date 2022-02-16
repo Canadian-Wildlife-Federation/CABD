@@ -17,7 +17,6 @@ package org.refractions.cabd.controllers;
 
 import java.text.MessageFormat;
 
-import org.refractions.cabd.CabdApplication;
 import org.refractions.cabd.CabdConfigurationProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
