@@ -16,19 +16,11 @@
 package org.refractions.cabd.serializers;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import org.refractions.cabd.model.FeatureType;
-import org.refractions.cabd.model.FeatureTypeListValue;
-import org.refractions.cabd.model.FeatureViewMetadata;
-import org.refractions.cabd.model.FeatureViewMetadataField;
 import org.springframework.boot.jackson.JsonComponent;
 
 import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 
 /**
@@ -38,99 +30,11 @@ import com.fasterxml.jackson.databind.SerializerProvider;
  *
  */
 @JsonComponent
-public class FeatureTypeJsonSerializer extends JsonSerializer<FeatureType> {
-
+public class FeatureTypeJsonSerializer extends AbstractFeatureTypeJsonSerializer<FeatureType> {
+	
 	@Override
 	public void serialize(FeatureType value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
-		
-		gen.writeStartObject();
-		
-		gen.writeStringField("type", value.getType());
-
-		gen.writeFieldName("attributes");
-		gen.writeStartArray();
-		for (FeatureViewMetadataField field : value.getViewMetadata().getFields()) {
-			if (field.isGeometry()) continue;
-			
-			gen.writeStartObject();
-				
-			gen.writeStringField("id", field.getFieldName());
-			gen.writeStringField("name", field.getName());
-			gen.writeStringField("description", field.getDescription());
-			gen.writeStringField("type", field.getDataType());
-		
-			
-			if (field.getValueOptions() != null) {
-				gen.writeFieldName("values");
-				gen.writeStartArray();
-				for (FeatureTypeListValue listitem : field.getValueOptions()) {
-					gen.writeStartObject();
-					gen.writeObjectField("value", listitem.getValue());
-					gen.writeStringField("name", listitem.getName());
-					if(listitem.getDescription() != null) {
-						gen.writeStringField("description", listitem.getDescription());
-					}
-					gen.writeEndObject();
-				}
-				
-				
-				gen.writeEndArray();
-			}
-			gen.writeEndObject();
-		}
-		
-		//url attribute
-		gen.writeStartObject();
-		gen.writeStringField("id", FeatureViewMetadata.URL_ATTRIBUTE);
-		gen.writeStringField("name", "");
-		gen.writeStringField("description", "");
-		gen.writeStringField("type", "url");
-		gen.writeEndObject();
-		
-		gen.writeEndArray();//attributes
-		
-		gen.writeFieldName("views");
-		gen.writeStartObject();
-		
-		DataView[] views = new DataView[]{
-			new DataView("simple", a->a.getSimpleOrder()),
-			new DataView("all", a->a.getAllOrder()),
-		};
-		
-		for (DataView v : views) {
-			gen.writeFieldName(v.name);
-			gen.writeStartObject();
-			
-			gen.writeFieldName("attribute_order");
-			gen.writeStartArray();
-			List<FeatureViewMetadataField> temp = new ArrayList<>(value.getViewMetadata().getFields());
-			temp = temp.stream()
-				.filter(e->v.orderer.apply(e) != null)
-				.sorted((a,b)->Integer.compare(v.orderer.apply(a), v.orderer.apply(b)))
-				.collect(Collectors.toList());
-			for (FeatureViewMetadataField f : temp) {
-				gen.writeString(f.getFieldName());
-			}
-			gen.writeEndArray();
-			gen.writeEndObject(); //simple
-		}
-		
-		
-		
-		gen.writeEndObject(); //views
-		
-		gen.writeEndObject();
-	}
-		
-	class DataView{
-		String name;
-		Function<FeatureViewMetadataField,Integer> orderer;
-		
-		public DataView(String name, Function<FeatureViewMetadataField,Integer> orderer) {
-			this.name = name;
-			this.orderer = orderer;
-		}
-	
-	}
+		serialize(value, gen, value);
+	}	
 	
 }
