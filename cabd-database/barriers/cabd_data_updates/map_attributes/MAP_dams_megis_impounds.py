@@ -1,6 +1,6 @@
 import MAP_attributes_main as main
 
-script = main.MappingScript("maine_impounds")
+script = main.MappingScript("megis_impounds")
 
 mappingquery = f"""
 

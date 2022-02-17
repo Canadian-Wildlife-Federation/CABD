@@ -11,7 +11,7 @@ dbName = "cabd"
 dataFile = ""
 dataFile = sys.argv[1]
 #provinceCode should be 'ab', 'bc', etc. but this is just to grab the correct layer from gpkg
-#e.g., provinceCode of 'atlantic' is fine if the layer you want is named 'atlantic_dam_review'
+#e.g., provinceCode of 'atlantic' is fine if the layer you want is named 'atlantic_waterfall_review'
 provinceCode = sys.argv[2]
 dbUser = sys.argv[3]
 dbPassword = sys.argv[4]
@@ -100,25 +100,29 @@ UPDATE {workingTable} SET data_source_text =
     WHEN data_source_text = '29' THEN 'canvec_hy_obstacles'
     WHEN data_source_text = '30' THEN 'wikipedia'
     WHEN data_source_text = '31' THEN 'nbhn_hy_obstacles'
+    WHEN data_source_text = '32' THEN 'nbwf'
+    WHEN data_source_text = '33' THEN 'mrmaps_nswf'
     ELSE NULL END;
 
 ALTER TABLE {workingTable} ADD COLUMN data_source uuid;
 UPDATE {workingTable} SET data_source = 
     CASE
-    WHEN data_source_text = 'ab_basefeatures' THEN '85e725a2-bb6d-45d5-a6c5-1bf7ceed28db'::uuid
-    WHEN data_source_text = 'canvec_hy_obstacles' THEN 'fe3928a3-0514-49bc-8759-7e85b75cbda2'::uuid
-    WHEN data_source_text = 'cgndb' THEN 'bc77aaa4-7a4e-43a1-84f1-9c5f6ea24912'::uuid
-    WHEN data_source_text = 'cwf' THEN 'd9918f2c-2b1d-47ac-918d-8aa026c4849f'::uuid
-    WHEN data_source_text = 'fishwerks' THEN '2f486903-b777-464d-891c-6581400b2788'::uuid
-    WHEN data_source_text = 'fiss' THEN '67ecfa8f-e156-45ef-81b5-fb93bd5b23c4'::uuid
-    WHEN data_source_text = 'fwa' THEN 'd794807d-a816-49dd-a76f-3490c0abd317'::uuid
-    WHEN data_source_text = 'nbhn_hy_obstacles' THEN 'd224a8ba-7e57-4ef6-80c5-9d883d012226'::uuid
-    WHEN data_source_text = 'ncc' THEN 'ce45dfdb-26d1-47ae-9f9c-2b353f3676d1'::uuid
-    WHEN data_source_text = 'nhn' THEN '9417da74-5cc8-4efa-8f43-0524fa47996d'::uuid
-    WHEN data_source_text = 'nswf' THEN '3f5c9d6e-4d4f-48af-b57d-cb2a1e2671a0'::uuid
-    WHEN data_source_text = 'ohn' THEN 'eb1e7314-7de8-46b8-94a6-1be8bfef17d1'::uuid
-    WHEN data_source_text = 'sk_hydro' THEN 'a855a3c9-3fed-4c0e-b123-48e0b0a93914'::uuid
-    WHEN data_source_text = 'wikipedia' THEN '1ec6c575-04da-4416-b870-0af2cba15206'::uuid
+    WHEN data_source_text = 'ab_basefeatures' THEN (SELECT id FROM cabd.data_source WHERE "name" = 'aep_bf_hy')
+    WHEN data_source_text = 'canvec_hy_obstacles' THEN (SELECT id FROM cabd.data_source WHERE "name" = 'nrcan_canvec_hyf')
+    WHEN data_source_text = 'cgndb' THEN (SELECT id FROM cabd.data_source WHERE "name" = 'nrcan_cgndb')
+    WHEN data_source_text = 'cwf' THEN (SELECT id FROM cabd.data_source WHERE "name" = 'cwf')
+    WHEN data_source_text = 'fishwerks' THEN (SELECT id FROM cabd.data_source WHERE "name" = 'wid_fishwerks')
+    WHEN data_source_text = 'fiss' THEN (SELECT id FROM cabd.data_source WHERE "name" = 'bceccs_fiss')
+    WHEN data_source_text = 'fwa' THEN (SELECT id FROM cabd.data_source WHERE "name" = 'bcflnrord_fwa')
+    WHEN data_source_text = 'mrmaps_nswf' THEN (SELECT id FROM cabd.data_source WHERE "name" = 'mrmaps_nswf')
+    WHEN data_source_text = 'nbhn_hy_obstacles' THEN (SELECT id FROM cabd.data_source WHERE "name" = 'nberd_nbhn_ho')
+    WHEN data_source_text = 'nbwf' THEN (SELECT id FROM cabd.data_source WHERE "name" = 'mrmaps_nbwf')
+    WHEN data_source_text = 'ncc' THEN (SELECT id FROM cabd.data_source WHERE "name" = 'ncc_chu_ab')
+    WHEN data_source_text = 'nhn' THEN (SELECT id FROM cabd.data_source WHERE "name" = 'nrcan_nhn')
+    WHEN data_source_text = 'nswf' THEN (SELECT id FROM cabd.data_source WHERE "name" = 'nse_td_wf')
+    WHEN data_source_text = 'ohn' THEN (SELECT id FROM cabd.data_source WHERE "name" = 'mndmnrf_ohn')
+    WHEN data_source_text = 'sk_hydro' THEN (SELECT id FROM cabd.data_source WHERE "name" = 'skmoe_hydrography')
+    WHEN data_source_text = 'wikipedia' THEN (SELECT id FROM cabd.data_source WHERE "name" = 'wiki_cdn_wfs')
     END;
 
 """

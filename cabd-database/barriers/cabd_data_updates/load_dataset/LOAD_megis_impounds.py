@@ -1,6 +1,6 @@
 import LOAD_main as main
 
-script = main.LoadingScript("maine_impounds")
+script = main.LoadingScript("megis_impounds")
     
 query = f"""
 
