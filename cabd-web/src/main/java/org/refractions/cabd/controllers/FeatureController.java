@@ -140,10 +140,10 @@ public class FeatureController {
 		if (btype == null) throw new NotFoundException(MessageFormat.format("The feature type ''{0}'' is not supported.", type));
 		
 		if (parameters.getSearchPoint() != null) {
-			return ResponseEntity.ok(new FeatureList(featureDao.getFeatures(btype, parameters.getSearchPoint(), parameters.getMaxResults(), parameters.getFilter())));
+			return ResponseEntity.ok(new FeatureList(featureDao.getFeatures(btype, parameters.getSearchPoint(), parameters.getMaxResults(), parameters.getFilter(), parameters.getAttributeSet())));
 		}
 		
-		List<Feature> features = featureDao.getFeatures(btype, parameters.getEnvelope(), parameters.getMaxResults(), parameters.getFilter());
+		List<Feature> features = featureDao.getFeatures(btype, parameters.getEnvelope(), parameters.getMaxResults(), parameters.getFilter(), parameters.getAttributeSet());
 		return ResponseEntity.ok(new FeatureList(features));
 	}
 	
@@ -179,10 +179,10 @@ public class FeatureController {
 		ParsedRequestParameters parameters = params.parseAndValidate(typeManager);
 
 		if (parameters.getSearchPoint() != null) {
-			return ResponseEntity.ok(new FeatureList(featureDao.getFeatures(parameters.getFeatureTypes(), parameters.getSearchPoint(), parameters.getMaxResults(), parameters.getFilter())));
+			return ResponseEntity.ok(new FeatureList(featureDao.getFeatures(parameters.getFeatureTypes(), parameters.getSearchPoint(), parameters.getMaxResults(), parameters.getFilter(), parameters.getAttributeSet())));
 		}
 		
-		FeatureList flist = new FeatureList(featureDao.getFeatures(parameters.getFeatureTypes(), parameters.getEnvelope(), parameters.getMaxResults(), parameters.getFilter()));
+		FeatureList flist = new FeatureList(featureDao.getFeatures(parameters.getFeatureTypes(), parameters.getEnvelope(), parameters.getMaxResults(), parameters.getFilter(), parameters.getAttributeSet()));
 		
 		return ResponseEntity.ok(flist);
 	}

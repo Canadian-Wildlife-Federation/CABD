@@ -41,34 +41,41 @@ public class FeatureRequestParameters {
 
 	@Parameter(required = false, description = "A bounding box in lat/long to search.  Should be of the form: 'xmin,ymin,xmax,ymax'")
 	private String bbox;
+	
 	@Parameter(required = false, description = "A search point to search for nearest features.  Should be of the form: 'longitude,latitude'. Will be ignored if bbox is provided  ")
 	private String point;
+	
 	@Parameter(name="max-results", required = false, description = "The maximum number of search results to return.  Required if point is provided.  If not provided a system defined maximum is used.")
 	private Integer maxresults;
 
 	@Parameter(name="filter", required = false, description = "The feature filter.")
 	private String[] filter;
 	
+	@Parameter(name="attributes", required = false, description = "A flag to set if a complete set or limitted set of attributes should be returned.")
+	private AttributeSet attributes;
+	
 	//this is the only way I could figure out
 	//how to provide names for query parameters and
 	//use a POJO to represent these parameters
 	//I needed custom name for max-results
 	//https://stackoverflow.com/questions/56468760/how-to-collect-all-fields-annotated-with-requestparam-into-one-object
-	@ConstructorProperties({"bbox", "point","max-results", "filter"})
+	@ConstructorProperties({"bbox", "point","max-results", "filter", "attributes"})
 	public FeatureRequestParameters(
 			String bbox, 
-			String point, Integer maxResults, String[] filter) {
+			String point, Integer maxResults, String[] filter, String attributes) {
 
 		this.bbox = bbox;
 		this.point = point;
 	    this.maxresults = maxResults;
 	    this.filter = filter;
+	    this.attributes = AttributeSet.parse(attributes);
 	}
 	
 	public String getBbox() { return this.bbox; }
 	public String getPoint() { return this.point; }
 	public Integer getMaxresults() { return maxresults;	}
 	public String[] getFilter() { return filter;	}
+	public AttributeSet getAttributeSet() { return this.attributes; }
 
 	
 	/**
@@ -111,7 +118,7 @@ public class FeatureRequestParameters {
 				throw new InvalidParameterException("The 'max-results' parameter must be larger than 0");
 			}
 		}
-		return new ParsedRequestParameters(env, searchPoint, maxresults, parseFilter(filter));
+		return new ParsedRequestParameters(env, searchPoint, maxresults, parseFilter(filter), attributes);
 	}
 
 	private Envelope parseBbox() {

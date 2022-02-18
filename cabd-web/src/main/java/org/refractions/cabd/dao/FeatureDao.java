@@ -31,6 +31,7 @@ import java.util.UUID;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Envelope;
 import org.refractions.cabd.CabdConfigurationProperties;
+import org.refractions.cabd.controllers.AttributeSet;
 import org.refractions.cabd.controllers.TooManyFeaturesException;
 import org.refractions.cabd.controllers.VectorTileController;
 import org.refractions.cabd.dao.filter.Filter;
@@ -127,7 +128,7 @@ public class FeatureDao {
 		sb.append(" = ? ");
 		
 		try {
-			return jdbcTemplate.queryForObject(sb.toString(), new FeatureRowMapper(btype.getViewMetadata()), uuid);
+			return jdbcTemplate.queryForObject(sb.toString(), new FeatureRowMapper(btype.getViewMetadata(), AttributeSet.ALL), uuid);
 		}catch (EmptyResultDataAccessException ex) {
 			return null;
 		}
@@ -142,9 +143,9 @@ public class FeatureDao {
 	 * @param env the envelope to search, can be null
 	 * @return
 	 */
-	public List<Feature> getFeatures(List<FeatureType> types, Envelope env, Integer maxresults, Filter filter) {
+	public List<Feature> getFeatures(List<FeatureType> types, Envelope env, Integer maxresults, Filter filter, AttributeSet attributes) {
 		FeatureViewMetadata vmetadata = typeManager.getAllViewMetadata();
-		return getFeaturesInternal(vmetadata, types, env, maxresults, filter);
+		return getFeaturesInternal(vmetadata, types, env, maxresults, filter, attributes);
 	}
 	
 	/**
@@ -156,9 +157,9 @@ public class FeatureDao {
 	 * @param env the envelope to search, can be null
 	 * @return
 	 */
-	public List<Feature> getFeatures(FeatureType type, Envelope env, Integer maxresults, Filter filter) {
+	public List<Feature> getFeatures(FeatureType type, Envelope env, Integer maxresults, Filter filter, AttributeSet attributes) {
 		FeatureViewMetadata vmetadata = type.getViewMetadata();
-		return getFeaturesInternal(vmetadata, null, env, maxresults, filter);
+		return getFeaturesInternal(vmetadata, null, env, maxresults, filter, attributes);
 	}
 	
 	/**
@@ -171,9 +172,9 @@ public class FeatureDao {
 	 * @param maxResults the maximum number of results to return
 	 * @return
 	 */
-	public List<Feature> getFeatures(FeatureType type, Coordinate pnt, Integer maxResults, Filter filter) {
+	public List<Feature> getFeatures(FeatureType type, Coordinate pnt, Integer maxResults, Filter filter, AttributeSet attributes) {
 		FeatureViewMetadata vmetadata = type.getViewMetadata();
-		return getFeaturesInternal(vmetadata, null, pnt, maxResults, filter);
+		return getFeaturesInternal(vmetadata, null, pnt, maxResults, filter, attributes);
 	}
 	
 	/**
@@ -189,9 +190,9 @@ public class FeatureDao {
 	 * @param maxResults the maximum number of results to return
 	 * @return
 	 */
-	public List<Feature> getFeatures(List<FeatureType> types, Coordinate pnt, Integer maxResults, Filter filter) {
+	public List<Feature> getFeatures(List<FeatureType> types, Coordinate pnt, Integer maxResults, Filter filter, AttributeSet attributes) {
 		FeatureViewMetadata vmetadata = typeManager.getAllViewMetadata();
-		return getFeaturesInternal(vmetadata, types, pnt, maxResults, filter);
+		return getFeaturesInternal(vmetadata, types, pnt, maxResults, filter, attributes);
 	}
 	
 	/*
@@ -201,7 +202,8 @@ public class FeatureDao {
 	private List<Feature> getFeaturesInternal(FeatureViewMetadata vmetadata,
 			List<FeatureType> types,
 			Envelope env, Integer maxresults,
-			Filter filter){
+			Filter filter, 
+			AttributeSet attributes){
 		
 		String geomField = null;
 		
@@ -210,8 +212,11 @@ public class FeatureDao {
 		sb.append(ID_FIELD);
 
 		for (FeatureViewMetadataField field : vmetadata.getFields()) {
+			
 			if (!field.isGeometry()) {
-				sb.append("," + field.getFieldName() );
+				if (attributes == AttributeSet.ALL || field.includeVectorTile()) {
+					sb.append("," + field.getFieldName() );
+				}
 			}else {
 				geomField = field.getFieldName();
 				sb.append(", st_asbinary(" + field.getFieldName() + ") as " + field.getFieldName() );
@@ -275,7 +280,7 @@ public class FeatureDao {
 		
 		List<Feature> features = 
 				jdbcTemplate.query(sb.toString(), 
-						new FeatureRowMapper(vmetadata), params.toArray());
+						new FeatureRowMapper(vmetadata, attributes), params.toArray());
 		
 		if (features.size() > properties.getMaxresults()) {
 			throw new TooManyFeaturesException();
@@ -307,7 +312,8 @@ public class FeatureDao {
 	@SuppressWarnings("unchecked")
 	private List<Feature> getFeaturesInternal(FeatureViewMetadata vmetadata,
 			List<FeatureType> types,
-			Coordinate c, Integer maxResults, Filter filter){
+			Coordinate c, Integer maxResults, Filter filter,
+			AttributeSet attributes){
 		
 		String geomField = null;
 		
@@ -317,7 +323,9 @@ public class FeatureDao {
 
 		for (FeatureViewMetadataField field : vmetadata.getFields()) {
 			if (!field.isGeometry()) {
-				sb.append("," + field.getFieldName() );
+				if (attributes == AttributeSet.ALL || field.includeVectorTile()) {
+					sb.append("," + field.getFieldName() );
+				}
 			}else {
 				geomField = field.getFieldName();
 				sb.append(", st_asbinary(" + field.getFieldName() + ") as " + field.getFieldName() );
@@ -369,7 +377,7 @@ public class FeatureDao {
 		
 		List<Feature> features = 
 				jdbcTemplate.query(sb.toString(), 
-						new FeatureRowMapper(vmetadata), params.toArray());
+						new FeatureRowMapper(vmetadata, attributes), params.toArray());
 		if (features.size() > properties.getMaxresults()) {
 			throw new TooManyFeaturesException();
 		}

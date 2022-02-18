@@ -29,12 +29,19 @@ public class ParsedRequestParameters {
 	private Coordinate searchPoint = null;
 	private List<FeatureType> ftypes = null;
 	private Filter filter;
+	private AttributeSet attributes;
 	
-	public ParsedRequestParameters(Envelope env, Coordinate searchPoint, Integer maxResults, Filter filter) {
+	public ParsedRequestParameters(Envelope env, Coordinate searchPoint, 
+			Integer maxResults, Filter filter, AttributeSet attributes) {
 		this.env  = env;
 		this.searchPoint = searchPoint;
 		this.maxResults = maxResults;
 		this.filter = filter;
+		this.attributes = attributes;
+	}
+	
+	public AttributeSet getAttributeSet() {
+		return this.attributes;
 	}
 	
 	public Integer getMaxResults() {
