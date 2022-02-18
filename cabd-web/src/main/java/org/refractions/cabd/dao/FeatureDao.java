@@ -211,18 +211,23 @@ public class FeatureDao {
 		sb.append("SELECT ");
 		sb.append(ID_FIELD);
 
+		boolean hasftype = false;
 		for (FeatureViewMetadataField field : vmetadata.getFields()) {
 			
 			if (!field.isGeometry()) {
 				if (attributes == AttributeSet.ALL || field.includeVectorTile()) {
 					sb.append("," + field.getFieldName() );
+					if (field.getFieldName().equals(FEATURE_TYPE_FIELD)) hasftype = true;
 				}
 			}else {
 				geomField = field.getFieldName();
 				sb.append(", st_asbinary(" + field.getFieldName() + ") as " + field.getFieldName() );
 			}
 		}
-		
+		//feature type is required
+		if (!hasftype) {
+			sb.append("," + FEATURE_TYPE_FIELD );
+		}
 		sb.append(" FROM " );
 		sb.append(vmetadata.getFeatureView());
 		
@@ -321,17 +326,22 @@ public class FeatureDao {
 		sb.append("SELECT ");
 		sb.append(ID_FIELD);
 
+		boolean hasftype = false;
 		for (FeatureViewMetadataField field : vmetadata.getFields()) {
 			if (!field.isGeometry()) {
 				if (attributes == AttributeSet.ALL || field.includeVectorTile()) {
 					sb.append("," + field.getFieldName() );
+					if (field.getFieldName().equals(FEATURE_TYPE_FIELD)) hasftype = true;
 				}
 			}else {
 				geomField = field.getFieldName();
 				sb.append(", st_asbinary(" + field.getFieldName() + ") as " + field.getFieldName() );
 			}
 		}
-		
+		//feature type is required
+		if (!hasftype) {
+			sb.append("," + FEATURE_TYPE_FIELD );
+		}
 		if (geomField == null) {
 			throw new InvalidDatabaseConfigException(MessageFormat.format("Not geometry column found for the view ''{0}''", vmetadata.getFeatureView()));
 		}
