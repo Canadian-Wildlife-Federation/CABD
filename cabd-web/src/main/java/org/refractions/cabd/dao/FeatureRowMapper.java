@@ -21,6 +21,7 @@ import java.util.UUID;
 
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.io.WKBReader;
+import org.refractions.cabd.controllers.AttributeSet;
 import org.refractions.cabd.model.Feature;
 import org.refractions.cabd.model.FeatureViewMetadata;
 import org.refractions.cabd.model.FeatureViewMetadataField;
@@ -37,11 +38,13 @@ public class FeatureRowMapper implements RowMapper<Feature> {
 
 	
 	private FeatureViewMetadata metadata;
+	private AttributeSet attributes;
 	
 	private WKBReader reader = new WKBReader();
 	
-	public FeatureRowMapper(FeatureViewMetadata metadata) {
+	public FeatureRowMapper(FeatureViewMetadata metadata, AttributeSet attributes) {
 		this.metadata = metadata;
+		this.attributes = attributes;
 	}
 	
 	@Override
@@ -62,12 +65,16 @@ public class FeatureRowMapper implements RowMapper<Feature> {
 				}catch (Exception ex) {
 					throw new SQLException(ex);
 				}
-			}else if (field.isLink()) {
-				String oo = (String)rs.getObject(field.getFieldName());
-				feature.addLinkAttribute(field.getFieldName(), oo);
 			}else {
-				Object oo = rs.getObject(field.getFieldName());
-				feature.addAttribute(field.getFieldName(), oo);
+				if (attributes == AttributeSet.ALL || field.includeVectorTile()) {
+					if (field.isLink()) {
+						String oo = (String)rs.getObject(field.getFieldName());
+						feature.addLinkAttribute(field.getFieldName(), oo);
+					}else {
+						Object oo = rs.getObject(field.getFieldName());
+						feature.addAttribute(field.getFieldName(), oo);
+					}
+				}
 			}
 		};
 		return feature;
