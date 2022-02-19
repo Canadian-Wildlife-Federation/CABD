@@ -112,7 +112,7 @@ public class FeatureListGeoPkgSerializer extends AbstractHttpMessageConverter<Fe
 			Files.copy(temp, outputMessage.getBody());
 			outputMessage.getBody().flush();
 		}
-		
+
 		try {
 			Files.delete(temp);
 		}catch (Exception ex) {
