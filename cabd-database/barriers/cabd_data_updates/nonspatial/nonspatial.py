@@ -18,7 +18,15 @@ class MappingScript:
 
     damTable = workingSchema + ".dams"
     damAttributeTable = workingSchema + ".dams_attribute_source"
-    
+
+    fishTable = workingSchema + ".fishways"
+    fishAttributeTable = workingSchema + ".fishways_attribute_source"
+
+    liveDamSchema = "dams"
+
+    liveDamTable = liveDamSchema + ".dams"
+    liveDamAttributeTable = liveDamSchema + ".dams_attribute_source"
+
     datasetname = ""
 
     dataFile = ""
@@ -31,7 +39,7 @@ class MappingScript:
         self.workingTable = self.workingSchema + "." + datasetname
 
         if len(sys.argv) != 3:
-            print("Invalid usage: MAP_<featureType>_<datasetid>.py <dbUser> <dbPassword>")
+            print("Invalid usage: PY <datasetname>.py <dbUser> <dbPassword>")
             sys.exit()
 
     def do_work(self, mappingquery):

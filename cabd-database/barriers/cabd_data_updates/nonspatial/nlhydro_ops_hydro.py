@@ -1,17 +1,17 @@
 import nonspatial as main
 
-script = main.MappingScript("nlp_depreciation_2019")
+script = main.MappingScript("nlhydro_ops_hydro")
 
 mappingquery = f"""
 
 --create new data source record
 INSERT INTO cabd.data_source (id, name, version_date, source, comments, source_type)
 VALUES(
-    '{script.dsUuid}', 
+    '{script.dsUuid}',
     '{script.datasetname}',
-    '2019-01-01',
-    'Newfoundland Power, 2019. 2019 Depreciation Study - Hydro Plant Decommissioning Report. pp. 4-83. Accessed from http://publicinfo.nlh.nl.ca/Newfoundland%20Power''s%202022%20CBA/RFI%20Responses/CA-NP-021.pdf',
-    'Accessed February 22, 2022',
+    '2022-02-08',
+    'Newfoundland and Labrador Hydro, no date. Operations - Hydro Generation. Accessed February 8, 2022, from https://nlhydro.com/operations/hydro-generation/',
+    'Accessed February 8, 2022',
     'non-spatial');
 
 --add data source to the table
@@ -26,17 +26,19 @@ SET
    facility_name_en_ds = CASE WHEN ({script.datasetname}.facility_name_en IS NOT NULL AND {script.datasetname}.facility_name_en IS DISTINCT FROM cabd.facility_name_en) THEN {script.datasetname}.data_source ELSE cabdsource.facility_name_en_ds END,
    owner_ds = CASE WHEN ({script.datasetname}.owner IS NOT NULL AND {script.datasetname}.owner IS DISTINCT FROM cabd.owner) THEN {script.datasetname}.data_source ELSE cabdsource.owner_ds END,
    ownership_type_code_ds = CASE WHEN ({script.datasetname}.ownership_type_code IS NOT NULL AND {script.datasetname}.ownership_type_code IS DISTINCT FROM cabd.ownership_type_code) THEN {script.datasetname}.data_source ELSE cabdsource.ownership_type_code_ds END,
-   construction_type_code_ds = CASE WHEN ({script.datasetname}.construction_type_code IS NOT NULL AND {script.datasetname}.construction_type_code IS DISTINCT FROM cabd.construction_type_code) THEN {script.datasetname}.data_source ELSE cabdsource.construction_type_code_ds END,
+   function_code_ds = CASE WHEN ({script.datasetname}.function_code IS NOT NULL AND {script.datasetname}.function_code IS DISTINCT FROM cabd.function_code) THEN {script.datasetname}.data_source ELSE cabdsource.function_code_ds END,
+   generating_capacity_mwh_ds = CASE WHEN ({script.datasetname}.generating_capacity_mwh IS NOT NULL AND {script.datasetname}.generating_capacity_mwh IS DISTINCT FROM cabd.generating_capacity_mwh) THEN {script.datasetname}.data_source ELSE cabdsource.generating_capacity_mwh_ds END,
+   construction_year_ds = CASE WHEN ({script.datasetname}.construction_year IS NOT NULL AND {script.datasetname}.construction_year IS DISTINCT FROM cabd.construction_year) THEN {script.datasetname}.data_source ELSE cabdsource.construction_year_ds END,
    turbine_type_code_ds = CASE WHEN ({script.datasetname}.turbine_type_code IS NOT NULL AND {script.datasetname}.turbine_type_code IS DISTINCT FROM cabd.turbine_type_code) THEN {script.datasetname}.data_source ELSE cabdsource.turbine_type_code_ds END,
-   turbine_number_ds = CASE WHEN ({script.datasetname}.turbine_number IS NOT NULL AND {script.datasetname}.turbine_number IS DISTINCT FROM cabd.turbine_number) THEN {script.datasetname}.data_source ELSE cabdsource.turbine_number_ds END,
    
    dam_name_en_dsfid = CASE WHEN ({script.datasetname}.dam_name_en IS NOT NULL AND {script.datasetname}.dam_name_en IS DISTINCT FROM cabd.dam_name_en) THEN NULL ELSE cabdsource.dam_name_en_dsfid END,
    facility_name_en_dsfid = CASE WHEN ({script.datasetname}.facility_name_en IS NOT NULL AND {script.datasetname}.facility_name_en IS DISTINCT FROM cabd.facility_name_en) THEN NULL ELSE cabdsource.facility_name_en_dsfid END,
    owner_dsfid = CASE WHEN ({script.datasetname}.owner IS NOT NULL AND {script.datasetname}.owner IS DISTINCT FROM cabd.owner) THEN NULL ELSE cabdsource.owner_dsfid END,
    ownership_type_code_dsfid = CASE WHEN ({script.datasetname}.ownership_type_code IS NOT NULL AND {script.datasetname}.ownership_type_code IS DISTINCT FROM cabd.ownership_type_code) THEN NULL ELSE cabdsource.ownership_type_code_dsfid END,
-   construction_type_code_dsfid = CASE WHEN ({script.datasetname}.construction_type_code IS NOT NULL AND {script.datasetname}.construction_type_code IS DISTINCT FROM cabd.construction_type_code) THEN NULL ELSE cabdsource.construction_type_code_dsfid END,
-   turbine_type_code_dsfid = CASE WHEN ({script.datasetname}.turbine_type_code IS NOT NULL AND {script.datasetname}.turbine_type_code IS DISTINCT FROM cabd.turbine_type_code) THEN NULL ELSE cabdsource.turbine_type_code_dsfid END,
-   turbine_number_dsfid = CASE WHEN ({script.datasetname}.turbine_number IS NOT NULL AND {script.datasetname}.turbine_number IS DISTINCT FROM cabd.turbine_number) THEN NULL ELSE cabdsource.turbine_number_dsfid END
+   function_code_dsfid = CASE WHEN ({script.datasetname}.function_code IS NOT NULL AND {script.datasetname}.function_code IS DISTINCT FROM cabd.function_code) THEN NULL ELSE cabdsource.function_code_dsfid END,
+   generating_capacity_mwh_dsfid = CASE WHEN ({script.datasetname}.generating_capacity_mwh IS NOT NULL AND {script.datasetname}.generating_capacity_mwh IS DISTINCT FROM cabd.generating_capacity_mwh) THEN NULL ELSE cabdsource.generating_capacity_mwh_dsfid END,
+   construction_year_dsfid = CASE WHEN ({script.datasetname}.construction_year IS NOT NULL AND {script.datasetname}.construction_year IS DISTINCT FROM cabd.construction_year) THEN NULL ELSE cabdsource.construction_year_dsfid END,
+   turbine_type_code_dsfid = CASE WHEN ({script.datasetname}.turbine_type_code IS NOT NULL AND {script.datasetname}.turbine_type_code IS DISTINCT FROM cabd.turbine_type_code) THEN NULL ELSE cabdsource.turbine_type_code_dsfid END
 FROM
    {script.damTable} AS cabd,
    {script.workingTable} AS {script.datasetname}
@@ -50,9 +52,10 @@ SET
    facility_name_en = CASE WHEN ({script.datasetname}.facility_name_en IS NOT NULL AND {script.datasetname}.facility_name_en IS DISTINCT FROM cabd.facility_name_en) THEN {script.datasetname}.facility_name_en ELSE cabd.facility_name_en END,
    "owner" = CASE WHEN ({script.datasetname}.owner IS NOT NULL AND {script.datasetname}.owner IS DISTINCT FROM cabd.owner) THEN {script.datasetname}.owner ELSE cabd.owner END,
    ownership_type_code = CASE WHEN ({script.datasetname}.ownership_type_code IS NOT NULL AND {script.datasetname}.ownership_type_code IS DISTINCT FROM cabd.ownership_type_code) THEN {script.datasetname}.ownership_type_code ELSE cabd.ownership_type_code END,
-   construction_type_code = CASE WHEN ({script.datasetname}.construction_type_code IS NOT NULL AND {script.datasetname}.construction_type_code IS DISTINCT FROM cabd.construction_type_code) THEN {script.datasetname}.construction_type_code ELSE cabd.construction_type_code END,
-   turbine_type_code = CASE WHEN ({script.datasetname}.turbine_type_code IS NOT NULL AND {script.datasetname}.turbine_type_code IS DISTINCT FROM cabd.turbine_type_code) THEN {script.datasetname}.turbine_type_code ELSE cabd.turbine_type_code END,
-   turbine_number = CASE WHEN ({script.datasetname}.turbine_number IS NOT NULL AND {script.datasetname}.turbine_number IS DISTINCT FROM cabd.turbine_number) THEN {script.datasetname}.turbine_number ELSE cabd.turbine_number END
+   function_code = CASE WHEN ({script.datasetname}.function_code IS NOT NULL AND {script.datasetname}.function_code IS DISTINCT FROM cabd.function_code) THEN {script.datasetname}.function_code ELSE cabd.function_code END,
+   generating_capacity_mwh = CASE WHEN ({script.datasetname}.generating_capacity_mwh IS NOT NULL AND {script.datasetname}.generating_capacity_mwh IS DISTINCT FROM cabd.generating_capacity_mwh) THEN {script.datasetname}.generating_capacity_mwh ELSE cabd.generating_capacity_mwh END,
+   construction_year = CASE WHEN ({script.datasetname}.construction_year IS NOT NULL AND {script.datasetname}.construction_year IS DISTINCT FROM cabd.construction_year) THEN {script.datasetname}.construction_year ELSE cabd.construction_year END,
+   turbine_type_code = CASE WHEN ({script.datasetname}.turbine_type_code IS NOT NULL AND {script.datasetname}.turbine_type_code IS DISTINCT FROM cabd.turbine_type_code) THEN {script.datasetname}.turbine_type_code ELSE cabd.turbine_type_code END
 FROM
    {script.workingTable} AS {script.datasetname}
 WHERE
