@@ -13,33 +13,33 @@ dbPassword = sys.argv[2]
 
 class MappingScript:
 
-    workingSchema = "featurecopy"
-    workingTable = ""
+    sourceSchema = "source_data"
+    sourceTable = ""
 
-    damTable = workingSchema + ".dams"
-    damAttributeTable = workingSchema + ".dams_attribute_source"
+    tempSchema = "featurecopy"
 
-    fishTable = workingSchema + ".fishways"
-    fishAttributeTable = workingSchema + ".fishways_attribute_source"
+    damTable = tempSchema + ".dams"
+    damAttributeTable = tempSchema + ".dams_attribute_source"
 
-    liveDamSchema = "dams"
+    fishTable = tempSchema + ".fishways"
+    fishAttributeTable = tempSchema + ".fishways_attribute_source"
 
-    liveDamTable = liveDamSchema + ".dams"
-    liveDamAttributeTable = liveDamSchema + ".dams_attribute_source"
+    liveSchema = "dams"
 
-    datasetname = ""
+    liveDamTable = liveSchema + ".dams"
+    liveDamAttributeTable = liveSchema + ".dams_attribute_source"
 
-    dataFile = ""
+    datasetName = ""
 
     dsUuid = uuid4()
 
-    def __init__(self, datasetname):
+    def __init__(self, datasetName):
 
-        self.datasetname = datasetname
-        self.workingTable = self.workingSchema + "." + datasetname
+        self.datasetName = datasetName
+        self.sourceTable = self.sourceSchema + "." + datasetName
 
         if len(sys.argv) != 3:
-            print("Invalid usage: PY <datasetname>.py <dbUser> <dbPassword>")
+            print("Invalid usage: py <datasetName>.py <dbUser> <dbPassword>")
             sys.exit()
 
     def do_work(self, mappingquery):
@@ -50,14 +50,14 @@ class MappingScript:
                    password=dbPassword, 
                    port=dbPort)
 
-        print("Mapping attributes from " +  self.datasetname)
+        print("Mapping attributes from " +  self.datasetName)
         self.run_mapping_query(mappingquery)
         
         self.conn.commit()
         self.conn.close()
         
         print("Script complete")
-        print("Attributes mapped to " + self.damTable + " from " + self.datasetname)
+        print("Attributes mapped from " + self.datasetName)
     
     def run_mapping_query(self, mappingquery):
         with self.conn.cursor() as cursor:
