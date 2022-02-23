@@ -7,12 +7,12 @@ mappingquery = f"""
 --create new data source record
 INSERT INTO cabd.data_source (id, name, version_date, source, comments, source_type)
 VALUES(
-    '{script.dsUuid}',
-    '{script.datasetName}',
-    '2022-02-08',
-    'NB Power, no date. Hydro Tour. Accessed February 8, 2022, from https://www.nbpower.com/en/about-us/learning/learn-about-electricity/hydro/hydro-tour/',
-    'Accessed February 8, 2022',
-    'non-spatial');
+   '{script.dsUuid}',
+   '{script.datasetName}',
+   '2022-02-08',
+   'NB Power, no date. Hydro Tour. Accessed February 8, 2022, from https://www.nbpower.com/en/about-us/learning/learn-about-electricity/hydro/hydro-tour/',
+   'Accessed February 8, 2022',
+   'non-spatial');
 
 --add data source to the table
 ALTER TABLE {script.sourceTable} ADD COLUMN data_source uuid;
@@ -29,7 +29,7 @@ SET
    construction_year_ds = CASE WHEN ({script.datasetName}.construction_year IS NOT NULL AND {script.datasetName}.construction_year IS DISTINCT FROM cabd.construction_year) THEN {script.datasetName}.data_source ELSE cabdsource.construction_year_ds END,
    generating_capacity_mwh_ds = CASE WHEN ({script.datasetName}.generating_capacity_mwh IS NOT NULL AND {script.datasetName}.generating_capacity_mwh IS DISTINCT FROM cabd.generating_capacity_mwh) THEN {script.datasetName}.data_source ELSE cabdsource.generating_capacity_mwh_ds END,
    waterbody_name_en_ds = CASE WHEN ({script.datasetName}.waterbody_name_en IS NOT NULL AND {script.datasetName}.waterbody_name_en IS DISTINCT FROM cabd.waterbody_name_en) THEN {script.datasetName}.data_source ELSE cabdsource.waterbody_name_en_ds END,
-   
+
    dam_name_en_dsfid = CASE WHEN ({script.datasetName}.dam_name_en IS NOT NULL AND {script.datasetName}.dam_name_en IS DISTINCT FROM cabd.dam_name_en) THEN NULL ELSE cabdsource.dam_name_en_dsfid END,
    facility_name_en_dsfid = CASE WHEN ({script.datasetName}.facility_name_en IS NOT NULL AND {script.datasetName}.facility_name_en IS DISTINCT FROM cabd.facility_name_en) THEN NULL ELSE cabdsource.facility_name_en_dsfid END,
    owner_dsfid = CASE WHEN ({script.datasetName}.owner IS NOT NULL AND {script.datasetName}.owner IS DISTINCT FROM cabd.owner) THEN NULL ELSE cabdsource.owner_dsfid END,
@@ -41,7 +41,8 @@ FROM
    {script.damTable} AS cabd,
    {script.sourceTable} AS {script.datasetName}
 WHERE
-   cabdsource.cabd_id = {script.datasetName}.cabd_id AND cabd.cabd_id = cabdsource.cabd_id;
+   {script.datasetName}.existing_pilot_region_pt IS FALSE
+   AND (cabdsource.cabd_id = {script.datasetName}.cabd_id AND cabd.cabd_id = cabdsource.cabd_id);
 
 UPDATE
    {script.damTable} AS cabd
@@ -56,7 +57,8 @@ SET
 FROM
    {script.sourceTable} AS {script.datasetName}
 WHERE
-   cabd.cabd_id = {script.datasetName}.cabd_id;
+   {script.datasetName}.existing_pilot_region_pt IS FALSE
+   AND cabd.cabd_id = {script.datasetName}.cabd_id;
 
 
 --update pilot region features
@@ -70,7 +72,7 @@ SET
    construction_year_ds = CASE WHEN ({script.datasetName}.construction_year IS NOT NULL AND {script.datasetName}.construction_year IS DISTINCT FROM cabd.construction_year) THEN {script.datasetName}.data_source ELSE cabdsource.construction_year_ds END,
    generating_capacity_mwh_ds = CASE WHEN ({script.datasetName}.generating_capacity_mwh IS NOT NULL AND {script.datasetName}.generating_capacity_mwh IS DISTINCT FROM cabd.generating_capacity_mwh) THEN {script.datasetName}.data_source ELSE cabdsource.generating_capacity_mwh_ds END,
    waterbody_name_en_ds = CASE WHEN ({script.datasetName}.waterbody_name_en IS NOT NULL AND {script.datasetName}.waterbody_name_en IS DISTINCT FROM cabd.waterbody_name_en) THEN {script.datasetName}.data_source ELSE cabdsource.waterbody_name_en_ds END,
-   
+
    dam_name_en_dsfid = CASE WHEN ({script.datasetName}.dam_name_en IS NOT NULL AND {script.datasetName}.dam_name_en IS DISTINCT FROM cabd.dam_name_en) THEN NULL ELSE cabdsource.dam_name_en_dsfid END,
    facility_name_en_dsfid = CASE WHEN ({script.datasetName}.facility_name_en IS NOT NULL AND {script.datasetName}.facility_name_en IS DISTINCT FROM cabd.facility_name_en) THEN NULL ELSE cabdsource.facility_name_en_dsfid END,
    owner_dsfid = CASE WHEN ({script.datasetName}.owner IS NOT NULL AND {script.datasetName}.owner IS DISTINCT FROM cabd.owner) THEN NULL ELSE cabdsource.owner_dsfid END,
@@ -82,8 +84,8 @@ FROM
    {script.liveDamTable} AS cabd,
    {script.sourceTable} AS {script.datasetName}
 WHERE
-    {script.datasetName}.existing_pilot_region_pt IS TRUE
-    AND (cabdsource.cabd_id = {script.datasetName}.cabd_id AND cabd.cabd_id = cabdsource.cabd_id);
+   {script.datasetName}.existing_pilot_region_pt IS TRUE
+   AND (cabdsource.cabd_id = {script.datasetName}.cabd_id AND cabd.cabd_id = cabdsource.cabd_id);
 
 UPDATE
    {script.liveDamTable} AS cabd

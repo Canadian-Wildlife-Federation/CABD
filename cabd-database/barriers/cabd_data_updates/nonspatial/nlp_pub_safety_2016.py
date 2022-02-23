@@ -57,7 +57,8 @@ FROM
    {script.damTable} AS cabd,
    {script.sourceTable} AS {script.datasetName}
 WHERE
-   cabdsource.cabd_id = {script.datasetName}.cabd_id AND cabd.cabd_id = cabdsource.cabd_id;
+   {script.datasetName}.fishway_yn IS FALSE
+   AND (cabdsource.cabd_id = {script.datasetName}.cabd_id AND cabd.cabd_id = cabdsource.cabd_id);
 
 UPDATE
    {script.damTable} AS cabd
@@ -80,7 +81,8 @@ SET
 FROM
    {script.sourceTable} AS {script.datasetName}
 WHERE
-   cabd.cabd_id = {script.datasetName}.cabd_id;
+   {script.datasetName}.fishway_yn IS FALSE
+   AND cabd.cabd_id = {script.datasetName}.cabd_id;
 
 
 --update fishway features

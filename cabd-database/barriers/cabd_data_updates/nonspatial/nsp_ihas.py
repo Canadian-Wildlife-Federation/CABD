@@ -57,7 +57,8 @@ FROM
    {script.damTable} AS cabd,
    {script.sourceTable} AS {script.datasetName}
 WHERE
-   cabdsource.cabd_id = {script.datasetName}.cabd_id AND cabd.cabd_id = cabdsource.cabd_id;
+   {script.datasetName}.existing_pilot_region_pt IS FALSE
+   AND (cabdsource.cabd_id = {script.datasetName}.cabd_id AND cabd.cabd_id = cabdsource.cabd_id);
 
 UPDATE
    {script.damTable} AS cabd
@@ -80,7 +81,8 @@ SET
 FROM
    {script.sourceTable} AS {script.datasetName}
 WHERE
-   cabd.cabd_id = {script.datasetName}.cabd_id;
+   {script.datasetName}.existing_pilot_region_pt IS FALSE
+   AND cabd.cabd_id = {script.datasetName}.cabd_id;
 
 
 --update pilot region features
