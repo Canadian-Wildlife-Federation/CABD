@@ -9,8 +9,8 @@ INSERT INTO cabd.data_source (id, name, version_date, source, comments, source_t
 VALUES(
     '{script.dsUuid}', 
     '{script.datasetName}',
-    '2016-02-01',
-    'Newfoundland and Labrador Hydro, 2016. RFP # 2017-70503 - Audit Dam Safety Review for Pudops Dam, North Salmon Dam and Spillway; Appendix VI: Inventory of Dams and Dykes. Accessed from https://bids.nalcorenergy.com/Module/Tenders/en/Document/Preview/c33bf56c-20b9-453d-914a-4d779ce9ed0e',
+    '2017-04-04',
+    'Newfoundland and Labrador Hydro, 2017. RFP # 2017-70503 - Audit Dam Safety Review for Pudops Dam, North Salmon Dam and Spillway; Appendix VI: Inventory of Dams and Dykes. Accessed from https://bids.nalcorenergy.com/Module/Tenders/en/Document/Preview/c33bf56c-20b9-453d-914a-4d779ce9ed0e',
     'Accessed February 22, 2022',
     'non-spatial');
 

@@ -9,7 +9,7 @@ INSERT INTO cabd.data_source (id, name, version_date, source, comments, source_t
 VALUES(
     '{script.dsUuid}', 
     '{script.datasetName}',
-    '2013-02-01',
+    '2013-02-21',
     'SNC-Lavalin Group Inc., 2013. Lower Churchill Project Design Criteria - Civil. pp. 34, 44-45. Accessed from https://muskratfalls.nalcorenergy.com/wp-content/uploads/2013/03/Muskrat-Falls_Civil-Design-Criteria_Feb2013_Web.pdf',
     'Accessed February 22, 2022');
 

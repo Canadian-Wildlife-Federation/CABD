@@ -9,8 +9,8 @@ INSERT INTO cabd.data_source (id, name, version_date, source, comments, source_t
 VALUES(
     '{script.dsUuid}', 
     '{script.datasetName}',
-    '2011-01-01',
-    'Newfoundland Power, 2011. Rattling Brook Fisheries Compensation. pp. 3-4. Accessed from http://www.pub.nl.ca/applications/NP2012Capital/files/applic/NP2012Application-Generation.pdf',
+    '2011-06-01',
+    'Newfounland Power, 2011. Rattling Brook Fisheries Compensation. pp. 3-4. Accessed from http://www.pub.nl.ca/applications/NP2012Capital/files/applic/NP2012Application-Generation.pdf',
     'Accessed February 22, 2022',
     'non-spatial');
 

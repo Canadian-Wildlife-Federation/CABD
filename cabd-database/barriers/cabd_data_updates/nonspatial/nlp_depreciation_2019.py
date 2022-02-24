@@ -9,7 +9,7 @@ INSERT INTO cabd.data_source (id, name, version_date, source, comments, source_t
 VALUES(
     '{script.dsUuid}', 
     '{script.datasetName}',
-    '2019-01-01',
+    '2019-12-31',
     'Newfoundland Power, 2019. 2019 Depreciation Study - Hydro Plant Decommissioning Report. pp. 4-83. Accessed from http://publicinfo.nlh.nl.ca/Newfoundland%20Power''s%202022%20CBA/RFI%20Responses/CA-NP-021.pdf',
     'Accessed February 22, 2022',
     'non-spatial');

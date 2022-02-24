@@ -9,7 +9,7 @@ INSERT INTO cabd.data_source (id, name, version_date, source, comments, source_t
 VALUES(
     '{script.dsUuid}', 
     '{script.datasetName}',
-    '2018-12-01',
+    '2018-12-21',
     'Nova Scotia Power Inc., 2018. Nova Scotia Power Incorporated Hydro Asset Study - Redacted; Appendix B. pp. 16-68. Accessed from https://irp.nspower.ca/files/key-documents/background-materials/20181221-NS-Power-Hydro-Asset-Study-REDACTED.pdf',
     'Accessed February 22, 2022',
     'non-spatial');

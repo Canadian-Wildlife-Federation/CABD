@@ -9,7 +9,7 @@ INSERT INTO cabd.data_source (id, name, version_date, source, comments, source_t
 VALUES(
     '{script.dsUuid}',
     '{script.datasetName}',
-    '2008-01-01',
+    '2009-04-16',
     'Newfoundland Power, 2009. 2008 Submission - Sustainable Electricity Program. pp. 4. Accessed from https://secure.newfoundlandpower.com/-/media/PDFs/About-Us/Sustainable-Electricity/SEP-2008-Report.pdf',
     'Accessed February 22, 2022',
     'non-spatial');

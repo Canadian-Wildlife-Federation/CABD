@@ -9,7 +9,7 @@ INSERT INTO cabd.data_source (id, name, version_date, source, comments, source_t
 VALUES(
     '{script.dsUuid}', 
     '{script.datasetName}',
-    '2011-01-01',
+    '2011-06-01',
     'Newfoundland Power, 2011. 2012 Facility Rehabilitation. pp. 1-3. Accessed from http://www.pub.nl.ca/applications/NP2012Capital/files/applic/NP2012Application-Generation.pdf',
     'Accessed February 22, 2022',
     'non-spatial');

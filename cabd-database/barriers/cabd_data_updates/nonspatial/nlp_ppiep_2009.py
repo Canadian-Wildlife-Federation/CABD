@@ -1,6 +1,6 @@
 import nonspatial as main
 
-script = main.MappingScript("nlp_ppiep_2008")
+script = main.MappingScript("nlp_ppiep_2009")
 
 mappingquery = f"""
 
@@ -9,8 +9,8 @@ INSERT INTO cabd.data_source (id, name, version_date, source, comments, source_t
 VALUES(
     '{script.dsUuid}',
     '{script.datasetName}',
-    '2008-01-01',
-    'Newfoundland Power, 2008. Potential Projects to Increase Energy Production. pp. 2-25. Accessed from http://pub.nl.ca/applications/NP2010Capital/files/rfi/PUB-NP-009.pdf',
+    '2009-01-01',
+    'Newfoundland Power, 2009. Potential Projects to Increase Energy Production. pp. 2-25. Accessed from http://pub.nl.ca/applications/NP2010Capital/files/rfi/PUB-NP-009.pdf',
     'Accessed February 22, 2022',
     'non-spatial');
 
