@@ -10,7 +10,7 @@ VALUES(
     '{script.dsUuid}',
     '{script.datasetName}',
     '2018-10-15',
-    'Protulipac, D., Smith, T., Snyder, G., O'Brien, J., & Chislett, T., 2018. Muskrat Falls Dams - Cold Climate Considerations in Design and Construction. pp. 4-5. Accessed from https://www.researchgate.net/publication/328365634_MUSKRAT_FALLS_DAMS_-_COLD_CLIMATE_CONSIDERATIONS_IN_DESIGN_AND_CONSTRUCTION',
+    'Protulipac, D., Smith, T., Snyder, G., O''Brien, J., & Chislett, T., 2018. Muskrat Falls Dams - Cold Climate Considerations in Design and Construction. pp. 4-5. Accessed from https://www.researchgate.net/publication/328365634_MUSKRAT_FALLS_DAMS_-_COLD_CLIMATE_CONSIDERATIONS_IN_DESIGN_AND_CONSTRUCTION',
     'Accessed February 22, 2022',
     'non-spatial');
 

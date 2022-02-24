@@ -10,7 +10,7 @@ VALUES(
     '{script.dsUuid}',
     '{script.datasetName}',
     '2013-02-27',
-    'AMEC Environment & Infrastructure, 2013. Flood Risk Mapping Project - Corner Brook Stream and Petrie's Brook. pp. 2-12 - 2-15. Accessed from https://www.gov.nl.ca/ecc/files/waterres-flooding-corner-brook-stream-cornerbrook-report.pdf',
+    'AMEC Environment & Infrastructure, 2013. Flood Risk Mapping Project - Corner Brook Stream and Petrie''s Brook. pp. 2-12 - 2-15. Accessed from https://www.gov.nl.ca/ecc/files/waterres-flooding-corner-brook-stream-cornerbrook-report.pdf',
     'Accessed February 22, 2022',
     'non-spatial');
 

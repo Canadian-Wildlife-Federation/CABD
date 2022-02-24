@@ -11,7 +11,8 @@ VALUES(
     '{script.datasetName}',
     '2013-02-21',
     'SNC-Lavalin Group Inc., 2013. Lower Churchill Project Design Criteria - Civil. pp. 34, 44-45. Accessed from https://muskratfalls.nalcorenergy.com/wp-content/uploads/2013/03/Muskrat-Falls_Civil-Design-Criteria_Feb2013_Web.pdf',
-    'Accessed February 22, 2022');
+    'Accessed February 22, 2022',
+    'non-spatial');
 
 --add data source to the table
 ALTER TABLE {script.sourceTable} ADD COLUMN data_source uuid;

@@ -63,8 +63,10 @@ UPDATE
    {script.fishAttributeTable} AS cabdsource
 SET    
     structure_name_en_ds = CASE WHEN ({script.datasetName}.structure_name_en IS NOT NULL AND {script.datasetName}.structure_name_en IS DISTINCT FROM cabd.structure_name_en) THEN {script.datasetName}.data_source ELSE cabdsource.structure_name_en_ds END,
+    year_constructed_ds = CASE WHEN ({script.datasetName}.year_constructed IS NOT NULL AND {script.datasetName}.year_constructed IS DISTINCT FROM cabd.year_constructed) THEN {script.datasetName}.data_source ELSE cabdsource.year_constructed_ds END,
 
     structure_name_en_dsfid = CASE WHEN ({script.datasetName}.structure_name_en IS NOT NULL AND {script.datasetName}.structure_name_en IS DISTINCT FROM cabd.structure_name_en) THEN NULL ELSE cabdsource.structure_name_en_dsfid END,
+    year_constructed_dsfid = CASE WHEN ({script.datasetName}.year_constructed IS NOT NULL AND {script.datasetName}.year_constructed IS DISTINCT FROM cabd.year_constructed) THEN NULL ELSE cabdsource.year_constructed_dsfid END
 FROM
     {script.fishTable} AS cabd,
     {script.sourceTable} AS {script.datasetName}
@@ -76,6 +78,7 @@ UPDATE
     {script.fishTable} AS cabd
 SET
     structure_name_en = CASE WHEN ({script.datasetName}.structure_name_en IS NOT NULL AND {script.datasetName}.structure_name_en IS DISTINCT FROM cabd.structure_name_en) THEN {script.datasetName}.structure_name_en ELSE cabd.structure_name_en END,
+    year_constructed = CASE WHEN ({script.datasetName}.year_constructed IS NOT NULL AND {script.datasetName}.year_constructed IS DISTINCT FROM cabd.year_constructed) THEN {script.datasetName}.year_constructed ELSE cabd.year_constructed END
 FROM
     {script.sourceTable} AS {script.datasetName}
 WHERE

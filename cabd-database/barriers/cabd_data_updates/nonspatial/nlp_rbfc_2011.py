@@ -10,7 +10,7 @@ VALUES(
     '{script.dsUuid}', 
     '{script.datasetName}',
     '2011-06-01',
-    'Newfounland Power, 2011. Rattling Brook Fisheries Compensation. pp. 3-4. Accessed from http://www.pub.nl.ca/applications/NP2012Capital/files/applic/NP2012Application-Generation.pdf',
+    'Newfoundland Power, 2011. Rattling Brook Fisheries Compensation. pp. 3-4. Accessed from http://www.pub.nl.ca/applications/NP2012Capital/files/applic/NP2012Application-Generation.pdf',
     'Accessed February 22, 2022',
     'non-spatial');
 
@@ -38,7 +38,7 @@ UPDATE
    {script.damTable} AS cabd
 SET
    dam_name_en = CASE WHEN ({script.datasetName}.dam_name_en IS NOT NULL AND {script.datasetName}.dam_name_en IS DISTINCT FROM cabd.dam_name_en) THEN {script.datasetName}.dam_name_en ELSE cabd.dam_name_en END,
-   down_passage_route_code_dsfid = CASE WHEN ({script.datasetName}.down_passage_route_code IS NOT NULL AND {script.datasetName}.down_passage_route_code IS DISTINCT FROM cabd.down_passage_route_code) THEN NULL ELSE cabdsource.down_passage_route_code_dsfid END
+   down_passage_route_code = CASE WHEN ({script.datasetName}.down_passage_route_code IS NOT NULL AND {script.datasetName}.down_passage_route_code IS DISTINCT FROM cabd.down_passage_route_code) THEN {script.datasetName}.down_passage_route_code ELSE cabd.down_passage_route_code END
 FROM
    {script.sourceTable} AS {script.datasetName}
 WHERE

@@ -1,6 +1,6 @@
 import LOAD_main as main
 
-script = main.LoadingScript("wikipedia")
+script = main.LoadingScript("wiki_cdn_wfs")
     
 query = f"""
 
