@@ -45,11 +45,11 @@ public class FeatureRequestTypeParameters extends FeatureRequestParameters{
 	//use a POJO to represent these parameters
 	//I needed custom name for max-results
 	//https://stackoverflow.com/questions/56468760/how-to-collect-all-fields-annotated-with-requestparam-into-one-object
-	@ConstructorProperties({"types","bbox", "point","max-results", "filter"})
+	@ConstructorProperties({"types","bbox", "point","max-results", "filter", "attributes"})
 	public FeatureRequestTypeParameters(
 			String types, String bbox, 
-			String point, Integer maxResults, String[] filter) {
-		super(bbox, point, maxResults, filter);
+			String point, Integer maxResults, String[] filter, String attributes) {
+		super(bbox, point, maxResults, filter, attributes);
 		this.types = types;
 	}
 		

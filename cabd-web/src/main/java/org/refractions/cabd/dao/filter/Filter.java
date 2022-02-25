@@ -53,7 +53,8 @@ public class Filter {
 			if (and) sb.append(" AND ");	
 			and = true;
 			
-			if (e.getDataType() == DataType.STRING) {
+			if (e.getDataType() == DataType.STRING &&
+					(e.getOperator() != Operator.NULL && e.getOperator() != Operator.NOTNULL)) {
 				sb.append("LOWER(");
 				sb.append(e.getAttributeKey());
 				sb.append(")");
@@ -77,17 +78,19 @@ public class Filter {
 				sb.deleteCharAt(sb.length() - 1);
 				sb.append(")");
 			}else {
-				Object value = e.getValuesAsDataType()[0];
-				if (e.getOperator() == Operator.LIKE) {
-					String str = value.toString();
-					str = str.replaceAll("_", "\\\\_").replaceAll("%", "\\\\%");
-					value = "%" + str + "%";
-				}
-				sb.append("?");
-				if (e.getDataType() == DataType.STRING) {
-					parameters.add(value.toString().toLowerCase());
-				}else {
-					parameters.add(value);
+				if (e.getOperator() != Operator.NULL && e.getOperator() != Operator.NOTNULL) {
+					Object value = e.getValuesAsDataType()[0];
+					if (e.getOperator() == Operator.LIKE) {
+						String str = value.toString();
+						str = str.replaceAll("_", "\\\\_").replaceAll("%", "\\\\%");
+						value = "%" + str + "%";
+					}
+					sb.append("?");
+					if (e.getDataType() == DataType.STRING) {
+						parameters.add(value.toString().toLowerCase());
+					}else {
+						parameters.add(value);
+					}
 				}
 			}
 		}

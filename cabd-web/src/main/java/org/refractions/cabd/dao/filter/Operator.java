@@ -33,7 +33,9 @@ public enum Operator {
 	LTE("lte"),
 	GT("gt"),
 	GTE("gte"),
-	LIKE("like");
+	LIKE("like"),
+	NULL("isnull"),
+	NOTNULL("notnull");
 	
 	String key;
 	
@@ -56,17 +58,19 @@ public enum Operator {
 		case LTE: return "<=";
 		case NEQ: return "!=";
 		case NOTIN: return "NOT IN";		
+		case NULL: return "is null";
+		case NOTNULL: return "is not null";
 		};
 		return "";
 	}
 	
 	public boolean supports(DataType dataType) {
 		switch(dataType) {
-		case STRING: return this == IN ||  this == NOTIN || this == EQ || this == NEQ || this == LIKE;
+		case STRING: return this == IN ||  this == NOTIN || this == EQ || this == NEQ || this == LIKE || this == NULL || this == NOTNULL;
 		case NUMBER: 
-		case DATE: return this == IN || this == NOTIN || this == EQ || this == NEQ || this == LT || this == LTE || this == GT || this == GTE;
+		case DATE: return this == IN || this == NOTIN || this == EQ || this == NEQ || this == LT || this == LTE || this == GT || this == GTE || this == NULL || this == NOTNULL;
 		case BOOLEAN: return this == EQ || this == NEQ;
-		case UUID: return this == EQ ;
+		case UUID: return this == EQ || this == NULL || this == NOTNULL;
 		}
 		return false;
 	}

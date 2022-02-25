@@ -17,6 +17,7 @@ package org.refractions.cabd.controllers;
 
 import java.text.MessageFormat;
 import java.util.List;
+import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -24,6 +25,9 @@ import org.refractions.cabd.dao.FeatureTypeManager;
 import org.refractions.cabd.exceptions.ApiError;
 import org.refractions.cabd.exceptions.NotFoundException;
 import org.refractions.cabd.model.FeatureType;
+import org.refractions.cabd.model.FeatureTypeWithDataMetadata;
+import org.refractions.cabd.model.FeatureViewMetadataField;
+import org.refractions.cabd.model.FeatureViewMetadataFieldData;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -96,7 +100,7 @@ public class FeatureTypeController {
 			 			content = {
 						@Content(mediaType = "application/json", schema = @Schema(implementation = ApiError.class))})})
 	@GetMapping(value = "/{type:[a-zA-Z0-9_]+}")
-	public ResponseEntity<FeatureType> getFeatureSchema(
+	public ResponseEntity<FeatureTypeWithDataMetadata> getFeatureSchema(
 			@Parameter(description = "feature type") 
 			@PathVariable("type") String type,
 			HttpServletRequest request) {
@@ -106,7 +110,10 @@ public class FeatureTypeController {
 		FeatureType ftype = typeManager.getFeatureType(type);
 		if (ftype == null) throw new NotFoundException(MessageFormat.format("No feature of type ''{0}'' found.", type));
 
-		return ResponseEntity.ok(ftype);
+		//add current data metadata values
+		Map<FeatureViewMetadataField, FeatureViewMetadataFieldData> dataMetadata = typeManager.computeDataMetadata(ftype);
+		
+		return ResponseEntity.ok(new FeatureTypeWithDataMetadata(ftype, dataMetadata));
 
 	}
 }

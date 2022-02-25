@@ -13,28 +13,27 @@
  * See the License for the specific language governing permissions and 
  * limitations under the License.
  */
-package org.refractions.cabd.serializers;
+package org.refractions.cabd.model;
 
-import java.io.IOException;
-
-import org.refractions.cabd.model.FeatureType;
-import org.springframework.boot.jackson.JsonComponent;
-
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.SerializerProvider;
+import java.util.List;
 
 /**
- * Serializer for a single feature type
+ * A collection of items.
  * 
  * @author Emily
  *
  */
-@JsonComponent
-public class FeatureTypeJsonSerializer extends AbstractFeatureTypeJsonSerializer<FeatureType> {
+//I created this class to make it simple to
+//serialize a list of items to GeoJSON
+public class ItemList<T> {
+
+	private List<T> items;
 	
-	@Override
-	public void serialize(FeatureType value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
-		serialize(value, gen, value);
-	}	
+	public ItemList(List<T> items) {
+		this.items = items;
+	}
 	
+	public List<T> getItems(){
+		return this.items;
+	}
 }

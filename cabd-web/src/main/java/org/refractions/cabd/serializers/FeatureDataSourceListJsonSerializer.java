@@ -17,24 +17,31 @@ package org.refractions.cabd.serializers;
 
 import java.io.IOException;
 
-import org.refractions.cabd.model.FeatureType;
+import org.refractions.cabd.model.FeatureDataSourceDetails;
+import org.refractions.cabd.model.FeatureDataSourceList;
 import org.springframework.boot.jackson.JsonComponent;
 
 import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 
 /**
- * Serializer for a single feature type
+ * Serializes a list of Feature data source fields to a json.
  * 
  * @author Emily
  *
  */
 @JsonComponent
-public class FeatureTypeJsonSerializer extends AbstractFeatureTypeJsonSerializer<FeatureType> {
-	
+public class FeatureDataSourceListJsonSerializer extends JsonSerializer<FeatureDataSourceList> {
+
 	@Override
-	public void serialize(FeatureType value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
-		serialize(value, gen, value);
-	}	
-	
+	public void serialize(FeatureDataSourceList value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+
+		gen.writeStartArray();
+		for (FeatureDataSourceDetails b : value.getItems()) {
+			gen.writeObject(b);
+		}
+		gen.writeEndArray();
+	}
+
 }

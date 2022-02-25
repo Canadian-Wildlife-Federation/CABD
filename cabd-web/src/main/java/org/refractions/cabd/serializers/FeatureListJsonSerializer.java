@@ -16,37 +16,67 @@
 package org.refractions.cabd.serializers;
 
 import java.io.IOException;
+import java.io.OutputStream;
 
+import org.refractions.cabd.CabdApplication;
+import org.refractions.cabd.controllers.GeoJsonUtils;
 import org.refractions.cabd.model.Feature;
 import org.refractions.cabd.model.FeatureList;
-import org.springframework.boot.jackson.JsonComponent;
-
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
+import org.springframework.http.HttpInputMessage;
+import org.springframework.http.HttpOutputMessage;
+import org.springframework.http.MediaType;
+import org.springframework.http.converter.AbstractHttpMessageConverter;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.http.converter.HttpMessageNotWritableException;
+import org.springframework.stereotype.Component;
 
 /**
- * Serializes a list of Feature features to a GeoJson FeatureCollection.
+ * Serializes a set of features Feature to GeoJSON
  * 
  * @author Emily
  *
  */
-@JsonComponent
-public class FeatureListJsonSerializer extends JsonSerializer<FeatureList> {
+@Component
+public class FeatureListJsonSerializer extends AbstractHttpMessageConverter<FeatureList>{
 
-	@Override
-	public void serialize(FeatureList value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
 
-		gen.writeStartObject();
-		gen.writeStringField("type", "FeatureCollection");
-		// features
-		gen.writeFieldName("features");
-		gen.writeStartArray();
-		for (Feature b : value.getFeatures()) {
-			gen.writeObject(b);
-		}
-		gen.writeEndArray();
-		gen.writeEndObject();
+	public FeatureListJsonSerializer() {
+		super(CabdApplication.GEOJSON_MEDIA_TYPE,MediaType.APPLICATION_JSON);
 	}
 
+	@Override
+	protected boolean supports(Class<?> clazz) {
+		return FeatureList.class.isAssignableFrom(clazz);
+	}
+
+	@Override
+	protected FeatureList readInternal(Class<? extends FeatureList> clazz, HttpInputMessage inputMessage)
+			throws IOException, HttpMessageNotReadableException {
+		return null;
+	}
+
+	@Override
+	protected void writeInternal(FeatureList features, HttpOutputMessage outputMessage)
+			throws IOException, HttpMessageNotWritableException {
+		
+		StringBuilder sb = new StringBuilder();
+		sb.append("{");
+		sb.append("\"type\": \"FeatureCollection\",");
+		sb.append("\"features\":");
+		sb.append("[");
+		
+		writeString(outputMessage.getBody(), sb.toString());
+		
+		boolean first = true;
+		for (Feature b : features.getItems()) {
+			if (!first) writeString(outputMessage.getBody(),",");
+			GeoJsonUtils.INSTANCE.writeFeature(b, outputMessage.getBody());
+			first = false;
+		}
+		writeString(outputMessage.getBody(), "]}");
+	}
+	
+	private void writeString(OutputStream stream, String value) throws IOException {
+		stream.write(value.getBytes());
+	}
 }

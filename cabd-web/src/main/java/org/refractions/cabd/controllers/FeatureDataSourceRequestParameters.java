@@ -13,28 +13,30 @@
  * See the License for the specific language governing permissions and 
  * limitations under the License.
  */
-package org.refractions.cabd.serializers;
+package org.refractions.cabd.controllers;
 
-import java.io.IOException;
+import java.beans.ConstructorProperties;
 
-import org.refractions.cabd.model.FeatureType;
-import org.springframework.boot.jackson.JsonComponent;
-
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.SerializerProvider;
+import io.swagger.v3.oas.annotations.Parameter;
 
 /**
- * Serializer for a single feature type
+ * Class to represent query parameters for querying
+ * features data sources
  * 
  * @author Emily
  *
  */
-@JsonComponent
-public class FeatureTypeJsonSerializer extends AbstractFeatureTypeJsonSerializer<FeatureType> {
+public class FeatureDataSourceRequestParameters {
+
+	@Parameter(required = false, description = "Identifies what fields to include in the results. 'all' - includes all fields otherwise limited fields are included")
+	private String fields;
+		
+	@ConstructorProperties({"fields"})
+	public FeatureDataSourceRequestParameters(String fields) {
+		this.fields = fields;
+	}
 	
-	@Override
-	public void serialize(FeatureType value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
-		serialize(value, gen, value);
-	}	
+	public String getFields() { return this.fields; }
+
 	
 }

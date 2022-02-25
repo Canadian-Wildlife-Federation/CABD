@@ -13,28 +13,41 @@
  * See the License for the specific language governing permissions and 
  * limitations under the License.
  */
-package org.refractions.cabd.serializers;
+package org.refractions.cabd.model;
 
-import java.io.IOException;
-
-import org.refractions.cabd.model.FeatureType;
-import org.springframework.boot.jackson.JsonComponent;
-
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.SerializerProvider;
+import java.util.Date;
+import java.util.UUID;
 
 /**
- * Serializer for a single feature type
+ * Feature data source details.
  * 
  * @author Emily
  *
  */
-@JsonComponent
-public class FeatureTypeJsonSerializer extends AbstractFeatureTypeJsonSerializer<FeatureType> {
+public class DataSource {
+
+	private UUID id;
+	private String name;
+	private Date versionDate;
+	private String version;
 	
-	@Override
-	public void serialize(FeatureType value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
-		serialize(value, gen, value);
+	public DataSource(UUID id, String name, Date versionDate, String version) {
+		this.id = id;
+		this.name = name;
+		this.versionDate = versionDate;
+		this.version = version;
+	}
+	
+	public UUID getId() {
+		return id;
+	}
+	public String getName() {
+		return name;
+	}
+	public Date getVersionDate() {
+		return versionDate;
+	}
+	public String getVersion() {
+		return version;
 	}	
-	
 }
