@@ -11,8 +11,7 @@ Input data/files:
 ********Load script steps********
 
 This script loads the source dataset into the database and converts attributes to be mapped to the 
-CABD data structure into the correct data types and values. It also assigns a cabd_id to rows that
-have corresponding rows in the duplicates table. 
+CABD data structure into the correct data types and values.
 
 1. The source dataset is loaded into the database, under the source_data schema.
 
@@ -32,20 +31,22 @@ dataset table.
 6. The extra columns created in the source dataset table are removed. The source dataset now
 resides in the database as a table that maintains its original data structure.
 
-7. Using the duplicates table, rows in the data loading table are assigned a cabd_id if the duplicates
-table contains a matching data_source. For instance, a row in the data loading table with a data_source
-of NHN_123 would be assigned the cabd_id from the corresponding row in the duplicates table where the
-data_source was also NHN_123.
-
 ********Update script steps********
 
 This script checks to see if a source dataset contains new information for a row in the CABD dams table
 and adds this new information to the CABD dams table. If new information is added, it also appends the
 data source to the existing value in the CABD dams table data_source column.
 
-As these update scripts rely on checking NULL values, they need to be run in a specific order 
-(which CWF will provide), to ensure that information from the most recent and authoritative source datasets
-are populated first.
+The update scripts for spatial data sources rely on checking NULL values, and as such, need to be run 
+in a specific order (which CWF maintains), to ensure that information from the most recent and
+authoritative source datasets are populated first.
+
+The first step of all update scripts is to assign a cabd_id if the imported geopackage contains a matching
+data_source and data_source_id. For example, a row from the NHN dataset with a data_source of 'NHN'
+and a data_source_id of '123' would be assigned the cabd_id from the corresponding row in the 
+imported geopackage where the data_source was also 'NHN' and the data_source_id was '123'.
+
+The following steps are as follows for spatial data sources:
 
 1. Find rows in the data loading table and CABD dams table with matching cabd_ids.
 
@@ -61,5 +62,9 @@ contains a non-null value: do nothing.
 5. Repeat steps 2-4 for all columns in the data loading table, and all rows with matching cabd_ids between
 the data loading table and CABD dams table.
 
-6. If any columns were updated for a row from the data loading table, append the data_source value from the
-data loading table to the existing data_source value in the CABD dams table.
+For non-spatial data sources, the steps are quite similar, but may overwrite values if that source
+has been deemed more recent and/or accurate than existing values for a feature.
+
+You can determine if a non-spatial data source script will overwrite values by checking the update
+queries to be executed. Sources that do overwrite will not evaluate based on NULL values, and instead
+look for values in the non-spatial source that are DISTINCT FROM existing values in the DB.

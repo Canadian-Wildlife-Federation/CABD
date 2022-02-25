@@ -56,7 +56,7 @@ It should contain the following fields at a minimum:
 (2) Data source id (as a stable id from the data source you specified)
 
 (3) Fields for all your input datasets with a name like 'dups_<datasetid>', where 
-field values representthe stable id from that source dataset for a duplicate point. 
+field values represent the stable id from that source dataset for a duplicate point. 
 
 (4) A "use for analysis" field which indicates whether the feature should be snapped
 to the hydro network.
@@ -66,8 +66,8 @@ not supported in the DB, but planned for the future).
 
 The script will load your feature geopackage into the DB, assign a cabd_id to each
 feature, add additional fields for that feature type as required for the CABD,
-populate constraints, snap features to the CHyF network, and populate the
-<featuretype>_attribute_source_tracking table with records for each feature loaded.
+populate constraints, and populate the <featuretype>_attribute_source_tracking
+table with records for each feature loaded.
 
 Requirements:
 This script requires Python, the ogr tools, and psycopg2.
@@ -85,7 +85,7 @@ arguments will be specified when you run the script.
 2) Run the script providing the source dataset file, province or territory
 code (e.g., 'ab', 'bc') and your database username and password as your arguments:
 
-py LOAD_<featuretype>_review.py <datafile> <provinceCode> <dbUser> <dbPassword>
+py LOAD_<featuretype>_review.py <datafile> <regionCode> <dbUser> <dbPassword>
 
 Once the script is complete, you can view the data and make any additional updates
 needed.
