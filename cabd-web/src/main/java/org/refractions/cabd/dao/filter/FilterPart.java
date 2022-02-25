@@ -87,6 +87,7 @@ public class FilterPart {
 		case STRING:
 			return value;
 		case UUID:
+			if (value.trim().isBlank()) return null;
 			return UUID.fromString(value);
 		}
 		throw new InvalidParameterException(MessageFormat.format("Could not parse {0} into data type {1}", value, getDataType().name()));
