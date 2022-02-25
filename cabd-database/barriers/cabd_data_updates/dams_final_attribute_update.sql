@@ -1,5 +1,6 @@
 --This script should be run as the last step after populating attributes.
 --This script updates DAMS only.
+--RUN THIS SCRIPT AFTER FISHWAYS FINAL ATTRIBUTE UPDATE
 
 --Ensure various fields are populated with most up-to-date info after mapping from multiple sources
 BEGIN;
@@ -16,7 +17,12 @@ SET
 
     reservoir_present =
     CASE
-    WHEN reservoir_area_skm IS NOT NULL OR reservoir_depth_m IS NOT NULL THEN TRUE
+    WHEN 
+        reservoir_area_skm IS NOT NULL 
+        OR reservoir_depth_m IS NOT NULL
+        OR reservoir_name_en IS NOT NULL
+        OR reservoir_name_fr IS NOT NULL
+        THEN TRUE
     ELSE reservoir_present END;
 
 UPDATE featurecopy.dams AS cabd SET passability_status_code = 2 FROM featurecopy.fishways AS f WHERE f.dam_id = cabd.cabd_id;
@@ -25,9 +31,9 @@ UPDATE featurecopy.dams SET passability_status_code = 1 WHERE passability_status
 --Various spatial joins/queries to populate fields
 UPDATE featurecopy.dams AS dams SET longitude = ST_X(dams.snapped_point);
 UPDATE featurecopy.dams AS dams SET latitude = ST_Y(dams.snapped_point);
-UPDATE featurecopy.dams AS dams SET province_territory_code = n.code FROM cabd.province_territory_codes AS n WHERE st_contains(n.geometry, dams.snapped_point);
-UPDATE featurecopy.dams AS dams SET nhn_workunit_id = n.id FROM cabd.nhn_workunit AS n WHERE st_contains(n.polygon, dams.snapped_point);
-UPDATE featurecopy.dams AS dams SET municipality = n.csdname FROM cabd.census_subdivisions AS n WHERE st_contains(n.geometry, dams.snapped_point);
+UPDATE featurecopy.dams AS dams SET province_territory_code = n.code FROM cabd.province_territory_codes AS n WHERE st_contains(ST_Transform(n.geometry, 4617), dams.snapped_point);
+UPDATE featurecopy.dams AS dams SET nhn_workunit_id = n.id FROM cabd.nhn_workunit AS n WHERE st_contains(ST_Transform(n.polygon, 4617), dams.snapped_point);
+UPDATE featurecopy.dams AS dams SET municipality = n.csdname FROM cabd.census_subdivisions AS n WHERE st_contains(ST_Transform(n.geometry, 4617), dams.snapped_point);
 
 --TO DO: Add foreign table to reference ecatchment and eflowpath tables, make sure 2 lines below work
 --Should waterbody name simply be overwritten here as long as we have a value from the chyf networks?
@@ -43,7 +49,7 @@ UPDATE featurecopy.dams SET construction_type_code = 9 WHERE construction_type_c
 UPDATE featurecopy.dams SET ownership_type_code = 7 WHERE ownership_type_code IS NULL;
 UPDATE featurecopy.dams SET use_code = 11 WHERE use_code IS NULL;
 UPDATE featurecopy.dams SET function_code = 13 WHERE function_code IS NULL;
-UPDATE featurecopy.dams SET turbine_type_code = 5 WHERE turbine_type_code IS NULL;
+UPDATE featurecopy.dams SET turbine_type_code = 5 WHERE turbine_type_code IS NULL AND (use_code = 2 OR use_electricity_code IS NOT NULL);
 UPDATE featurecopy.dams SET operating_status_code = 5 WHERE operating_status_code IS NULL;
 UPDATE featurecopy.dams SET up_passage_type_code = 9 WHERE up_passage_type_code IS NULL;
 
@@ -95,46 +101,3 @@ UPDATE featurecopy.dams SET complete_level_code =
     ELSE 1 END;
 
 COMMIT;
-
---drop original fields we no longer need
--- BEGIN;
-
--- ALTER TABLE featurecopy.dams
---     DROP COLUMN fid,
---     DROP COLUMN data_source,
---     DROP COLUMN data_source_text,
---     DROP COLUMN data_source_id,
---     DROP COLUMN decommissioned_yn,
---     DROP COLUMN duplicates_yn,
---     DROP COLUMN fishway_yn,
---     DROP COLUMN canfishpass_id,
---     DROP COLUMN barrier_ind,
---     DROP COLUMN IF EXISTS dups_ab_basefeatures,
---     DROP COLUMN IF EXISTS dups_canvec_manmade,
---     DROP COLUMN IF EXISTS dups_cdai,
---     DROP COLUMN IF EXISTS dups_cehq,
---     DROP COLUMN IF EXISTS dups_cgndb,
---     DROP COLUMN IF EXISTS dups_fao,
---     DROP COLUMN IF EXISTS dups_fishwerks,
---     DROP COLUMN IF EXISTS dups_fwa,
---     DROP COLUMN IF EXISTS dups_gfielding,
---     DROP COLUMN IF EXISTS dups_goodd,
---     DROP COLUMN IF EXISTS dups_grand,
---     DROP COLUMN IF EXISTS dups_lsds,
---     DROP COLUMN IF EXISTS dups_nbhn,
---     DROP COLUMN IF EXISTS dups_ncc,
---     DROP COLUMN IF EXISTS dups_nhn,
---     DROP COLUMN IF EXISTS dups_nlprov,
---     DROP COLUMN IF EXISTS dups_npdp,
---     DROP COLUMN IF EXISTS dups_nswf,
---     DROP COLUMN IF EXISTS dups_odi,
---     DROP COLUMN IF EXISTS dups_ohn,
---     DROP COLUMN IF EXISTS dups_publicdamskml,
---     DROP COLUMN IF EXISTS dups_wrispublicdams,
---     DROP COLUMN reference_url,
---     DROP COLUMN reviewer_classification,
---     DROP COLUMN reviewer_comments,
---     DROP COLUMN multipoint_yn
---     DROP COLUMN geometry;
-
--- COMMIT;

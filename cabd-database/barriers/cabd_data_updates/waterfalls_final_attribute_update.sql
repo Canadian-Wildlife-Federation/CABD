@@ -12,19 +12,11 @@ UPDATE featurecopy.waterfalls SET passability_status_code =
     ELSE NULL END;
 
 --Various spatial joins/queries to populate fields
---Change original_point, snapped_point to EPSG:4326, populate lat/long fields, drop column geometry
-ALTER TABLE featurecopy.waterfalls
-    ALTER COLUMN original_point TYPE geometry(Point, 4326)
-        USING ST_Transform(ST_SetSRID(original_point, 4326), 4326);
-ALTER TABLE featurecopy.waterfalls
-    ALTER COLUMN snapped_point TYPE geometry(Point, 4326)
-        USING ST_Transform(ST_SetSRID(snapped_point, 4326), 4326);
-
 UPDATE featurecopy.waterfalls AS falls SET longitude = ST_X(falls.snapped_point);
 UPDATE featurecopy.waterfalls AS falls SET latitude = ST_Y(falls.snapped_point);
-UPDATE featurecopy.waterfalls AS falls SET province_territory_code = n.code FROM cabd.province_territory_codes AS n WHERE st_contains(n.geometry, falls.snapped_point);
-UPDATE featurecopy.waterfalls AS falls SET nhn_workunit_id = n.id FROM cabd.nhn_workunit AS n WHERE st_contains(n.polygon, falls.snapped_point);
-UPDATE featurecopy.waterfalls AS falls SET municipality = n.csdname FROM cabd.census_subdivisions AS n WHERE st_contains(n.geometry, falls.snapped_point);
+UPDATE featurecopy.waterfalls AS falls SET province_territory_code = n.code FROM cabd.province_territory_codes AS n WHERE st_contains(ST_Transform(n.geometry, 4617), falls.snapped_point);
+UPDATE featurecopy.waterfalls AS falls SET nhn_workunit_id = n.id FROM cabd.nhn_workunit AS n WHERE st_contains(ST_Transform(n.polygon, 4617), falls.snapped_point);
+UPDATE featurecopy.waterfalls AS falls SET municipality = n.csdname FROM cabd.census_subdivisions AS n WHERE st_contains(ST_Transform(n.geometry, 4617), falls.snapped_point);
 
 --TO DO: Add foreign table to reference ecatchment and eflowpath tables, make sure 2 lines below work
 --Should waterbody name simply be overwritten here as long as we have a value from the chyf networks?
@@ -41,30 +33,5 @@ UPDATE featurecopy.waterfalls SET complete_level_code =
     WHEN ((fall_name_en IS NOT NULL OR fall_name_fr IS NOT NULL) AND fall_height_m IS NOT NULL) THEN 3
     WHEN ((fall_name_en IS NOT NULL OR fall_name_fr IS NOT NULL) OR fall_height_m IS NOT NULL) THEN 2
     ELSE 1 END;
-
-COMMIT;
-
---drop original fields we no longer need
-BEGIN;
-
-ALTER TABLE featurecopy.waterfalls
-    DROP COLUMN fid,
-    DROP COLUMN data_source,
-    DROP COLUMN data_source_text,
-    DROP COLUMN data_source_id,
-    DROP COLUMN decommissioned_yn,
-    DROP COLUMN duplicates_yn,
-    DROP COLUMN reference_url,
-    DROP COLUMN reviewer_classification,
-    DROP COLUMN reviewer_comments,
-    DROP COLUMN IF EXISTS dups_fwa,
-    DROP COLUMN IF EXISTS dups_fiss,
-    DROP COLUMN IF EXISTS dups_ab_basefeatures,
-    DROP COLUMN IF EXISTS dups_nhn,
-    DROP COLUMN IF EXISTS dups_cgndb,
-    DROP COLUMN IF EXISTS dups_canvec_hy_obstacles,
-    DROP COLUMN IF EXISTS dups_wikipedia,
-    DROP COLUMN IF EXISTS dups_wwd
-    DROP COLUMN geometry;
 
 COMMIT;

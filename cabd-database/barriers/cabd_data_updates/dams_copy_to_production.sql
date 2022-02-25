@@ -25,7 +25,7 @@ INSERT INTO dams.dams(
     up_passage_type_code, down_passage_route_code, last_modified,
     "comments", complete_level_code, original_point, snapped_point,
     nhn_workunit_id, upstream_linear_km, passability_status_code,
-    passability_status_note, use_analysis
+    passability_status_note, use_analysis, facility_name_en, facility_name_fr
 )
 SELECT
     cabd_id, dam_name_en, dam_name_fr, waterbody_name_en,
@@ -48,7 +48,7 @@ SELECT
     up_passage_type_code, down_passage_route_code, last_modified,
     "comments", complete_level_code, original_point, snapped_point,
     nhn_workunit_id, upstream_linear_km, passability_status_code,
-    passability_status_note, use_analysis
+    passability_status_note, use_analysis, facility_name_en, facility_name_fr
 FROM featurecopy.dams;
 
 INSERT INTO dams.dams_attribute_source(
@@ -69,8 +69,8 @@ INSERT INTO dams.dams_attribute_source(
     use_pollution_code_dsfid, use_invasivespecies_code_ds, use_invasivespecies_code_dsfid,
     use_other_code_ds, use_other_code_dsfid, lake_control_code_ds,
     lake_control_code_dsfid, construction_year_ds, construction_year_dsfid,
-    assess_schedule_ds, assess_schedule_dsfid, expected_life_ds,
-    expected_life_dsfid, maintenance_last_ds, maintenance_last_dsfid,
+    removed_year_ds, removed_year_dsfid, assess_schedule_ds, assess_schedule_dsfid,
+    expected_life_ds, expected_life_dsfid, maintenance_last_ds, maintenance_last_dsfid,
     maintenance_next_ds, maintenance_next_dsfid, function_code_ds,
     function_code_dsfid, condition_code_ds, condition_code_dsfid,
     construction_type_code_ds, construction_type_code_dsfid, height_m_ds,
@@ -91,7 +91,8 @@ INSERT INTO dams.dams_attribute_source(
     down_passage_route_code_dsfid, passability_status_code_ds,
     passability_status_code_dsfid, passability_status_note_ds,
     passability_status_note_dsfid, comments_ds, comments_dsfid, complete_level_code_ds,
-    complete_level_code_dsfid, original_point_ds, original_point_dsfid
+    complete_level_code_dsfid, original_point_ds, original_point_dsfid,
+    facility_name_en_ds, facility_name_en_dsfid, facility_name_fr_ds, facility_name_fr_dsfid
 )
 SELECT
     cabd_id, dam_name_en_ds, dam_name_en_dsfid, dam_name_fr_ds,
@@ -111,8 +112,8 @@ SELECT
     use_pollution_code_dsfid, use_invasivespecies_code_ds, use_invasivespecies_code_dsfid,
     use_other_code_ds, use_other_code_dsfid, lake_control_code_ds,
     lake_control_code_dsfid, construction_year_ds, construction_year_dsfid,
-    assess_schedule_ds, assess_schedule_dsfid, expected_life_ds,
-    expected_life_dsfid, maintenance_last_ds, maintenance_last_dsfid,
+    removed_year_ds, removed_year_dsfid, assess_schedule_ds, assess_schedule_dsfid,
+    expected_life_ds, expected_life_dsfid, maintenance_last_ds, maintenance_last_dsfid,
     maintenance_next_ds, maintenance_next_dsfid, function_code_ds,
     function_code_dsfid, condition_code_ds, condition_code_dsfid,
     construction_type_code_ds, construction_type_code_dsfid, height_m_ds,
@@ -133,11 +134,13 @@ SELECT
     down_passage_route_code_dsfid, passability_status_code_ds,
     passability_status_code_dsfid, passability_status_note_ds,
     passability_status_note_dsfid, comments_ds, comments_dsfid, complete_level_code_ds,
-    complete_level_code_dsfid, original_point_ds, original_point_dsfid
+    complete_level_code_dsfid, original_point_ds, original_point_dsfid,
+    facility_name_en_ds, facility_name_en_dsfid, facility_name_fr_ds, facility_name_fr_dsfid
 FROM featurecopy.dams_attribute_source;
 
 --do whatever qa checks you want to do here?
 
 SELECT COUNT(*) FROM dams.dams;
+SELECT COUNT(*) FROM dams.dams_attribute_source;
 
 --COMMIT;

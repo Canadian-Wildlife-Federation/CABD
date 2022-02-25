@@ -5,7 +5,7 @@
 BEGIN TRANSACTION;
 --push to production table
 INSERT INTO fishways.fishways(
-    cabd_id, dam_id, dam_name_en, dam_name_fr, waterbody_name_en, waterbody_name_fr, river_name_en, river_name_fr,
+    cabd_id, dam_id, structure_name_en, structure_name_fr, waterbody_name_en, waterbody_name_fr, river_name_en, river_name_fr,
     nhn_workunit_id, province_territory_code, municipality, fishpass_type_code, monitoring_equipment, architect, 
     contracted_by, constructed_by, plans_held_by, purpose, designed_on_biology, length_m, elevation_m, gradient, 
     depth_m, entrance_location_code, entrance_position_code, modified, modification_year, modification_purpose, 
@@ -14,7 +14,7 @@ INSERT INTO fishways.fishways(
     estimate_of_passage_success_pct, fishway_reference_id, complete_level_code, original_point
 )
 SELECT
-    cabd_id, dam_id, dam_name_en, dam_name_fr, waterbody_name_en, waterbody_name_fr, river_name_en, river_name_fr,
+    cabd_id, dam_id, structure_name_en, structure_name_fr, waterbody_name_en, waterbody_name_fr, river_name_en, river_name_fr,
     nhn_workunit_id, province_territory_code, municipality, fishpass_type_code, monitoring_equipment, architect, 
     contracted_by, constructed_by, plans_held_by, purpose, designed_on_biology, length_m, elevation_m, gradient, 
     depth_m, entrance_location_code, entrance_position_code, modified, modification_year, modification_purpose, 
@@ -25,7 +25,7 @@ FROM featurecopy.fishways;
 
 
 INSERT INTO fishways.fishways_attribute_source(
-    cabd_id, dam_name_en_ds, dam_name_en_dsfid, dam_name_fr_ds, dam_name_fr_dsfid, waterbody_name_en_ds,
+    cabd_id, structure_name_en_ds, structure_name_en_dsfid, structure_name_fr_ds, structure_name_fr_dsfid, waterbody_name_en_ds,
     waterbody_name_en_dsfid, waterbody_name_fr_ds, waterbody_name_fr_dsfid, river_name_en_ds, river_name_en_dsfid,
     river_name_fr_ds, river_name_fr_dsfid, fishpass_type_code_ds, fishpass_type_code_dsfid, monitoring_equipment_ds,
     monitoring_equipment_dsfid, architect_ds, architect_dsfid, contracted_by_ds, contracted_by_dsfid,
@@ -43,7 +43,7 @@ INSERT INTO fishways.fishways_attribute_source(
     fishway_reference_id_dsfid, complete_level_code_ds, complete_level_code_dsfid, original_point_ds, original_point_dsfid
 )
 SELECT
-    cabd_id, dam_name_en_ds, dam_name_en_dsfid, dam_name_fr_ds, dam_name_fr_dsfid, waterbody_name_en_ds,
+    cabd_id, structure_name_en_ds, structure_name_en_dsfid, structure_name_fr_ds, structure_name_fr_dsfid, waterbody_name_en_ds,
     waterbody_name_en_dsfid, waterbody_name_fr_ds, waterbody_name_fr_dsfid, river_name_en_ds, river_name_en_dsfid,
     river_name_fr_ds, river_name_fr_dsfid, fishpass_type_code_ds, fishpass_type_code_dsfid, monitoring_equipment_ds,
     monitoring_equipment_dsfid, architect_ds, architect_dsfid, contracted_by_ds, contracted_by_dsfid,
@@ -77,5 +77,6 @@ SELECT fishway_id, species_id FROM fishways.species_mapping sm ) foo;
 --do whatever qa checks you want to do here?
 
 SELECT COUNT(*) FROM fishways.fishways;
+SELECT COUNT(*) FROM fishways.fishways_attribute_source;
 
 --COMMIT;
