@@ -35,5 +35,10 @@ join chyf2.aoi d on d.id = b.aoi_id
 join chyf2.aoi e on e.id = b.aoi_id 
 where (d.display_status = 1 or e.display_status = 1);
 
+grant select on chyf2.eflowpath_vw to chyf;
+grant select on chyf2.ecatchment_vw to chyf;
+grant select on chyf2.shoreline_vw to chyf;
+grant select on chyf2.nexus_vw to chyf;
+
 truncate chyf2.vector_tile_cache ;
 
