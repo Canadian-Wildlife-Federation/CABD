@@ -103,4 +103,3 @@ UPDATE damcopy.dams SET operating_status_code = 5 WHERE operating_status_code IS
 UPDATE damcopy.dams SET up_passage_type_code = 9 WHERE up_passage_type_code IS NULL;
 
 COMMIT;
-
