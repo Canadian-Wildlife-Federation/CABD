@@ -1,12 +1,12 @@
 import nonspatial as main
 
-script = main.MappingScript("aep_fsm_moundred_res")
+script = main.MappingScript("aep_fsm_open_crk")
 
 mappingquery = f"""
 
 --create new data source record
 INSERT INTO cabd.data_source (id, name, version_date, source, comments)
-VALUES('{script.dsUuid}', '{script.datasetName}', now(), 'Alberta Environment and Parks, 2021. Stocking Maps - Mound Red Reservoir. My Wild Alberta. Accessed December 13, 2021, from https://mywildalberta.ca/fishing/fish-stocking/stocking-maps.aspx?id=6737', 'Accessed December 13, 2021');
+VALUES('{script.dsUuid}', '{script.datasetName}', now(), 'Alberta Environment and Parks, 2021. Stocking Maps - Open Creek Reservoir. My Wild Alberta. Accessed December 13, 2021, from https://mywildalberta.ca/fishing/fish-stocking/stocking-maps.aspx?id=6726', 'Accessed December 13, 2021');
 
 --add data source to the table
 ALTER TABLE {script.workingTable} ADD COLUMN data_source uuid;
