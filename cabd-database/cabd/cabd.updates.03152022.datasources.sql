@@ -55,10 +55,6 @@ insert into waterfalls.waterfalls_feature_source (cabd_id, datasource_id, dataso
 	from waterfalls.waterfalls_attribute_source
 	where waterbody_name_fr_dsfid is not null
 	union
-	select cabd_id, municipality_ds, municipality_dsfid
-	from waterfalls.waterfalls_attribute_source
-	where municipality_dsfid is not null
-	union
 	select cabd_id, fall_name_en_ds, fall_name_en_dsfid
 	from waterfalls.waterfalls_attribute_source
 	where fall_name_en_dsfid is not null
@@ -112,10 +108,6 @@ references cabd.data_source(id) on delete restrict;
 insert into fishways.fishways_feature_source (cabd_id, datasource_id, datasource_feature_id)
 	select distinct * from (
 	
-SELECT cabd_id, dam_name_en_ds, dam_name_en_dsfid FROM fishways.fishways_attribute_source where dam_name_en_dsfid is not null
-union
-SELECT cabd_id, dam_name_fr_ds, dam_name_fr_dsfid FROM fishways.fishways_attribute_source where dam_name_fr_dsfid is not null
-union
 SELECT cabd_id, waterbody_name_en_ds, waterbody_name_en_dsfid FROM fishways.fishways_attribute_source where waterbody_name_en_dsfid is not null
 union
 SELECT cabd_id, waterbody_name_fr_ds, waterbody_name_fr_dsfid FROM fishways.fishways_attribute_source where waterbody_name_fr_dsfid is not null
@@ -123,8 +115,6 @@ union
 SELECT cabd_id, river_name_en_ds, river_name_en_dsfid FROM fishways.fishways_attribute_source where river_name_en_dsfid is not null
 union
 SELECT cabd_id, river_name_fr_ds, river_name_fr_dsfid FROM fishways.fishways_attribute_source where river_name_fr_dsfid is not null
-union
-SELECT cabd_id, municipality_ds, municipality_dsfid FROM fishways.fishways_attribute_source where municipality_dsfid is not null
 union
 SELECT cabd_id, fishpass_type_code_ds, fishpass_type_code_dsfid FROM fishways.fishways_attribute_source where fishpass_type_code_dsfid is not null
 union
@@ -221,12 +211,11 @@ SELECT cabd_id, waterbody_name_en_ds, waterbody_name_en_dsfid FROM dams.dams_att
 SELECT cabd_id, waterbody_name_fr_ds, waterbody_name_fr_dsfid FROM dams.dams_attribute_source WHERE waterbody_name_fr_dsfid IS NOT NULL UNION
 SELECT cabd_id, reservoir_name_en_ds, reservoir_name_en_dsfid FROM dams.dams_attribute_source WHERE reservoir_name_en_dsfid IS NOT NULL UNION
 SELECT cabd_id, reservoir_name_fr_ds, reservoir_name_fr_dsfid FROM dams.dams_attribute_source WHERE reservoir_name_fr_dsfid IS NOT NULL UNION
-SELECT cabd_id, municipality_ds, municipality_dsfid FROM dams.dams_attribute_source WHERE municipality_dsfid IS NOT NULL UNION
 SELECT cabd_id, owner_ds, owner_dsfid FROM dams.dams_attribute_source WHERE owner_dsfid IS NOT NULL UNION
 SELECT cabd_id, ownership_type_code_ds, ownership_type_code_dsfid FROM dams.dams_attribute_source WHERE ownership_type_code_dsfid IS NOT NULL UNION
-SELECT cabd_id, province_compliance_status_ds, province_compliance_status_dsfid FROM dams.dams_attribute_source WHERE province_compliance_status_dsfid IS NOT NULL UNION
+SELECT cabd_id, provincial_compliance_status_ds, provincial_compliance_status_dsfid FROM dams.dams_attribute_source WHERE provincial_compliance_status_dsfid IS NOT NULL UNION
 SELECT cabd_id, federal_compliance_status_ds, federal_compliance_status_dsfid FROM dams.dams_attribute_source WHERE federal_compliance_status_dsfid IS NOT NULL UNION
-SELECT cabd_id, operating_note_ds, operating_note_dsfid FROM dams.dams_attribute_source WHERE operating_note_dsfid IS NOT NULL UNION
+SELECT cabd_id, operating_notes_ds, operating_notes_dsfid FROM dams.dams_attribute_source WHERE operating_notes_dsfid IS NOT NULL UNION
 SELECT cabd_id, operating_status_code_ds, operating_status_code_dsfid FROM dams.dams_attribute_source WHERE operating_status_code_dsfid IS NOT NULL UNION
 SELECT cabd_id, use_code_ds, use_code_dsfid FROM dams.dams_attribute_source WHERE use_code_dsfid IS NOT NULL UNION
 SELECT cabd_id, use_irrigation_code_ds, use_irrigation_code_dsfid FROM dams.dams_attribute_source WHERE use_irrigation_code_dsfid IS NOT NULL UNION
