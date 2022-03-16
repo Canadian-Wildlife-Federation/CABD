@@ -17,8 +17,9 @@ package org.refractions.cabd.serializers;
 
 import java.io.IOException;
 
-import org.refractions.cabd.model.FeatureDataSourceDetails;
-import org.refractions.cabd.model.FeatureDataSourceList;
+import org.apache.commons.lang3.tuple.Pair;
+import org.refractions.cabd.model.DataSource;
+import org.refractions.cabd.model.FeatureSourceDetails;
 import org.springframework.boot.jackson.JsonComponent;
 
 import com.fasterxml.jackson.core.JsonGenerator;
@@ -32,16 +33,51 @@ import com.fasterxml.jackson.databind.SerializerProvider;
  *
  */
 @JsonComponent
-public class FeatureDataSourceListJsonSerializer extends JsonSerializer<FeatureDataSourceList> {
+public class FeatureDataSourceListJsonSerializer extends JsonSerializer<FeatureSourceDetails> {
 
 	@Override
-	public void serialize(FeatureDataSourceList value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
-
+	public void serialize(FeatureSourceDetails value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+		
+		gen.writeStartObject();
+		gen.writeObjectField("cabd_id", value.getFeatureId());
+		gen.writeObjectField("feature_name", value.getFeatureName());
+		
+		gen.writeFieldName("data_sources");
 		gen.writeStartArray();
-		for (FeatureDataSourceDetails b : value.getItems()) {
-			gen.writeObject(b);
+		for (DataSource ds : value.getSpatialDataSources()) {
+			gen.writeStartObject();
+			gen.writeObjectField("name", ds.getName());
+			gen.writeObjectField("type", ds.getType());
+			gen.writeObjectField("datasource_feature_id", ds.getFeatureId());
+			if (value.getIncludeAllDatasourceDetails()) {
+				gen.writeObjectField("version_date", ds.getVersionDate());
+				gen.writeObjectField("version_number", ds.getVersion());
+			}
+			
+			gen.writeEndObject();
+		}
+		for (DataSource ds : value.getNonSpatialDataSources()) {
+			gen.writeStartObject();
+			gen.writeObjectField("name", ds.getName());
+			gen.writeObjectField("type", ds.getType());
+			gen.writeObjectField("datasource_feature_id", ds.getFeatureId());
+			if (value.getIncludeAllDatasourceDetails()) {
+				gen.writeObjectField("version_date", ds.getVersionDate());
+				gen.writeObjectField("version_number", ds.getVersion());
+			}
+			
+			gen.writeEndObject();
 		}
 		gen.writeEndArray();
+		
+		gen.writeFieldName("attribute_data_sources");
+		gen.writeStartObject();
+		for (Pair<String,String> a : value.getAttributeDataSources()) {
+			gen.writeObjectField(a.getLeft(), a.getRight());
+		}
+		gen.writeEndObject();
+		
+		gen.writeEndObject();
 	}
 
 }

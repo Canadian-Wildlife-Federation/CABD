@@ -29,19 +29,31 @@ public class FeatureType {
 	private String dataView;
 	private String name;
 	private String attributeSourceTable;
+	private String featureSourceTable;
+	private String defaultNameField;
 	
 	private String dataurl;
 	private String metadataurl;
 	
 	private FeatureViewMetadata metadata;
 	
-	public FeatureType(String type, String dataView, String name, String attributeSourceTable) {
+	public FeatureType(String type, String dataView, String name, String attributeSourceTable, 
+			String featureSourceTable, String defaultNameField) {
 		this.type = type;
 		this.dataView = dataView;	
 		this.name = name;
 		this.attributeSourceTable = attributeSourceTable;
+		this.featureSourceTable = featureSourceTable;
+		this.defaultNameField = defaultNameField;
 	}
 
+	public String getFeatureSourceTable() {
+		return this.featureSourceTable;
+	}
+	public String getDefaultNameField() {
+		return this.defaultNameField;
+	}
+	
 	public String getAttributeSourceTable() {
 		return this.attributeSourceTable;
 	}

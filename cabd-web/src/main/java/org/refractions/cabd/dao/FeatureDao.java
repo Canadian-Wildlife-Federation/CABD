@@ -15,6 +15,7 @@
  */
 package org.refractions.cabd.dao;
 
+import java.sql.Date;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
@@ -22,12 +23,11 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Envelope;
 import org.refractions.cabd.CabdConfigurationProperties;
@@ -38,7 +38,6 @@ import org.refractions.cabd.dao.filter.Filter;
 import org.refractions.cabd.exceptions.InvalidDatabaseConfigException;
 import org.refractions.cabd.model.DataSource;
 import org.refractions.cabd.model.Feature;
-import org.refractions.cabd.model.FeatureDataSourceDetails;
 import org.refractions.cabd.model.FeatureType;
 import org.refractions.cabd.model.FeatureViewMetadata;
 import org.refractions.cabd.model.FeatureViewMetadataField;
@@ -487,15 +486,74 @@ public class FeatureDao {
 	}
 	
 	/**
-	 * Finds all the attribute source details for a given feature.
+	 * List of datasources and features ids associated with
+	 * that data source for the provided cabd feature
+	 * 
+	 * @param featureId
+	 * @param ftype
+	 * @return list of String[]{datasourcename, datasourcetype, featureid}
+	 */
+	public List<DataSource> getDataSources(UUID featureId, FeatureType ftype){
+		
+		StringBuilder sb = new StringBuilder();
+		sb.append("SELECT distinct a.id as ds_id, a.name as ds_name, a.source_type as ds_type, ");
+		sb.append("a.version_date, a.version_number, b.datasource_feature_id as fid");
+		sb.append(" FROM ");
+		sb.append(" cabd.data_source a JOIN ");
+		sb.append(ftype.getFeatureSourceTable() );
+		sb.append(" b ON a.id = b.datasource_id ");
+		sb.append(" WHERE b.cabd_id = ?");
+		
+		List<DataSource> columns = jdbcTemplate.query(sb.toString(), 
+				new Object[] {featureId}, 
+				new int[] {SqlTypeValue.TYPE_UNKNOWN}, new RowMapper<DataSource>() {
+			@Override
+			public DataSource mapRow(ResultSet rs, int rowNum) throws SQLException {
+				UUID dsid = (UUID) rs.getObject("ds_id");
+				String dsname = rs.getString("ds_name");
+				String dstype = rs.getString("ds_type");
+				String fid = rs.getString("fid");
+				Date vdate = rs.getDate("version_date");
+				String vnumber = rs.getString("version_number");
+				return new DataSource(dsid, dsname, dstype, vdate, vnumber, fid);
+			}});
+		
+		return columns;
+	}
+	
+	/**
+	 * Finds all the attribute source details for a given feature. Returns 
+	 * a list of pairs where the left side of the pair is the attribute
+	 * field name and the right side is the data source name. Values
+	 * are sorted by attribute name
 	 * 
 	 * @param featureId the feature id
 	 * @param ftype the feature type
 	 * @return
 	 */
-	public List<FeatureDataSourceDetails> getFeatureSourceDetails(UUID featureId, FeatureType ftype) {
+	public List<Pair<String,String>> getFeatureSourceDetails(UUID featureId, FeatureType ftype) {
+		
+		//get data source names
+		HashMap<UUID, String> dataSourceNames = new HashMap<>();
+		
+		RowMapper<Pair<UUID,String>> dsRowMapper = new RowMapper<Pair<UUID,String>>() {
+			@Override
+			public Pair<UUID,String> mapRow(ResultSet rs, int rowNum) throws SQLException {
+				UUID uuid = (UUID)rs.getObject("id"); 
+				String name = rs.getString("name");
+				return new ImmutablePair<UUID, String>(uuid, name);
+			}
+		};
 		
 		StringBuilder sb = new StringBuilder();
+		sb.append("SELECT id, name ");
+		sb.append(" FROM cabd.data_source ");
+		
+		List<Pair<UUID,String>> dss = 
+				jdbcTemplate.query(sb.toString(), dsRowMapper);
+		dss.forEach(p->dataSourceNames.put(p.getLeft(), p.getRight()));
+		
+		sb = new StringBuilder();
 		sb.append("SELECT substring(column_name, 0, length(column_name) - length('_ds') + 1)");
 		sb.append(" FROM information_schema.columns ");
 		sb.append("WHERE table_schema = ? and table_name = ? and column_name like '%_ds'");
@@ -516,77 +574,39 @@ public class FeatureDao {
 		sb.append("SELECT ");
 		for (String field : columns) {
 			sb.append(field + "_ds,");
-			sb.append(field + "_dsfid,");
 		}
 		sb.deleteCharAt(sb.length() - 1);
 		sb.append(" FROM ");
 		sb.append(ftype.getAttributeSourceTable());
 		sb.append(" WHERE cabd_id = ?");
-		
-		Set<UUID> dataSources = new HashSet<>();
-		
-		List<Map<String,Object>> fieldData = jdbcTemplate.query(sb.toString(),
+	
+		List<List<Pair<String,String>>> fieldData = jdbcTemplate.query(sb.toString(),
 				new Object[] {featureId}, new int[] {SqlTypeValue.TYPE_UNKNOWN}, 
-				new RowMapper<Map<String, Object>>() {
+				new RowMapper<List<Pair<String, String>>>() {
+			
 			@Override
-			public Map<String,Object> mapRow(ResultSet rs, int rowNum) throws SQLException {
-				HashMap<String, Object> columnData = new HashMap<>();
+			public List<Pair<String, String>> mapRow(ResultSet rs, int rowNum) throws SQLException {
+				List<Pair<String, String>> columnData = new ArrayList<>();
+				
 				for (String field:columns) {
 					UUID dsuuid = (UUID) rs.getObject(field + "_ds");
-					String dsfid = rs.getString(field + "_dsfid");
-					
 					if (dsuuid != null) {
-						columnData.put(field + "_ds", dsuuid);
-						columnData.put(field + "_dsfid", dsfid);
-						dataSources.add(dsuuid);
+						columnData.add(new ImmutablePair<String,String>(field, dataSourceNames.get(dsuuid)));
+					}else {
+						columnData.add(new ImmutablePair<String,String>(field, ""));
 					}
 				}
 				return columnData;
 			}});
-		
-		RowMapper<DataSource> dsRowMapper = new RowMapper<DataSource>() {
-			@Override
-			public DataSource mapRow(ResultSet rs, int rowNum) throws SQLException {
-				return new DataSource((UUID)rs.getObject("id"), rs.getString("name"), rs.getDate("version_date"), rs.getString("version_number"));
-			}
-		};
-		
-		sb = new StringBuilder();
-		sb.append("SELECT id, name, version_date, version_number ");
-		sb.append(" FROM cabd.data_source ");
-		sb.append(" WHERE id = ? ");
-		
-		Map<UUID, DataSource> sources = new HashMap<>();
-		for (UUID ds : dataSources) {
-			List<DataSource> ds1 = 
-					jdbcTemplate.query(sb.toString(), new Object[] {ds}, new int[] {SqlTypeValue.TYPE_UNKNOWN}, dsRowMapper);
-			if (ds1.size() == 1) {
-				sources.put(ds, ds1.get(0));
-			}
+		List<Pair<String,String>> attributesources = new ArrayList<>();
+		if (!fieldData.isEmpty()) {
+			attributesources = fieldData.get(0);
 		}
 		
-		Map<String,Object> fData = fieldData.isEmpty() ? new HashMap<>() :  fieldData.get(0);
 		
-		Map<String,String> attToName = new HashMap<>();
-		for (FeatureViewMetadataField field :  ftype.getViewMetadata().getFields()) {
-			attToName.put(field.getFieldName(), field.getName());
-		}
+		attributesources.sort((a,b)->a.getLeft().compareTo(b.getLeft()));
 		
-		List<FeatureDataSourceDetails> all = new ArrayList<>();
-		for(String field : columns) {
-			FeatureDataSourceDetails details = new FeatureDataSourceDetails(featureId);
-			
-			details.setAttributeFieldName(field);
-			details.setAttributeName(attToName.get(field));
-			
-			details.setDataSource(sources.get( (UUID)fData.get(field+"_ds") ));
-			details.setDsFeatureId((String) fData.get(field + "_dsfid"));
-			
-			
-			all.add(details);
-		}
-		
-		return all;
+		return attributesources;
 	}
 	
 	/**
