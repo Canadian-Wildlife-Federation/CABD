@@ -36,6 +36,8 @@ add constraint waterfalls_data_source_id_fk
 foreign key (datasource_id) 
 references cabd.data_source(id) on delete restrict;
 
+ALTER table waterfalls.waterfalls_feature_source  OWNER to cabd;
+
 
 insert into waterfalls.waterfalls_feature_source (cabd_id, datasource_id, datasource_feature_id)
 	select distinct * from (
@@ -80,7 +82,6 @@ insert into waterfalls.waterfalls_feature_source (cabd_id, datasource_id, dataso
 	where original_point_dsfid is not null
 	) foo;
 	
-	
 		
 -----------------------------------------------------------------
 --
@@ -104,6 +105,9 @@ alter table fishways.fishways_feature_source
 add constraint fishways_data_source_id_fk 
 foreign key (datasource_id) 
 references cabd.data_source(id) on delete restrict;
+
+ALTER table fishways.fishways_feature_source  OWNER to cabd;
+
 
 insert into fishways.fishways_feature_source (cabd_id, datasource_id, datasource_feature_id)
 	select distinct * from (
@@ -180,6 +184,7 @@ SELECT cabd_id, original_point_ds, original_point_dsfid FROM fishways.fishways_a
 ) foo;
 
 
+
 -----------------------------------------------------------------
 --
 --   DAMS
@@ -202,6 +207,9 @@ alter table dams.dams_feature_source
 add constraint dams_data_source_id_fk 
 foreign key (datasource_id) 
 references cabd.data_source(id) on delete restrict;
+
+ALTER table dams.dams_feature_source  OWNER to cabd;
+
 
 insert into dams.dams_feature_source (cabd_id, datasource_id, datasource_feature_id)
 	select distinct * from (
