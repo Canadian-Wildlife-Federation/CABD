@@ -30,12 +30,16 @@ public class DataSource {
 	private String name;
 	private Date versionDate;
 	private String version;
+	private String featureId;
+	private String type;
 	
-	public DataSource(UUID id, String name, Date versionDate, String version) {
+	public DataSource(UUID id, String name, String type, Date versionDate, String version, String featureId) {
 		this.id = id;
 		this.name = name;
 		this.versionDate = versionDate;
 		this.version = version;
+		this.featureId = featureId;
+		this.type = type;
 	}
 	
 	public UUID getId() {
@@ -50,4 +54,10 @@ public class DataSource {
 	public String getVersion() {
 		return version;
 	}	
+	public String getFeatureId() {
+		return featureId;
+	}
+	public String getType() {
+		return this.type;
+	}
 }

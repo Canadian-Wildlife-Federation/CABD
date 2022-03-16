@@ -16,15 +16,20 @@
 package org.refractions.cabd.controllers;
 
 import java.text.MessageFormat;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 import javax.servlet.http.HttpServletRequest;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.refractions.cabd.CabdApplication;
 import org.refractions.cabd.dao.FeatureDao;
 import org.refractions.cabd.exceptions.ApiError;
 import org.refractions.cabd.exceptions.NotFoundException;
-import org.refractions.cabd.model.FeatureDataSourceList;
+import org.refractions.cabd.model.DataSource;
+import org.refractions.cabd.model.Feature;
+import org.refractions.cabd.model.FeatureSourceDetails;
 import org.refractions.cabd.model.FeatureType;
 import org.springdoc.api.annotations.ParameterObject;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -70,7 +75,7 @@ public class FeatureDataSourceController {
 	@GetMapping(value = "/{id:[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}}",
 			produces = {CabdApplication.CSV_MEDIA_TYPE_STR,  MediaType.APPLICATION_JSON_VALUE})
 
-	public ResponseEntity<FeatureDataSourceList> getFeatureSourceDetails(
+	public ResponseEntity<FeatureSourceDetails> getFeatureSourceDetails(
 			@Parameter(description = "unique feature identifier") 
 			@PathVariable("id") UUID id,
 			@ParameterObject FeatureDataSourceRequestParameters params, 
@@ -84,7 +89,35 @@ public class FeatureDataSourceController {
 		if (params.getFields() != null && params.getFields().equalsIgnoreCase("all")) {
 			includeall = true;
 		}
-		FeatureDataSourceList items = new FeatureDataSourceList(featureDao.getFeatureSourceDetails(id, ftype), includeall);
-		return ResponseEntity.ok(items);		
+		
+		Feature feature = featureDao.getFeature(id);
+		if (feature == null) throw new NotFoundException(MessageFormat.format("No feature with id ''{0}'' found.", id));
+		
+		FeatureSourceDetails details = new FeatureSourceDetails(id, includeall);
+		
+		//name
+		if (ftype.getDefaultNameField() != null && feature.getAttribute(ftype.getDefaultNameField()) != null) {
+			details.setFeatureName(feature.getAttribute(ftype.getDefaultNameField()).toString());
+		}
+		
+		//data sources by type
+		List<DataSource> sources = featureDao.getDataSources(id, ftype);
+		List<DataSource> dsspatial = new ArrayList<>();
+		List<DataSource> dsnon = new ArrayList<>();
+		for (DataSource s : sources) {
+			if (s.getType().equalsIgnoreCase("spatial")) {
+				dsspatial.add(s);
+			}else {
+				dsnon.add(s);
+			}
+		}
+		details.setSpatialDataSources(dsspatial);
+		details.setNonSpatialDataSources(dsnon);
+		
+		//attribute sources
+		List<Pair<String,String>> fields = featureDao.getFeatureSourceDetails(id, ftype);
+		details.setAttributeDataSources(fields);
+		
+		return ResponseEntity.ok(details);		
 	}
 }

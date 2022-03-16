@@ -19,9 +19,10 @@ import java.io.IOException;
 import java.text.DateFormat;
 import java.util.Date;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.refractions.cabd.CabdApplication;
-import org.refractions.cabd.model.FeatureDataSourceDetails;
-import org.refractions.cabd.model.FeatureDataSourceList;
+import org.refractions.cabd.model.DataSource;
+import org.refractions.cabd.model.FeatureSourceDetails;
 import org.springframework.http.HttpInputMessage;
 import org.springframework.http.HttpOutputMessage;
 import org.springframework.http.converter.AbstractHttpMessageConverter;
@@ -40,7 +41,7 @@ import com.fasterxml.jackson.dataformat.csv.CsvMapper;
  *
  */
 @Component
-public class FeatureDataSourceListCsvSerializer extends AbstractHttpMessageConverter<FeatureDataSourceList>{
+public class FeatureDataSourceListCsvSerializer extends AbstractHttpMessageConverter<FeatureSourceDetails>{
 
 	
 	public FeatureDataSourceListCsvSerializer() {
@@ -49,12 +50,12 @@ public class FeatureDataSourceListCsvSerializer extends AbstractHttpMessageConve
 
 	@Override
 	protected boolean supports(Class<?> clazz) {
-		return FeatureDataSourceList.class.isAssignableFrom(clazz);
+		return FeatureSourceDetails.class.isAssignableFrom(clazz);
 	}
 
 
 	@Override
-	protected FeatureDataSourceList readInternal(Class<? extends FeatureDataSourceList> clazz, HttpInputMessage inputMessage)
+	protected FeatureSourceDetails readInternal(Class<? extends FeatureSourceDetails> clazz, HttpInputMessage inputMessage)
 			throws IOException, HttpMessageNotReadableException {
 		return null;
 	}
@@ -69,7 +70,7 @@ public class FeatureDataSourceListCsvSerializer extends AbstractHttpMessageConve
 	}
 	
 	@Override
-	protected void writeInternal(FeatureDataSourceList features, HttpOutputMessage outputMessage)
+	protected void writeInternal(FeatureSourceDetails features, HttpOutputMessage outputMessage)
 			throws IOException, HttpMessageNotWritableException {
 		
 		//outputMessage.getHeaders().set(HttpHeaders.CONTENT_TYPE, "text/plain");
@@ -78,33 +79,60 @@ public class FeatureDataSourceListCsvSerializer extends AbstractHttpMessageConve
 				.build();
 		try(SequenceWriter seqW = csvwriter.writer().writeValues(outputMessage.getBody())){
 		
-			if (features.getIncludeAllAttributes()) {
-				seqW.write(new String[] {"cabd_id",
-						"attribute_field_name","attribute_name",
-						"datasource_name","datasource_date","datasource_version",
-						"datasource_feature_id"});
-				for (FeatureDataSourceDetails details: features.getItems()) {
-					seqW.write(new String[] {	
-							details.getCabdId().toString(),
-							convertToString(details.getAttributeFieldName()),
-							convertToString(details.getAttributeName()),
-							convertToString(details.getDsName()),
-							convertToString(details.getDsDate()),
-							convertToString(details.getDsVersion()),
-							convertToString(details.getDsFeatureId())});
-				}
-				
+			if (features.getFeatureName() != null) {
+				seqW.write(new String[] {features.getFeatureName(), ""});
+			}
+			seqW.write(new String[] {features.getFeatureId().toString(), ""});
+			
+			seqW.write(new String[] {"", ""});
+			seqW.write(new String[] {"Complete list of data source names and links:", "https://aquaticbarriers.ca/data-sources"});
+			seqW.write(new String[] {"", ""});
+			
+			seqW.write(new String[] {"Spatial Data Sources", ""});
+			if (features.getIncludeAllDatasourceDetails()) {
+				seqW.write(new String[] {"datasource_name", "datasource_feature_id", "datasource_date", "datasource_version"});
 			}else {
-				seqW.write(new String[] {"cabd_id","attribute_field_name","datasource_name","datasource_feature_id"});
-				for (FeatureDataSourceDetails details: features.getItems()) {
-					seqW.write(new String[] {	
-							details.getCabdId().toString(),
-							convertToString(details.getAttributeFieldName()),
-							convertToString(details.getDsName()),
-							convertToString(details.getDsFeatureId())});
+				seqW.write(new String[] {"datasource_name", "datasource_feature_id"});
+			}
+			
+			for (DataSource ds : features.getSpatialDataSources()) {
+				if (features.getIncludeAllDatasourceDetails()) {
+					seqW.write(new String[] {convertToString(ds.getName()), 
+							convertToString(ds.getFeatureId()),
+							convertToString(ds.getVersionDate()),
+							convertToString(ds.getVersion())});
+				}else {
+					seqW.write(new String[] {convertToString(ds.getName()), convertToString(ds.getFeatureId())} );
 				}
 			}
 			
+			seqW.write(new String[] {"", ""});
+			seqW.write(new String[] {"Non-Spatial Data Sources", ""});
+			if (features.getIncludeAllDatasourceDetails()) {
+				seqW.write(new String[] {"datasource_name", "datasource_feature_id", "datasource_date", "datasource_version"});
+			}else {
+				seqW.write(new String[] {"datasource_name", "datasource_feature_id"});
+			}
+
+			
+			for (DataSource ds : features.getNonSpatialDataSources()) {
+				if (features.getIncludeAllDatasourceDetails()) {
+					seqW.write(new String[] {convertToString(ds.getName()), 
+							convertToString(ds.getFeatureId()),
+							convertToString(ds.getVersionDate()),
+							convertToString(ds.getVersion())});
+				}else {
+					seqW.write(new String[] {convertToString(ds.getName()), convertToString(ds.getFeatureId())} );
+				}
+			}
+			
+			seqW.write(new String[] {"", ""});
+			seqW.write(new String[] {"Attributes", ""});
+			seqW.write(new String[] {"attribute_field_name", "datasource_name"});
+			
+			for (Pair<String,String> ds : features.getAttributeDataSources()) {
+				seqW.write(new String[] {convertToString(ds.getLeft()), convertToString(ds.getRight())} );
+			}
 		}
 		
 	}
