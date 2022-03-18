@@ -111,7 +111,7 @@ public class FeatureDataSourceListCsvSerializer extends AbstractHttpMessageConve
 			if (features.getIncludeAllDatasourceDetails()) {
 				seqW.write(new String[] {"datasource_name", "datasource_feature_id", "datasource_date", "datasource_version"});
 			}else {
-				seqW.write(new String[] {"datasource_name", "datasource_feature_id"});
+				seqW.write(new String[] {"datasource_name", ""});
 			}
 
 			
@@ -122,7 +122,7 @@ public class FeatureDataSourceListCsvSerializer extends AbstractHttpMessageConve
 							convertToString(ds.getVersionDate()),
 							convertToString(ds.getVersion())});
 				}else {
-					seqW.write(new String[] {convertToString(ds.getName()), convertToString(ds.getFeatureId())} );
+					seqW.write(new String[] {convertToString(ds.getName()), ""} );
 				}
 			}
 			

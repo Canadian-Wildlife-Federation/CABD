@@ -60,7 +60,9 @@ public class FeatureDataSourceListJsonSerializer extends JsonSerializer<FeatureS
 			gen.writeStartObject();
 			gen.writeObjectField("name", ds.getName());
 			gen.writeObjectField("type", ds.getType());
-			gen.writeObjectField("datasource_feature_id", ds.getFeatureId());
+			if (ds.getFeatureId() != null && !ds.getFeatureId().isBlank()) {
+				gen.writeObjectField("datasource_feature_id", ds.getFeatureId());
+			}
 			if (value.getIncludeAllDatasourceDetails()) {
 				gen.writeObjectField("version_date", ds.getVersionDate());
 				gen.writeObjectField("version_number", ds.getVersion());
