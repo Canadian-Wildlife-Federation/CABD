@@ -1,6 +1,6 @@
 import MAP_attributes_main as main
 
-script = main.MappingScript("bc_hydro_wiki")
+script = main.MappingScript("wiki_gs_bc")
 
 mappingquery = f"""
 
@@ -15,15 +15,14 @@ FROM
     {script.damTable} AS duplicates
 WHERE
     ({script.datasetname}.data_source_id = duplicates.data_source_id AND duplicates.data_source_text = '{script.datasetname}') 
-    OR {script.datasetname}.data_source_id = duplicates.dups_{script.datasetname};
+    OR {script.datasetname}.data_source_id = duplicates.{script.datasetname};
 
 --update existing features 
 UPDATE
     {script.damAttributeTable} AS cabdsource
 SET    
-    dam_name_en_ds = CASE WHEN (cabd.dam_name_en IS NULL AND {script.datasetname}.dam_name_en IS NOT NULL) THEN {script.datasetname}.data_source ELSE cabdsource.dam_name_en_ds END,   
-    
-    dam_name_en_dsfid = CASE WHEN (cabd.dam_name_en IS NULL AND {script.datasetname}.dam_name_en IS NOT NULL) THEN {script.datasetname}.data_source_id ELSE cabdsource.dam_name_en_dsfid END
+    dam_name_en_ds = CASE WHEN (cabd.dam_name_en IS NULL AND {script.datasetname}.dam_name_en IS NOT NULL) THEN {script.datasetname}.data_source ELSE cabdsource.dam_name_en_ds END,
+    construction_year_ds = CASE WHEN (cabd.construction_year IS NULL AND {script.datasetname}.construction_year IS NOT NULL) THEN {script.datasetname}.data_source ELSE cabdsource.construction_year_ds END
 FROM
     {script.damTable} AS cabd,
     {script.workingTable} AS {script.datasetname}
@@ -33,7 +32,8 @@ WHERE
 UPDATE
     {script.damTable} AS cabd
 SET
-    dam_name_en = CASE WHEN (cabd.dam_name_en IS NULL AND {script.datasetname}.dam_name_en IS NOT NULL) THEN {script.datasetname}.dam_name_en ELSE cabd.dam_name_en END
+    dam_name_en = CASE WHEN (cabd.dam_name_en IS NULL AND {script.datasetname}.dam_name_en IS NOT NULL) THEN {script.datasetname}.dam_name_en ELSE cabd.dam_name_en END,
+    construction_year = CASE WHEN (cabd.construction_year IS NULL AND {script.datasetname}.construction_year IS NOT NULL) THEN {script.datasetname}.construction_year ELSE cabd.construction_year END
 FROM
     {script.workingTable} AS {script.datasetname}
 WHERE

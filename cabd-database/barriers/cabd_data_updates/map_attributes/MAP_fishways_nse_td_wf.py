@@ -1,6 +1,6 @@
 import MAP_attributes_main as main
 
-script = main.MappingScript("nswf")
+script = main.MappingScript("nse_td_wf")
 
 mappingquery = f"""
 
@@ -15,15 +15,13 @@ FROM
     {script.fishwayTable} AS duplicates
 WHERE
     ({script.datasetname}.data_source_id = duplicates.data_source_id AND duplicates.data_source_text = '{script.datasetname}') 
-    OR {script.datasetname}.data_source_id = duplicates.dups_{script.datasetname};
+    OR {script.datasetname}.data_source_id = duplicates.{script.datasetname};
 
 --update existing features 
 UPDATE
     {script.fishwayAttributeTable} AS cabdsource
 SET    
-    waterbody_name_en_ds = CASE WHEN (cabd.waterbody_name_en IS NULL AND {script.datasetname}.waterbody_name_en IS NOT NULL) THEN {script.datasetname}.data_source ELSE cabdsource.waterbody_name_en_ds END,   
-    
-    waterbody_name_en_dsfid = CASE WHEN (cabd.waterbody_name_en IS NULL AND {script.datasetname}.waterbody_name_en IS NOT NULL) THEN {script.datasetname}.data_source_id ELSE cabdsource.waterbody_name_en_dsfid END
+    waterbody_name_en_ds = CASE WHEN (cabd.waterbody_name_en IS NULL AND {script.datasetname}.waterbody_name_en IS NOT NULL) THEN {script.datasetname}.data_source ELSE cabdsource.waterbody_name_en_ds END
 FROM
     {script.fishwayTable} AS cabd,
     {script.workingTable} AS {script.datasetname}

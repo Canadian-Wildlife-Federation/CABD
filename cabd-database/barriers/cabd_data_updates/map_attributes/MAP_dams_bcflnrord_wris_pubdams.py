@@ -15,7 +15,7 @@ FROM
     {script.damTable} AS duplicates
 WHERE
     ({script.datasetname}.data_source_id = duplicates.data_source_id AND duplicates.data_source_text = '{script.datasetname}') 
-    OR {script.datasetname}.data_source_id = duplicates.dups_{script.datasetname};       
+    OR {script.datasetname}.data_source_id = duplicates.{script.datasetname};       
 
 --update existing features
 UPDATE 
@@ -29,7 +29,7 @@ SET
     construction_year_ds = CASE WHEN (cabd.construction_year IS NULL AND {script.datasetname}.construction_year IS NOT NULL) THEN {script.datasetname}.data_source ELSE cabdsource.construction_year_ds END,
     height_m_ds = CASE WHEN (cabd.height_m IS NULL AND {script.datasetname}.height_m IS NOT NULL) THEN {script.datasetname}.data_source ELSE cabdsource.height_m_ds END,
     length_m_ds = CASE WHEN (cabd.length_m IS NULL AND {script.datasetname}.length_m IS NOT NULL) THEN {script.datasetname}.data_source ELSE cabdsource.length_m_ds END,
-    operating_status_code_ds = CASE WHEN (cabd.operating_status_code IS NULL AND {script.datasetname}.operating_status_code IS NOT NULL) THEN {script.datasetname}.data_source ELSE cabdsource.operating_status_code_ds END    
+    operating_status_code_ds = CASE WHEN (cabd.operating_status_code IS NULL AND {script.datasetname}.operating_status_code IS NOT NULL) THEN {script.datasetname}.data_source ELSE cabdsource.operating_status_code_ds END
 FROM
     {script.damTable} AS cabd,
     {script.workingTable} AS {script.datasetname}    
@@ -53,9 +53,6 @@ FROM
     {script.workingTable} AS {script.datasetname}
 WHERE
     cabd.cabd_id = {script.datasetname}.cabd_id;
-
-
---TODO: manage new features & duplicates table with new features
     
 """
 

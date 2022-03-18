@@ -1,6 +1,6 @@
 import MAP_attributes_main as main
 
-script = main.MappingScript("fwa")
+script = main.MappingScript("bcflnrord_fwa")
 
 mappingquery = f"""
 
@@ -15,14 +15,13 @@ FROM
     {script.waterfallTable} AS duplicates
 WHERE
     ({script.datasetname}.data_source_id = duplicates.data_source_id AND duplicates.data_source_text = '{script.datasetname}') 
-    OR {script.datasetname}.data_source_id = duplicates.dups_{script.datasetname};  
+    OR {script.datasetname}.data_source_id = duplicates.{script.datasetname};  
 
 --update existing features 
 UPDATE 
     {script.waterfallAttributeTable} AS cabdsource
 SET    
-    fall_name_en_ds = CASE WHEN (cabd.fall_name_en IS NULL AND {script.datasetname}.fall_name_en IS NOT NULL) THEN {script.datasetname}.data_source ELSE cabdsource.fall_name_en_ds END,   
-    fall_name_en_dsfid = CASE WHEN (cabd.fall_name_en IS NULL AND {script.datasetname}.fall_name_en IS NOT NULL) THEN {script.datasetname}.data_source_id ELSE cabdsource.fall_name_en_dsfid END
+    fall_name_en_ds = CASE WHEN (cabd.fall_name_en IS NULL AND {script.datasetname}.fall_name_en IS NOT NULL) THEN {script.datasetname}.data_source ELSE cabdsource.fall_name_en_ds END
 FROM
     {script.waterfallTable} AS cabd,
     {script.workingTable} AS {script.datasetname}
