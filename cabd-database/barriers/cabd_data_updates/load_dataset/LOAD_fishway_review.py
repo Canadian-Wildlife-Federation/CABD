@@ -26,6 +26,8 @@ workingTableRaw = "fishways"
 workingTable = workingSchema + "." + workingTableRaw
 attributeTableRaw = "fishways_attribute_source"
 attributeTable = workingSchema + "." + attributeTableRaw
+featureTableRaw = "fishways_feature_source"
+featureTable = workingSchema + "." + featureTableRaw
 
 print("Loading data from file " +  dataFile)
 
@@ -60,10 +62,11 @@ ALTER TABLE {workingTable} ADD COLUMN cabd_id uuid;
 UPDATE {workingTable} SET cabd_id = uuid_generate_v4();
 ALTER TABLE {workingTable} DROP CONSTRAINT {workingTableRaw}_pkey;
 ALTER TABLE {workingTable} ADD PRIMARY KEY (cabd_id);
+ALTER TABLE {workingTable} DROP COLUMN fid;
 
 ALTER TABLE {workingTable} ADD COLUMN dam_id uuid;
-ALTER TABLE {workingTable} ADD COLUMN dam_name_en character varying(512);
-ALTER TABLE {workingTable} ADD COLUMN dam_name_fr character varying(512);
+ALTER TABLE {workingTable} ADD COLUMN structure_name_en character varying(512);
+ALTER TABLE {workingTable} ADD COLUMN structure_name_fr character varying(512);
 ALTER TABLE {workingTable} ADD COLUMN waterbody_name_en character varying(512);
 ALTER TABLE {workingTable} ADD COLUMN waterbody_name_fr character varying(512);
 ALTER TABLE {workingTable} ADD COLUMN river_name_en character varying(512);
@@ -108,10 +111,10 @@ ALTER TABLE {workingTable} ADD COLUMN original_point geometry(Point, 4617);
 
 ALTER TABLE {workingTable} ALTER COLUMN data_source TYPE varchar;
 ALTER TABLE {workingTable} RENAME COLUMN data_source TO data_source_text;
-UPDATE {workingTable} SET data_source_text = 'canfishpass' WHERE data_source_text = '22';
+UPDATE {workingTable} SET data_source_text = 'cwf_canfish' WHERE data_source_text = '22';
 
 ALTER TABLE {workingTable} ADD COLUMN data_source uuid;
-UPDATE {workingTable} SET data_source = '7fe9e701-d804-40e6-8113-6b2c3656d1bd'::uuid WHERE data_source_text = 'canfishpass';
+UPDATE {workingTable} SET data_source = '7fe9e701-d804-40e6-8113-6b2c3656d1bd'::uuid WHERE data_source_text = 'cwf_canfish';
 
 UPDATE {workingTable} SET original_point = ST_GeometryN(geometry, 1);
 CREATE INDEX {workingTableRaw}_idx ON {workingTable} USING gist (original_point);
@@ -121,7 +124,7 @@ with conn.cursor() as cursor:
     cursor.execute(loadQuery)
 conn.commit()
 
-print("Fetching constraints...")
+print("Adding constraints...")
 loadQuery = f"""
 
 INSERT INTO {attributeTable} (cabd_id) SELECT cabd_id FROM {workingTable};
@@ -129,19 +132,65 @@ INSERT INTO {attributeTable} (cabd_id) SELECT cabd_id FROM {workingTable};
 ALTER TABLE {attributeTable} ADD CONSTRAINT {workingTableRaw}_cabd_id_fkey FOREIGN KEY (cabd_id) REFERENCES {workingTable} (cabd_id);
 
 ALTER TABLE {workingTable}
-    ADD CONSTRAINT fishpass_fk FOREIGN KEY (fishpass_type_code) REFERENCES cabd.upstream_passage_type_codes (code),
-    ADD CONSTRAINT fishpass_fk_1 FOREIGN KEY (province_territory_code) REFERENCES cabd.province_territory_codes (code),
-    ADD CONSTRAINT fishpass_fk_3 FOREIGN KEY (entrance_location_code) REFERENCES fishways.entrance_location_codes (code),
-    ADD CONSTRAINT fishpass_fk_4 FOREIGN KEY (entrance_position_code) REFERENCES fishways.entrance_position_codes (code),
-    ADD CONSTRAINT fishways_fk FOREIGN KEY (dam_id) REFERENCES {workingSchema}.dams (cabd_id),
-    ADD CONSTRAINT fishways_fk_8 FOREIGN KEY (complete_level_code) REFERENCES fishways.fishway_complete_level_codes (code);
+    ADD CONSTRAINT fishways_fk FOREIGN KEY (fishpass_type_code) REFERENCES cabd.upstream_passage_type_codes (code),
+    ADD CONSTRAINT fishways_fk_1 FOREIGN KEY (province_territory_code) REFERENCES cabd.province_territory_codes (code),
+    ADD CONSTRAINT fishways_fk_2 FOREIGN KEY (dam_id) REFERENCES {workingSchema}.dams (cabd_id),
+    ADD CONSTRAINT fishways_fk_3 FOREIGN KEY (entrance_location_code) REFERENCES fishways.entrance_location_codes (code),
+    ADD CONSTRAINT fishways_fk_4 FOREIGN KEY (entrance_position_code) REFERENCES fishways.entrance_position_codes (code),
+    ADD CONSTRAINT fishways_fk_5 FOREIGN KEY (complete_level_code) REFERENCES fishways.fishway_complete_level_codes (code);
 
 """
 with conn.cursor() as cursor:
     cursor.execute(loadQuery)
-
 conn.commit()
+
+#set up feature source table
+print("Creating feature_source table...")
+loadQuery = f"""
+
+DROP TABLE IF EXISTS {featureTable};
+CREATE TABLE {featureTable} (
+    cabd_id uuid NOT NULL,
+    datasource_id uuid NOT NULL,
+    datasource_feature_id character varying NOT NULL,
+    CONSTRAINT fishways_feature_source_pkey PRIMARY KEY (cabd_id, datasource_id),
+    CONSTRAINT fishways_datasource_id_fk FOREIGN KEY (datasource_id)
+        REFERENCES cabd.data_source (id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE RESTRICT,
+    CONSTRAINT fishways_feature_source_cabd_id_fk FOREIGN KEY (cabd_id)
+        REFERENCES {workingTable} (cabd_id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE CASCADE
+);
+ALTER TABLE {featureTable} OWNER to cabd;
+
+"""
+with conn.cursor() as cursor:
+    cursor.execute(loadQuery)
+conn.commit()
+
+loadQuery = f"""
+
+--insert rows into feature_source table from data source columns
+
+INSERT INTO {featureTable} (cabd_id, datasource_id, datasource_feature_id)
+SELECT cabd_id, (SELECT id FROM cabd.data_source WHERE "name" = 'cwf_canfish'), data_source_id
+FROM {workingTable} WHERE data_source_text = 'cwf_canfish'
+ON CONFLICT DO NOTHING;
+
+--insert rows into feature_source table from named columns
+
+INSERT INTO {featureTable} (cabd_id, datasource_id, datasource_feature_id)
+SELECT cabd_id, (SELECT id FROM cabd.data_source WHERE "name" = 'cwf_canfish'), cwf_canfish
+FROM {workingTable} WHERE cwf_canfish IS NOT NULL
+ON CONFLICT DO NOTHING;
+
+"""
+
 conn.close()
 
-print("Script complete")
-print("Data loaded into table: " + workingTable)
+print("\n" + "Script complete! Data loaded into table: " + workingTable)
+
+print(loadQuery)
+print("Run the query above to insert rows into the feature_source table")
