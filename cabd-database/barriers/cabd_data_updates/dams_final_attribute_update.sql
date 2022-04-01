@@ -31,9 +31,9 @@ UPDATE featurecopy.dams SET passability_status_code = 1 WHERE passability_status
 --Various spatial joins/queries to populate fields
 UPDATE featurecopy.dams AS dams SET longitude = ST_X(dams.snapped_point);
 UPDATE featurecopy.dams AS dams SET latitude = ST_Y(dams.snapped_point);
-UPDATE featurecopy.dams AS dams SET province_territory_code = n.code FROM cabd.province_territory_codes AS n WHERE st_contains(ST_Transform(n.geometry, 4617), dams.snapped_point);
-UPDATE featurecopy.dams AS dams SET nhn_workunit_id = n.id FROM cabd.nhn_workunit AS n WHERE st_contains(ST_Transform(n.polygon, 4617), dams.snapped_point);
-UPDATE featurecopy.dams AS dams SET municipality = n.csdname FROM cabd.census_subdivisions AS n WHERE st_contains(ST_Transform(n.geometry, 4617), dams.snapped_point);
+UPDATE featurecopy.dams AS dams SET province_territory_code = n.code FROM cabd.province_territory_codes AS n WHERE st_contains(n.geometry, dams.snapped_point);
+UPDATE featurecopy.dams AS dams SET nhn_watershed_id = n.id FROM cabd.nhn_workunit AS n WHERE st_contains(n.polygon, dams.snapped_point);
+UPDATE featurecopy.dams AS dams SET municipality = n.csdname FROM cabd.census_subdivisions AS n WHERE st_contains(n.geometry, dams.snapped_point);
 
 --TO DO: Add foreign table to reference ecatchment and eflowpath tables, make sure 2 lines below work
 --Should waterbody name simply be overwritten here as long as we have a value from the chyf networks?
@@ -51,7 +51,6 @@ UPDATE featurecopy.dams SET use_code = 11 WHERE use_code IS NULL;
 UPDATE featurecopy.dams SET function_code = 13 WHERE function_code IS NULL;
 UPDATE featurecopy.dams SET turbine_type_code = 5 WHERE turbine_type_code IS NULL AND (use_code = 2 OR use_electricity_code IS NOT NULL);
 UPDATE featurecopy.dams SET operating_status_code = 5 WHERE operating_status_code IS NULL;
-UPDATE featurecopy.dams SET up_passage_type_code = 9 WHERE up_passage_type_code IS NULL;
 
 COMMIT;
 

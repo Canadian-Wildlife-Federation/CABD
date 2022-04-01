@@ -24,7 +24,7 @@ INSERT INTO dams.dams(
     generating_capacity_mwh, turbine_number, turbine_type_code,
     up_passage_type_code, down_passage_route_code, last_modified,
     "comments", complete_level_code, original_point, snapped_point,
-    nhn_workunit_id, upstream_linear_km, passability_status_code,
+    nhn_watershed_id, upstream_linear_km, passability_status_code,
     passability_status_note, use_analysis, facility_name_en, facility_name_fr
 )
 SELECT
@@ -47,7 +47,7 @@ SELECT
     generating_capacity_mwh, turbine_number, turbine_type_code,
     up_passage_type_code, down_passage_route_code, last_modified,
     "comments", complete_level_code, original_point, snapped_point,
-    nhn_workunit_id, upstream_linear_km, passability_status_code,
+    nhn_watershed_id, upstream_linear_km, passability_status_code,
     passability_status_note, use_analysis, facility_name_en, facility_name_fr
 FROM featurecopy.dams;
 
@@ -138,9 +138,15 @@ SELECT
     facility_name_en_ds, facility_name_en_dsfid, facility_name_fr_ds, facility_name_fr_dsfid
 FROM featurecopy.dams_attribute_source;
 
+INSERT INTO dams.dams_feature_source (cabd_id, datasource_id, datasource_feature_id)
+    SELECT cabd_id, datasource_id, datasource_feature_id
+FROM featurecopy.dams_feature_source
+ON CONFLICT DO NOTHING;
+
 --do whatever qa checks you want to do here?
 
 SELECT COUNT(*) FROM dams.dams;
 SELECT COUNT(*) FROM dams.dams_attribute_source;
+SELECT COUNT(*) FROM dams.dams_feature_source;
 
 --COMMIT;

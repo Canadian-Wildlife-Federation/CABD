@@ -1,6 +1,6 @@
 import MAP_attributes_main as main
 
-script = main.MappingScript("fiss")
+script = main.MappingScript("bceccs_fiss")
 
 mappingquery = f"""
 
@@ -15,7 +15,7 @@ FROM
     {script.damTable} AS duplicates
 WHERE
     ({script.datasetname}.data_source_id = duplicates.data_source_id AND duplicates.data_source_text = '{script.datasetname}') 
-    OR {script.datasetname}.data_source_id = duplicates.dups_{script.datasetname};  
+    OR {script.datasetname}.data_source_id = duplicates.{script.datasetname};  
 
 --update existing features
 UPDATE 
@@ -29,17 +29,7 @@ SET
     use_irrigation_code_ds = CASE WHEN (cabd.use_irrigation_code IS NULL AND {script.datasetname}.use_irrigation_code IS NOT NULL) THEN {script.datasetname}.data_source ELSE cabdsource.use_irrigation_code_ds END,
     use_electricity_code_ds = CASE WHEN (cabd.use_electricity_code IS NULL AND {script.datasetname}.use_electricity_code IS NOT NULL) THEN {script.datasetname}.data_source ELSE cabdsource.use_electricity_code_ds END,
     use_fish_code_ds = CASE WHEN (cabd.use_fish_code IS NULL AND {script.datasetname}.use_fish_code IS NOT NULL) THEN {script.datasetname}.data_source ELSE cabdsource.use_fish_code_ds END,
-    use_other_code_ds = CASE WHEN (cabd.use_other_code IS NULL AND {script.datasetname}.use_other_code IS NOT NULL) THEN {script.datasetname}.data_source ELSE cabdsource.use_other_code_ds END,
-
-    height_m_dsfid = CASE WHEN (cabd.height_m IS NULL AND {script.datasetname}.height_m IS NOT NULL) THEN {script.datasetname}.data_source_id ELSE cabdsource.height_m_dsfid END,
-    length_m_dsfid = CASE WHEN (cabd.length_m IS NULL AND {script.datasetname}.length_m IS NOT NULL) THEN {script.datasetname}.data_source_id ELSE cabdsource.length_m_dsfid END,
-    waterbody_name_en_dsfid = CASE WHEN (cabd.waterbody_name_en IS NULL AND {script.datasetname}.waterbody_name_en IS NOT NULL) THEN {script.datasetname}.data_source_id ELSE cabdsource.waterbody_name_en_dsfid END,
-    use_code_dsfid = CASE WHEN (cabd.use_code IS NULL AND {script.datasetname}.use_code IS NOT NULL) THEN {script.datasetname}.data_source_id ELSE cabdsource.use_code_dsfid END,
-    function_code_dsfid = CASE WHEN (cabd.function_code IS NULL AND {script.datasetname}.function_code IS NOT NULL) THEN {script.datasetname}.data_source_id ELSE cabdsource.function_code_dsfid END,
-    use_irrigation_code_dsfid = CASE WHEN (cabd.use_irrigation_code IS NULL AND {script.datasetname}.use_irrigation_code IS NOT NULL) THEN {script.datasetname}.data_source_id ELSE cabdsource.use_irrigation_code_dsfid END,
-    use_electricity_code_dsfid = CASE WHEN (cabd.use_electricity_code IS NULL AND {script.datasetname}.use_electricity_code IS NOT NULL) THEN {script.datasetname}.data_source_id ELSE cabdsource.use_electricity_code_dsfid END,
-    use_fish_code_dsfid = CASE WHEN (cabd.use_fish_code IS NULL AND {script.datasetname}.use_fish_code IS NOT NULL) THEN {script.datasetname}.data_source_id ELSE cabdsource.use_fish_code_dsfid END,
-    use_other_code_dsfid = CASE WHEN (cabd.use_other_code IS NULL AND {script.datasetname}.use_other_code IS NOT NULL) THEN {script.datasetname}.data_source_id ELSE cabdsource.use_other_code_dsfid END
+    use_other_code_ds = CASE WHEN (cabd.use_other_code IS NULL AND {script.datasetname}.use_other_code IS NOT NULL) THEN {script.datasetname}.data_source ELSE cabdsource.use_other_code_ds END
 FROM
     {script.damTable} AS cabd,
     {script.workingTable} AS {script.datasetname}

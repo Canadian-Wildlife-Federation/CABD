@@ -14,9 +14,9 @@ UPDATE featurecopy.waterfalls SET passability_status_code =
 --Various spatial joins/queries to populate fields
 UPDATE featurecopy.waterfalls AS falls SET longitude = ST_X(falls.snapped_point);
 UPDATE featurecopy.waterfalls AS falls SET latitude = ST_Y(falls.snapped_point);
-UPDATE featurecopy.waterfalls AS falls SET province_territory_code = n.code FROM cabd.province_territory_codes AS n WHERE st_contains(ST_Transform(n.geometry, 4617), falls.snapped_point);
-UPDATE featurecopy.waterfalls AS falls SET nhn_workunit_id = n.id FROM cabd.nhn_workunit AS n WHERE st_contains(ST_Transform(n.polygon, 4617), falls.snapped_point);
-UPDATE featurecopy.waterfalls AS falls SET municipality = n.csdname FROM cabd.census_subdivisions AS n WHERE st_contains(ST_Transform(n.geometry, 4617), falls.snapped_point);
+UPDATE featurecopy.waterfalls AS falls SET province_territory_code = n.code FROM cabd.province_territory_codes AS n WHERE st_contains(n.geometry, falls.snapped_point);
+UPDATE featurecopy.waterfalls AS falls SET nhn_watershed_id = n.id FROM cabd.nhn_workunit AS n WHERE st_contains(n.polygon, falls.snapped_point);
+UPDATE featurecopy.waterfalls AS falls SET municipality = n.csdname FROM cabd.census_subdivisions AS n WHERE st_contains(n.geometry, falls.snapped_point);
 
 --TO DO: Add foreign table to reference ecatchment and eflowpath tables, make sure 2 lines below work
 --Should waterbody name simply be overwritten here as long as we have a value from the chyf networks?

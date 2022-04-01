@@ -11,7 +11,7 @@ INSERT INTO waterfalls.waterfalls(
     waterbody_name_en,
     waterbody_name_fr,
     province_territory_code,
-    nhn_workunit_id,
+    nhn_watershed_id,
     municipality,
     fall_height_m,
     last_modified,
@@ -29,7 +29,7 @@ SELECT
     waterbody_name_en,
     waterbody_name_fr,
     province_territory_code,
-    nhn_workunit_id,
+    nhn_watershed_id,
     municipality,
     fall_height_m,
     last_modified,
@@ -84,9 +84,15 @@ SELECT
     original_point_dsfid
 FROM featurecopy.waterfalls_attribute_source;
 
+INSERT INTO waterfalls.waterfalls_feature_source (cabd_id, datasource_id, datasource_feature_id)
+    SELECT cabd_id, datasource_id, datasource_feature_id
+FROM featurecopy.waterfalls_feature_source
+ON CONFLICT DO NOTHING;
+
 --do whatever qa checks you want to do here?
 
 SELECT COUNT(*) FROM waterfalls.waterfalls;
 SELECT COUNT(*) FROM waterfalls.waterfalls_attribute_source;
+SELECT COUNT(*) FROM waterfalls.waterfalls_feature_source;
 
 --COMMIT;

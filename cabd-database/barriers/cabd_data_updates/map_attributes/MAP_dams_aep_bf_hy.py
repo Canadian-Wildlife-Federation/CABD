@@ -1,6 +1,6 @@
 import MAP_attributes_main as main
 
-script = main.MappingScript("ab_basefeatures")
+script = main.MappingScript("aep_bf_hy")
 
 mappingquery = f"""
 
@@ -15,15 +15,13 @@ FROM
     {script.damTable} AS duplicates
 WHERE
     ({script.datasetname}.data_source_id = duplicates.data_source_id AND duplicates.data_source_text = '{script.datasetname}') 
-    OR {script.datasetname}.data_source_id = duplicates.dups_{script.datasetname};
+    OR {script.datasetname}.data_source_id = duplicates.{script.datasetname};
 
 --update existing features 
 UPDATE
     {script.damAttributeTable} AS cabdsource
 SET    
-    dam_name_en_ds = CASE WHEN (cabd.dam_name_en IS NULL AND {script.datasetname}.dam_name_en IS NOT NULL) THEN {script.datasetname}.data_source ELSE cabdsource.dam_name_en_ds END,   
-    
-    dam_name_en_dsfid = CASE WHEN (cabd.dam_name_en IS NULL AND {script.datasetname}.dam_name_en IS NOT NULL) THEN {script.datasetname}.data_source_id ELSE cabdsource.dam_name_en_dsfid END
+    dam_name_en_ds = CASE WHEN (cabd.dam_name_en IS NULL AND {script.datasetname}.dam_name_en IS NOT NULL) THEN {script.datasetname}.data_source ELSE cabdsource.dam_name_en_ds END
 FROM
     {script.damTable} AS cabd,
     {script.workingTable} AS {script.datasetname}

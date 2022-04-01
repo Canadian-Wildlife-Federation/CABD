@@ -1,6 +1,6 @@
 import MAP_attributes_main as main
 
-script = main.MappingScript("goodd")
+script = main.MappingScript("gdw_goodd")
 
 mappingquery = f"""
 
@@ -15,7 +15,7 @@ FROM
     {script.damTable} AS duplicates
 WHERE
     ({script.datasetname}.data_source_id = duplicates.data_source_id AND duplicates.data_source_text = '{script.datasetname}') 
-    OR {script.datasetname}.data_source_id = duplicates.dups_{script.datasetname};  
+    OR {script.datasetname}.data_source_id = duplicates.{script.datasetname};  
 
 --no attributes to be mapped for this dataset
 
