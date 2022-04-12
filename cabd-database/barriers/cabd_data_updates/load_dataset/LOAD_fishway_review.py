@@ -11,7 +11,7 @@ dbName = "cabd"
 dataFile = ""
 dataFile = sys.argv[1]
 #provinceCode should be 'ab', 'bc', etc. but this is just to grab the correct layer from gpkg
-#e.g., provinceCode of 'atlantic' is fine if the layer you want is named 'atlantic_dam_review'
+#e.g., provinceCode of 'atlantic' is fine if the layer you want is named 'atlantic_fishway_review'
 provinceCode = sys.argv[2]
 dbUser = sys.argv[3]
 dbPassword = sys.argv[4]
@@ -42,6 +42,7 @@ CREATE SCHEMA IF NOT EXISTS {workingSchema};
 ALTER TABLE {attributeTable} DROP CONSTRAINT IF EXISTS {workingTableRaw}_attribute_source_cabd_id_fkey;
 DROP TABLE IF EXISTS {workingTable} CASCADE;
 TRUNCATE TABLE {attributeTable};
+TRUNCATE TABLE {featureTable};
 """
 
 with conn.cursor() as cursor:
@@ -71,7 +72,7 @@ ALTER TABLE {workingTable} ADD COLUMN waterbody_name_en character varying(512);
 ALTER TABLE {workingTable} ADD COLUMN waterbody_name_fr character varying(512);
 ALTER TABLE {workingTable} ADD COLUMN river_name_en character varying(512);
 ALTER TABLE {workingTable} ADD COLUMN river_name_fr character varying(512);
-ALTER TABLE {workingTable} ALTER COLUMN nhn_workunit_id TYPE varchar(7);
+ALTER TABLE {workingTable} ALTER COLUMN nhn_watershed_id TYPE varchar(7);
 ALTER TABLE {workingTable} DROP COLUMN IF EXISTS province;
 ALTER TABLE {workingTable} ADD COLUMN province_territory_code character varying(2);
 ALTER TABLE {workingTable} ADD COLUMN municipality character varying(512);
@@ -129,7 +130,10 @@ loadQuery = f"""
 
 INSERT INTO {attributeTable} (cabd_id) SELECT cabd_id FROM {workingTable};
 
-ALTER TABLE {attributeTable} ADD CONSTRAINT {workingTableRaw}_cabd_id_fkey FOREIGN KEY (cabd_id) REFERENCES {workingTable} (cabd_id);
+ALTER TABLE {attributeTable} ADD CONSTRAINT {workingTableRaw}_cabd_id_fkey FOREIGN KEY (cabd_id)
+    REFERENCES {workingTable} (cabd_id)
+    ON UPDATE NO ACTION
+    ON DELETE CASCADE;
 
 ALTER TABLE {workingTable}
     ADD CONSTRAINT fishways_fk FOREIGN KEY (fishpass_type_code) REFERENCES cabd.upstream_passage_type_codes (code),
