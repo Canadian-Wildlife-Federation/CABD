@@ -17,7 +17,7 @@ dbUser = sys.argv[3]
 dbPassword = sys.argv[4]
 
 if dataFile == '':
-    print("Data file required. Usage: LOAD_fishway_review.py <datafile> <provinceCode> <dbUser> <dbPassword>")
+    print("Data file required. Usage: py LOAD_fishway_review.py <datafile> <provinceCode> <dbUser> <dbPassword>")
     sys.exit()
 
 #this is the temporary table the data is loaded into
@@ -37,6 +37,7 @@ conn = pg2.connect(database=dbName,
                    password=dbPassword, 
                    port=dbPort)
 
+#note that the attribute table has been created ahead of time with all constraints from production attribute table
 query = f"""
 CREATE SCHEMA IF NOT EXISTS {workingSchema};
 ALTER TABLE {attributeTable} DROP CONSTRAINT IF EXISTS {workingTableRaw}_attribute_source_cabd_id_fkey;
@@ -115,7 +116,10 @@ ALTER TABLE {workingTable} RENAME COLUMN data_source TO data_source_text;
 UPDATE {workingTable} SET data_source_text = 'cwf_canfish' WHERE data_source_text = '22';
 
 ALTER TABLE {workingTable} ADD COLUMN data_source uuid;
-UPDATE {workingTable} SET data_source = '7fe9e701-d804-40e6-8113-6b2c3656d1bd'::uuid WHERE data_source_text = 'cwf_canfish';
+UPDATE {workingTable} SET data_source = 
+    CASE
+    WHEN data_source_text = 'cwf_canfish' THEN (SELECT id FROM cabd.data_source WHERE name = 'cwf_canfish')
+    ELSE NULL END;
 
 UPDATE {workingTable} SET original_point = ST_GeometryN(geometry, 1);
 CREATE INDEX {workingTableRaw}_idx ON {workingTable} USING gist (original_point);
