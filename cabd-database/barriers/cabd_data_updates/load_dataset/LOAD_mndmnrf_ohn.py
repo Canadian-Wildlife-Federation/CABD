@@ -44,7 +44,7 @@ ALTER TABLE {script.damWorkingTable}
 DROP TABLE IF EXISTS {script.fallWorkingTable};
 CREATE TABLE {script.fallWorkingTable} AS
     SELECT
-        general_comments
+        general_comments,
         data_source,
         data_source_id
     FROM {script.sourceTable} WHERE hydrographic_type = 'Falls';
