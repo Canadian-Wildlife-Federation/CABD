@@ -8,7 +8,7 @@ query = f"""
 ALTER TABLE {script.sourceTable} ADD COLUMN data_source varchar;
 ALTER TABLE {script.sourceTable} ADD COLUMN data_source_id varchar;
 UPDATE {script.sourceTable} SET data_source_id = barrier_id;
-UPDATE {script.sourceTable} SET data_source = (SELECT id FROM cabd.data_source WHERE name = {script.datasetname});
+UPDATE {script.sourceTable} SET data_source = (SELECT id FROM cabd.data_source WHERE name = '{script.datasetname}');
 ALTER TABLE {script.sourceTable} ALTER COLUMN data_source TYPE uuid USING data_source::uuid;
 ALTER TABLE {script.sourceTable} ADD CONSTRAINT data_source_fkey FOREIGN KEY (data_source) REFERENCES cabd.data_source (id);
 ALTER TABLE {script.sourceTable} DROP CONSTRAINT {script.datasetname}_pkey;
@@ -40,7 +40,7 @@ ALTER TABLE {script.damWorkingTable}
     DROP COLUMN lamprey_barrier;
 
 
---split into waterfalls
+--split into waterfalls (no attributes needed, wid_fishwerks is geometry source only for waterfalls)
 DROP TABLE IF EXISTS {script.fallWorkingTable};
 CREATE TABLE {script.fallWorkingTable} AS
     SELECT

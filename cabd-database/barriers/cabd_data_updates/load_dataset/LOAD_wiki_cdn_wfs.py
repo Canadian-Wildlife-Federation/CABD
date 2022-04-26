@@ -8,7 +8,7 @@ query = f"""
 ALTER TABLE {script.sourceTable} ADD COLUMN data_source varchar;
 ALTER TABLE {script.sourceTable} ADD COLUMN data_source_id varchar;
 UPDATE {script.sourceTable} SET data_source_id = fid;
-UPDATE {script.sourceTable} SET data_source = '1ec6c575-04da-4416-b870-0af2cba15206';
+UPDATE {script.sourceTable} SET data_source = (SELECT id FROM cabd.data_source WHERE name = '{script.datasetname}');
 ALTER TABLE {script.sourceTable} ALTER COLUMN data_source TYPE uuid USING data_source::uuid;
 ALTER TABLE {script.sourceTable} ADD CONSTRAINT data_source_fkey FOREIGN KEY (data_source) REFERENCES cabd.data_source (id);
 ALTER TABLE {script.sourceTable} DROP CONSTRAINT {script.datasetname}_pkey;

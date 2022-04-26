@@ -1,6 +1,6 @@
 import LOAD_main as main
 
-script = main.LoadingScript("fwa")
+script = main.LoadingScript("bcflnrord_fwa")
 
 query = f"""
 
@@ -8,7 +8,7 @@ query = f"""
 ALTER TABLE {script.sourceTable} ADD COLUMN data_source varchar;
 ALTER TABLE {script.sourceTable} ADD COLUMN data_source_id varchar;
 UPDATE {script.sourceTable} SET data_source_id = obstruction_id;
-UPDATE {script.sourceTable} SET data_source = 'd794807d-a816-49dd-a76f-3490c0abd317';
+UPDATE {script.sourceTable} SET data_source = (SELECT id FROM cabd.data_source WHERE name = '{script.datasetname}');
 ALTER TABLE {script.sourceTable} ALTER COLUMN data_source TYPE uuid USING data_source::uuid;
 ALTER TABLE {script.sourceTable} ADD CONSTRAINT data_source_fkey FOREIGN KEY (data_source) REFERENCES cabd.data_source (id);
 ALTER TABLE {script.sourceTable} DROP CONSTRAINT {script.datasetname}_pkey;

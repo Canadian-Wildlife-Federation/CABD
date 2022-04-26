@@ -1,6 +1,6 @@
 import LOAD_main as main
 
-script = main.LoadingScript("cgndb")
+script = main.LoadingScript("nrcan_cgndb")
     
 query = f"""
 
@@ -8,7 +8,7 @@ query = f"""
 ALTER TABLE {script.sourceTable} ADD COLUMN data_source varchar;
 ALTER TABLE {script.sourceTable} ADD COLUMN data_source_id varchar;
 UPDATE {script.sourceTable} SET data_source_id = cgndb_id;
-UPDATE {script.sourceTable} SET data_source = 'bc77aaa4-7a4e-43a1-84f1-9c5f6ea24912';
+UPDATE {script.sourceTable} SET data_source = (SELECT id FROM cabd.data_source WHERE name = '{script.datasetname}');
 ALTER TABLE {script.sourceTable} ALTER COLUMN data_source TYPE uuid USING data_source::uuid;
 ALTER TABLE {script.sourceTable} ADD CONSTRAINT data_source_fkey FOREIGN KEY (data_source) REFERENCES cabd.data_source (id);
 ALTER TABLE {script.sourceTable} DROP CONSTRAINT {script.datasetname}_pkey;

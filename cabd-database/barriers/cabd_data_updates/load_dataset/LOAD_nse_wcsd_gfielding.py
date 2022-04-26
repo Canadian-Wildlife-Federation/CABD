@@ -1,6 +1,6 @@
 import LOAD_main as main
 
-script = main.LoadingScript("gfielding")
+script = main.LoadingScript("nse_wcsd_gfielding")
 
 query = f"""
 
@@ -8,7 +8,7 @@ query = f"""
 ALTER TABLE {script.sourceTable} ADD COLUMN data_source varchar;
 ALTER TABLE {script.sourceTable} ADD COLUMN data_source_id varchar;
 UPDATE {script.sourceTable} SET data_source_id = dam_id_number;
-UPDATE {script.sourceTable} SET data_source = '41b947a0-867d-4dd1-aa08-3609bf5679de';
+UPDATE {script.sourceTable} SET data_source = (SELECT id FROM cabd.data_source WHERE name = '{script.datasetname}');
 ALTER TABLE {script.sourceTable} ALTER COLUMN data_source TYPE uuid USING data_source::uuid;
 ALTER TABLE {script.sourceTable} ADD CONSTRAINT data_source_fkey FOREIGN KEY (data_source) REFERENCES cabd.data_source (id);
 ALTER TABLE {script.sourceTable} DROP CONSTRAINT {script.datasetname}_pkey;

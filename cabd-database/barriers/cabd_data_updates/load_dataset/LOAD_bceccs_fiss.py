@@ -1,6 +1,6 @@
 import LOAD_main as main
 
-script = main.LoadingScript("fiss")
+script = main.LoadingScript("bceccs_fiss")
     
 query = f"""
 
@@ -8,7 +8,7 @@ query = f"""
 ALTER TABLE {script.sourceTable} ADD COLUMN data_source uuid;
 ALTER TABLE {script.sourceTable} ADD COLUMN data_source_id varchar;
 UPDATE {script.sourceTable} SET data_source_id = fish_obstacle_point_id;
-UPDATE {script.sourceTable} SET data_source = '67ecfa8f-e156-45ef-81b5-fb93bd5b23c4';
+UPDATE {script.sourceTable} SET data_source = (SELECT id FROM cabd.data_source WHERE name = '{script.datasetname}');
 ALTER TABLE {script.sourceTable} ALTER COLUMN data_source TYPE uuid USING data_source::uuid;
 ALTER TABLE {script.sourceTable} ADD CONSTRAINT data_source_fkey FOREIGN KEY (data_source) REFERENCES cabd.data_source (id);
 ALTER TABLE {script.sourceTable} DROP CONSTRAINT {script.datasetname}_pkey;

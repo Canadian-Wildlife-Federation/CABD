@@ -1,13 +1,13 @@
 import LOAD_main as main
 
-script = main.LoadingScript("nswf")
+script = main.LoadingScript("nse_td_wf")
 
 query = f"""
 --data source fields
 ALTER TABLE {script.sourceTable} ADD COLUMN data_source varchar;
 ALTER TABLE {script.sourceTable} ADD COLUMN data_source_id varchar;
 UPDATE {script.sourceTable} SET data_source_id = shape_fid;
-UPDATE {script.sourceTable} SET data_source = '3f5c9d6e-4d4f-48af-b57d-cb2a1e2671a0';
+UPDATE {script.sourceTable} SET data_source = (SELECT id FROM cabd.data_source WHERE name = '{script.datasetname}');
 ALTER TABLE {script.sourceTable} ALTER COLUMN data_source TYPE uuid USING data_source::uuid;
 ALTER TABLE {script.sourceTable} ADD CONSTRAINT data_source_fkey FOREIGN KEY (data_source) REFERENCES cabd.data_source (id);
 ALTER TABLE {script.sourceTable} DROP CONSTRAINT {script.datasetname}_pkey;
