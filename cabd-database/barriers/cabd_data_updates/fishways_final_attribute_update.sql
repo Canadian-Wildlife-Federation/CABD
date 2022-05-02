@@ -5,6 +5,7 @@
 BEGIN;
 --Various spatial joins/queries to populate fields
 UPDATE featurecopy.fishways AS fish SET province_territory_code = n.code FROM cabd.province_territory_codes AS n WHERE st_contains(n.geometry, fish.original_point);
+UPDATE featurecopy.fishways SET province_territory_code = 'us' WHERE province_territory_code IS NULL;
 UPDATE featurecopy.fishways AS fish SET nhn_watershed_id = n.id FROM cabd.nhn_workunit AS n WHERE st_contains(n.polygon, fish.original_point);
 UPDATE featurecopy.fishways AS fish SET municipality = n.csdname FROM cabd.census_subdivisions AS n WHERE st_contains(n.geometry, fish.original_point);
 

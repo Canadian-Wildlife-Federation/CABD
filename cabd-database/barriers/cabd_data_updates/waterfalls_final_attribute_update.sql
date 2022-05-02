@@ -12,9 +12,8 @@ UPDATE featurecopy.waterfalls SET passability_status_code =
     ELSE NULL END;
 
 --Various spatial joins/queries to populate fields
-UPDATE featurecopy.waterfalls AS falls SET longitude = ST_X(falls.snapped_point);
-UPDATE featurecopy.waterfalls AS falls SET latitude = ST_Y(falls.snapped_point);
 UPDATE featurecopy.waterfalls AS falls SET province_territory_code = n.code FROM cabd.province_territory_codes AS n WHERE st_contains(n.geometry, falls.snapped_point);
+UPDATE featurecopy.waterfalls SET province_territory_code = 'us' WHERE province_territory_code IS NULL;
 UPDATE featurecopy.waterfalls AS falls SET nhn_watershed_id = n.id FROM cabd.nhn_workunit AS n WHERE st_contains(n.polygon, falls.snapped_point);
 UPDATE featurecopy.waterfalls AS falls SET municipality = n.csdname FROM cabd.census_subdivisions AS n WHERE st_contains(n.geometry, falls.snapped_point);
 

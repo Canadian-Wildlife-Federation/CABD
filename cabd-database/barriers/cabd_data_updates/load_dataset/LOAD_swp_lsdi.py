@@ -31,7 +31,7 @@ CREATE TABLE {script.damWorkingTable} AS
         Comments,
         data_source,
         data_source_id
-    FROM {script.sourceTable} WHERE Barr_Type <> 'Waterfall';
+    FROM {script.sourceTable};
 
 ALTER TABLE {script.damWorkingTable} ALTER COLUMN data_source_id SET NOT NULL;
 ALTER TABLE {script.damWorkingTable} ADD PRIMARY KEY (data_source_id);

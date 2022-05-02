@@ -29,7 +29,7 @@ SET
     construction_type_code_ds = CASE WHEN (cabd.construction_type_code IS NULL AND {script.datasetname}.construction_type_code IS NOT NULL) THEN {script.datasetname}.data_source ELSE cabdsource.construction_type_code_ds END,
     use_code_ds = CASE WHEN (cabd.use_code IS NULL AND {script.datasetname}.use_code IS NOT NULL) THEN {script.datasetname}.data_source ELSE cabdsource.use_code_ds END,
     use_electricity_code_ds = CASE WHEN (cabd.use_electricity_code IS NULL AND {script.datasetname}.use_electricity_code IS NOT NULL) THEN {script.datasetname}.data_source ELSE cabdsource.use_electricity_code_ds END,
-    use_invasive_species_code_ds = CASE WHEN (cabd.use_invasive_species_code IS NULL AND {script.datasetname}.use_invasive_species_code IS NOT NULL) THEN {script.datasetname}.data_source ELSE cabdsource.use_invasive_species_code_ds END,
+    use_invasivespecies_code_ds = CASE WHEN (cabd.use_invasivespecies_code IS NULL AND {script.datasetname}.use_invasivespecies_code IS NOT NULL) THEN {script.datasetname}.data_source ELSE cabdsource.use_invasivespecies_code_ds END,
     comments_ds = CASE WHEN (cabd.comments IS NULL AND {script.datasetname}.comments IS NOT NULL) THEN {script.datasetname}.data_source ELSE cabdsource.comments_ds END
 FROM
     {script.damTable} AS cabd,
@@ -48,7 +48,7 @@ SET
     construction_type_code = CASE WHEN (cabd.construction_type_code IS NULL AND {script.datasetname}.construction_type_code IS NOT NULL) THEN {script.datasetname}.construction_type_code ELSE cabd.construction_type_code END,
     use_code = CASE WHEN (cabd.use_code IS NULL AND {script.datasetname}.use_code IS NOT NULL) THEN {script.datasetname}.use_code ELSE cabd.use_code END,
     use_electricity_code = CASE WHEN (cabd.use_electricity_code IS NULL AND {script.datasetname}.use_electricity_code IS NOT NULL) THEN {script.datasetname}.use_electricity_code ELSE cabd.use_electricity_code END,
-    use_invasive_species_code = CASE WHEN (cabd.use_invasive_species_code IS NULL AND {script.datasetname}.use_invasive_species_code IS NOT NULL) THEN {script.datasetname}.use_invasive_species_code ELSE cabd.use_invasive_species_code END,
+    use_invasivespecies_code = CASE WHEN (cabd.use_invasivespecies_code IS NULL AND {script.datasetname}.use_invasivespecies_code IS NOT NULL) THEN {script.datasetname}.use_invasivespecies_code ELSE cabd.use_invasivespecies_code END,
     "comments" = CASE WHEN (cabd.comments IS NULL AND {script.datasetname}.comments IS NOT NULL) THEN {script.datasetname}.comments ELSE cabd.comments END
 FROM
     {script.workingTable} AS {script.datasetname}
