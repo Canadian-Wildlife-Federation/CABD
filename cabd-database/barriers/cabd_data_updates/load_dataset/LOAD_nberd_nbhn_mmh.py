@@ -1,13 +1,13 @@
 import LOAD_main as main
 
-script = main.LoadingScript("nbhn_manmade")
+script = main.LoadingScript("nberd_nbhn_mmh")
 
 query = f"""
 --data source fields
 ALTER TABLE {script.sourceTable} ADD COLUMN data_source varchar;
 ALTER TABLE {script.sourceTable} ADD COLUMN data_source_id varchar;
 UPDATE {script.sourceTable} SET data_source_id = nid;
-UPDATE {script.sourceTable} SET data_source = '41fef339-840f-40c8-b048-5dfc5ae395d0';
+UPDATE {script.sourceTable} SET data_source = (SELECT id FROM cabd.data_source WHERE name = '{script.datasetname}');
 ALTER TABLE {script.sourceTable} ALTER COLUMN data_source TYPE uuid USING data_source::uuid;
 ALTER TABLE {script.sourceTable} ADD CONSTRAINT data_source_fkey FOREIGN KEY (data_source) REFERENCES cabd.data_source (id);
 ALTER TABLE {script.sourceTable} DROP CONSTRAINT {script.datasetname}_pkey;
@@ -15,7 +15,7 @@ ALTER TABLE {script.sourceTable} ADD PRIMARY KEY (data_source_id);
 ALTER TABLE {script.sourceTable} DROP COLUMN fid;
 ALTER TABLE {script.sourceTable} DROP COLUMN geometry;
 
---add new columns, and map attributes
+--add new columns and map attributes
 DROP TABLE IF EXISTS {script.damWorkingTable};
 CREATE TABLE {script.damWorkingTable} AS
     SELECT 

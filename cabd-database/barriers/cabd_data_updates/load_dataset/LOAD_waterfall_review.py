@@ -17,7 +17,7 @@ dbUser = sys.argv[3]
 dbPassword = sys.argv[4]
 
 if dataFile == '':
-    print("Data file required. Usage: LOAD_waterfall_review.py <datafile> <provinceCode> <dbUser> <dbPassword>")
+    print("Data file required. Usage: py LOAD_waterfall_review.py <datafile> <provinceCode> <dbUser> <dbPassword>")
     sys.exit()
 
 #this is the temporary table the data is loaded into
@@ -40,11 +40,13 @@ conn = pg2.connect(database=dbName,
                    password=dbPassword, 
                    port=dbPort)
 
+#note that the attribute table has been created ahead of time with all constraints from production attribute table
 query = f"""
 CREATE SCHEMA IF NOT EXISTS {workingSchema};
 ALTER TABLE {attributeTable} DROP CONSTRAINT IF EXISTS {workingTableRaw}_attribute_source_cabd_id_fkey;
 DROP TABLE IF EXISTS {workingTable} CASCADE;
 TRUNCATE TABLE {attributeTable};
+TRUNCATE TABLE {featureTable};
 """
 
 with conn.cursor() as cursor:
@@ -73,7 +75,7 @@ ALTER TABLE {workingTable} ADD COLUMN waterbody_name_en varchar(512);
 ALTER TABLE {workingTable} ADD COLUMN waterbody_name_fr varchar(512);
 ALTER TABLE {workingTable} DROP COLUMN IF EXISTS province;
 ALTER TABLE {workingTable} ADD COLUMN province_territory_code varchar(2);
-ALTER TABLE {workingTable} ALTER COLUMN nhn_workunit_id TYPE varchar(7);
+ALTER TABLE {workingTable} ALTER COLUMN nhn_watershed_id TYPE varchar(7);
 ALTER TABLE {workingTable} ADD COLUMN municipality varchar(512);
 ALTER TABLE {workingTable} ADD COLUMN fall_height_m real;
 ALTER TABLE {workingTable} ADD COLUMN last_modified date;
@@ -140,7 +142,10 @@ loadQuery = f"""
 
 INSERT INTO {attributeTable} (cabd_id) SELECT cabd_id FROM {workingTable};
 
-ALTER TABLE {attributeTable} ADD CONSTRAINT {workingTableRaw}_cabd_id_fkey FOREIGN KEY (cabd_id) REFERENCES {workingTable} (cabd_id);
+ALTER TABLE {attributeTable} ADD CONSTRAINT {workingTableRaw}_cabd_id_fkey FOREIGN KEY (cabd_id)
+    REFERENCES {workingTable} (cabd_id)
+    ON UPDATE NO ACTION
+    ON DELETE CASCADE;
 
 ALTER TABLE {workingTable}
     ADD CONSTRAINT waterfalls_fk_1 FOREIGN KEY (province_territory_code) REFERENCES cabd.province_territory_codes (code),

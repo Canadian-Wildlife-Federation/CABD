@@ -11,13 +11,13 @@ dbName = "cabd"
 dataFile = ""
 dataFile = sys.argv[1]
 #provinceCode should be 'ab', 'bc', etc. but this is just to grab the correct layer from gpkg
-#e.g., provinceCode of 'atlantic' is fine if the layer you want is named 'atlantic_dam_review'
+#e.g., provinceCode of 'atlantic' is fine if the layer you want is named 'atlantic_fishway_review'
 provinceCode = sys.argv[2]
 dbUser = sys.argv[3]
 dbPassword = sys.argv[4]
 
 if dataFile == '':
-    print("Data file required. Usage: LOAD_fishway_review.py <datafile> <provinceCode> <dbUser> <dbPassword>")
+    print("Data file required. Usage: py LOAD_fishway_review.py <datafile> <provinceCode> <dbUser> <dbPassword>")
     sys.exit()
 
 #this is the temporary table the data is loaded into
@@ -37,11 +37,13 @@ conn = pg2.connect(database=dbName,
                    password=dbPassword, 
                    port=dbPort)
 
+#note that the attribute table has been created ahead of time with all constraints from production attribute table
 query = f"""
 CREATE SCHEMA IF NOT EXISTS {workingSchema};
 ALTER TABLE {attributeTable} DROP CONSTRAINT IF EXISTS {workingTableRaw}_attribute_source_cabd_id_fkey;
 DROP TABLE IF EXISTS {workingTable} CASCADE;
 TRUNCATE TABLE {attributeTable};
+TRUNCATE TABLE {featureTable};
 """
 
 with conn.cursor() as cursor:
@@ -71,7 +73,7 @@ ALTER TABLE {workingTable} ADD COLUMN waterbody_name_en character varying(512);
 ALTER TABLE {workingTable} ADD COLUMN waterbody_name_fr character varying(512);
 ALTER TABLE {workingTable} ADD COLUMN river_name_en character varying(512);
 ALTER TABLE {workingTable} ADD COLUMN river_name_fr character varying(512);
-ALTER TABLE {workingTable} ALTER COLUMN nhn_workunit_id TYPE varchar(7);
+ALTER TABLE {workingTable} ALTER COLUMN nhn_watershed_id TYPE varchar(7);
 ALTER TABLE {workingTable} DROP COLUMN IF EXISTS province;
 ALTER TABLE {workingTable} ADD COLUMN province_territory_code character varying(2);
 ALTER TABLE {workingTable} ADD COLUMN municipality character varying(512);
@@ -114,7 +116,10 @@ ALTER TABLE {workingTable} RENAME COLUMN data_source TO data_source_text;
 UPDATE {workingTable} SET data_source_text = 'cwf_canfish' WHERE data_source_text = '22';
 
 ALTER TABLE {workingTable} ADD COLUMN data_source uuid;
-UPDATE {workingTable} SET data_source = '7fe9e701-d804-40e6-8113-6b2c3656d1bd'::uuid WHERE data_source_text = 'cwf_canfish';
+UPDATE {workingTable} SET data_source = 
+    CASE
+    WHEN data_source_text = 'cwf_canfish' THEN (SELECT id FROM cabd.data_source WHERE name = 'cwf_canfish')
+    ELSE NULL END;
 
 UPDATE {workingTable} SET original_point = ST_GeometryN(geometry, 1);
 CREATE INDEX {workingTableRaw}_idx ON {workingTable} USING gist (original_point);
@@ -129,7 +134,10 @@ loadQuery = f"""
 
 INSERT INTO {attributeTable} (cabd_id) SELECT cabd_id FROM {workingTable};
 
-ALTER TABLE {attributeTable} ADD CONSTRAINT {workingTableRaw}_cabd_id_fkey FOREIGN KEY (cabd_id) REFERENCES {workingTable} (cabd_id);
+ALTER TABLE {attributeTable} ADD CONSTRAINT {workingTableRaw}_cabd_id_fkey FOREIGN KEY (cabd_id)
+    REFERENCES {workingTable} (cabd_id)
+    ON UPDATE NO ACTION
+    ON DELETE CASCADE;
 
 ALTER TABLE {workingTable}
     ADD CONSTRAINT fishways_fk FOREIGN KEY (fishpass_type_code) REFERENCES cabd.upstream_passage_type_codes (code),

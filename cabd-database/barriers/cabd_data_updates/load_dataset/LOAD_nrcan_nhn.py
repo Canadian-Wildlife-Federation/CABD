@@ -1,13 +1,13 @@
 import LOAD_main as main
 
-script = main.LoadingScript("nhn")
+script = main.LoadingScript("nrcan_nhn")
 
 query = f"""
 --data source fields
 ALTER TABLE {script.sourceTable} ADD COLUMN data_source varchar;
 ALTER TABLE {script.sourceTable} ADD COLUMN data_source_id varchar;
 UPDATE {script.sourceTable} SET data_source_id = nid;
-UPDATE {script.sourceTable} SET data_source = '9417da74-5cc8-4efa-8f43-0524fa47996d';
+UPDATE {script.sourceTable} SET data_source = (SELECT id FROM cabd.data_source WHERE name = '{script.datasetname}');
 ALTER TABLE {script.sourceTable} ALTER COLUMN data_source TYPE uuid USING data_source::uuid;
 ALTER TABLE {script.sourceTable} ADD CONSTRAINT data_source_fkey FOREIGN KEY (data_source) REFERENCES cabd.data_source (id);
 ALTER TABLE {script.sourceTable} DROP CONSTRAINT {script.datasetname}_pkey;

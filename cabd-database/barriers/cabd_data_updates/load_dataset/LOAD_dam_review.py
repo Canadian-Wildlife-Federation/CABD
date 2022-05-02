@@ -43,9 +43,10 @@ conn = pg2.connect(database=dbName,
 #note that the attribute table has been created ahead of time with all constraints from production attribute table
 query = f"""
 CREATE SCHEMA IF NOT EXISTS {workingSchema};
-ALTER TABLE {attributeTable} DROP CONSTRAINT IF EXISTS dams_medium_large_attribute_source_cabd_id_fkey;
+ALTER TABLE {attributeTable} DROP CONSTRAINT IF EXISTS dams_cabd_id_fkey;
 DROP TABLE IF EXISTS {workingTable} CASCADE;
 TRUNCATE TABLE {attributeTable};
+TRUNCATE TABLE {featureTable};
 """
 
 with conn.cursor() as cursor:
@@ -79,7 +80,7 @@ ALTER TABLE {workingTable} ADD COLUMN waterbody_name_fr varchar(512);
 ALTER TABLE {workingTable} ADD COLUMN reservoir_name_en varchar(512);
 ALTER TABLE {workingTable} ADD COLUMN reservoir_name_fr varchar(512);
 ALTER TABLE {workingTable} ADD COLUMN watershed_group_code varchar(32);
-ALTER TABLE {workingTable} ALTER COLUMN nhn_workunit_id TYPE varchar(7);
+ALTER TABLE {workingTable} ALTER COLUMN nhn_watershed_id TYPE varchar(7);
 ALTER TABLE {workingTable} DROP COLUMN IF EXISTS province;
 ALTER TABLE {workingTable} ADD COLUMN province_territory_code varchar(2);
 ALTER TABLE {workingTable} ADD COLUMN municipality varchar(512);
@@ -222,7 +223,10 @@ loadQuery = f"""
 
 INSERT INTO {attributeTable} (cabd_id) SELECT cabd_id FROM {workingTable};
 
-ALTER TABLE {attributeTable} ADD CONSTRAINT {workingTableRaw}_cabd_id_fkey FOREIGN KEY (cabd_id) REFERENCES {workingTable} (cabd_id);
+ALTER TABLE {attributeTable} ADD CONSTRAINT {workingTableRaw}_cabd_id_fkey FOREIGN KEY (cabd_id)
+    REFERENCES {workingTable} (cabd_id)
+    ON UPDATE NO ACTION
+    ON DELETE CASCADE;
 
 ALTER TABLE {workingTable}
     ADD CONSTRAINT dams_fk FOREIGN KEY (province_territory_code) REFERENCES cabd.province_territory_codes (code),
