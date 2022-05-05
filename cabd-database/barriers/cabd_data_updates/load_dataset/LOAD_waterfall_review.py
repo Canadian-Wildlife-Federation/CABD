@@ -87,25 +87,6 @@ ALTER TABLE {workingTable} ADD COLUMN passability_status_code smallint;
 
 ALTER TABLE {workingTable} ALTER COLUMN data_source TYPE varchar;
 ALTER TABLE {workingTable} RENAME COLUMN data_source TO data_source_text;
-UPDATE {workingTable} SET data_source_text = 
-    CASE
-    WHEN data_source_text = '1' THEN 'ncc_chu_ab'
-    WHEN data_source_text = '2' THEN 'nse_td_wf'
-    WHEN data_source_text = '5' THEN 'bcflnrord_fwa'
-    WHEN data_source_text = '6' THEN 'aep_bf_hy'
-    WHEN data_source_text = '8' THEN 'mndmnrf_ohn'
-    WHEN data_source_text = '11' THEN 'wid_fishwerks'
-    WHEN data_source_text = '12' THEN 'bceccs_fiss'
-    WHEN data_source_text = '17' THEN 'nrcan_nhn'
-    WHEN data_source_text = '21' THEN 'cwf'
-    WHEN data_source_text = '24' THEN 'nrcan_cgndb'
-    WHEN data_source_text = '26' THEN 'skmoe_hydrography'
-    WHEN data_source_text = '29' THEN 'nrcan_canvec_hyf'
-    WHEN data_source_text = '30' THEN 'wiki_cdn_wfs'
-    WHEN data_source_text = '31' THEN 'nberd_nbhn_ho'
-    WHEN data_source_text = '32' THEN 'mrmaps_nbwf'
-    WHEN data_source_text = '33' THEN 'mrmaps_nswf'
-    ELSE NULL END;
 
 ALTER TABLE {workingTable} ADD COLUMN data_source uuid;
 UPDATE {workingTable} SET data_source = 
