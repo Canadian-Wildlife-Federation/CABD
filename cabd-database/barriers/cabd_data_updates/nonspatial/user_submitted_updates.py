@@ -4,22 +4,16 @@ script = main.MappingScript("user_submitted_updates")
 
 mappingquery = f"""
 
---TO DO: figure out if there is a better system than below for creating new records
---could be based on some column(s) we include in our CSV input to this script?
---we currently would just be hardcoding most of these values
+--TO DO: confirm with Nick that this is an appropriate solution
+--possible that we want to keep this constraint on all the time, but for now just add and delete
 
---code below adds too many rows, will have to figure out how to deal with this
---INSERT INTO cabd.data_source (name, id, source_type)
---SELECT DISTINCT data_source, uuid_generate_v4(), 'non-spatial' FROM {script.sourceTable};
+ALTER TABLE cabd.data_source ADD CONSTRAINT unique_name (name);
 
---create new data source records
-INSERT INTO cabd.data_source (id, name, source, comments, source_type)
-VALUES(
-    uuid_generate_v4(),
-    '...',
-    '...',
-    '...',
-    'non-spatial');
+INSERT INTO cabd.data_source (name, id, source_type)
+    SELECT DISTINCT data_source, uuid_generate_v4(), 'non-spatial' FROM {script.sourceTable}
+    ON CONFLICT DO NOTHING;
+
+ALTER TABLE cabd.data_source DROP CONSTRAINT unique_name;
 
 --add data source ids to the table
 ALTER TABLE {script.sourceTable} RENAME COLUMN data_source to data_source_text;
