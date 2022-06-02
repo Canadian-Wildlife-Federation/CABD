@@ -139,9 +139,6 @@ ALTER TABLE {workingTable} ADD COLUMN passability_status_note text;
 ALTER TABLE {workingTable} ADD COLUMN original_point geometry(POINT, 4617);
 ALTER TABLE {workingTable} ADD COLUMN snapped_point geometry(POINT, 4617);
 
-ALTER TABLE {workingTable} ALTER COLUMN data_source TYPE varchar;
-ALTER TABLE {workingTable} RENAME COLUMN data_source TO data_source_text;
-
 ALTER TABLE {workingTable} ADD COLUMN data_source uuid;
 UPDATE {workingTable} SET data_source = 
     CASE
