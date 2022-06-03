@@ -111,10 +111,6 @@ ALTER TABLE {workingTable} ADD COLUMN fishway_reference_id character varying(256
 ALTER TABLE {workingTable} ADD COLUMN complete_level_code smallint;
 ALTER TABLE {workingTable} ADD COLUMN original_point geometry(Point, 4617);
 
-ALTER TABLE {workingTable} ALTER COLUMN data_source TYPE varchar;
-ALTER TABLE {workingTable} RENAME COLUMN data_source TO data_source_text;
-UPDATE {workingTable} SET data_source_text = 'cwf_canfish' WHERE data_source_text = '22';
-
 ALTER TABLE {workingTable} ADD COLUMN data_source uuid;
 UPDATE {workingTable} SET data_source = 
     CASE

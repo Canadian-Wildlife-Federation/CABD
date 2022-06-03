@@ -81,10 +81,8 @@ ALTER TABLE {workingTable} ADD COLUMN reservoir_name_en varchar(512);
 ALTER TABLE {workingTable} ADD COLUMN reservoir_name_fr varchar(512);
 ALTER TABLE {workingTable} ADD COLUMN watershed_group_code varchar(32);
 ALTER TABLE {workingTable} ALTER COLUMN nhn_watershed_id TYPE varchar(7);
-ALTER TABLE {workingTable} DROP COLUMN IF EXISTS province;
 ALTER TABLE {workingTable} ADD COLUMN province_territory_code varchar(2);
 ALTER TABLE {workingTable} ADD COLUMN municipality varchar(512);
-ALTER TABLE {workingTable} DROP COLUMN IF EXISTS "owner";
 ALTER TABLE {workingTable} ADD COLUMN "owner" varchar(512);
 ALTER TABLE {workingTable} ADD COLUMN ownership_type_code int2;
 ALTER TABLE {workingTable} ADD COLUMN provincial_compliance_status varchar(64);
@@ -141,41 +139,6 @@ ALTER TABLE {workingTable} ADD COLUMN passability_status_note text;
 ALTER TABLE {workingTable} ADD COLUMN original_point geometry(POINT, 4617);
 ALTER TABLE {workingTable} ADD COLUMN snapped_point geometry(POINT, 4617);
 
-ALTER TABLE {workingTable} ALTER COLUMN data_source TYPE varchar;
-ALTER TABLE {workingTable} RENAME COLUMN data_source TO data_source_text;
-UPDATE {workingTable} SET data_source_text = 
-    CASE
-    WHEN data_source_text = '1' THEN 'ncc_chu_ab'
-    WHEN data_source_text = '2' THEN 'nse_td_wf'
-    WHEN data_source_text = '3' THEN 'mndmnrf_odi'
-    WHEN data_source_text = '4' THEN 'bcflnrord_wris_pubdams'
-    WHEN data_source_text = '5' THEN 'bcflnrord_fwa'
-    WHEN data_source_text = '6' THEN 'aep_bf_hy'
-    WHEN data_source_text = '7' THEN 'qmelcc_repbarrages'
-    WHEN data_source_text = '8' THEN 'mndmnrf_ohn'
-    WHEN data_source_text = '9' THEN 'nberd_nbhn_mmh'
-    WHEN data_source_text = '10' THEN 'nse_wcsd_gfielding'
-    WHEN data_source_text = '11' THEN 'wid_fishwerks'
-    WHEN data_source_text = '12' THEN 'bceccs_fiss'
-    WHEN data_source_text = '13' THEN 'bcflnrord_kml_pubdams'
-    WHEN data_source_text = '14' THEN 'nleccm_nlpdi'
-    WHEN data_source_text = '15' THEN 'su_npdp'
-    WHEN data_source_text = '16' THEN 'nrcan_canvec_mm'
-    WHEN data_source_text = '17' THEN 'nrcan_nhn'
-    WHEN data_source_text = '18' THEN 'gdw_goodd'
-    WHEN data_source_text = '19' THEN 'gdw_grand'
-    WHEN data_source_text = '20' THEN 'fao_aquastat'
-    WHEN data_source_text = '21' THEN 'cwf'
-    WHEN data_source_text = '22' THEN 'cwf_canfish'
-    WHEN data_source_text = '23' THEN 'mi_prov_ww'
-    WHEN data_source_text = '24' THEN 'nrcan_cgndb'
-    WHEN data_source_text = '25' THEN 'wsa_sk_owned_dams'
-    WHEN data_source_text = '26' THEN 'skmoe_hydrography'
-    WHEN data_source_text = '27' THEN 'wiki_gs_bc'
-    WHEN data_source_text = '28' THEN 'swp_lsdi'
-    WHEN data_source_text = '34' THEN 'usace_nid'
-    ELSE NULL END;
-
 ALTER TABLE {workingTable} ADD COLUMN data_source uuid;
 UPDATE {workingTable} SET data_source = 
     CASE
@@ -207,6 +170,7 @@ UPDATE {workingTable} SET data_source =
     WHEN data_source_text = 'wiki_gs_bc' THEN (SELECT id FROM cabd.data_source WHERE name = 'wiki_gs_bc')
     WHEN data_source_text = 'swp_lsdi' THEN (SELECT id FROM cabd.data_source WHERE name = 'swp_lsdi')
     WHEN data_source_text = 'usace_nid' THEN (SELECT id FROM cabd.data_source WHERE name = 'usace_nid')
+    WHEN data_source_text = 'megis_impounds' THEN (SELECT id FROM cabd.data_source WHERE name = 'megis_impounds')
     ELSE NULL END;
 
 UPDATE {workingTable} SET original_point = ST_GeometryN(geometry, 1);
@@ -431,6 +395,11 @@ SELECT cabd_id, (SELECT id FROM cabd.data_source WHERE "name" = 'usace_nid'), da
 FROM {workingTable} WHERE data_source_text = 'usace_nid'
 ON CONFLICT DO NOTHING;
 
+INSERT INTO {featureTable} (cabd_id, datasource_id, datasource_feature_id)
+SELECT cabd_id, (SELECT id FROM cabd.data_source WHERE "name" = 'megis_impounds'), data_source_id
+FROM {workingTable} WHERE data_source_text = 'megis_impounds'
+ON CONFLICT DO NOTHING;
+
 --insert rows into feature_source table from named columns
 
 INSERT INTO {featureTable} (cabd_id, datasource_id, datasource_feature_id)
@@ -571,6 +540,11 @@ ON CONFLICT DO NOTHING;
 INSERT INTO {featureTable} (cabd_id, datasource_id, datasource_feature_id)
 SELECT cabd_id, (SELECT id FROM cabd.data_source WHERE "name" = 'usace_nid'), usace_nid
 FROM {workingTable} WHERE usace_nid IS NOT NULL
+ON CONFLICT DO NOTHING;
+
+INSERT INTO {featureTable} (cabd_id, datasource_id, datasource_feature_id)
+SELECT cabd_id, (SELECT id FROM cabd.data_source WHERE "name" = 'megis_impounds'), megis_impounds
+FROM {workingTable} WHERE megis_impounds IS NOT NULL
 ON CONFLICT DO NOTHING;
 
 """

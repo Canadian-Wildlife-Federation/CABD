@@ -44,44 +44,26 @@ FROM featurecopy.waterfalls;
 INSERT INTO waterfalls.waterfalls_attribute_source(
     cabd_id,
     fall_name_en_ds,
-    fall_name_en_dsfid,
     fall_name_fr_ds,
-    fall_name_fr_dsfid,
     waterbody_name_en_ds,
-    waterbody_name_en_dsfid,
     waterbody_name_fr_ds,
-    waterbody_name_fr_dsfid,
     fall_height_m_ds,
-    fall_height_m_dsfid,
     comments_ds,
-    comments_dsfid,
     complete_level_code_ds,
-    complete_level_code_dsfid,
     passability_status_code_ds,
-    passability_status_code_dsfid,
-    original_point_ds,
-    original_point_dsfid
+    original_point_ds
 )
 SELECT
     cabd_id,
     fall_name_en_ds,
-    fall_name_en_dsfid,
     fall_name_fr_ds,
-    fall_name_fr_dsfid,
     waterbody_name_en_ds,
-    waterbody_name_en_dsfid,
     waterbody_name_fr_ds,
-    waterbody_name_fr_dsfid,
     fall_height_m_ds,
-    fall_height_m_dsfid,
     comments_ds,
-    comments_dsfid,
     complete_level_code_ds,
-    complete_level_code_dsfid,
     passability_status_code_ds,
-    passability_status_code_dsfid,
-    original_point_ds,
-    original_point_dsfid
+    original_point_ds
 FROM featurecopy.waterfalls_attribute_source;
 
 INSERT INTO waterfalls.waterfalls_feature_source (cabd_id, datasource_id, datasource_feature_id)
