@@ -63,6 +63,8 @@ print("Adding rows to attribute_source and feature_source tables...")
 
 loadQuery = f"""
 
+TRUNCATE TABLE {featureTable};
+
 --insert any missing rows into attribute_source table (i.e., new features added between import and now)
 
 INSERT INTO {attributeTable} (cabd_id)
@@ -148,6 +150,7 @@ ON CONFLICT DO NOTHING;
 
 
 --insert rows into feature_source table from named columns
+--IMPORTANT: comment out any lines below where column does not exist in your workingTable
 
 INSERT INTO {featureTable} (cabd_id, datasource_id, datasource_feature_id)
 SELECT cabd_id, (SELECT id FROM cabd.data_source WHERE "name" = 'aep_bf_hy'), aep_bf_hy

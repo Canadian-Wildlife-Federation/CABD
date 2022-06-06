@@ -48,6 +48,8 @@ print("Adding rows to attribute_source and feature_source tables...")
 
 loadQuery = f"""
 
+TRUNCATE TABLE {featureTable};
+
 --insert any missing rows into attribute_source table (i.e., new features added between import and now)
 
 INSERT INTO {attributeTable} (cabd_id)
