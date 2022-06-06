@@ -15,7 +15,6 @@ if dataFile == '':
     print('Data file required. Usage: py dams_feature_attribute_source.py <dbUser> <dbPassword>')
     sys.exit()
 
-#this is the temporary table the data is loaded into
 workingSchema = "featurecopy"
 workingTableRaw = "dams"
 workingTable = workingSchema + "." + workingTableRaw
@@ -32,7 +31,6 @@ conn = pg2.connect(database=dbName,
                    password=dbPassword, 
                    port=dbPort)
 
-#add columns from cabd
 print("Adding data source ids...")
 loadQuery = f"""
 
@@ -43,6 +41,7 @@ UPDATE {workingTable} SET data_source =
     WHEN data_source_text = 'bcflnrord_fwa' THEN (SELECT id FROM cabd.data_source WHERE name = 'bcflnrord_fwa')
     WHEN data_source_text = 'bcflnrord_kml_pubdams' THEN (SELECT id FROM cabd.data_source WHERE name = 'bcflnrord_kml_pubdams')
     WHEN data_source_text = 'bcflnrord_wris_pubdams' THEN (SELECT id FROM cabd.data_source WHERE name = 'bcflnrord_wris_pubdams')
+    WHEN data_source_text = 'cwf' THEN (SELECT id FROM cabd.data_source WHERE "name" = 'cwf')
     WHEN data_source_text = 'cwf_canfish' THEN (SELECT id FROM cabd.data_source WHERE name = 'cwf_canfish')
     WHEN data_source_text = 'fao_aquastat' THEN (SELECT id FROM cabd.data_source WHERE name = 'fao_aquastat')
     WHEN data_source_text = 'gdw_goodd' THEN (SELECT id FROM cabd.data_source WHERE name = 'gdw_goodd')
@@ -235,58 +234,8 @@ ON CONFLICT DO NOTHING;
 --insert rows into feature_source table from named columns
 
 INSERT INTO {featureTable} (cabd_id, datasource_id, datasource_feature_id)
-SELECT cabd_id, (SELECT id FROM cabd.data_source WHERE "name" = 'ncc_chu_ab'), ncc_chu_ab
-FROM {workingTable} WHERE ncc_chu_ab IS NOT NULL
-ON CONFLICT DO NOTHING;
-
-INSERT INTO {featureTable} (cabd_id, datasource_id, datasource_feature_id)
-SELECT cabd_id, (SELECT id FROM cabd.data_source WHERE "name" = 'nse_td_wf'), nse_td_wf
-FROM {workingTable} WHERE nse_td_wf IS NOT NULL
-ON CONFLICT DO NOTHING;
-
-INSERT INTO {featureTable} (cabd_id, datasource_id, datasource_feature_id)
-SELECT cabd_id, (SELECT id FROM cabd.data_source WHERE "name" = 'mndmnrf_odi'), mndmnrf_odi
-FROM {workingTable} WHERE mndmnrf_odi IS NOT NULL
-ON CONFLICT DO NOTHING;
-
-INSERT INTO {featureTable} (cabd_id, datasource_id, datasource_feature_id)
-SELECT cabd_id, (SELECT id FROM cabd.data_source WHERE "name" = 'bcflnrord_wris_pubdams'), bcflnrord_wris_pubdams
-FROM {workingTable} WHERE bcflnrord_wris_pubdams IS NOT NULL
-ON CONFLICT DO NOTHING;
-
-INSERT INTO {featureTable} (cabd_id, datasource_id, datasource_feature_id)
-SELECT cabd_id, (SELECT id FROM cabd.data_source WHERE "name" = 'bcflnrord_fwa'), bcflnrord_fwa
-FROM {workingTable} WHERE bcflnrord_fwa IS NOT NULL
-ON CONFLICT DO NOTHING;
-
-INSERT INTO {featureTable} (cabd_id, datasource_id, datasource_feature_id)
 SELECT cabd_id, (SELECT id FROM cabd.data_source WHERE "name" = 'aep_bf_hy'), aep_bf_hy
 FROM {workingTable} WHERE aep_bf_hy IS NOT NULL
-ON CONFLICT DO NOTHING;
-
-INSERT INTO {featureTable} (cabd_id, datasource_id, datasource_feature_id)
-SELECT cabd_id, (SELECT id FROM cabd.data_source WHERE "name" = 'qmelcc_repbarrages'), qmelcc_repbarrages
-FROM {workingTable} WHERE qmelcc_repbarrages IS NOT NULL
-ON CONFLICT DO NOTHING;
-
-INSERT INTO {featureTable} (cabd_id, datasource_id, datasource_feature_id)
-SELECT cabd_id, (SELECT id FROM cabd.data_source WHERE "name" = 'mndmnrf_ohn'), mndmnrf_ohn
-FROM {workingTable} WHERE mndmnrf_ohn IS NOT NULL
-ON CONFLICT DO NOTHING;
-
-INSERT INTO {featureTable} (cabd_id, datasource_id, datasource_feature_id)
-SELECT cabd_id, (SELECT id FROM cabd.data_source WHERE "name" = 'nberd_nbhn_mmh'), nberd_nbhn_mmh
-FROM {workingTable} WHERE nberd_nbhn_mmh IS NOT NULL
-ON CONFLICT DO NOTHING;
-
-INSERT INTO {featureTable} (cabd_id, datasource_id, datasource_feature_id)
-SELECT cabd_id, (SELECT id FROM cabd.data_source WHERE "name" = 'nse_wcsd_gfielding'), nse_wcsd_gfielding
-FROM {workingTable} WHERE nse_wcsd_gfielding IS NOT NULL
-ON CONFLICT DO NOTHING;
-
-INSERT INTO {featureTable} (cabd_id, datasource_id, datasource_feature_id)
-SELECT cabd_id, (SELECT id FROM cabd.data_source WHERE "name" = 'wid_fishwerks'), wid_fishwerks
-FROM {workingTable} WHERE wid_fishwerks IS NOT NULL
 ON CONFLICT DO NOTHING;
 
 INSERT INTO {featureTable} (cabd_id, datasource_id, datasource_feature_id)
@@ -295,28 +244,28 @@ FROM {workingTable} WHERE bceccs_fiss IS NOT NULL
 ON CONFLICT DO NOTHING;
 
 INSERT INTO {featureTable} (cabd_id, datasource_id, datasource_feature_id)
+SELECT cabd_id, (SELECT id FROM cabd.data_source WHERE "name" = 'bcflnrord_fwa'), bcflnrord_fwa
+FROM {workingTable} WHERE bcflnrord_fwa IS NOT NULL
+ON CONFLICT DO NOTHING;
+
+INSERT INTO {featureTable} (cabd_id, datasource_id, datasource_feature_id)
 SELECT cabd_id, (SELECT id FROM cabd.data_source WHERE "name" = 'bcflnrord_kml_pubdams'), bcflnrord_kml_pubdams
 FROM {workingTable} WHERE bcflnrord_kml_pubdams IS NOT NULL
 ON CONFLICT DO NOTHING;
 
 INSERT INTO {featureTable} (cabd_id, datasource_id, datasource_feature_id)
-SELECT cabd_id, (SELECT id FROM cabd.data_source WHERE "name" = 'nleccm_nlpdi'), nleccm_nlpdi
-FROM {workingTable} WHERE nleccm_nlpdi IS NOT NULL
+SELECT cabd_id, (SELECT id FROM cabd.data_source WHERE "name" = 'bcflnrord_wris_pubdams'), bcflnrord_wris_pubdams
+FROM {workingTable} WHERE bcflnrord_wris_pubdams IS NOT NULL
 ON CONFLICT DO NOTHING;
 
 INSERT INTO {featureTable} (cabd_id, datasource_id, datasource_feature_id)
-SELECT cabd_id, (SELECT id FROM cabd.data_source WHERE "name" = 'su_npdp'), su_npdp
-FROM {workingTable} WHERE su_npdp IS NOT NULL
+SELECT cabd_id, (SELECT id FROM cabd.data_source WHERE "name" = 'cwf_canfish'), cwf_canfish
+FROM {workingTable} WHERE cwf_canfish IS NOT NULL
 ON CONFLICT DO NOTHING;
 
 INSERT INTO {featureTable} (cabd_id, datasource_id, datasource_feature_id)
-SELECT cabd_id, (SELECT id FROM cabd.data_source WHERE "name" = 'nrcan_canvec_mm'), nrcan_canvec_mm
-FROM {workingTable} WHERE nrcan_canvec_mm IS NOT NULL
-ON CONFLICT DO NOTHING;
-
-INSERT INTO {featureTable} (cabd_id, datasource_id, datasource_feature_id)
-SELECT cabd_id, (SELECT id FROM cabd.data_source WHERE "name" = 'nrcan_nhn'), nrcan_nhn
-FROM {workingTable} WHERE nrcan_nhn IS NOT NULL
+SELECT cabd_id, (SELECT id FROM cabd.data_source WHERE "name" = 'fao_aquastat'), fao_aquastat
+FROM {workingTable} WHERE fao_aquastat IS NOT NULL
 ON CONFLICT DO NOTHING;
 
 INSERT INTO {featureTable} (cabd_id, datasource_id, datasource_feature_id)
@@ -330,13 +279,8 @@ FROM {workingTable} WHERE gdw_grand IS NOT NULL
 ON CONFLICT DO NOTHING;
 
 INSERT INTO {featureTable} (cabd_id, datasource_id, datasource_feature_id)
-SELECT cabd_id, (SELECT id FROM cabd.data_source WHERE "name" = 'fao_aquastat'), fao_aquastat
-FROM {workingTable} WHERE fao_aquastat IS NOT NULL
-ON CONFLICT DO NOTHING;
-
-INSERT INTO {featureTable} (cabd_id, datasource_id, datasource_feature_id)
-SELECT cabd_id, (SELECT id FROM cabd.data_source WHERE "name" = 'cwf_canfish'), cwf_canfish
-FROM {workingTable} WHERE cwf_canfish IS NOT NULL
+SELECT cabd_id, (SELECT id FROM cabd.data_source WHERE "name" = 'megis_impounds'), megis_impounds
+FROM {workingTable} WHERE megis_impounds IS NOT NULL
 ON CONFLICT DO NOTHING;
 
 INSERT INTO {featureTable} (cabd_id, datasource_id, datasource_feature_id)
@@ -345,13 +289,58 @@ FROM {workingTable} WHERE mi_prov_ww IS NOT NULL
 ON CONFLICT DO NOTHING;
 
 INSERT INTO {featureTable} (cabd_id, datasource_id, datasource_feature_id)
+SELECT cabd_id, (SELECT id FROM cabd.data_source WHERE "name" = 'mndmnrf_odi'), mndmnrf_odi
+FROM {workingTable} WHERE mndmnrf_odi IS NOT NULL
+ON CONFLICT DO NOTHING;
+
+INSERT INTO {featureTable} (cabd_id, datasource_id, datasource_feature_id)
+SELECT cabd_id, (SELECT id FROM cabd.data_source WHERE "name" = 'mndmnrf_ohn'), mndmnrf_ohn
+FROM {workingTable} WHERE mndmnrf_ohn IS NOT NULL
+ON CONFLICT DO NOTHING;
+
+INSERT INTO {featureTable} (cabd_id, datasource_id, datasource_feature_id)
+SELECT cabd_id, (SELECT id FROM cabd.data_source WHERE "name" = 'nberd_nbhn_mmh'), nberd_nbhn_mmh
+FROM {workingTable} WHERE nberd_nbhn_mmh IS NOT NULL
+ON CONFLICT DO NOTHING;
+
+INSERT INTO {featureTable} (cabd_id, datasource_id, datasource_feature_id)
+SELECT cabd_id, (SELECT id FROM cabd.data_source WHERE "name" = 'ncc_chu_ab'), ncc_chu_ab
+FROM {workingTable} WHERE ncc_chu_ab IS NOT NULL
+ON CONFLICT DO NOTHING;
+
+INSERT INTO {featureTable} (cabd_id, datasource_id, datasource_feature_id)
+SELECT cabd_id, (SELECT id FROM cabd.data_source WHERE "name" = 'nleccm_nlpdi'), nleccm_nlpdi
+FROM {workingTable} WHERE nleccm_nlpdi IS NOT NULL
+ON CONFLICT DO NOTHING;
+
+INSERT INTO {featureTable} (cabd_id, datasource_id, datasource_feature_id)
+SELECT cabd_id, (SELECT id FROM cabd.data_source WHERE "name" = 'nrcan_canvec_mm'), nrcan_canvec_mm
+FROM {workingTable} WHERE nrcan_canvec_mm IS NOT NULL
+ON CONFLICT DO NOTHING;
+
+INSERT INTO {featureTable} (cabd_id, datasource_id, datasource_feature_id)
 SELECT cabd_id, (SELECT id FROM cabd.data_source WHERE "name" = 'nrcan_cgndb'), nrcan_cgndb
 FROM {workingTable} WHERE nrcan_cgndb IS NOT NULL
 ON CONFLICT DO NOTHING;
 
 INSERT INTO {featureTable} (cabd_id, datasource_id, datasource_feature_id)
-SELECT cabd_id, (SELECT id FROM cabd.data_source WHERE "name" = 'wsa_sk_owned_dams'), wsa_sk_owned_dams
-FROM {workingTable} WHERE wsa_sk_owned_dams IS NOT NULL
+SELECT cabd_id, (SELECT id FROM cabd.data_source WHERE "name" = 'nrcan_nhn'), nrcan_nhn
+FROM {workingTable} WHERE nrcan_nhn IS NOT NULL
+ON CONFLICT DO NOTHING;
+
+INSERT INTO {featureTable} (cabd_id, datasource_id, datasource_feature_id)
+SELECT cabd_id, (SELECT id FROM cabd.data_source WHERE "name" = 'nse_td_wf'), nse_td_wf
+FROM {workingTable} WHERE nse_td_wf IS NOT NULL
+ON CONFLICT DO NOTHING;
+
+INSERT INTO {featureTable} (cabd_id, datasource_id, datasource_feature_id)
+SELECT cabd_id, (SELECT id FROM cabd.data_source WHERE "name" = 'nse_wcsd_gfielding'), nse_wcsd_gfielding
+FROM {workingTable} WHERE nse_wcsd_gfielding IS NOT NULL
+ON CONFLICT DO NOTHING;
+
+INSERT INTO {featureTable} (cabd_id, datasource_id, datasource_feature_id)
+SELECT cabd_id, (SELECT id FROM cabd.data_source WHERE "name" = 'qmelcc_repbarrages'), qmelcc_repbarrages
+FROM {workingTable} WHERE qmelcc_repbarrages IS NOT NULL
 ON CONFLICT DO NOTHING;
 
 INSERT INTO {featureTable} (cabd_id, datasource_id, datasource_feature_id)
@@ -360,8 +349,8 @@ FROM {workingTable} WHERE skmoe_hydrography IS NOT NULL
 ON CONFLICT DO NOTHING;
 
 INSERT INTO {featureTable} (cabd_id, datasource_id, datasource_feature_id)
-SELECT cabd_id, (SELECT id FROM cabd.data_source WHERE "name" = 'wiki_gs_bc'), wiki_gs_bc
-FROM {workingTable} WHERE wiki_gs_bc IS NOT NULL
+SELECT cabd_id, (SELECT id FROM cabd.data_source WHERE "name" = 'su_npdp'), su_npdp
+FROM {workingTable} WHERE su_npdp IS NOT NULL
 ON CONFLICT DO NOTHING;
 
 INSERT INTO {featureTable} (cabd_id, datasource_id, datasource_feature_id)
@@ -375,8 +364,18 @@ FROM {workingTable} WHERE usace_nid IS NOT NULL
 ON CONFLICT DO NOTHING;
 
 INSERT INTO {featureTable} (cabd_id, datasource_id, datasource_feature_id)
-SELECT cabd_id, (SELECT id FROM cabd.data_source WHERE "name" = 'megis_impounds'), megis_impounds
-FROM {workingTable} WHERE megis_impounds IS NOT NULL
+SELECT cabd_id, (SELECT id FROM cabd.data_source WHERE "name" = 'wid_fishwerks'), wid_fishwerks
+FROM {workingTable} WHERE wid_fishwerks IS NOT NULL
+ON CONFLICT DO NOTHING;
+
+INSERT INTO {featureTable} (cabd_id, datasource_id, datasource_feature_id)
+SELECT cabd_id, (SELECT id FROM cabd.data_source WHERE "name" = 'wiki_gs_bc'), wiki_gs_bc
+FROM {workingTable} WHERE wiki_gs_bc IS NOT NULL
+ON CONFLICT DO NOTHING;
+
+INSERT INTO {featureTable} (cabd_id, datasource_id, datasource_feature_id)
+SELECT cabd_id, (SELECT id FROM cabd.data_source WHERE "name" = 'wsa_sk_owned_dams'), wsa_sk_owned_dams
+FROM {workingTable} WHERE wsa_sk_owned_dams IS NOT NULL
 ON CONFLICT DO NOTHING;
 
 """
