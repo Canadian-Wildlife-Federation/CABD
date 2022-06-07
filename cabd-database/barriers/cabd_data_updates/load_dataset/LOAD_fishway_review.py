@@ -40,7 +40,7 @@ conn = pg2.connect(database=dbName,
 #note that the attribute table has been created ahead of time with all constraints from production attribute table
 query = f"""
 CREATE SCHEMA IF NOT EXISTS {workingSchema};
-ALTER TABLE {attributeTable} DROP CONSTRAINT IF EXISTS {workingTableRaw}_attribute_source_cabd_id_fkey;
+ALTER TABLE {attributeTable} DROP CONSTRAINT IF EXISTS {workingTableRaw}_cabd_id_fkey;
 DROP TABLE IF EXISTS {workingTable} CASCADE;
 TRUNCATE TABLE {attributeTable};
 TRUNCATE TABLE {featureTable};
