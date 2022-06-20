@@ -11,10 +11,6 @@ dbName = "cabd"
 dbUser = sys.argv[1]
 dbPassword = sys.argv[2]
 
-if dataFile == '':
-    print('Data file required. Usage: py waterfalls_feature_attribute_source.py <dbUser> <dbPassword>')
-    sys.exit()
-
 workingSchema = "featurecopy"
 workingTableRaw = "waterfalls"
 workingTable = workingSchema + "." + workingTableRaw
