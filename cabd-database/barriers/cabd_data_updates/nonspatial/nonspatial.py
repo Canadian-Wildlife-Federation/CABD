@@ -29,6 +29,9 @@ class MappingScript:
     liveDamTable = liveSchema + ".dams"
     liveDamAttributeTable = liveSchema + ".dams_attribute_source"
 
+    liveFishTable = liveSchema + ".fishways"
+    liveFishAttributeTable = liveSchema + ".fishways_attribute_source"
+
     datasetName = ""
 
     dsUuid = uuid4()
