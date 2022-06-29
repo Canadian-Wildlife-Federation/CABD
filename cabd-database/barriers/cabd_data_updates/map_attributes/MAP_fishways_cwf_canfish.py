@@ -21,6 +21,7 @@ UPDATE
     {script.fishwayAttributeTable} AS cabdsource
 SET    
     structure_name_en_ds = CASE WHEN (cabd.structure_name_en IS NULL AND {script.datasetname}.structure_name_en IS NOT NULL) THEN {script.datasetname}.data_source ELSE cabdsource.structure_name_en_ds END,   
+    structure_name_fr_ds = CASE WHEN (cabd.structure_name_fr IS NULL AND {script.datasetname}.structure_name_fr IS NOT NULL) THEN {script.datasetname}.data_source ELSE cabdsource.structure_name_fr_ds END,   
     river_name_en_ds = CASE WHEN (cabd.river_name_en IS NULL AND {script.datasetname}.river_name_en IS NOT NULL) THEN {script.datasetname}.data_source ELSE cabdsource.river_name_en_ds END,   
     fishpass_type_code_ds = CASE WHEN (cabd.fishpass_type_code IS NULL AND {script.datasetname}.fishpass_type_code IS NOT NULL) THEN {script.datasetname}.data_source ELSE cabdsource.fishpass_type_code_ds END,
     monitoring_equipment_ds = CASE WHEN (cabd.monitoring_equipment IS NULL AND {script.datasetname}.monitoring_equipment IS NOT NULL) THEN {script.datasetname}.data_source ELSE cabdsource.monitoring_equipment_ds END,
@@ -55,6 +56,7 @@ UPDATE
     {script.fishwayTable} AS cabd
 SET
     structure_name_en = CASE WHEN (cabd.structure_name_en IS NULL AND {script.datasetname}.structure_name_en IS NOT NULL) THEN {script.datasetname}.structure_name_en ELSE cabd.structure_name_en END,
+    structure_name_fr = CASE WHEN (cabd.structure_name_fr IS NULL AND {script.datasetname}.structure_name_fr IS NOT NULL) THEN {script.datasetname}.structure_name_fr ELSE cabd.structure_name_fr END,
     river_name_en = CASE WHEN (cabd.river_name_en IS NULL AND {script.datasetname}.river_name_en IS NOT NULL) THEN {script.datasetname}.river_name_en ELSE cabd.river_name_en END,
     fishpass_type_code = CASE WHEN (cabd.fishpass_type_code IS NULL AND {script.datasetname}.fishpass_type_code IS NOT NULL) THEN {script.datasetname}.fishpass_type_code ELSE cabd.fishpass_type_code END,
     monitoring_equipment = CASE WHEN (cabd.monitoring_equipment IS NULL AND {script.datasetname}.monitoring_equipment IS NOT NULL) THEN {script.datasetname}.monitoring_equipment ELSE cabd.monitoring_equipment END,
