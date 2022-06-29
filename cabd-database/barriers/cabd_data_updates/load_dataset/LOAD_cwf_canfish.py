@@ -110,7 +110,7 @@ UPDATE {script.fishWorkingTable} SET entrance_position_code =
     WHEN entrance_position_water_column ILIKE 'Bottom and Surface' THEN 3
     WHEN entrance_position_water_column = 'Mid-column' THEN 4
     ELSE NULL END;
-UPDATE {script.fishWorkingTable} SET modified = post_construction_modification::bool USING post_construction_modification::bool;
+UPDATE {script.fishWorkingTable} SET modified = cast(post_construction_modification as boolean);
 UPDATE {script.fishWorkingTable} SET modification_year = cast(date_of_modification as integer);
 UPDATE {script.fishWorkingTable} SET modification_purpose = modification_reason;
 UPDATE {script.fishWorkingTable} SET year_constructed = cast(date_constructed as integer);
