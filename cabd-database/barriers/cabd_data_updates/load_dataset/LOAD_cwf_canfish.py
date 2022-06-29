@@ -61,6 +61,7 @@ ALTER TABLE {script.fishWorkingTable} ADD COLUMN dam_id uuid;
 ALTER TABLE {script.fishWorkingTable} ADD COLUMN structure_name_en varchar(512);
 ALTER TABLE {script.fishWorkingTable} ADD COLUMN structure_name_fr varchar(512);
 ALTER TABLE {script.fishWorkingTable} ADD COLUMN river_name_en varchar(512);
+ALTER TABLE {script.fishWorkingTable} ADD COLUMN river_name_fr varchar(512);
 ALTER TABLE {script.fishWorkingTable} ADD COLUMN fishpass_type_code int2;
 ALTER TABLE {script.fishWorkingTable} ADD COLUMN purpose text;
 ALTER TABLE {script.fishWorkingTable} ALTER COLUMN designed_on_biology TYPE bool USING designed_on_biology::bool;
@@ -81,6 +82,7 @@ ALTER TABLE {script.fishWorkingTable} ALTER COLUMN species_known_not_to_use_fish
 UPDATE {script.fishWorkingTable} SET structure_name_en = name_of_dam_barrier;
 UPDATE {script.fishWorkingTable} SET structure_name_fr = name_of_dam_barrier WHERE province_territory = 'Quebec';
 UPDATE {script.fishWorkingTable} SET river_name_en = stream_river;
+UPDATE {script.fishWorkingTable} SET river_name_fr = stream_river WHERE province_territory = 'Quebec';
 UPDATE {script.fishWorkingTable} SET fishpass_type_code = 
     CASE 
     WHEN fishway_type IN ('Denil', 'denil', 'Steep pass', 'Alaska steep pass') THEN 1
