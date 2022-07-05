@@ -4,7 +4,7 @@ import subprocess
 import os
 from nhn_data_qa import run_qa
 
-ogr = "C:\\Program Files\\QGIS 3.12\\bin\\ogr2ogr.exe";
+ogr = "C:\\OSGeo4W64\\bin\\ogr2ogr.exe";
 
 
 if len(sys.argv) != 8:
@@ -247,6 +247,14 @@ where e.geometry && b.geometry and
 
 UPDATE {workingSchema}.terminal_node set aoi_id = (SELECT id from {workingSchema}.aoi);
 UPDATE {workingSchema}.terminal_node set geometry = st_snaptogrid(geometry, {snaptogrid});
+
+ALTER SCHEMA {workingSchema} OWNER TO chyf;
+ALTER TABLE {workingSchema}.aoi OWNER TO chyf;
+ALTER TABLE {workingSchema}.delimiter OWNER TO chyf;
+ALTER TABLE {workingSchema}.ecatchment OWNER TO chyf;
+ALTER TABLE {workingSchema}.eflowpath OWNER TO chyf;
+ALTER TABLE {workingSchema}.shoreline OWNER TO chyf;
+ALTER TABLE {workingSchema}.terminal_node OWNER TO chyf;
 
 """
 log(query)
