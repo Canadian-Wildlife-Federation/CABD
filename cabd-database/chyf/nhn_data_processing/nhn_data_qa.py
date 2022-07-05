@@ -16,6 +16,8 @@ def run_qa(conn, workunit):
           message varchar,
           geometry geometry(POINT)
         );
+
+        alter table {workingSchema}.qaerrors owner to chyf;
         
         truncate {workingSchema}.qaerrors;
     """
