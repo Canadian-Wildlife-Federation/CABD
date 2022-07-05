@@ -24,13 +24,15 @@ class MappingScript:
     fishTable = tempSchema + ".fishways"
     fishAttributeTable = tempSchema + ".fishways_attribute_source"
 
-    liveSchema = "dams"
+    liveDamSchema = "dams"
 
-    liveDamTable = liveSchema + ".dams"
-    liveDamAttributeTable = liveSchema + ".dams_attribute_source"
+    liveDamTable = liveDamSchema + ".dams"
+    liveDamAttributeTable = liveDamSchema + ".dams_attribute_source"
 
-    liveFishTable = liveSchema + ".fishways"
-    liveFishAttributeTable = liveSchema + ".fishways_attribute_source"
+    liveFishSchema = "fishways"
+
+    liveFishTable = liveFishSchema + ".fishways"
+    liveFishAttributeTable = liveFishSchema + ".fishways_attribute_source"
 
     datasetName = ""
 

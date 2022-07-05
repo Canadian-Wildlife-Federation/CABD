@@ -8,7 +8,7 @@ mappingquery = f"""
 --possible that we want to keep this constraint on all the time, but for now just add and delete
 --prevents multiple data sources being added for the same data source based on names in csv
 
-ALTER TABLE cabd.data_source ADD CONSTRAINT unique_name (name);
+ALTER TABLE cabd.data_source ADD CONSTRAINT unique_name UNIQUE (name);
 
 INSERT INTO cabd.data_source (name, id, source_type)
     SELECT DISTINCT data_source, uuid_generate_v4(), 'non-spatial' FROM {script.sourceTable}
