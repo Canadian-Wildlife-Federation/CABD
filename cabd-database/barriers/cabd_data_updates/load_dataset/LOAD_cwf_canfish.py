@@ -7,7 +7,7 @@ query = f"""
 --data source fields
 ALTER TABLE {script.sourceTable} ADD COLUMN data_source varchar;
 ALTER TABLE {script.sourceTable} ADD COLUMN data_source_id varchar;
-UPDATE {script.sourceTable} SET data_source_id = fid;
+UPDATE {script.sourceTable} SET data_source_id = canfishpass_id;
 UPDATE {script.sourceTable} SET data_source = (SELECT id FROM cabd.data_source WHERE name = '{script.datasetname}');
 ALTER TABLE {script.sourceTable} ALTER COLUMN data_source TYPE uuid USING data_source::uuid;
 ALTER TABLE {script.sourceTable} ADD CONSTRAINT data_source_fkey FOREIGN KEY (data_source) REFERENCES cabd.data_source (id);
@@ -20,33 +20,34 @@ ALTER TABLE {script.sourceTable} DROP COLUMN geometry;
 DROP TABLE IF EXISTS {script.fishWorkingTable};
 CREATE TABLE {script.fishWorkingTable} AS
     SELECT 
-        "name of dam/barrier",
-        "stream/river",
-        "fishway type",
-        "monitoring equipment",
-        "contracted by",
-        "constructed by",
-        "plans held by",
-        "purpose of fishway",
-        "designed based on biology?",
-        "length of fishway (m)",
-        "elevation (m)",
-        "inclination (%)",
-        "mean channel depth (m)",
-        "bank or midstream entrance",
-        "entrance position in water column",
-        "post_construction modifications?",
-        "date of modification",
-        "reason for modification",
-        "date constructed",
-        "operated by",
-        "period of operation",
-        "evaluating studies",
-        "nature of evaluation studies",
-        "species known to use fishway",
-        "species known not to use fishway",
-        "engineering notes",
-        "operations notes",
+        name_of_dam_barrier,
+        province_territory,
+        stream_river,
+        fishway_type,
+        monitoring_equipment,
+        contracted_by,
+        constructed_by,
+        plans_held_by,
+        purpose_of_fishway,
+        designed_on_biology,
+        length_fishway_m,
+        elevation_fishway_m,
+        inclination_pct,
+        mean_channel_depth_m,
+        bank_midstream_entrance,
+        entrance_position_water_column,
+        post_construction_modification,
+        date_of_modification,
+        modification_reason,
+        date_constructed,
+        operated_by,
+        operation_period,
+        has_evaluating_studies,
+        nature_of_evaluation_studies,
+        species_known_to_use_fishway,
+        species_known_not_to_use_fishway,
+        engineering_notes,
+        operating_notes,
         data_source,
         data_source_id
     FROM {script.sourceTable};
@@ -57,15 +58,13 @@ ALTER TABLE {script.fishWorkingTable} ADD COLUMN cabd_id uuid;
 ALTER TABLE {script.fishWorkingTable} ADD CONSTRAINT data_source_fkey FOREIGN KEY (data_source) REFERENCES cabd.data_source (id);
 
 ALTER TABLE {script.fishWorkingTable} ADD COLUMN dam_id uuid;
-ALTER TABLE {script.fishWorkingTable} ADD COLUMN dam_name_en varchar(512);
+ALTER TABLE {script.fishWorkingTable} ADD COLUMN structure_name_en varchar(512);
+ALTER TABLE {script.fishWorkingTable} ADD COLUMN structure_name_fr varchar(512);
 ALTER TABLE {script.fishWorkingTable} ADD COLUMN river_name_en varchar(512);
+ALTER TABLE {script.fishWorkingTable} ADD COLUMN river_name_fr varchar(512);
 ALTER TABLE {script.fishWorkingTable} ADD COLUMN fishpass_type_code int2;
-ALTER TABLE {script.fishWorkingTable} ADD COLUMN monitoring_equipment text;
-ALTER TABLE {script.fishWorkingTable} ADD COLUMN contracted_by text;
-ALTER TABLE {script.fishWorkingTable} ADD COLUMN constructed_by text;
-ALTER TABLE {script.fishWorkingTable} ADD COLUMN plans_held_by text;
 ALTER TABLE {script.fishWorkingTable} ADD COLUMN purpose text;
-ALTER TABLE {script.fishWorkingTable} ADD COLUMN designed_on_biology bool;
+ALTER TABLE {script.fishWorkingTable} ALTER COLUMN designed_on_biology TYPE bool USING designed_on_biology::bool;
 ALTER TABLE {script.fishWorkingTable} ADD COLUMN length_m float4;
 ALTER TABLE {script.fishWorkingTable} ADD COLUMN elevation_m float4;
 ALTER TABLE {script.fishWorkingTable} ADD COLUMN gradient float4;
@@ -76,104 +75,63 @@ ALTER TABLE {script.fishWorkingTable} ADD COLUMN modified boolean;
 ALTER TABLE {script.fishWorkingTable} ADD COLUMN modification_year int2;
 ALTER TABLE {script.fishWorkingTable} ADD COLUMN modification_purpose text;
 ALTER TABLE {script.fishWorkingTable} ADD COLUMN year_constructed int2;
-ALTER TABLE {script.fishWorkingTable} ADD COLUMN operated_by text;
-ALTER TABLE {script.fishWorkingTable} ADD COLUMN operation_period text;
-ALTER TABLE {script.fishWorkingTable} ADD COLUMN has_evaluating_studies boolean;
-ALTER TABLE {script.fishWorkingTable} ADD COLUMN nature_of_evaluation_studies text;
-ALTER TABLE {script.fishWorkingTable} ADD COLUMN engineering_notes text;
-ALTER TABLE {script.fishWorkingTable} ADD COLUMN operating_notes text;
-ALTER TABLE {script.fishWorkingTable} ADD COLUMN species_known_to_use_fishway varchar;
-ALTER TABLE {script.fishWorkingTable} ADD COLUMN species_known_not_to_use_fishway varchar;
+ALTER TABLE {script.fishWorkingTable} ALTER COLUMN has_evaluating_studies TYPE bool USING has_evaluating_studies::bool;
+ALTER TABLE {script.fishWorkingTable} ALTER COLUMN species_known_to_use_fishway TYPE varchar;
+ALTER TABLE {script.fishWorkingTable} ALTER COLUMN species_known_not_to_use_fishway TYPE varchar;
 
-UPDATE {script.fishWorkingTable} SET dam_name_en = "name of dam/barrier";
-UPDATE {script.fishWorkingTable} SET river_name_en = "stream/river";
+UPDATE {script.fishWorkingTable} SET structure_name_en = name_of_dam_barrier;
+UPDATE {script.fishWorkingTable} SET structure_name_fr = name_of_dam_barrier WHERE province_territory = 'Quebec';
+UPDATE {script.fishWorkingTable} SET river_name_en = stream_river;
+UPDATE {script.fishWorkingTable} SET river_name_fr = stream_river WHERE province_territory = 'Quebec';
 UPDATE {script.fishWorkingTable} SET fishpass_type_code = 
     CASE 
-    WHEN "fishway type" IN ('Denil', 'denil', 'Steep pass', 'Alaska steep pass') THEN 1
-    WHEN "fishway type" IN ('Runaround', 'Pool and riffle', 'Bypass channel', 'Rock ramp') THEN 2
-    WHEN "fishway type" ILIKE '%weir%' THEN 3
-    WHEN "fishway type" IN ('Pool and orifice', 'Notch') THEN 4
-    WHEN "fishway type" ILIKE 'Vertical slot' THEN 6
-    WHEN "fishway type" IN ('Eel ladder', 'Other') THEN 7
+    WHEN fishway_type IN ('Denil', 'denil', 'Steep pass', 'Alaska steep pass') THEN 1
+    WHEN fishway_type IN ('Runaround', 'Pool and riffle', 'Bypass channel', 'Rock ramp') THEN 2
+    WHEN fishway_type ILIKE '%weir%' THEN 3
+    WHEN fishway_type IN ('Pool and orifice', 'Notch') THEN 4
+    WHEN fishway_type ILIKE 'Vertical slot' THEN 6
+    WHEN fishway_type IN ('Eel ladder', 'Other') THEN 7
     ELSE NULL END;
-UPDATE {script.fishWorkingTable} SET
-     monitoring_equipment = "monitoring equipment",
-     contracted_by = "contracted by",
-     constructed_by = "constructed by",
-     plans_held_by = "plans held by",
-     purpose = "purpose of fishway";
-UPDATE {script.fishWorkingTable} SET designed_on_biology = 
-    CASE 
-    WHEN "designed based on biology?" ILIKE 'Yes' THEN true
-    WHEN "designed based on biology?" = 'No' THEN false
-    ELSE NULL END;
+UPDATE {script.fishWorkingTable} SET purpose = purpose_of_fishway;
 UPDATE {script.fishWorkingTable} SET 
-    length_m = cast("length of fishway (m)" as double precision),
-    elevation_m = cast("elevation (m)" as double precision),
-    gradient = cast("inclination (%)" as double precision),
-    depth_m = cast("mean channel depth (m)" as double precision);
+    length_m = cast(length_fishway_m as double precision),
+    elevation_m = cast(elevation_fishway_m as double precision),
+    gradient = cast(inclination_pct as double precision),
+    depth_m = cast(mean_channel_depth_m as double precision);
 UPDATE {script.fishWorkingTable} SET entrance_location_code =    
     CASE 
-    WHEN "bank or midstream entrance" = 'Midstream' THEN 1
-    WHEN "bank or midstream entrance" = 'Bank' THEN 2
+    WHEN bank_midstream_entrance = 'Midstream' THEN 1
+    WHEN bank_midstream_entrance = 'Bank' THEN 2
     ELSE NULL END;
 UPDATE {script.fishWorkingTable} SET entrance_position_code = 
     CASE 
-    WHEN "entrance position in water column" = 'Bottom' THEN 1
-    WHEN "entrance position in water column" = 'Surface' THEN 2
-    WHEN "entrance position in water column" ILIKE 'Bottom and Surface' THEN 3
-    WHEN "entrance position in water column" = 'Mid-column' THEN 4
+    WHEN entrance_position_water_column = 'Bottom' THEN 1
+    WHEN entrance_position_water_column = 'Surface' THEN 2
+    WHEN entrance_position_water_column ILIKE 'Bottom and Surface' THEN 3
+    WHEN entrance_position_water_column = 'Mid-column' THEN 4
     ELSE NULL END;
-UPDATE {script.fishWorkingTable} SET modified = 
-    CASE 
-    WHEN "post_construction modifications?" ILIKE 'Yes' THEN true
-    WHEN "post_construction modifications?" = 'No' THEN false
-    ELSE NULL END;
-UPDATE {script.fishWorkingTable} SET modification_year = cast("date of modification" as integer);
-UPDATE {script.fishWorkingTable} SET modification_purpose = "reason for modification";
-UPDATE {script.fishWorkingTable} SET year_constructed = cast("date constructed" as integer);
-UPDATE {script.fishWorkingTable} SET operated_by = "operated by";
-UPDATE {script.fishWorkingTable} SET operation_period = "period of operation";
-UPDATE {script.fishWorkingTable} SET has_evaluating_studies =
-    CASE WHEN "evaluating studies" = 'Yes' THEN true
-    WHEN "evaluating studies" = 'No' THEN false
-    ELSE NULL END;
-UPDATE {script.fishWorkingTable} SET 
-    nature_of_evaluation_studies = "nature of evaluation studies",
-    engineering_notes = "engineering notes",
-    operating_notes = "operations notes",
-    species_known_to_use_fishway = "species known to use fishway",
-    species_known_not_to_use_fishway = "species known not to use fishway";
+UPDATE {script.fishWorkingTable} SET modified = cast(post_construction_modification as boolean);
+UPDATE {script.fishWorkingTable} SET modification_year = cast(date_of_modification as integer);
+UPDATE {script.fishWorkingTable} SET modification_purpose = modification_reason;
+UPDATE {script.fishWorkingTable} SET year_constructed = cast(date_constructed as integer);
 
 --delete extra fields so only mapped fields remain
  ALTER TABLE {script.fishWorkingTable}
-    DROP COLUMN "name of dam/barrier",
-    DROP COLUMN "stream/river",
-    DROP COLUMN "fishway type",
-    DROP COLUMN "monitoring equipment",
-    DROP COLUMN "contracted by",
-    DROP COLUMN "constructed by",
-    DROP COLUMN "plans held by",
-    DROP COLUMN "purpose of fishway",
-    DROP COLUMN "designed based on biology?",
-    DROP COLUMN "length of fishway (m)",
-    DROP COLUMN "elevation (m)",
-    DROP COLUMN "inclination (%)",
-    DROP COLUMN "mean channel depth (m)",
-    DROP COLUMN "bank or midstream entrance",
-    DROP COLUMN "entrance position in water column",
-    DROP COLUMN "post_construction modifications?",
-    DROP COLUMN "date of modification",
-    DROP COLUMN "reason for modification",
-    DROP COLUMN "date constructed",
-    DROP COLUMN "operated by",
-    DROP COLUMN "period of operation",
-    DROP COLUMN "evaluating studies",
-    DROP COLUMN "nature of evaluation studies",
-    DROP COLUMN "engineering notes",
-    DROP COLUMN "operations notes",
-    DROP COLUMN "species known to use fishway",
-    DROP COLUMN "species known not to use fishway";
+    DROP COLUMN name_of_dam_barrier,
+    DROP COLUMN province_territory,
+    DROP COLUMN stream_river,
+    DROP COLUMN fishway_type,
+    DROP COLUMN purpose_of_fishway,
+    DROP COLUMN length_fishway_m,
+    DROP COLUMN elevation_fishway_m,
+    DROP COLUMN inclination_pct,
+    DROP COLUMN mean_channel_depth_m,
+    DROP COLUMN bank_midstream_entrance,
+    DROP COLUMN entrance_position_water_column,
+    DROP COLUMN post_construction_modification,
+    DROP COLUMN date_of_modification,
+    DROP COLUMN modification_reason,
+    DROP COLUMN date_constructed;
 
 
 --create species mapping table
