@@ -17,8 +17,11 @@ package org.refractions.cabd.model;
 
 import java.sql.Date;
 import java.util.List;
+import java.util.Locale;
 
 import org.locationtech.jts.geom.Geometry;
+import org.refractions.cabd.CabdApplication;
+import org.springframework.context.i18n.LocaleContextHolder;
 
 /**
  * Contains details about a feature
@@ -27,12 +30,10 @@ import org.locationtech.jts.geom.Geometry;
  * @author Emily
  *
  */
-public class FeatureViewMetadataField {
+public class FeatureViewMetadataField extends NamedDescriptionItem {
 
 	private String fieldName;
-	private String name;
-	private String description;
-
+	
 	private String datatype;
 	private Integer simpleOrder;
 	private Integer allOrder;
@@ -46,12 +47,12 @@ public class FeatureViewMetadataField {
 	
 	private List<FeatureTypeListValue> valueOptions;
 	
-	public FeatureViewMetadataField(String fieldName, String name, String description, 
+	public FeatureViewMetadataField(String fieldName, String name_en, String description_en,
+			String name_fr, String description_fr,
 			boolean isLink, String datatype, Integer simpleOrder, Integer allOrder,
 			boolean includeVectorTile, String validValues) {
+		super(name_en, name_fr, description_en, description_fr);
 		this.fieldName = fieldName;
-		this.name = name;
-		this.description = description;
 		this.isLink = isLink;
 		this.datatype = datatype;
 		this.simpleOrder = simpleOrder;
@@ -103,13 +104,7 @@ public class FeatureViewMetadataField {
 	public String getFieldName() {
 		return fieldName;
 	}
-	public String getName() {
-		return name;
-	}
-	public String getDescription() {
-		return description;
-	}
-	
+		
 	public boolean isGeometry() {
 		return this.isGeometry;
 	}

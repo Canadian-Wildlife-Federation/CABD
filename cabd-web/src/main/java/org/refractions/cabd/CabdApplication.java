@@ -16,6 +16,8 @@
 package org.refractions.cabd;
 
 import java.nio.charset.Charset;
+import java.util.Arrays;
+import java.util.Locale;
 
 import javax.sql.DataSource;
 
@@ -25,7 +27,10 @@ import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.http.MediaType;
+import org.springframework.web.servlet.LocaleResolver;
+import org.springframework.web.servlet.i18n.AcceptHeaderLocaleResolver;
 
 @SpringBootApplication()
 @ComponentScan(basePackages = {"org.refractions.cabd"})
@@ -63,7 +68,6 @@ public class CabdApplication extends SpringBootServletInitializer {
     	
     	String user = System.getProperty(DB_USER_ENV);
     	if (user == null) user = System.getenv(DB_USER_ENV);
-    	
     	String password = System.getProperty(DB_PASS_ENV);
     	if (password == null) password= System.getenv(DB_PASS_ENV);
     	
@@ -79,6 +83,17 @@ public class CabdApplication extends SpringBootServletInitializer {
         return dataSourceBuilder.build();
     }
     
+    @Bean
+    public LocaleResolver sessionLocaleResolver() {
+        AcceptHeaderLocaleResolver localeResolver = new AcceptHeaderLocaleResolver();
+        localeResolver.setDefaultLocale(Locale.ENGLISH);
+        localeResolver.setSupportedLocales(Arrays.asList(Locale.ENGLISH, Locale.FRENCH));
+        return localeResolver;
+    }
+    
+    public static final boolean isFrench() {
+    	return (LocaleContextHolder.getLocale().getLanguage() == Locale.FRENCH.getLanguage()) ;
+    }
     
 //    @Bean
 //    public HttpMessageConverters customConverters() {

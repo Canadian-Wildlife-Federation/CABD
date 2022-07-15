@@ -180,6 +180,7 @@ public enum GeoJsonUtils {
 		sb.append("[");
 		
 		for (int i = 0; i < mp.getNumGeometries(); i++) {
+			if (i != 0) sb.append(",");
 			sb.append(polygon((Polygon) mp.getGeometryN(i)));
 		}
 		sb.append("]");
@@ -191,6 +192,7 @@ public enum GeoJsonUtils {
 		sb.append("[");
 		sb.append(coordinates(p.getExteriorRing().getCoordinateSequence()));
 		for (int i = 0; i < p.getNumInteriorRing(); i++) {
+			if (i != 0) sb.append(",");
 			sb.append(coordinates(p.getInteriorRingN(i).getCoordinateSequence()));
 		}
 		sb.append("]");
@@ -202,6 +204,7 @@ public enum GeoJsonUtils {
 		StringBuilder sb = new StringBuilder();
 		sb.append("[");
 		for (int i = 0; i < cs.size(); i++) {
+			if (i != 0) sb.append(",");
 			sb.append(coordinate(cs.getX(i), cs.getY(i)));
 		}
 		sb.append("]");
@@ -212,6 +215,7 @@ public enum GeoJsonUtils {
 		StringBuilder sb = new StringBuilder();
 		sb.append("[");
 		for (int i = 0; i < cs.length; i++) {
+			if (i != 0) sb.append(",");
 			sb.append(coordinate(cs[i].x, cs[i].y));
 		}
 		sb.append("]");

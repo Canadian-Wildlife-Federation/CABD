@@ -51,13 +51,14 @@ public class FeatureTypeDao {
 	
 	@Autowired
 	private JdbcTemplate jdbcTemplate;
-	
+		
 	/**
 	 * Mapper for feature type query to FeatureType 
 	 */
 	private RowMapper<FeatureType> typeMapper = (rs, rownum)-> 
 		new FeatureType(rs.getString("type"), rs.getString("data_view"), 
-				rs.getString("name"), rs.getString("attribute_source_table"),
+				rs.getString("name_en"), rs.getString("name_fr"), 
+				rs.getString("attribute_source_table"),
 				rs.getString("feature_source_table"),
 				rs.getString("default_featurename_field"));
 		
@@ -66,18 +67,21 @@ public class FeatureTypeDao {
 	 */
 	private RowMapper<FeatureViewMetadataField> viewMetadataMapper = (rs, rownum) -> 
 		new FeatureViewMetadataField(
-				rs.getString("field_name"), rs.getString("name"), 
-				rs.getString("description"), rs.getBoolean("is_link"),
+				rs.getString("field_name"), rs.getString("name_en"), 
+				rs.getString("description_en"), rs.getString("name_fr"),
+				rs.getString("description_fr"), rs.getBoolean("is_link"),
 				rs.getString("data_type"), (Integer)rs.getObject("vw_simple_order"),
 				(Integer)rs.getObject("vw_all_order"), rs.getBoolean("include_vector_tile"), 
 				rs.getString("value_options_reference"));
 
 	
 	private RowMapper<FeatureTypeListValue> validValueMapper = (rs, rownum) ->
-		new FeatureTypeListValue(rs.getObject("value"), rs.getString("name"), rs.getString("description"));
+		new FeatureTypeListValue(rs.getObject("value"), rs.getString("name_en"),
+				rs.getString("name_fr"),rs.getString("description_en"), rs.getString("description_fr"));
 		
 	public FeatureTypeDao() {
 	}
+	
 	
 	/**
 	 * Gets all feature types configured in the database.
@@ -85,7 +89,7 @@ public class FeatureTypeDao {
 	 * @return
 	 */
 	public List<FeatureType> getFeatureTypes(){
-		String query = "SELECT type, data_view, name, attribute_source_table, feature_source_table, default_featurename_field FROM " + FEATURE_TYPE_TABLE;
+		String query = "SELECT type, data_view, name_en, name_fr, attribute_source_table, feature_source_table, default_featurename_field FROM " + FEATURE_TYPE_TABLE;
 		return jdbcTemplate.query(query, typeMapper);		
 	}
 	
@@ -97,7 +101,9 @@ public class FeatureTypeDao {
 	public FeatureViewMetadata getViewMetadata(String view) {
 
 		StringBuilder sb = new StringBuilder();
-		sb.append("SELECT field_name, name, description, is_link, data_type, ");
+		sb.append("SELECT field_name, ");
+		sb.append("name_en, description_en, name_fr, description_fr,");
+		sb.append("is_link, data_type, ");
 		sb.append("vw_simple_order, vw_all_order, include_vector_tile, value_options_reference ");
 		sb.append(" FROM ");
 		sb.append(FEATURE_METADATA_TABLE);
@@ -120,7 +126,8 @@ public class FeatureTypeDao {
 		sb.append("SELECT f_geometry_column, srid ");
 		sb.append("FROM public.geometry_columns ");
 		sb.append("WHERE f_table_schema = ? and f_table_name = ?");
-		List<Map<String, Object>> columns = jdbcTemplate.queryForList(sb.toString(), schema, tablename);
+		//assumption here is that there is an _en table for the view
+		List<Map<String, Object>> columns = jdbcTemplate.queryForList(sb.toString(), schema, tablename + "_en");
 		
 		for (FeatureViewMetadataField f : fields) {
 			
@@ -150,15 +157,19 @@ public class FeatureTypeDao {
 			
 			sb = new StringBuilder();
 			sb.append("SELECT ");
-			sb.append(valuefield);
-			sb.append(" as value, ");
-			sb.append(namefield);
-			sb.append(" as name, ");
-			if (descfield != null) {
-				sb.append(descfield);
-				sb.append(" as description ");
+			if (valuefield != null) {
+				sb.append(valuefield + " as value, ");
 			}else {
-				sb.append("null as description ");
+				sb.append("null as value, ");
+			}
+			sb.append(namefield + "_en as name_en, ");
+			sb.append(namefield + "_fr as name_fr, ");
+			if (descfield != null) {
+				sb.append(descfield + "_en as description_en,");
+				sb.append(descfield + "_fr as description_fr");
+			}else {
+				sb.append("null as description_en, ");
+				sb.append("null as description_fr ");
 			}
 			sb.append(" FROM ");
 			sb.append(listtable);
@@ -200,7 +211,7 @@ public class FeatureTypeDao {
 		if (dataFields.isEmpty()) return Collections.emptyMap();
 		sb.delete(sb.length()-2, sb.length());
 		sb.append(" FROM ");
-		sb.append(type.getDataView());
+		sb.append(type.getDataViewName());
 		
 		Map<FeatureViewMetadataField, FeatureViewMetadataFieldData> data = jdbcTemplate.query(sb.toString(), new ResultSetExtractor<Map<FeatureViewMetadataField, FeatureViewMetadataFieldData>>() {
 

@@ -27,6 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.Cache.ValueWrapper;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.cache.CacheManager;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -148,8 +149,8 @@ public class ClusterVectorTileController {
 
 	private String getTileKey(int z, int x, int y, FeatureType layer) {
 		String ft = "all";
-		if (layer != null) ft = layer.getName();
-		return "c_" + ft + "_" + z + "_" + x + "_" + y;
+		if (layer != null) ft = layer.getType();
+		return "c_" + ft + "_" + z + "_" + x + "_" + y + "_" + LocaleContextHolder.getLocale().getLanguage().toLowerCase();
 	}
 	
 }

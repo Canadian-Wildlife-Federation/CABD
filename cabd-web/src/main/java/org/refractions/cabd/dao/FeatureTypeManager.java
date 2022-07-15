@@ -107,12 +107,12 @@ public class FeatureTypeManager {
         this.setFeatureTypes( typeDao.getFeatureTypes() );      
         
         for (FeatureType t : types) {
-        	FeatureViewMetadata metadata = typeDao.getViewMetadata(t.getDataView());
+        	FeatureViewMetadata metadata = typeDao.getViewMetadata(t.getDataViewName());
         	validateMetadata(t, metadata);
         	t.setViewMetadata( metadata );
         }
         
-        allViewMetadata = typeDao.getViewMetadata(FeatureViewMetadata.ALL_FEATURES_VIEW);
+        allViewMetadata = typeDao.getViewMetadata(FeatureViewMetadata.ALL_FEATURES_VIEW_ROOT);
         validateMetadata(null, allViewMetadata);
     }
 
@@ -140,8 +140,8 @@ public class FeatureTypeManager {
 			if (!hasid) throw new InvalidDatabaseConfigException(MessageFormat.format("The feature type ''{0}'' linked to the view ''{1}'' has no {2} column.  This column is required and should be configured in the database table {3}.", type.getType(), metadata.getFeatureView(), FeatureDao.ID_FIELD, FeatureTypeDao.FEATURE_METADATA_TABLE));
 			if (!hasgeom) throw new InvalidDatabaseConfigException(MessageFormat.format("The feature type ''{0}'' linked to the view ''{1}'' has no geometry column field.  This column is required and should be configured in the database table {1}.", type.getType(), metadata.getFeatureView(), FeatureTypeDao.FEATURE_METADATA_TABLE));
 		}else {
-			if (!hasid) throw new InvalidDatabaseConfigException(MessageFormat.format("The view ''{0}'' has no {1} column.  This column is required and should be configured in the database table {2}.", FeatureViewMetadata.ALL_FEATURES_VIEW, FeatureDao.ID_FIELD, FeatureTypeDao.FEATURE_METADATA_TABLE));
-			if (!hasgeom) throw new InvalidDatabaseConfigException(MessageFormat.format("The view ''{0}'' has no geometry column field.  This column is required and should be configured in the database table {1}.", FeatureViewMetadata.ALL_FEATURES_VIEW, FeatureTypeDao.FEATURE_METADATA_TABLE));
+			if (!hasid) throw new InvalidDatabaseConfigException(MessageFormat.format("The view ''{0}'' has no {1} column.  This column is required and should be configured in the database table {2}.", FeatureViewMetadata.getAllFeaturesView(), FeatureDao.ID_FIELD, FeatureTypeDao.FEATURE_METADATA_TABLE));
+			if (!hasgeom) throw new InvalidDatabaseConfigException(MessageFormat.format("The view ''{0}'' has no geometry column field.  This column is required and should be configured in the database table {1}.", FeatureViewMetadata.getAllFeaturesView(), FeatureTypeDao.FEATURE_METADATA_TABLE));
 		}
 	}
 	

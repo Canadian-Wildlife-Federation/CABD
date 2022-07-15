@@ -21,27 +21,21 @@ package org.refractions.cabd.model;
  * @author Emily
  *
  */
-public class FeatureTypeListValue {
+public class FeatureTypeListValue extends NamedDescriptionItem{
 
 	private Object value;
-	private String name;
-	private String description;
 	
-	public FeatureTypeListValue(Object value, String name, String description) {
+	
+	public FeatureTypeListValue(Object value, String name_en, 
+			String name_fr, String description_en, String description_fr) {
+		super(name_en, name_fr, description_en, description_fr);
+		
 		this.value = value;
-		this.name = name;
-		this.description = description;
 	}
 	
 	public Object getValue() {
+		if (this.value == null) return getName();
 		return this.value;
 	}
 	
-	public String getName() {
-		return this.name;
-	}
-	
-	public String getDescription() {
-		return this.description;
-	}
 }

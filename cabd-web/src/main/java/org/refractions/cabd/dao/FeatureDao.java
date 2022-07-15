@@ -97,7 +97,7 @@ public class FeatureDao {
 	public Feature getFeature(UUID uuid) {
 		String type = null;
 		try {
-			String query = "SELECT " + FEATURE_TYPE_FIELD  + " FROM " + FeatureViewMetadata.ALL_FEATURES_VIEW + " WHERE " + ID_FIELD + " = ? ";
+			String query = "SELECT " + FEATURE_TYPE_FIELD  + " FROM " + FeatureViewMetadata.getAllFeaturesView() + " WHERE " + ID_FIELD + " = ? ";
 			type = jdbcTemplate.queryForObject(query, String.class, uuid);
 		}catch(EmptyResultDataAccessException ex) {
 			return null;
@@ -622,7 +622,7 @@ public class FeatureDao {
 			sb.append("SELECT ");
 			sb.append(FEATURE_TYPE_FIELD);
 			sb.append(" FROM ");
-			sb.append( FeatureViewMetadata.ALL_FEATURES_VIEW);
+			sb.append( FeatureViewMetadata.getAllFeaturesView());
 			sb.append(" WHERE ");
 			sb.append( ID_FIELD);
 			sb.append( " = ? ");
@@ -676,8 +676,8 @@ public class FeatureDao {
 		sb.append(" ), ");
 		sb.append("	mvtgeom AS (");
 		
-		String schema = FeatureViewMetadata.ALL_FEATURES_VIEW .split("\\.")[0];
-		String table = FeatureViewMetadata.ALL_FEATURES_VIEW .split("\\.")[1];
+		String schema = FeatureViewMetadata.getAllFeaturesView() .split("\\.")[0];
+		String table = FeatureViewMetadata.getAllFeaturesView() .split("\\.")[1];
 		
 		if (ftype != null) {
 			schema = ftype.getDataView().split("\\.")[0];
