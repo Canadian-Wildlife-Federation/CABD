@@ -17,11 +17,8 @@ package org.refractions.cabd.model;
 
 import java.sql.Date;
 import java.util.List;
-import java.util.Locale;
 
 import org.locationtech.jts.geom.Geometry;
-import org.refractions.cabd.CabdApplication;
-import org.springframework.context.i18n.LocaleContextHolder;
 
 /**
  * Contains details about a feature
