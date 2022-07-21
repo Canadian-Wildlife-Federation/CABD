@@ -1,3 +1,6 @@
+--create extension postgis;
+--create extension "uuid-ossp";
+
 drop schema if exists chyf2 cascade;
 create schema chyf2;
 
@@ -32,6 +35,7 @@ create index terminal_point_aoi_id_idx on chyf2.terminal_point(aoi_id);
 
 create table chyf2.ecatchment(
   id uuid not null primary key,
+  nid varchar(32),
   ec_type smallint not null check (ec_type in(1,2,3,4,5)),
   ec_subtype smallint,
   area double precision not null,
@@ -51,6 +55,7 @@ create table chyf2.nexus(
 
 create table chyf2.eflowpath(
   id uuid not null primary key,
+  nid varchar(32),
   ef_type smallint not null check (ef_type in (1,2,3,4)),
   ef_subtype smallint check (ef_subtype in (10, 20, 99)),
   rank smallint not null,
