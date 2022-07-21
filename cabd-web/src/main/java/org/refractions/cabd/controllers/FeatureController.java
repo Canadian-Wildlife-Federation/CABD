@@ -16,7 +16,6 @@
 package org.refractions.cabd.controllers;
 
 import java.text.MessageFormat;
-import java.util.List;
 import java.util.UUID;
 
 import javax.servlet.http.HttpServletRequest;
@@ -68,9 +67,7 @@ public class FeatureController {
 	
 	@Autowired
 	FeatureTypeManager typeManager;
-	
-
-	
+		
 	/**
 	 * Gets an individual feature by identifier
 	 * 
@@ -98,6 +95,7 @@ public class FeatureController {
 		
 		Feature f = featureDao.getFeature(id);
 		if (f == null) throw new NotFoundException(MessageFormat.format("No feature with id ''{0}'' found.", id));
+		
 		return ResponseEntity.ok(f);
 	}
 	
@@ -143,11 +141,11 @@ public class FeatureController {
 		if (btype == null) throw new NotFoundException(MessageFormat.format("The feature type ''{0}'' is not supported.", type));
 		
 		if (parameters.getSearchPoint() != null) {
-			return ResponseEntity.ok(new FeatureList(featureDao.getFeatures(btype, parameters.getSearchPoint(), parameters.getMaxResults(), parameters.getFilter(), parameters.getAttributeSet())));
+			return ResponseEntity.ok(featureDao.getFeatures(btype, parameters.getSearchPoint(), parameters.getMaxResults(), parameters.getFilter(), parameters.getAttributeSet()));
 		}
 		
-		List<Feature> features = featureDao.getFeatures(btype, parameters.getEnvelope(), parameters.getMaxResults(), parameters.getFilter(), parameters.getAttributeSet());
-		return ResponseEntity.ok(new FeatureList(features));
+		FeatureList features = featureDao.getFeatures(btype, parameters.getEnvelope(), parameters.getMaxResults(), parameters.getFilter(), parameters.getAttributeSet());
+		return ResponseEntity.ok(features);
 	}
 	
 	/**
@@ -183,11 +181,10 @@ public class FeatureController {
 		ParsedRequestParameters parameters = params.parseAndValidate(typeManager);
 
 		if (parameters.getSearchPoint() != null) {
-			return ResponseEntity.ok(new FeatureList(featureDao.getFeatures(parameters.getFeatureTypes(), parameters.getSearchPoint(), parameters.getMaxResults(), parameters.getFilter(), parameters.getAttributeSet())));
+			return ResponseEntity.ok(featureDao.getFeatures(parameters.getFeatureTypes(), parameters.getSearchPoint(), parameters.getMaxResults(), parameters.getFilter(), parameters.getAttributeSet()));
 		}
 		
-		FeatureList flist = new FeatureList(featureDao.getFeatures(parameters.getFeatureTypes(), parameters.getEnvelope(), parameters.getMaxResults(), parameters.getFilter(), parameters.getAttributeSet()));
-		
+		FeatureList flist = featureDao.getFeatures(parameters.getFeatureTypes(), parameters.getEnvelope(), parameters.getMaxResults(), parameters.getFilter(), parameters.getAttributeSet());
 		return ResponseEntity.ok(flist);
 	}
 		

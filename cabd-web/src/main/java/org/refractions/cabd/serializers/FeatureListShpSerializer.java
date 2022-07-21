@@ -56,7 +56,7 @@ import org.springframework.stereotype.Component;
  *
  */
 @Component
-public class FeatureListShpSerializer extends AbstractHttpMessageConverter<FeatureList>{
+public class FeatureListShpSerializer extends AbstractFeatureListSerializer{
 
 	@Autowired
 	private FeatureTypeManager typeManager;
@@ -70,21 +70,11 @@ public class FeatureListShpSerializer extends AbstractHttpMessageConverter<Featu
 	}
 
 	@Override
-	protected boolean supports(Class<?> clazz) {
-		return FeatureList.class.isAssignableFrom(clazz);
-	}
-
-
-	@Override
-	protected FeatureList readInternal(Class<? extends FeatureList> clazz, HttpInputMessage inputMessage)
-			throws IOException, HttpMessageNotReadableException {
-		return null;
-	}
-
-	@Override
 	protected void writeInternal(FeatureList features, HttpOutputMessage outputMessage)
 			throws IOException, HttpMessageNotWritableException {
-	
+		
+		super.writeInternal(features, outputMessage);
+		
 		if (features.getItems().isEmpty()) return;
 		
 		ImmutableTriple<String, FeatureViewMetadata, Envelope> metadataitems = FeatureListUtil.getMetadata(features, typeManager);
