@@ -1,5 +1,6 @@
 import psycopg2 as pg2
 import sys
+from datetime import datetime
 
 if len(sys.argv) != 7:
     print("Invalid Usage: flowpath_2_chyf.py <host> <port> <dbname> <dbuser> <dbpassword> <dataschema> ")
@@ -14,6 +15,8 @@ dbPassword = sys.argv[5]
 schema = sys.argv[6]
 
 chyfschema = "chyf2"
+
+startTime = datetime.now()
 
 #status flag for aoi to be copied over
 readystatus = "CHYF_READY"
@@ -446,4 +449,4 @@ copy_to_production(conn)
 conn.commit()
 
 print ("LOAD DONE")
-
+print("Runtime: " + str((datetime.now() - startTime)))

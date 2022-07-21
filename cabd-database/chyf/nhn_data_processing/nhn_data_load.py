@@ -4,8 +4,9 @@ import subprocess
 import os
 from nhn_data_qa import run_qa
 
+#alternate ogr option
 #ogr = "C:\\OSGeo4W64\\bin\\ogr2ogr.exe";
-ogr= "C:\\Program Files\\QGIS 3.22.3\\bin\\ogr2ogr.exe"
+ogr = "C:\\Program Files\\QGIS 3.22.3\\bin\\ogr2ogr.exe"
 
 
 if len(sys.argv) != 8:
