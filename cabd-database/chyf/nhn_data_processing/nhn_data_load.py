@@ -142,10 +142,10 @@ UPDATE {workingSchema}.eflowpath set ef_subtype = CASE
 --fix empty strings in name fields
 UPDATE {workingSchema}.eflowpath SET geographicalnamedb = TRIM(geographicalnamedb);
 UPDATE {workingSchema}.eflowpath SET geographicalnamedb = NULL WHERE geographicalnamedb = '';
-UPDATE {workingSchema}.eflowpath SET nameid1 = NULL WHERE nameid1 = '';
-UPDATE {workingSchema}.eflowpath SET nameid2 = NULL WHERE nameid2 = '';
-UPDATE {workingSchema}.eflowpath SET name1 = NULL WHERE name1 = '';
-UPDATE {workingSchema}.eflowpath SET name2 = NULL WHERE name2 = '';
+UPDATE {workingSchema}.eflowpath SET nameid1 = NULL WHERE TRIM(nameid1) = '';
+UPDATE {workingSchema}.eflowpath SET nameid2 = NULL WHERE TRIM(nameid2) = '';
+UPDATE {workingSchema}.eflowpath SET name1 = NULL WHERE TRIM(name1) = '';
+UPDATE {workingSchema}.eflowpath SET name2 = NULL WHERE TRIM(name2) = '';
 
 --digitized in opposite direction
 UPDATE {workingSchema}.eflowpath set geometry = reverse(geometry) where flowdirection = 2;
@@ -178,14 +178,14 @@ ELSE 99 END;
 --fix empty strings in name fields
 UPDATE {workingSchema}.ecatchment SET geographicalnamedb = TRIM(geographicalnamedb);
 UPDATE {workingSchema}.ecatchment SET geographicalnamedb = NULL WHERE geographicalnamedb = '';
-UPDATE {workingSchema}.ecatchment SET lakeid1 = NULL WHERE lakeid1 = '';
-UPDATE {workingSchema}.ecatchment SET lakeid2 = NULL WHERE lakeid2 = '';
-UPDATE {workingSchema}.ecatchment SET riverid1 = NULL WHERE riverid1 = '';
-UPDATE {workingSchema}.ecatchment SET riverid2 = NULL WHERE riverid2 = '';
-UPDATE {workingSchema}.ecatchment SET lakename1 = NULL WHERE lakename1 = '';
-UPDATE {workingSchema}.ecatchment SET lakename2 = NULL WHERE lakename2 = '';
-UPDATE {workingSchema}.ecatchment SET rivername1 = NULL WHERE rivername1 = '';
-UPDATE {workingSchema}.ecatchment SET rivername2 = NULL WHERE rivername2 = '';
+UPDATE {workingSchema}.ecatchment SET lakeid1 = NULL WHERE TRIM(lakeid1) = '';
+UPDATE {workingSchema}.ecatchment SET lakeid2 = NULL WHERE TRIM(lakeid2) = '';
+UPDATE {workingSchema}.ecatchment SET riverid1 = NULL WHERE TRIM(riverid1) = '';
+UPDATE {workingSchema}.ecatchment SET riverid2 = NULL WHERE TRIM(riverid2) = '';
+UPDATE {workingSchema}.ecatchment SET lakename1 = NULL WHERE TRIM(lakename1) = '';
+UPDATE {workingSchema}.ecatchment SET lakename2 = NULL WHERE TRIM(lakename2) = '';
+UPDATE {workingSchema}.ecatchment SET rivername1 = NULL WHERE TRIM(rivername1) = '';
+UPDATE {workingSchema}.ecatchment SET rivername2 = NULL WHERE TRIM(rivername2) = '';
  
 --snap to grid to deal with noding problems
 UPDATE {workingSchema}.eflowpath set geometry = ST_RemoveRepeatedPoints(st_snaptogrid(geometry, {snaptogrid}));
