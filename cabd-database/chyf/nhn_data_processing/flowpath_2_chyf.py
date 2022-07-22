@@ -1,5 +1,6 @@
 import psycopg2 as pg2
 import sys
+from datetime import datetime
 
 if len(sys.argv) != 7:
     print("Invalid Usage: flowpath_2_chyf.py <host> <port> <dbname> <dbuser> <dbpassword> <dataschema> ")
@@ -14,6 +15,8 @@ dbPassword = sys.argv[5]
 schema = sys.argv[6]
 
 chyfschema = "chyf2"
+
+startTime = datetime.now()
 
 #status flag for aoi to be copied over
 readystatus = "CHYF_READY"
@@ -343,8 +346,8 @@ def copy_to_production(conn):
         FROM {schema}.shoreline a JOIN {schema}.aoi b on a.aoi_id = b.id
         WHERE b.status = '{readystatus}';
 
-        INSERT into {chyfschema}.ecatchment(id, ec_type, ec_subtype, area, aoi_id, name_id, geometry)
-        SELECT a.internal_id, a.ec_type, a.ec_subtype, st_area(a.geometry::geography), a.aoi_id, c.chyf_name_id, st_transform(a.geometry, 4617) 
+        INSERT into {chyfschema}.ecatchment(id, nid, ec_type, ec_subtype, area, aoi_id, name_id, geometry)
+        SELECT a.internal_id, a.nid, a.ec_type, a.ec_subtype, st_area(a.geometry::geography), a.aoi_id, c.chyf_name_id, st_transform(a.geometry, 4617) 
         FROM {schema}.ecatchment a JOIN {schema}.aoi b on a.aoi_id = b.id JOIN {schema}.ecatchment_extra c on c.internal_id = a.internal_id
         WHERE b.status = '{readystatus}';
         
@@ -355,9 +358,9 @@ def copy_to_production(conn):
         SELECT a.id, a.nexus_type, a.bank_ecatchment_id, st_transform(a.geometry, 4617)
         FROM {schema}.nexus a left join {chyfschema}.nexus b on a.id = b.id where b.id is null;
                 
-        INSERT into {chyfschema}.eflowpath(id, ef_type, ef_subtype, rank, length, 
+        INSERT into {chyfschema}.eflowpath(id, nid, ef_type, ef_subtype, rank, length, 
           name_id, aoi_id, ecatchment_id, from_nexus_id, to_nexus_id, geometry)
-        SELECT a.internal_id, a.ef_type, a.ef_subtype, a.rank, ST_LengthSpheroid(a.geometry, ss), c.chyf_name_id, 
+        SELECT a.internal_id, a.nid, a.ef_type, a.ef_subtype, a.rank, ST_LengthSpheroid(a.geometry, ss), c.chyf_name_id, 
           a.aoi_id, c.ecatchment_id, c.from_nexus_id, c.to_nexus_id, st_transform(a.geometry, 4617) 
         FROM {schema}.eflowpath a JOIN {schema}.aoi b on a.aoi_id = b.id JOIN {schema}.eflowpath_extra c on c.internal_id = a.internal_id, 
           CAST('SPHEROID["GRS_1980",6378137,298.257222101]' As spheroid) ss  
@@ -446,4 +449,4 @@ copy_to_production(conn)
 conn.commit()
 
 print ("LOAD DONE")
-
+print("Runtime: " + str((datetime.now() - startTime)))

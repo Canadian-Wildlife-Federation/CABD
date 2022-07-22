@@ -4,7 +4,9 @@ import subprocess
 import os
 from nhn_data_qa import run_qa
 
+#alternate ogr option
 ogr = "C:\\OSGeo4W64\\bin\\ogr2ogr.exe";
+#ogr = "C:\\Program Files\\QGIS 3.22.3\\bin\\ogr2ogr.exe"
 
 
 if len(sys.argv) != 8:
@@ -122,7 +124,7 @@ ALTER TABLE {workingSchema}.shoreline add column id uuid default uuid_generate_v
 ALTER TABLE {workingSchema}.ecatchment add column id uuid default uuid_generate_v4();
 ALTER TABLE {workingSchema}.eflowpath add column id uuid default uuid_generate_v4();
 
---eflowpatch
+--eflowpath
 --nhnflowpath type  -1 Unknown , 0 - None, 1 - Observed, 2 - Inferred, 3 - Constructed 
 --eftype 1 - REACH, 2-BANK, 3-SKELETON, 4-INFRASTRUCTURE
 --efsubtype  #10 - Observed, 20 - Inferred, 99 - Unspecified
@@ -137,6 +139,13 @@ UPDATE {workingSchema}.eflowpath set ef_subtype = CASE
   WHEN networkFlowType IN (-1, 0) THEN 99
   ELSE 10 END;
 
+--fix empty strings in name fields
+UPDATE {workingSchema}.eflowpath SET geographicalnamedb = TRIM(geographicalnamedb);
+UPDATE {workingSchema}.eflowpath SET geographicalnamedb = NULL WHERE geographicalnamedb = '';
+UPDATE {workingSchema}.eflowpath SET nameid1 = NULL WHERE TRIM(nameid1) = '';
+UPDATE {workingSchema}.eflowpath SET nameid2 = NULL WHERE TRIM(nameid2) = '';
+UPDATE {workingSchema}.eflowpath SET name1 = NULL WHERE TRIM(name1) = '';
+UPDATE {workingSchema}.eflowpath SET name2 = NULL WHERE TRIM(name2) = '';
 
 --digitized in opposite direction
 UPDATE {workingSchema}.eflowpath set geometry = reverse(geometry) where flowdirection = 2;
@@ -165,6 +174,18 @@ WHEN waterdefinition = 7 then 20
 WHEN waterdefinition = 8 then 12
 WHEN waterdefinition = 10 then 40
 ELSE 99 END;
+
+--fix empty strings in name fields
+UPDATE {workingSchema}.ecatchment SET geographicalnamedb = TRIM(geographicalnamedb);
+UPDATE {workingSchema}.ecatchment SET geographicalnamedb = NULL WHERE geographicalnamedb = '';
+UPDATE {workingSchema}.ecatchment SET lakeid1 = NULL WHERE TRIM(lakeid1) = '';
+UPDATE {workingSchema}.ecatchment SET lakeid2 = NULL WHERE TRIM(lakeid2) = '';
+UPDATE {workingSchema}.ecatchment SET riverid1 = NULL WHERE TRIM(riverid1) = '';
+UPDATE {workingSchema}.ecatchment SET riverid2 = NULL WHERE TRIM(riverid2) = '';
+UPDATE {workingSchema}.ecatchment SET lakename1 = NULL WHERE TRIM(lakename1) = '';
+UPDATE {workingSchema}.ecatchment SET lakename2 = NULL WHERE TRIM(lakename2) = '';
+UPDATE {workingSchema}.ecatchment SET rivername1 = NULL WHERE TRIM(rivername1) = '';
+UPDATE {workingSchema}.ecatchment SET rivername2 = NULL WHERE TRIM(rivername2) = '';
  
 --snap to grid to deal with noding problems
 UPDATE {workingSchema}.eflowpath set geometry = ST_RemoveRepeatedPoints(st_snaptogrid(geometry, {snaptogrid}));
