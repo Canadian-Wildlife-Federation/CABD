@@ -89,19 +89,19 @@ def copytonhnraw(conn):
     select id, '{workunit}', st_transform(geometry, {srid}) from {fromschema}.aoi;
     
     insert into {toschema}.shoreline(id, geometry, aoi_id) 
-    select case when id is null then uuid_generate_v4() else id end, 
+    select case when id is null then gen_random_uuid() else id end, 
     st_transform(geometry, {srid}), aoi_id 
     from {fromschema}.shoreline;
     
     insert into {toschema}.terminal_node(id, geometry, flow_direction, aoi_id) 
-    select case when id is null then uuid_generate_v4() else id end, st_transform(geometry, {srid}), flow_direction, aoi_id 
+    select case when id is null then gen_random_uuid() else id end, st_transform(geometry, {srid}), flow_direction, aoi_id 
     from {fromschema}.terminal_node;
     
     insert into {toschema}.eflowpath(
       id, aoi_id, ef_type, ef_subtype, 
       direction_known, name, name_id, geodbname, geometry
     )
-    select case when id is null then uuid_generate_v4() else id end,
+    select case when id is null then gen_random_uuid() else id end,
       aoi_id, ef_type, ef_subtype, direction_known,
       case when name1 is not null then name1 else name2 end,
       case when name1 is not null then nameid1 else nameid2 end,
@@ -112,7 +112,7 @@ def copytonhnraw(conn):
     insert into {toschema}.ecatchment(
       id, aoi_id, ec_type, ec_subtype, permanency, 
       name, name_id, geodbname, is_reservoir, geometry)
-    select case when id is null then uuid_generate_v4() else id end,
+    select case when id is null then gen_random_uuid() else id end,
       aoi_id, ec_type, ec_subtype, permanency,
       case when lakename1 is not null then lakename1 when lakename2 is not null then lakename2 when rivername1 is not null then rivername1 when rivername2 is not null then rivername2 else null end,
       case when lakename1 is not null then lakeid1 when lakename2 is not null then lakeid2 when rivername1 is not null then riverid1 when rivername2 is not null then riverid2 else null end,
