@@ -21,11 +21,10 @@ chyfschema = "chyf2"
 startTime = datetime.now()
 
 #status flag for aoi to be copied over
-#readystatus = "CHYF_READY"
-readystatus = "CHYF_DONE_TEST"
+readystatus = "CHYF_READY"
 #status flag updated after aoi copied over
-#donestatus = "CHYF_DONE"
-donestatus = "CHYF_DONE_2"
+donestatus = "CHYF_DONE"
+
 
 def log(message):
     if (1):
