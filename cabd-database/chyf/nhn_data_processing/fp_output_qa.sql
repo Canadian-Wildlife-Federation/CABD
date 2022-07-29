@@ -66,7 +66,7 @@ from fpoutput.eflowpath a, fpoutput.eflowpath b, fpoutput.aoi c
 where  a.id != b.id and 
 st_dwithin(a.geometry, b.geometry, 0.000001) and 
 st_disjoint(a.geometry, b.geometry) 
-and a.aoi_id  = c.id and b.aoi_id  = c.id 
+and a.aoi_id = b.aoi_id and a.aoi_id  = c.id and b.aoi_id  = c.id 
 --and c.name = '02HB000'
         
 
@@ -79,6 +79,6 @@ and a.aoi_id  = c.id and b.aoi_id  = c.id
 select a.id, b.id, st_pointonsurface(st_intersection(a.geometry, b.geometry)) as pnt
 from fpoutput.eflowpath a, fpoutput.ecatchment b, fpoutput.aoi c
 WHERE a.ef_type != 3 and a.id != b.id and a.geometry && b.geometry and st_relate(a.geometry, b.geometry, 'T********')
-and a.aoi_id  = c.id and b.aoi_id  = c.id 
+and a.aoi_id = b.aoi_id and a.aoi_id  = c.id and b.aoi_id  = c.id 
 --and c.name = '02HB000'
 
