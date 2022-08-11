@@ -247,60 +247,138 @@ def populate_names(conn):
     
     queries = [
           f"""
+          
+          with allnames as (
+            select distinct a.rivernameid1 as nameid, a.rivername1 as name, a.geodbname as geodbname
+            from {schema}.eflowpath a join {schema}.aoi b on a.aoi_id = b.id
+            where a.rivernameid1 is not null and a.rivernameid1 != ''
+            and a.rivername1 is not null
+            and a.rivernameid1 not in (select geodb_id from {chyfschema}.names )
+            and b.status = '{readystatus}'
+                          
+            union
+          
+            select distinct a.rivernameid2, a.rivername2, a.geodbname
+            from {schema}.eflowpath a join {schema}.aoi b on a.aoi_id = b.id
+            where a.rivernameid2 is not null and a.rivernameid2 != ''
+            and a.rivername2 is not null
+            and a.rivernameid2 not in (select geodb_id from {chyfschema}.names )
+            and b.status = '{readystatus}'
+            
+            union
+            
+            select distinct a.rivernameid1, a.rivername1, a.geodbname
+            from {schema}.ecatchment a join {schema}.aoi b on a.aoi_id = b.id
+            where a.rivernameid1 is not null and a.rivernameid1 != ''
+            and a.rivername1 is not null
+            and a.rivernameid1 not in (select geodb_id from {chyfschema}.names )
+            and b.status = '{readystatus}'
+            
+            union
+            
+            select distinct a.rivernameid2, a.rivername2, a.geodbname
+            from {schema}.ecatchment a join {schema}.aoi b on a.aoi_id = b.id
+            where a.rivernameid2 is not null and a.rivernameid2 != ''
+            and a.rivername2 is not null
+            and a.rivernameid2 not in (select geodb_id from {chyfschema}.names )
+            and b.status = '{readystatus}'
+            
+            union
+        
+            select distinct a.lakenameid1, a.lakename1, a.geodbname
+            from {schema}.ecatchment a join {schema}.aoi b on a.aoi_id = b.id
+            where a.lakenameid1 is not null and a.lakenameid1 != ''
+            and a.lakename1 is not null
+            and a.lakenameid1 not in (select geodb_id from {chyfschema}.names )
+            and b.status = '{readystatus}'
+        
+            union
+            
+            select distinct a.lakenameid2, a.lakename2, a.geodbname
+            from {schema}.ecatchment a join {schema}.aoi b on a.aoi_id = b.id
+            where a.lakenameid2 is not null and a.lakenameid2 != ''
+            and a.lakename2 is not null            
+            and a.lakenameid2 not in (select geodb_id from {chyfschema}.names )
+            and b.status = '{readystatus}'
+
+            union
+          
+            select distinct a.rivernameid1, a.rivername1, a.geodbname
+            from {schema}.terminal_node a join {schema}.aoi b on a.aoi_id = b.id
+            where a.rivernameid1 is not null and a.rivernameid1 != ''
+            and a.rivername1 is not null
+            and a.rivernameid1 not in (select geodb_id from {chyfschema}.names )
+            and b.status = '{readystatus}'
+          
+            union
+          
+            select distinct a.rivernameid2, a.rivername2, a.geodbname
+            from {schema}.terminal_node a join {schema}.aoi b on a.aoi_id = b.id
+            where a.rivernameid2 is not null and a.rivernameid2 != ''
+            and a.rivername2 is not null
+            and a.rivernameid2 not in (select geodb_id from {chyfschema}.names )
+            and b.status = '{readystatus}'
+        )
         --add any new names to the names table that aren't there
-        -- for eflowpaths cgndb
-        insert into {chyfschema}.names (name_id, name_en, name_fr, cgndb_id)
-        select gen_random_uuid(), name, null, name_id::uuid
-        from (
-            select distinct a.name, a.name_id 
-            from {schema}.eflowpath a join {schema}.aoi b on a.aoi_id = b.id  
-            where b.status = '{readystatus}'
-                and a.name_id is not null
-                and a.name_id != ''
-                and a.geodbname = 'CGNDB' 
-                and a.name_id::uuid not in (select cgndb_id from {chyfschema}.names )
-            ) foo;
+        insert into {chyfschema}.names (name_id, name_en, name_fr, geodb_id, geodbname)
+        select gen_random_uuid(), name, null, nameid, geodbname
+        from allnames 
         """,
         
         f"""
-        --update reference for cgndb
-        update {schema}.eflowpath_extra set chyf_name_id = a.name_id
+        --update reference for flowpaths
+        update {schema}.eflowpath_extra set chyf_rivername_id1 = a.name_id
         from {chyfschema}.names a, {schema}.eflowpath b 
         where 
           b.internal_id = {schema}.eflowpath_extra.internal_id and
-          b.geodbname = 'CGNDB' and 
-          a.cgndb_id = b.name_id::uuid and
-          b.name_id is not null and
-          b.name_id != '';
+          a.geodb_id = b.rivernameid1 and
+          b.rivernameid1 is not null and
+          b.rivernameid1 != '';
+          
+        update {schema}.eflowpath_extra set chyf_rivername_id2 = a.name_id
+        from {chyfschema}.names a, {schema}.eflowpath b 
+        where 
+          b.internal_id = {schema}.eflowpath_extra.internal_id and
+          a.geodb_id = b.rivernameid2 and
+          b.rivernameid2 is not null and
+          b.rivernameid2 != '';
         """,
                 
-        f"""
-        --add any new names to the names table that aren't there
-        -- for ecatchments
-        insert into {chyfschema}.names (name_id, name_en, name_fr, cgndb_id)
-        select gen_random_uuid(), name, null, name_id::uuid
-        from (
-            select distinct a.name, a.name_id
-            from {schema}.ecatchment a join {schema}.aoi b on a.aoi_id = b.id
-            where b.status = '{readystatus}'
-                and a.name_id is not null 
-                and a.name_id != ''
-                and a.geodbname = 'CGNDB' 
-                and a.name_id::uuid not in (select cgndb_id from {chyfschema}.names )
-            ) foo;
-        """,
         
         f"""
-        --update reference
-        update {schema}.ecatchment_extra set chyf_name_id = a.name_id
-        from {chyfschema}.names a, {schema}.ecatchment b
+          --update reference for catchments
+        update {schema}.ecatchment_extra set chyf_rivername_id1 = a.name_id
+        from {chyfschema}.names a, {schema}.ecatchment b 
         where 
-            b.internal_id = {schema}.ecatchment_extra.internal_id and
-            b.geodbname = 'CGNDB' and 
-            b.name_id is not null and 
-            b.name_id != '' and
-            a.cgndb_id = b.name_id::uuid;
-        """
+          b.internal_id = {schema}.ecatchment_extra.internal_id and
+          a.geodb_id = b.rivernameid1 and
+          b.rivernameid1 is not null and
+          b.rivernameid1 != '';
+          
+        update {schema}.ecatchment_extra set chyf_rivername_id2 = a.name_id
+        from {chyfschema}.names a, {schema}.ecatchment b 
+        where 
+          b.internal_id = {schema}.ecatchment_extra.internal_id and
+          a.geodb_id = b.rivernameid2 and
+          b.rivernameid2 is not null and
+          b.rivernameid2 != '';
+          
+        update {schema}.ecatchment_extra set chyf_lakename_id1 = a.name_id
+        from {chyfschema}.names a, {schema}.ecatchment b 
+        where 
+          b.internal_id = {schema}.ecatchment_extra.internal_id and
+          a.geodb_id = b.lakenameid1 and
+          b.lakenameid1 is not null and
+          b.lakenameid1 != '';
+          
+        update {schema}.ecatchment_extra set chyf_lakename_id2 = a.name_id
+        from {chyfschema}.names a, {schema}.ecatchment b 
+        where 
+          b.internal_id = {schema}.ecatchment_extra.internal_id and
+          a.geodb_id = b.lakenameid2 and
+          b.lakenameid2 is not null and
+          b.lakenameid2 != '';          
+        """,
     ]
              
     for query in queries:
@@ -321,8 +399,12 @@ def copy_to_production(conn):
         
         "alter table chyf2.eflowpath drop constraint eflowpath_from_nexus_id_fkey;",
         "alter table chyf2.eflowpath drop constraint eflowpath_to_nexus_id_fkey;",
-        "alter table chyf2.eflowpath drop constraint eflowpath_name_id_fkey;",
-        "alter table chyf2.ecatchment drop constraint ecatchment_name_id_fkey;",
+        "alter table chyf2.eflowpath drop constraint eflowpath_rivernameid1_fkey;",
+        "alter table chyf2.eflowpath drop constraint eflowpath_rivernameid2_fkey;",
+        "alter table chyf2.ecatchment drop constraint ecatchment_rivernameid1_fkey;",
+        "alter table chyf2.ecatchment drop constraint ecatchment_rivernameid2_fkey;",
+        "alter table chyf2.ecatchment drop constraint ecatchment_lakenameid1_fkey;",
+        "alter table chyf2.ecatchment drop constraint ecatchment_lakenameid2_fkey;",
         
         f"""
         INSERT into {chyfschema}.aoi (id, short_name, geometry)
@@ -333,8 +415,8 @@ def copy_to_production(conn):
         """, 
         
         f"""
-        INSERT into {chyfschema}.terminal_point(id, aoi_id, flow_direction, geometry)
-        SELECT a.id, a.aoi_id, a.flow_direction, st_transform(a.geometry, 4617) 
+        INSERT into {chyfschema}.terminal_point(id, aoi_id, flow_direction, geodb_rivernameid1, geodb_rivernameid2, rivername1, rivername2, geometry)
+        SELECT a.id, a.aoi_id, a.flow_direction, a.rivernameid1, a.rivernameid2, a.rivername1, a.rivername2, st_transform(a.geometry, 4617) 
         FROM {schema}.terminal_node a JOIN {schema}.aoi b on a.aoi_id = b.id
         WHERE b.status = '{readystatus}';
         """, 
@@ -351,8 +433,8 @@ def copy_to_production(conn):
         "alter table chyf2.ecatchment drop constraint ecatchment_pkey;",
         
         f"""
-        INSERT into {chyfschema}.ecatchment(id, nid, ec_type, ec_subtype, area, aoi_id, name_id, geometry)
-        SELECT a.internal_id, a.nid, a.ec_type, a.ec_subtype, st_area(a.geometry::geography), a.aoi_id, c.chyf_name_id, st_transform(a.geometry, 4617) 
+        INSERT into {chyfschema}.ecatchment(id, nid, ec_type, ec_subtype, area, aoi_id, rivernameid1, rivernameid2, lakenameid1, lakenameid2, geometry)
+        SELECT a.internal_id, a.nid, a.ec_type, a.ec_subtype, st_area(a.geometry::geography), a.aoi_id, c.chyf_rivername_id1, c.chyf_rivername_id2, c.chyf_lakename_id1, c.chyf_lakename_id2, st_transform(a.geometry, 4617) 
         FROM {schema}.ecatchment a JOIN {schema}.aoi b on a.aoi_id = b.id JOIN {schema}.ecatchment_extra c on c.internal_id = a.internal_id
         WHERE b.status = '{readystatus}';
         """, 
@@ -381,8 +463,8 @@ def copy_to_production(conn):
         "drop index chyf2.eflowpath_to_nexus_id_idx;",
         f"""
         INSERT into {chyfschema}.eflowpath(id, nid, ef_type, ef_subtype, rank, length, 
-          name_id, aoi_id, ecatchment_id, from_nexus_id, to_nexus_id, geometry)
-        SELECT a.internal_id, a.nid, a.ef_type, a.ef_subtype, a.rank, ST_LengthSpheroid(a.geometry, ss), c.chyf_name_id, 
+          rivernameid1, rivernameid2, aoi_id, ecatchment_id, from_nexus_id, to_nexus_id, geometry)
+        SELECT a.internal_id, a.nid, a.ef_type, a.ef_subtype, a.rank, ST_LengthSpheroid(a.geometry, ss), c.chyf_rivername_id1, c.chyf_rivername_id2, 
           a.aoi_id, c.ecatchment_id, c.from_nexus_id, c.to_nexus_id, st_transform(a.geometry, 4617) 
         FROM {schema}.eflowpath a JOIN {schema}.aoi b on a.aoi_id = b.id JOIN {schema}.eflowpath_extra c on c.internal_id = a.internal_id, 
           CAST('SPHEROID["GRS_1980",6378137,298.257222101]' As spheroid) ss  
@@ -409,8 +491,13 @@ def copy_to_production(conn):
         "alter table chyf2.eflowpath_attributes add constraint eflowpath_attributes_id_fkey foreign key (id) references chyf2.eflowpath(id);",
         "alter table chyf2.eflowpath add constraint eflowpath_from_nexus_id_fkey foreign key (from_nexus_id) references chyf2.nexus(id);",
         "alter table chyf2.eflowpath add constraint eflowpath_to_nexus_id_fkey foreign key (from_nexus_id) references chyf2.nexus(id);",
-        "alter table chyf2.eflowpath add constraint eflowpath_name_id_fkey foreign key (name_id) references chyf2.names(name_id);",
-        "alter table chyf2.ecatchment add constraint ecatchment_name_id_fkey foreign key (name_id) references chyf2.names(name_id);",
+        "alter table chyf2.eflowpath add constraint eflowpath_rivernameid1_fkey foreign key (rivernameid1) references chyf2.names(name_id);",
+        "alter table chyf2.eflowpath add constraint eflowpath_rivernameid2_fkey foreign key (rivernameid2) references chyf2.names(name_id);",
+        "alter table chyf2.ecatchment add constraint ecatchment_rivernameid1_fkey foreign key (rivernameid1) references chyf2.names(name_id);",
+        "alter table chyf2.ecatchment add constraint ecatchment_rivernameid2_fkey foreign key (rivernameid2) references chyf2.names(name_id);",
+        "alter table chyf2.ecatchment add constraint ecatchment_lakenameid1_fkey foreign key (lakenameid1) references chyf2.names(name_id);",
+        "alter table chyf2.ecatchment add constraint ecatchment_lakenameid2_fkey foreign key (lakenameid2) references chyf2.names(name_id);",
+        
     ]
     
     for query in queries:
@@ -434,14 +521,20 @@ def delete_current(connt):
     
     queries = [ 
         #drop and re-create constraints for performance reasons
-        "alter table chyf2.nexus drop constraint nexus_bank_ecatchment_id_fkey;",
-        "alter table chyf2.eflowpath drop constraint eflowpath_ecatchment_id_fkey;",
-        "alter table chyf2.ecatchment_attributes drop constraint ecatchment_attributes_id_fkey;",
-        "alter table chyf2.eflowpath_attributes drop constraint eflowpath_attributes_id_fkey;",
-        "alter table chyf2.eflowpath drop constraint eflowpath_from_nexus_id_fkey;",
-        "alter table chyf2.eflowpath drop constraint eflowpath_to_nexus_id_fkey;",
-        "alter table chyf2.eflowpath drop constraint eflowpath_name_id_fkey;",
-        "alter table chyf2.ecatchment drop constraint ecatchment_name_id_fkey;",
+        "alter table chyf2.nexus drop constraint nexus_bank_ecatchment_id_fkey",
+        "alter table chyf2.eflowpath drop constraint eflowpath_ecatchment_id_fkey",
+        "alter table chyf2.ecatchment_attributes drop constraint ecatchment_attributes_id_fkey",
+        "alter table chyf2.eflowpath_attributes drop constraint eflowpath_attributes_id_fkey",
+        "alter table chyf2.eflowpath drop constraint eflowpath_from_nexus_id_fkey",
+        "alter table chyf2.eflowpath drop constraint eflowpath_to_nexus_id_fkey",
+        "alter table chyf2.eflowpath drop constraint eflowpath_rivernameid1_fkey",
+        "alter table chyf2.eflowpath drop constraint eflowpath_rivernameid2_fkey",
+        "alter table chyf2.ecatchment drop constraint ecatchment_rivernameid1_fkey",
+        "alter table chyf2.ecatchment drop constraint ecatchment_rivernameid2_fkey",
+        "alter table chyf2.ecatchment drop constraint ecatchment_lakenameid1_fkey",
+        "alter table chyf2.ecatchment drop constraint ecatchment_lakenameid2_fkey",
+        
+        
         #--delete any existing data for aoi
         f"delete from {chyfschema}.eflowpath where aoi_id in (select a.id from {chyfschema}.aoi a, {schema}.aoi b where a.short_name = b.name and b.status = '{readystatus}');",
         f"delete from {chyfschema}.ecatchment where aoi_id in (select a.id from {chyfschema}.aoi a, {schema}.aoi b where a.short_name = b.name and b.status = '{readystatus}');",
@@ -462,14 +555,18 @@ def delete_current(connt):
         "alter table chyf2.eflowpath_attributes add constraint eflowpath_attributes_id_fkey foreign key (id) references chyf2.eflowpath(id);",
         "alter table chyf2.eflowpath add constraint eflowpath_from_nexus_id_fkey foreign key (from_nexus_id) references chyf2.nexus(id);",
         "alter table chyf2.eflowpath add constraint eflowpath_to_nexus_id_fkey foreign key (from_nexus_id) references chyf2.nexus(id);",
-        "alter table chyf2.eflowpath add constraint eflowpath_name_id_fkey foreign key (name_id) references chyf2.names(name_id);",
-        "alter table chyf2.ecatchment add constraint ecatchment_name_id_fkey foreign key (name_id) references chyf2.names(name_id);",
+        "alter table chyf2.eflowpath add constraint eflowpath_rivernameid1_fkey foreign key (rivernameid1) references chyf2.names(name_id);",
+        "alter table chyf2.eflowpath add constraint eflowpath_rivernameid2_fkey foreign key (rivernameid2) references chyf2.names(name_id);",
+        "alter table chyf2.ecatchment add constraint ecatchment_rivernameid1_fkey foreign key (rivernameid1) references chyf2.names(name_id);",
+        "alter table chyf2.ecatchment add constraint ecatchment_rivernameid2_fkey foreign key (rivernameid2) references chyf2.names(name_id);",
+        "alter table chyf2.ecatchment add constraint ecatchment_lakenameid1_fkey foreign key (lakenameid1) references chyf2.names(name_id);",
+        "alter table chyf2.ecatchment add constraint ecatchment_lakenameid2_fkey foreign key (lakenameid2) references chyf2.names(name_id);",
         
         f"drop table if exists {schema}.eflowpath_extra;",
         f"drop table if exists {schema}.ecatchment_extra;",
         
-        f"create table {schema}.eflowpath_extra (internal_id uuid references {schema}.eflowpath(internal_id), ecatchment_id uuid, from_nexus_id uuid, to_nexus_id uuid, chyf_name_id uuid, point geometry(point, 4617), primary key(internal_id));",
-        f"create table {schema}.ecatchment_extra (internal_id uuid references {schema}.ecatchment(internal_id), chyf_name_id uuid, primary key(internal_id));",
+        f"create table {schema}.eflowpath_extra (internal_id uuid references {schema}.eflowpath(internal_id), ecatchment_id uuid, from_nexus_id uuid, to_nexus_id uuid, chyf_rivername_id1 uuid, chyf_rivername_id2 uuid, point geometry(point, 4617), primary key(internal_id));",
+        f"create table {schema}.ecatchment_extra (internal_id uuid references {schema}.ecatchment(internal_id), chyf_lakename_id1 uuid, chyf_lakename_id2 uuid, chyf_rivername_id1 uuid, chyf_rivername_id2 uuid, primary key(internal_id));",
     
         f"insert into {schema}.eflowpath_extra (internal_id, point) select a.internal_id, ST_LineInterpolatePoint(a.geometry, 0.5) from {schema}.eflowpath a join {schema}.aoi b on a.aoi_id = b.id and b.status = '{readystatus}';",
         f"insert into {schema}.ecatchment_extra (internal_id) select a.internal_id from {schema}.ecatchment a join {schema}.aoi b on a.aoi_id = b.id and b.status = '{readystatus}';",

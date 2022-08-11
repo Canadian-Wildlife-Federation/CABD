@@ -174,7 +174,16 @@ UPDATE {workingSchema}.aoi set geometry = ST_RemoveRepeatedPoints(st_snaptogrid(
 UPDATE {workingSchema}.shoreline set geometry = ST_RemoveRepeatedPoints(st_snaptogrid(geometry, {snaptogrid}));
  
 --populate terminal points table the best we can
-CREATE TABLE {workingSchema}.terminal_node(id uuid primary key, aoi_id uuid, flow_direction int, geometry geometry(POINT, {srid}));
+CREATE TABLE {workingSchema}.terminal_node(
+id uuid primary key, 
+aoi_id uuid, 
+flow_direction int,
+rivernameid1 varchar(32),
+rivernameid2 varchar(32),
+rivername1 varchar(32),
+rivername2 varchar(32) ,
+geodbname varchar,
+geometry geometry(POINT, {srid}));
  
 --eflowpath intersections with aoi
 with points as (
@@ -214,9 +223,7 @@ FROM
   ) foo
 ) bar 
 WHERE upper(st_geometrytype(geometry)) = 'ST_POINT';
-
-
-    
+   
 -- linear intersections
 INSERT INTO {workingSchema}.terminal_node(id, geometry) 
 with eintersect as (
@@ -237,7 +244,19 @@ from (
 select st_pointn(geometry, generate_series(1, st_numpoints(geometry))) as geom, uuid, geometry as rawg from eintersect) a
 group by uuid, rawg;
 
+-- apply names to terminal points
+-- this will only work for linear intersections when the centroid of the intersection
+-- is closest to the skeleton line (this is generally the case but it doesn't have to be)
+-- these should be reviewed
+UPDATE {workingSchema}.terminal_node
+SET rivernameid1 = a.nameid1, rivernameid2 = a.nameid2, rivername1 = a.name1, rivername2 = a.name2, geodbname = a.geographicalnamedb
+FROM
+{workingSchema}.eflowpath a
+WHERE st_intersects(a.geometry, {workingSchema}.terminal_node.geometry)
+AND a.ef_type in (1, 3, 4); 
 
+
+--apply flow direction to terminal nodes
 UPDATE {workingSchema}.terminal_node SET flow_direction = z.fd
 FROM (
 select b.id, e.geometry, case when e.flowdirection != 1 then null when st_equals(st_startpoint(e.geometry), b.geometry) then 1 else 2 end as fd
