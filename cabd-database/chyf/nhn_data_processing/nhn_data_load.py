@@ -140,8 +140,7 @@ UPDATE {workingSchema}.eflowpath set ef_subtype = CASE
   ELSE 10 END;
 
 --fix empty strings in name fields
-UPDATE {workingSchema}.eflowpath SET geographicalnamedb = TRIM(geographicalnamedb);
-UPDATE {workingSchema}.eflowpath SET geographicalnamedb = NULL WHERE geographicalnamedb = '';
+UPDATE {workingSchema}.eflowpath SET geographicalnamedb = NULL WHERE TRIM(geographicalnamedb) = '';
 UPDATE {workingSchema}.eflowpath SET nameid1 = NULL WHERE TRIM(nameid1) = '';
 UPDATE {workingSchema}.eflowpath SET nameid2 = NULL WHERE TRIM(nameid2) = '';
 UPDATE {workingSchema}.eflowpath SET name1 = NULL WHERE TRIM(name1) = '';
@@ -176,8 +175,7 @@ WHEN waterdefinition = 10 then 40
 ELSE 99 END;
 
 --fix empty strings in name fields
-UPDATE {workingSchema}.ecatchment SET geographicalnamedb = TRIM(geographicalnamedb);
-UPDATE {workingSchema}.ecatchment SET geographicalnamedb = NULL WHERE geographicalnamedb = '';
+UPDATE {workingSchema}.ecatchment SET geographicalnamedb = NULL WHERE TRIM(geographicalnamedb) = '';
 UPDATE {workingSchema}.ecatchment SET lakeid1 = NULL WHERE TRIM(lakeid1) = '';
 UPDATE {workingSchema}.ecatchment SET lakeid2 = NULL WHERE TRIM(lakeid2) = '';
 UPDATE {workingSchema}.ecatchment SET riverid1 = NULL WHERE TRIM(riverid1) = '';
