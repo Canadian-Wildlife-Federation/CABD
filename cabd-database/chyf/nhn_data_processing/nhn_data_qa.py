@@ -222,6 +222,11 @@ def run_qa(conn, workunit):
                
     conn.commit()
     
+    conn.set_session(autocommit=True)
+    with conn.cursor() as cursor:
+        cursor.execute(f"VACUUM ANALYZE {workingSchema}.qaerrors");
+    conn.set_session(autocommit=False)    
+    
     print ("QA Complete: " + workunit)
 
 

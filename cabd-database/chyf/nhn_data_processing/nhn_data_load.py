@@ -276,6 +276,8 @@ ALTER TABLE {workingSchema}.eflowpath OWNER TO chyf;
 ALTER TABLE {workingSchema}.shoreline OWNER TO chyf;
 ALTER TABLE {workingSchema}.terminal_node OWNER TO chyf;
 
+
+
 """
 log(query)
 
@@ -283,6 +285,18 @@ with conn.cursor() as cursor:
     cursor.execute(query);
 conn.commit();
 
+
+conn.set_session(autocommit=True)
+log(query)
+with conn.cursor() as cursor:
+    cursor.execute(f"VACUUM ANALYZE {workingSchema}.aoi");
+    cursor.execute(f"VACUUM ANALYZE {workingSchema}.delimiter");
+    cursor.execute(f"VACUUM ANALYZE {workingSchema}.ecatchment");
+    cursor.execute(f"VACUUM ANALYZE {workingSchema}.eflowpath");
+    cursor.execute(f"VACUUM ANALYZE {workingSchema}.shoreline");
+    cursor.execute(f"VACUUM ANALYZE {workingSchema}.terminal_node");
+conn.set_session(autocommit=False)    
+    
 run_qa(conn, nhnworkunit)
 
 print ("LOAD DONE")
