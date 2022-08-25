@@ -139,13 +139,7 @@ public class FeatureController {
 
 		FeatureType btype = typeManager.getFeatureType(type);
 		if (btype == null) throw new NotFoundException(MessageFormat.format("The feature type ''{0}'' is not supported.", type));
-		
-		if (parameters.getSearchPoint() != null) {
-			return ResponseEntity.ok(featureDao.getFeatures(btype, parameters.getSearchPoint(), parameters.getMaxResults(), parameters.getFilter(), parameters.getAttributeSet()));
-		}
-		
-		FeatureList features = featureDao.getFeatures(btype, parameters.getEnvelope(), parameters.getMaxResults(), parameters.getFilter(), parameters.getAttributeSet());
-		return ResponseEntity.ok(features);
+		return ResponseEntity.ok(featureDao.getFeatures(btype, parameters));
 	}
 	
 	/**
@@ -179,13 +173,7 @@ public class FeatureController {
 			HttpServletRequest request) {
 
 		ParsedRequestParameters parameters = params.parseAndValidate(typeManager);
-
-		if (parameters.getSearchPoint() != null) {
-			return ResponseEntity.ok(featureDao.getFeatures(parameters.getFeatureTypes(), parameters.getSearchPoint(), parameters.getMaxResults(), parameters.getFilter(), parameters.getAttributeSet()));
-		}
-		
-		FeatureList flist = featureDao.getFeatures(parameters.getFeatureTypes(), parameters.getEnvelope(), parameters.getMaxResults(), parameters.getFilter(), parameters.getAttributeSet());
-		return ResponseEntity.ok(flist);
+		return ResponseEntity.ok(featureDao.getFeatures(parameters.getFeatureTypes(), parameters));
 	}
 		
 }

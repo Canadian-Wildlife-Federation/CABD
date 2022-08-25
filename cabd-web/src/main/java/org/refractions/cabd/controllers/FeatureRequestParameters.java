@@ -22,6 +22,7 @@ import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Envelope;
 import org.refractions.cabd.dao.FeatureDao;
 import org.refractions.cabd.dao.filter.Filter;
+import org.refractions.cabd.dao.filter.NameFilter;
 import org.refractions.cabd.exceptions.InvalidParameterException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,6 +52,9 @@ public class FeatureRequestParameters {
 	@Parameter(name="filter", required = false, description = "The feature filter.")
 	private String[] filter;
 	
+	@Parameter(name="namefilter", required = false, description = "Filters feature by multiple system defined named fields.")
+	private String[] namefilter;
+	
 	@Parameter(name="attributes", required = false, description = "A flag to set if a complete set or limitted set of attributes should be returned.")
 	private AttributeSet attributes;
 	
@@ -59,22 +63,25 @@ public class FeatureRequestParameters {
 	//use a POJO to represent these parameters
 	//I needed custom name for max-results
 	//https://stackoverflow.com/questions/56468760/how-to-collect-all-fields-annotated-with-requestparam-into-one-object
-	@ConstructorProperties({"bbox", "point","max-results", "filter", "attributes"})
+	@ConstructorProperties({"bbox", "point","max-results", "filter", "namefilter", "attributes"})
 	public FeatureRequestParameters(
 			String bbox, 
-			String point, Integer maxResults, String[] filter, String attributes) {
+			String point, Integer maxResults, String[] filter, 
+			String[] namefilter, String attributes) {
 
 		this.bbox = bbox;
 		this.point = point;
 	    this.maxresults = maxResults;
 	    this.filter = filter;
+	    this.namefilter = namefilter;
 	    this.attributes = AttributeSet.parse(attributes);
 	}
 	
 	public String getBbox() { return this.bbox; }
 	public String getPoint() { return this.point; }
 	public Integer getMaxresults() { return maxresults;	}
-	public String[] getFilter() { return filter;	}
+	public String[] getFilter() { return filter; }
+	public String[] getNameFilter() { return namefilter; }
 	public AttributeSet getAttributeSet() { return this.attributes; }
 
 	
@@ -118,7 +125,8 @@ public class FeatureRequestParameters {
 				throw new InvalidParameterException("The 'max-results' parameter must be larger than 0");
 			}
 		}
-		return new ParsedRequestParameters(env, searchPoint, maxresults, parseFilter(filter), attributes);
+		return new ParsedRequestParameters(env, searchPoint, maxresults, parseFilter(filter), 
+				parseNameFilter(namefilter), attributes);
 	}
 
 	private Envelope parseBbox() {
@@ -167,4 +175,8 @@ public class FeatureRequestParameters {
 		return Filter.parseFilter(filters);
 	}
 	
+	private NameFilter parseNameFilter(String[] filters) {
+		if (namefilter == null || namefilter.length == 0) return null;
+		return NameFilter.parseFilter(namefilter);
+	}
 }

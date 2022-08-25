@@ -161,7 +161,7 @@ def run_qa(conn, workunit):
     #waterdefinition = -1 
     qa2 = f"""
         insert into {workingSchema}.qaerrors (type, message, geometry)
-         select 'WARNING', 'WARNING: catchment with unknown subtype (ec_subtype = 99) and name: ' || id || ' ' || lakename1 || ' ' || lakename2 || ' ' || rivername1 || ' ' || rivername2, st_pointonsurface(geometry)
+         select 'WARNING', 'WARNING: catchment with unknown subtype (ec_subtype = 99) and name: ' || id || ' ' || case when lakename1 is null then '' else lakename1 end || ' ' || case when lakename2 is null then '' else lakename2 end || ' ' || case when rivername1 is null then '' else rivername1 end || ' ' || case when rivername2 is null then '' else rivername2 end, st_pointonsurface(geometry)
         FROM 
         {workingSchema}.ecatchment 
         WHERE 
@@ -212,6 +212,40 @@ def run_qa(conn, workunit):
     log (qa2)
     with conn.cursor() as cursor:
         cursor.execute(qa2)
+        
+        
+        
+    #nameid has duplicated geodbnames 
+    qa2 = f"""
+        with allnames as (
+            select distinct riverid1 as nameid, geographicalnamedb from {workingSchema}.ecatchment where riverid1 is not null and riverid1 != ''
+            union
+            select distinct riverid2 as nameid, geographicalnamedb from {workingSchema}.ecatchment where riverid2 is not null and riverid2 != ''
+            union
+            select distinct lakeid1 as nameid, geographicalnamedb from {workingSchema}.ecatchment where lakeid1 is not null and lakeid1 != ''
+            union
+            select distinct lakeid2 as nameid, geographicalnamedb from {workingSchema}.ecatchment where lakeid2 is not null and lakeid2 != ''
+            union
+            select distinct nameid1 as nameid, geographicalnamedb from {workingSchema}.eflowpath where nameid1 is not null and nameid1 != ''
+            union
+            select distinct nameid2 as nameid, geographicalnamedb from {workingSchema}.eflowpath where nameid2 is not null and nameid2 != ''
+            union
+            select distinct rivernameid1 as nameid, geodbname from {workingSchema}.terminal_node where rivernameid1 is not null and rivernameid1 != ''
+            union
+            select distinct rivernameid2 as nameid, geodbname from {workingSchema}.terminal_node where rivernameid2 is not null and rivernameid2 != ''
+        ),
+        dallnames as 
+        ( 
+        select distinct nameid, geographicalnamedb from allnames
+        )
+        insert into {workingSchema}.qaerrors(type, message) 
+        select 'ERROR', 'Name id ' || nameid || ' has multiple geographicalnamedbs associated with it. Must only have one.' 
+        from dallnames group by nameid having count(*) > 1;
+    """
+    log (qa2)
+    with conn.cursor() as cursor:
+        cursor.execute(qa2)
+                
 
     qa1 = f'SELECT type, message, st_astext(geometry) from {workingSchema}.qaerrors';
     with conn.cursor() as cursor:

@@ -72,7 +72,7 @@ public class FeatureTypeDao {
 				rs.getString("description_fr"), rs.getBoolean("is_link"),
 				rs.getString("data_type"), (Integer)rs.getObject("vw_simple_order"),
 				(Integer)rs.getObject("vw_all_order"), rs.getBoolean("include_vector_tile"), 
-				rs.getString("value_options_reference"));
+				rs.getString("value_options_reference"), rs.getBoolean("is_name_search"));
 
 	
 	private RowMapper<FeatureTypeListValue> validValueMapper = (rs, rownum) ->
@@ -104,7 +104,8 @@ public class FeatureTypeDao {
 		sb.append("SELECT field_name, ");
 		sb.append("name_en, description_en, name_fr, description_fr,");
 		sb.append("is_link, data_type, ");
-		sb.append("vw_simple_order, vw_all_order, include_vector_tile, value_options_reference ");
+		sb.append("vw_simple_order, vw_all_order, include_vector_tile, value_options_reference, ");
+		sb.append("is_name_search");
 		sb.append(" FROM ");
 		sb.append(FEATURE_METADATA_TABLE);
 		sb.append(" WHERE view_name = ?");

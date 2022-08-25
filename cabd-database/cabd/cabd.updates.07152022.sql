@@ -825,9 +825,9 @@ AS SELECT barriers.cabd_id,
            FROM waterfalls.waterfalls
         UNION
          SELECT fishways.cabd_id,
-            'fishways'::text AS barrier_type,
-            NULL::character varying(512) AS name_en,
-            NULL::character varying(512) AS name_fr,
+           'fishways'::text AS barrier_type,
+            fishways.structure_name_en,
+            fishways.structure_name_fr,
             fishways.province_territory_code,
             fishways.nhn_watershed_id,
             fishways.municipality,
@@ -894,8 +894,8 @@ AS SELECT barriers.cabd_id,
         UNION
          SELECT fishways.cabd_id,
             'fishways'::text AS barrier_type,
-            NULL::character varying(512) AS name_en,
-            NULL::character varying(512) AS name_fr,
+            fishways.structure_name_en,
+            fishways.structure_name_fr,
             fishways.province_territory_code,
             fishways.nhn_watershed_id,
             fishways.municipality,
@@ -2269,4 +2269,17 @@ update cabd.nhn_workunit set name_fr = 'Cours inférieur de la Milk et Poplar' WH
 update cabd.nhn_workunit set name_fr = 'Big Muddy' WHERE id = '11AFA00';
 update cabd.nhn_workunit set name_fr = 'Big Muddy' WHERE id = '11AFB00';
 
+
+
+
+--NAME Search metadata
+alter table cabd.feature_type_metadata add column is_name_search boolean default false;
+
+update cabd.feature_type_metadata set is_name_search = true 
+where 
+(view_name = 'cabd.all_features_view' and field_name in ('name_en', 'name_fr')) 
+or (view_name = 'cabd.barriers_view' and field_name in ('name_en', 'name_fr')) 
+or (view_name = 'cabd.dams_view' and field_name in ('dam_name_en', 'dam_name_fr')) 
+or (view_name = 'cabd.fishways_view' and field_name in ('structure_name_en', 'structure_name_fr'))
+or (view_name = 'cabd.waterfalls_view' and field_name in ('fall_name_en', 'fall_name_fr'))
                     
