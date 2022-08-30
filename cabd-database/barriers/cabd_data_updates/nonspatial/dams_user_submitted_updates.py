@@ -1,8 +1,13 @@
-import nonspatial as main
+import user_submit as main
 
+#change the datasetName below for each round of updates
 script = main.MappingScript("user_submitted_updates")
 
+#probably need to create a pre-processing script that cleans the CSV to run beforehand
+#that deals with coded value fields, trims fields, etc.
+
 mappingquery = f"""
+--add new data sources and match new uuids for each data source to each record
 
 --TO DO: confirm with Nick that this is an appropriate solution
 --possible that we want to keep this constraint on all the time, but for now just add and delete
@@ -10,23 +15,73 @@ mappingquery = f"""
 ALTER TABLE cabd.data_source ADD CONSTRAINT unique_name (name);
 
 INSERT INTO cabd.data_source (name, id, source_type)
-    SELECT DISTINCT data_source, uuid_generate_v4(), 'non-spatial' FROM {script.sourceTable}
+    SELECT DISTINCT data_source, gen_random_uuid(), 'non-spatial' FROM {script.sourceTable}
     ON CONFLICT DO NOTHING;
 
 ALTER TABLE cabd.data_source DROP CONSTRAINT unique_name;
-
+dam
 --add data source ids to the table
 ALTER TABLE {script.sourceTable} RENAME COLUMN data_source to data_source_text;
 ALTER TABLE {script.sourceTable} ADD COLUMN data_source uuid;
 UPDATE {script.sourceTable} AS s SET data_source = d.id FROM cabd.data_source AS d WHERE d.name = s.data_source_text;
 
---SELECT DISTINCT data_source, data_source_text FROM {script.sourceTable};
+--TO DO: create damTableNewModify, damTableDelete with proper format
 
---TO DO: figure out how we want to handle the DISTINCT clause for coded value fields
---users will be giving us the name instead of the id for these in the template
---possible solution: run a pre-processing script on the CSV input to switch these values?
+--split into new/modified and deleted features
+--TO DECIDE: these queries will only insert records, we'll have to clear old records at some point?
 
---update existing features 
+INSERT INTO {script.damTableNewModify} (
+    cabd_id,
+    entry_classification,
+    data_source,
+    latitude,
+    longitude,
+    use_analysis,
+    dam_name_en
+)
+SELECT
+    cabd_id,
+    entry_classification,
+    data_source,
+    latitude,
+    longitude,
+    use_analysis,
+    dam_name_en
+FROM {script.sourceTable} WHERE entry_classification IN ('new feature', 'modify feature');
+
+INSERT INTO {script.damTableDelete} (
+    cabd_id,
+    entry_classification,
+    data_source,
+    latitude,
+    longitude,
+    use_analysis,
+    dam_name_en
+)
+SELECT
+    cabd_id,
+    entry_classification,
+    data_source,
+    latitude,
+    longitude,
+    use_analysis,
+    dam_name_en
+FROM {script.sourceTable} WHERE entry_classification = 'delete feature';
+
+--deal with new and modified records
+INSERT INTO {script.damTable} (original_point)
+    SELECT (ST_SetSRID(ST_MakePoint(cast(longitude as float), cast(latitude as float)),4617)) FROM {script.damTableNewModify}
+    WHERE entry_classification = 'new feature';
+
+UPDATE {script.damTable} SET snapped_point = original_point WHERE snapped_point IS NULL;
+
+UPDATE {script.damTable} SET snapped_point = 
+    SELECT (ST_SetSRID(ST_MakePoint(cast(longitude as float), cast(latitude as float)),4617)) FROM {script.damTableNewModify}
+    WHERE entry_classification = 'modify feature'
+    AND latitude IS NOT NULL
+    AND longitude IS NOT NULL;
+
+--update attribute_source table
 UPDATE
     {script.damAttributeTable} AS cabdsource
 SET    
@@ -61,6 +116,7 @@ SET
     passability_status_note_ds = CASE WHEN ({script.datasetName}.passability_status_note IS NOT NULL AND {script.datasetName}.passability_status_note IS DISTINCT FROM cabd.passability_status_note) THEN {script.datasetName}.data_source ELSE cabdsource.passability_status_note_ds END,
     provincial_compliance_status_ds = CASE WHEN ({script.datasetName}.provincial_compliance_status IS NOT NULL AND {script.datasetName}.provincial_compliance_status IS DISTINCT FROM cabd.provincial_compliance_status) THEN {script.datasetName}.data_source ELSE cabdsource.provincial_compliance_status_ds END,
     provincial_flow_req_ds = CASE WHEN ({script.datasetName}.provincial_flow_req IS NOT NULL AND {script.datasetName}.provincial_flow_req IS DISTINCT FROM cabd.provincial_flow_req) THEN {script.datasetName}.data_source ELSE cabdsource.provincial_flow_req_ds END,
+    removed_year_ds = CASE WHEN ({script.datasetName}.removed_year IS NOT NULL AND {script.datasetName}.removed_year IS DISTINCT FROM cabd.removed_year) THEN {script.datasetName}.data_source ELSE cabdsource.removed_year_ds END,
     reservoir_area_skm_ds = CASE WHEN ({script.datasetName}.reservoir_area_skm IS NOT NULL AND {script.datasetName}.reservoir_area_skm IS DISTINCT FROM cabd.reservoir_area_skm) THEN {script.datasetName}.data_source ELSE cabdsource.reservoir_area_skm_ds END,
     reservoir_depth_m_ds = CASE WHEN ({script.datasetName}.reservoir_depth_m IS NOT NULL AND {script.datasetName}.reservoir_depth_m IS DISTINCT FROM cabd.reservoir_depth_m) THEN {script.datasetName}.data_source ELSE cabdsource.reservoir_depth_m_ds END,
     reservoir_name_en_ds = CASE WHEN ({script.datasetName}.reservoir_name_en IS NOT NULL AND {script.datasetName}.reservoir_name_en IS DISTINCT FROM cabd.reservoir_name_en) THEN {script.datasetName}.data_source ELSE cabdsource.reservoir_name_en_ds END,
@@ -88,10 +144,11 @@ SET
 
 FROM
     {script.damTable} AS cabd,
-    {script.sourceTable} AS {script.datasetName}
+    {script.damTableNewModify} AS {script.datasetName}
 WHERE
     cabdsource.cabd_id = {script.datasetName}.cabd_id and cabd.cabd_id = cabdsource.cabd_id;
 
+--update attributes in live data
 UPDATE
     {script.damTable} AS cabd
 SET
@@ -126,6 +183,7 @@ SET
     passability_status_note = CASE WHEN ({script.datasetName}.passability_status_note IS NOT NULL AND {script.datasetName}.passability_status_note IS DISTINCT FROM cabd.passability_status_note) THEN {script.datasetName}.passability_status_note ELSE cabd.passability_status_note END,
     provincial_compliance_status = CASE WHEN ({script.datasetName}.provincial_compliance_status IS NOT NULL AND {script.datasetName}.provincial_compliance_status IS DISTINCT FROM cabd.provincial_compliance_status) THEN {script.datasetName}.provincial_compliance_status ELSE cabd.provincial_compliance_status END,
     provincial_flow_req = CASE WHEN ({script.datasetName}.provincial_flow_req IS NOT NULL AND {script.datasetName}.provincial_flow_req IS DISTINCT FROM cabd.provincial_flow_req) THEN {script.datasetName}.provincial_flow_req ELSE cabd.provincial_flow_req END,
+    removed_year = CASE WHEN ({script.datasetName}.removed_year IS NOT NULL AND {script.datasetName}.removed_year IS DISTINCT FROM cabd.removed_year) THEN {script.datasetName}.removed_year ELSE cabd.removed_year END,
     reservoir_area_skm = CASE WHEN ({script.datasetName}.reservoir_area_skm IS NOT NULL AND {script.datasetName}.reservoir_area_skm IS DISTINCT FROM cabd.reservoir_area_skm) THEN {script.datasetName}.reservoir_area_skm ELSE cabd.reservoir_area_skm END,
     reservoir_depth_m = CASE WHEN ({script.datasetName}.reservoir_depth_m IS NOT NULL AND {script.datasetName}.reservoir_depth_m IS DISTINCT FROM cabd.reservoir_depth_m) THEN {script.datasetName}.reservoir_depth_m ELSE cabd.reservoir_depth_m END,
     reservoir_name_en = CASE WHEN ({script.datasetName}.reservoir_name_en IS NOT NULL AND {script.datasetName}.reservoir_name_en IS DISTINCT FROM cabd.reservoir_name_en) THEN {script.datasetName}.reservoir_name_en ELSE cabd.reservoir_name_en END,
@@ -151,10 +209,15 @@ SET
     waterbody_name_en = CASE WHEN ({script.datasetName}.waterbody_name_en IS NOT NULL AND {script.datasetName}.waterbody_name_en IS DISTINCT FROM cabd.waterbody_name_en) THEN {script.datasetName}.waterbody_name_en ELSE cabd.waterbody_name_en END,
     waterbody_name_fr = CASE WHEN ({script.datasetName}.waterbody_name_fr IS NOT NULL AND {script.datasetName}.waterbody_name_fr IS DISTINCT FROM cabd.waterbody_name_fr) THEN {script.datasetName}.waterbody_name_fr ELSE cabd.waterbody_name_fr END
 FROM
-    {script.sourceTable} AS {script.datasetName}
+    {script.damTableNewModify} AS {script.datasetName}
 WHERE
     cabd.cabd_id = {script.datasetName}.cabd_id;
 
-"""
+--deal with records to be deleted
+DELETE FROM {script.damAttributeTable} WHERE cabd_id IN (SELECT cabd_id FROM {script.damTableDelete});
+DELETE FROM {script.damFeatureTable} WHERE cabd_id IN (SELECT cabd_id FROM {script.damTableDelete});
+DELETE FROM {script.damTable} WHERE cabd_id IN (SELECT cabd_id FROM {script.damTableDelete});
 
+"""
+#print(mappingquery)
 script.do_work(mappingquery)
