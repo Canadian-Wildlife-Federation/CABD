@@ -22,14 +22,12 @@ alter table chyf2.names add column geodb_id2 varchar;
 update chyf2.names set geodb_id2 = geodb_id::varchar;
 alter table chyf2.names drop column geodb_id;
 alter table chyf2.names rename column geodb_id2 to geodb_id;
+alter table chyf2.names add constraint names_geodb_id_unq unique(geodb_id);
 
-
-
-alter table chyf2.terminal_point add column geodb_rivernameid1 varchar(32);
-alter table chyf2.terminal_point add column geodb_rivernameid2 varchar(32);
-alter table chyf2.terminal_point add column rivername1 varchar;
-alter table chyf2.terminal_point add column rivername2 varchar;
-
+alter table chyf2.terminal_point add column rivernameid1 uuid;
+alter table chyf2.terminal_point add column rivernameid2 uuid;
+alter table chyf2.terminal_point add constraint terminal_point_rivernameid1_fkey foreign key (rivernameid1) references chyf2.names(name_id);
+alter table chyf2.terminal_point add constraint terminal_point_rivernameid2_fkey foreign key (rivernameid2) references chyf2.names(name_id);
 
 alter table fpoutput.eflowpath rename column name_id to rivernameid1;
 alter table fpoutput.eflowpath rename column name to rivername1;
@@ -77,7 +75,7 @@ alter table fpinput.terminal_node add column geodbname varchar;
 SELECT UpdateGeometrySRID('fpoutput','construction_points','the_geom',4617);
 alter table fpoutput.errors alter column geometry type geometry(geometry, 4617);
 
-alter table fpoutput.errors add column process varchar(16) ;
+alter table fpoutput.errors add column process varchar;
 update fpoutput.errors set process = 'FLOWPATHFULL';
 
 

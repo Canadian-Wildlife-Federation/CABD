@@ -66,10 +66,10 @@ alter table dams.operating_status_codes rename column description to description
 alter table dams.operating_status_codes add column name_fr varchar(64);
 alter table dams.operating_status_codes add column description_fr text;
 
-alter table dams.passability_status_codes rename column name to name_en;
-alter table dams.passability_status_codes rename column description to description_en;
-alter table dams.passability_status_codes add column name_fr varchar(64);
-alter table dams.passability_status_codes add column description_fr text;
+--alter table dams.passability_status_codes rename column name to name_en;
+--alter table dams.passability_status_codes rename column description to description_en;
+--alter table dams.passability_status_codes add column name_fr varchar(64);
+--alter table dams.passability_status_codes add column description_fr text;
 
 alter table dams.size_codes rename column name to name_en;
 alter table dams.size_codes rename column description to description_en;
@@ -112,14 +112,15 @@ alter table fishways.fishway_complete_level_codes add column name_fr varchar(64)
 alter table fishways.fishway_complete_level_codes add column description_fr text;
 alter table cabd.nhn_workunit add column name_en varchar(500);
 alter table cabd.nhn_workunit add column name_fr varchar(500);
+
 update cabd.nhn_workunit set name_en = sub_sub_drainage_area ;
-update cabd.feature_type_metadata set value_options_reference = 'cabd.nhn_workunit;id;name;' where field_name ='nhn_workunit_id'
+update cabd.feature_type_metadata set value_options_reference = 'cabd.nhn_workunit;id;name;' where field_name ='nhn_watershed_id';
 update cabd.feature_type_metadata set value_options_reference = 'dams.downstream_passage_route_codes;;name;description' where field_name ='down_passage_route' and view_name = 'cabd.dams_view';
 update cabd.feature_type_metadata set value_options_reference = 'waterfalls.waterfall_complete_level_codes;;name;description' where field_name ='complete_level' and view_name = 'cabd.waterfalls_view';
 update cabd.feature_type_metadata set value_options_reference = 'waterfalls.waterfall_complete_level_codes;code;name;description' where field_name ='complete_level_code' and view_name = 'cabd.waterfalls_view';
 
 update cabd.feature_type_metadata set value_options_reference = 'dams.dam_complete_level_codes;;name;description' where field_name ='complete_level' and view_name = 'cabd.dams_view';
-update cabd.feature_type_metadata set value_options_reference = 'fishways.fishway_complete_level_codes;;name;description' where field_name ='complete_level' and view_name = 'cabd.fishways_view'
+update cabd.feature_type_metadata set value_options_reference = 'fishways.fishway_complete_level_codes;;name;description' where field_name ='complete_level' and view_name = 'cabd.fishways_view';
 update cabd.feature_type_metadata set value_options_reference = 'dams.lake_control_codes;;name;description' where field_name ='lake_control';
 update cabd.feature_type_metadata set value_options_reference = 'dams.function_codes;;name;description' where field_name ='function_name';
 update cabd.feature_type_metadata set value_options_reference = 'fishways.entrance_position_codes;;name;description' where field_name ='entrance_position';
@@ -141,35 +142,36 @@ update cabd.feature_type_metadata set value_options_reference = 'dams.use_codes;
 update cabd.feature_type_metadata set value_options_reference = 'dams.use_codes;;name;description' where view_name = 'cabd.dams_view' and field_name = 'use_fish';
 update cabd.feature_type_metadata set value_options_reference = 'dams.use_codes;;name;description' where view_name = 'cabd.dams_view' and field_name = 'use_electricity';
 update cabd.feature_type_metadata set value_options_reference = 'cabd.upstream_passage_type_codes;;name;description' where view_name = 'cabd.dams_view' and field_name = 'up_passage_type';
+update cabd.feature_type_metadata set value_options_reference = 'cabd.upstream_passage_type_codes;;name;description' where view_name = 'cabd.fishways_view' and field_name = 'fishpass_type';
 update cabd.feature_type_metadata set value_options_reference = 'dams.turbine_type_codes;;name;description' where view_name = 'cabd.dams_view' and field_name = 'turbine_type';
 update cabd.feature_type_metadata set value_options_reference = 'dams.spillway_type_codes;;name;description' where view_name = 'cabd.dams_view' and field_name = 'spillway_type';
 update cabd.feature_type_metadata set value_options_reference = 'dams.size_codes;;name;description' where view_name = 'cabd.dams_view' and field_name = 'size_class';
 
 
---update cabd.nhn_workunit set name_fr = 'FR<' || name_en || '>';
---update fishways.fishway_complete_level_codes set description_fr = 'FR<' || description_en || '>', name_fr = 'FR<' || name_en || '>';
---update fishways.entrance_position_codes set description_fr = 'FR<' || description_en || '>', name_fr = 'FR<' || name_en || '>';
---update fishways.entrance_location_codes set description_fr = 'FR<' || description_en || '>', name_fr = 'FR<' || name_en || '>';
---update waterfalls.waterfall_complete_level_codes set description_fr = 'FR<' || description_en || '>', name_fr = 'FR<' || name_en || '>';
---update dams.use_codes set description_fr = 'FR<' || description_en || '>', name_fr = 'FR<' || name_en || '>';
---update dams.turbine_type_codes set description_fr = 'FR<' || description_en || '>', name_fr = 'FR<' || name_en || '>';
---update dams.spillway_type_codes set description_fr = 'FR<' || description_en || '>', name_fr = 'FR<' || name_en || '>';
---update dams.size_codes set description_fr = 'FR<' || description_en || '>', name_fr = 'FR<' || name_en || '>';
---update dams.passability_status_codes set description_fr = 'FR<' || description_en || '>', name_fr = 'FR<' || name_en || '>';
---update dams.operating_status_codes set description_fr = 'FR<' || description_en || '>', name_fr = 'FR<' || name_en || '>';
---update dams.lake_control_codes set description_fr = 'FR<' || description_en || '>', name_fr = 'FR<' || name_en || '>';
---update dams.function_codes set description_fr = 'FR<' || description_en || '>', name_fr = 'FR<' || name_en || '>';
---update dams.downstream_passage_route_codes set description_fr = 'FR<' || description_en || '>', name_fr = 'FR<' || name_en || '>';
---update dams.dam_use_codes set description_fr = 'FR<' || description_en || '>', name_fr = 'FR<' || name_en || '>';
---update dams.dam_complete_level_codes set description_fr = 'FR<' || description_en || '>', name_fr = 'FR<' || name_en || '>';
---update dams.construction_type_codes set description_fr = 'FR<' || description_en || '>', name_fr = 'FR<' || name_en || '>';
---update dams.condition_codes set description_fr = 'FR<' || description_en || '>', name_fr = 'FR<' || name_en || '>';
---update cabd.upstream_passage_type_codes set description_fr = 'FR<' || description_en || '>', name_fr = 'FR<' || name_en || '>';
---update cabd.province_territory_codes set  name_fr = 'FR<' || name_en || '>';
---update cabd.passability_status_codes set description_fr = 'FR<' || description_en || '>', name_fr = 'FR<' || name_en || '>'
---update cabd.feature_types set name_fr = 'FR<' || name_en || '>'
---update cabd.feature_type_metadata set name_fr = 'FR<' || name_en || '>', description_fr = 'FR<' || description_en || '>'
---update cabd.barrier_ownership_type_codes set description_fr = 'FR<' || description_en || '>', name_fr = 'FR<' || name_en || '>'
+
+update fishways.fishway_complete_level_codes set description_fr = description_en, name_fr = name_en ;
+update fishways.entrance_position_codes set description_fr = description_en, name_fr = name_en;
+update fishways.entrance_location_codes set description_fr = description_en, name_fr = name_en;
+update waterfalls.waterfall_complete_level_codes set description_fr = description_en, name_fr = name_en;
+update dams.use_codes set description_fr = description_en, name_fr = name_en;
+update dams.turbine_type_codes set description_fr = description_en, name_fr = name_en;
+update dams.spillway_type_codes set description_fr = description_en, name_fr = name_en;
+update dams.size_codes set description_fr = description_en, name_fr = name_en;
+--update dams.passability_status_codes set description_fr = description_en, name_fr = name_en;
+update dams.operating_status_codes set description_fr = description_en, name_fr = name_en;
+update dams.lake_control_codes set description_fr = description_en, name_fr = name_en;
+update dams.function_codes set description_fr = description_en, name_fr = name_en;
+update dams.downstream_passage_route_codes set description_fr = description_en, name_fr = name_en;
+update dams.dam_use_codes set description_fr = description_en, name_fr = name_en;
+update dams.dam_complete_level_codes set description_fr = description_en, name_fr = name_en;
+update dams.construction_type_codes set description_fr = description_en, name_fr = name_en;
+update dams.condition_codes set description_fr = description_en, name_fr = name_en;
+update cabd.upstream_passage_type_codes set description_fr = description_en, name_fr = name_en;
+update cabd.province_territory_codes set  name_fr = name_en;
+update cabd.passability_status_codes set description_fr = description_en, name_fr = name_en;
+update cabd.feature_types set name_fr = name_en;
+update cabd.feature_type_metadata set name_fr = name_en, description_fr = description_en;
+update cabd.barrier_ownership_type_codes set description_fr = description_en, name_fr = name_en;
 
 
 
@@ -193,6 +195,7 @@ AS SELECT w.cabd_id,
     w.municipality,
     w.fall_height_m,
     w.last_modified,
+    w.use_analysis,
     w.comments,
     w.complete_level_code,
     cl.name_fr AS complete_level,
@@ -222,6 +225,7 @@ AS SELECT w.cabd_id,
     w.municipality,
     w.fall_height_m,
     w.last_modified,
+    w.use_analysis,
     w.comments,
     w.complete_level_code,
     cl.name_en AS complete_level,
@@ -429,6 +433,7 @@ AS SELECT d.cabd_id,
     d.operating_notes,
     d.operating_status_code,
     os.name_en AS operating_status,
+    d.removed_year,
     d.use_code,
     duc.name_en AS dam_use,
     d.use_irrigation_code,
@@ -491,6 +496,7 @@ AS SELECT d.cabd_id,
     d.down_passage_route_code,
     down.name_en AS down_passage_route,
     d.last_modified,
+    d.use_analysis,
     d.comments,
     d.passability_status_code,
     ps.name_en AS passability_status,
@@ -555,6 +561,7 @@ AS SELECT d.cabd_id,
     d.operating_notes,
     d.operating_status_code,
     os.name_fr AS operating_status,
+    d.removed_year,
     d.use_code,
     duc.name_fr AS dam_use,
     d.use_irrigation_code,
@@ -617,6 +624,7 @@ AS SELECT d.cabd_id,
     d.down_passage_route_code,
     down.name_fr AS down_passage_route,
     d.last_modified,
+    d.use_analysis,
     d.comments,
     d.passability_status_code,
     ps.name_fr AS passability_status,
@@ -683,6 +691,7 @@ AS SELECT barriers.cabd_id,
     barriers.reservoir_name_fr,
     barriers.passability_status_code,
     ps.name_en AS passability_status,
+    barriers.use_analysis,
     barriers.snapped_point AS geometry
    FROM ( SELECT dams.cabd_id,
             'dams'::text AS feature_type,
@@ -696,6 +705,7 @@ AS SELECT barriers.cabd_id,
             dams.reservoir_name_en,
             dams.reservoir_name_fr,
             dams.passability_status_code,
+			dams.use_analysis,
             dams.snapped_point
            FROM dams.dams
         UNION
@@ -711,12 +721,13 @@ AS SELECT barriers.cabd_id,
             NULL::character varying AS "varchar",
             NULL::character varying AS "varchar",
             waterfalls.passability_status_code,
+			waterfalls.use_analysis,
             waterfalls.snapped_point
            FROM waterfalls.waterfalls) barriers
      JOIN cabd.province_territory_codes pt ON barriers.province_territory_code::text = pt.code::text
      LEFT JOIN cabd.nhn_workunit nhn ON nhn.id::text = barriers.nhn_watershed_id::text
      LEFT JOIN cabd.passability_status_codes ps ON ps.code = barriers.passability_status_code;
-     
+
      
 
 CREATE OR REPLACE VIEW cabd.barriers_view_fr
@@ -736,6 +747,7 @@ AS SELECT barriers.cabd_id,
     barriers.reservoir_name_fr,
     barriers.passability_status_code,
     ps.name_fr AS passability_status,
+    barriers.use_analysis,
     barriers.snapped_point AS geometry
    FROM ( SELECT dams.cabd_id,
             'dams'::text AS feature_type,
@@ -749,6 +761,7 @@ AS SELECT barriers.cabd_id,
             dams.reservoir_name_en,
             dams.reservoir_name_fr,
             dams.passability_status_code,
+            dams.use_analysis,
             dams.snapped_point
            FROM dams.dams
         UNION
@@ -764,15 +777,13 @@ AS SELECT barriers.cabd_id,
             NULL::character varying AS "varchar",
             NULL::character varying AS "varchar",
             waterfalls.passability_status_code,
+            waterfalls.use_analysis,
             waterfalls.snapped_point
            FROM waterfalls.waterfalls) barriers
      JOIN cabd.province_territory_codes pt ON barriers.province_territory_code::text = pt.code::text
      LEFT JOIN cabd.nhn_workunit nhn ON nhn.id::text = barriers.nhn_watershed_id::text
      LEFT JOIN cabd.passability_status_codes ps ON ps.code = barriers.passability_status_code;     
      
-
-
--- cabd.all_features_view source
 
 DROP VIEW cabd.all_features_view;
 
@@ -793,6 +804,7 @@ AS SELECT barriers.cabd_id,
     barriers.reservoir_name_fr,
     barriers.passability_status_code,
     ps.name_en AS passability_status,
+    barriers.use_analysis,
     barriers.snapped_point AS geometry
    FROM ( SELECT dams.cabd_id,
             'dams'::text AS barrier_type,
@@ -806,6 +818,7 @@ AS SELECT barriers.cabd_id,
             dams.reservoir_name_en,
             dams.reservoir_name_fr,
             dams.passability_status_code,
+            dams.use_analysis,
             dams.snapped_point
            FROM dams.dams
         UNION
@@ -821,6 +834,7 @@ AS SELECT barriers.cabd_id,
             NULL::character varying AS "varchar",
             NULL::character varying AS "varchar",
             waterfalls.passability_status_code,
+            waterfalls.use_analysis,
             waterfalls.snapped_point
            FROM waterfalls.waterfalls
         UNION
@@ -836,6 +850,7 @@ AS SELECT barriers.cabd_id,
             NULL::character varying AS "varchar",
             NULL::character varying AS "varchar",
             NULL::smallint AS int2,
+            NULL::boolean AS "boolean",
             fishways.original_point
            FROM fishways.fishways) barriers
      JOIN cabd.province_territory_codes pt ON barriers.province_territory_code::text = pt.code::text
@@ -861,6 +876,7 @@ AS SELECT barriers.cabd_id,
     barriers.reservoir_name_fr,
     barriers.passability_status_code,
     ps.name_fr AS passability_status,
+    barriers.use_analysis,
     barriers.snapped_point AS geometry
    FROM ( SELECT dams.cabd_id,
             'dams'::text AS barrier_type,
@@ -874,6 +890,7 @@ AS SELECT barriers.cabd_id,
             dams.reservoir_name_en,
             dams.reservoir_name_fr,
             dams.passability_status_code,
+            dams.use_analysis,
             dams.snapped_point
            FROM dams.dams
         UNION
@@ -889,6 +906,7 @@ AS SELECT barriers.cabd_id,
             NULL::character varying AS "varchar",
             NULL::character varying AS "varchar",
             waterfalls.passability_status_code,
+            waterfalls.use_analysis,
             waterfalls.snapped_point
            FROM waterfalls.waterfalls
         UNION
@@ -904,13 +922,13 @@ AS SELECT barriers.cabd_id,
             NULL::character varying AS "varchar",
             NULL::character varying AS "varchar",
             NULL::smallint AS int2,
+            NULL::boolean AS "boolean",
             fishways.original_point
            FROM fishways.fishways) barriers
      JOIN cabd.province_territory_codes pt ON barriers.province_territory_code::text = pt.code::text
      LEFT JOIN cabd.nhn_workunit nhn ON nhn.id::text = barriers.nhn_watershed_id::text
      LEFT JOIN cabd.passability_status_codes ps ON ps.code = barriers.passability_status_code;          
                     
-
 grant all privileges on cabd.barriers_view_en to cabd;
 grant all privileges on cabd.barriers_view_fr to cabd;   
 grant all privileges on cabd.all_features_view_en to cabd;

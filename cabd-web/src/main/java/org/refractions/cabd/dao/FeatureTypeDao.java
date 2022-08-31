@@ -212,7 +212,7 @@ public class FeatureTypeDao {
 		if (dataFields.isEmpty()) return Collections.emptyMap();
 		sb.delete(sb.length()-2, sb.length());
 		sb.append(" FROM ");
-		sb.append(type.getDataViewName());
+		sb.append(type.getDataView());
 		
 		Map<FeatureViewMetadataField, FeatureViewMetadataFieldData> data = jdbcTemplate.query(sb.toString(), new ResultSetExtractor<Map<FeatureViewMetadataField, FeatureViewMetadataFieldData>>() {
 
