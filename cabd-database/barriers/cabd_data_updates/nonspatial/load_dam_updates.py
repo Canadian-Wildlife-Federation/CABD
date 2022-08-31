@@ -30,9 +30,17 @@ conn = pg2.connect(database=dbName,
                    password=dbPassword, 
                    port=dbPort)
 
-#load data using ogr - will overwrite sourceTable if you tried loading it already
+#clear any data from previous tries
+query = f"""
+DROP TABLE IF EXISTS {sourceTable};
+"""
+with conn.cursor() as cursor:
+    cursor.execute(query)
+conn.commit()
+
+#load data using ogr
 orgDb = "dbname='" + dbName + "' host='"+ dbHost +"' port='"+ dbPort + "' user='" + dbUser + "' password='" + dbPassword + "'"
-pycmd = '"' + ogr + '" -f "PostgreSQL" PG:"' + orgDb + '" "' + dataFile + '"' + ' -lco OVERWRITE=YES -nln "' + sourceTable + '" -oo AUTODETECT_TYPE=YES'
+pycmd = '"' + ogr + '" -f "PostgreSQL" PG:"' + orgDb + '" "' + dataFile + '"' + ' -nln "' + sourceTable + '" -oo AUTODETECT_TYPE=YES'
 print(pycmd)
 subprocess.run(pycmd)
 
