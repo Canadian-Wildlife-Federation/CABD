@@ -9,18 +9,18 @@ script = main.MappingScript("user_submitted_updates")
 mappingquery = f"""
 --deal with new and modified records
 INSERT INTO {script.damTable} (original_point)
-    SELECT (ST_SetSRID(ST_MakePoint(cast(longitude as float), cast(latitude as float)),4617)) FROM {script.damTableNewModify}
-    WHERE entry_classification = 'new feature';
+    (SELECT (ST_SetSRID(ST_MakePoint(cast(longitude as float), cast(latitude as float)),4617)) FROM {script.damUpdateTable}
+    WHERE entry_classification = 'new feature');
 
 UPDATE {script.damTable} SET snapped_point = original_point WHERE snapped_point IS NULL;
 
 UPDATE {script.damTable} SET snapped_point = 
-    SELECT (ST_SetSRID(ST_MakePoint(cast(longitude as float), cast(latitude as float)),4617)) FROM {script.damTableNewModify}
+    (SELECT (ST_SetSRID(ST_MakePoint(cast(longitude as float), cast(latitude as float)),4617)) FROM {script.damUpdateTable}
     WHERE entry_classification = 'modify feature'
     AND latitude IS NOT NULL
-    AND longitude IS NOT NULL;
+    AND longitude IS NOT NULL);
 
---update attribute_source table
+--update attribute_source table for live data
 UPDATE
     {script.damAttributeTable} AS cabdsource
 SET    
@@ -83,9 +83,10 @@ SET
 
 FROM
     {script.damTable} AS cabd,
-    {script.damTableNewModify} AS {script.datasetName}
+    {script.damUpdateTable} AS {script.datasetName}
 WHERE
-    cabdsource.cabd_id = {script.datasetName}.cabd_id and cabd.cabd_id = cabdsource.cabd_id;
+    cabdsource.cabd_id = {script.datasetName}.cabd_id and cabd.cabd_id = cabdsource.cabd_id
+    AND {script.datasetName}.entry_classification IN ('new feature', 'modify feature');
 
 --update attributes in live data
 UPDATE
@@ -148,15 +149,17 @@ SET
     waterbody_name_en = CASE WHEN ({script.datasetName}.waterbody_name_en IS NOT NULL AND {script.datasetName}.waterbody_name_en IS DISTINCT FROM cabd.waterbody_name_en) THEN {script.datasetName}.waterbody_name_en ELSE cabd.waterbody_name_en END,
     waterbody_name_fr = CASE WHEN ({script.datasetName}.waterbody_name_fr IS NOT NULL AND {script.datasetName}.waterbody_name_fr IS DISTINCT FROM cabd.waterbody_name_fr) THEN {script.datasetName}.waterbody_name_fr ELSE cabd.waterbody_name_fr END
 FROM
-    {script.damTableNewModify} AS {script.datasetName}
+    {script.damUpdateTable} AS {script.datasetName}
 WHERE
-    cabd.cabd_id = {script.datasetName}.cabd_id;
+    cabd.cabd_id = {script.datasetName}.cabd_id
+    AND {script.datasetName}.entry_classification IN ('new feature', 'modify feature');
 
 --deal with records to be deleted
-DELETE FROM {script.damAttributeTable} WHERE cabd_id IN (SELECT cabd_id FROM {script.damTableDelete});
-DELETE FROM {script.damFeatureTable} WHERE cabd_id IN (SELECT cabd_id FROM {script.damTableDelete});
-DELETE FROM {script.damTable} WHERE cabd_id IN (SELECT cabd_id FROM {script.damTableDelete});
+DELETE FROM {script.damAttributeTable} WHERE cabd_id IN (SELECT cabd_id FROM {script.damUpdateTable} WHERE entry_classification = 'delete feature');
+DELETE FROM {script.damFeatureTable} WHERE cabd_id IN (SELECT cabd_id FROM {script.damUpdateTable} WHERE entry_classification = 'delete feature');
+DELETE FROM {script.damTable} WHERE cabd_id IN (SELECT cabd_id FROM {script.damUpdateTable} WHERE entry_classification = 'delete feature');
 
 """
+
 #print(mappingquery)
 script.do_work(mappingquery)

@@ -1,73 +1,86 @@
-import user_submit as main
+import psycopg2 as pg2
+import subprocess
+import sys
 
-#change the datasetName below for each round of updates
-script = main.MappingScript("user_submitted_updates")
+ogr = "C:\\OSGeo4W64\\bin\\ogr2ogr.exe"
 
-#probably need to create a pre-processing script that cleans the CSV to run beforehand
-#that deals with coded value fields, trims fields, etc.
+dbName = "cabd"
+dbHost = "cabd-postgres-dev.postgres.database.azure.com"
+dbPort = "5432"
+dbUser = sys.argv[3]
+dbPassword = sys.argv[4]
 
-mappingquery = f"""
---add new data sources and match new uuids for each data source to each record
+dataFile = ""
+dataFile = sys.argv[1]
 
---TO DO: confirm with Nick that this is an appropriate solution
---possible that we want to keep this constraint on all the time, but for now just add and delete
+sourceSchema = "source_data"
+sourceTableRaw = sys.argv[2]
+sourceTable = sourceSchema + "." + sourceTableRaw
 
-ALTER TABLE cabd.data_source ADD CONSTRAINT unique_name (name);
+updateSchema = "featurecopy"
+damUpdateTable = updateSchema + '.dam_updates'
 
-INSERT INTO cabd.data_source (name, id, source_type)
-    SELECT DISTINCT data_source, gen_random_uuid(), 'non-spatial' FROM {script.sourceTable}
-    ON CONFLICT DO NOTHING;
+if len(sys.argv) != 5:
+    print("Invalid usage: py load_dam_updates.py <dataFile> <tableName> <dbUser> <dbPassword>")
+    sys.exit()
 
-ALTER TABLE cabd.data_source DROP CONSTRAINT unique_name;
-dam
---add data source ids to the table
-ALTER TABLE {script.sourceTable} RENAME COLUMN data_source to data_source_text;
-ALTER TABLE {script.sourceTable} ADD COLUMN data_source uuid;
-UPDATE {script.sourceTable} AS s SET data_source = d.id FROM cabd.data_source AS d WHERE d.name = s.data_source_text;
+conn = pg2.connect(database=dbName, 
+                   user=dbUser, 
+                   host=dbHost, 
+                   password=dbPassword, 
+                   port=dbPort)
 
---TO DO: create damTableNewModify, damTableDelete with proper format
+#load data using ogr - will overwrite sourceTable if you tried loading it already
+orgDb = "dbname='" + dbName + "' host='"+ dbHost +"' port='"+ dbPort + "' user='" + dbUser + "' password='" + dbPassword + "'"
+pycmd = '"' + ogr + '" -f "PostgreSQL" PG:"' + orgDb + '" "' + dataFile + '"' + ' -lco OVERWRITE=YES -nln "' + sourceTable + '" -oo AUTODETECT_TYPE=YES'
+print(pycmd)
+subprocess.run(pycmd)
 
---split into new/modified and deleted features
---TO DECIDE: these queries will only insert records, we'll have to clear old records at some point?
+# loadQuery = f"""
 
-INSERT INTO {script.damTableNewModify} (
-    cabd_id,
-    entry_classification,
-    data_source,
-    latitude,
-    longitude,
-    use_analysis,
-    dam_name_en
-)
-SELECT
-    cabd_id,
-    entry_classification,
-    data_source,
-    latitude,
-    longitude,
-    use_analysis,
-    dam_name_en
-FROM {script.sourceTable} WHERE entry_classification IN ('new feature', 'modify feature');
+# --TO DO: add code to clean CSV - deal with coded value fields, trim fields, etc.
 
-INSERT INTO {script.damTableDelete} (
-    cabd_id,
-    entry_classification,
-    data_source,
-    latitude,
-    longitude,
-    use_analysis,
-    dam_name_en
-)
-SELECT
-    cabd_id,
-    entry_classification,
-    data_source,
-    latitude,
-    longitude,
-    use_analysis,
-    dam_name_en
-FROM {script.sourceTable} WHERE entry_classification = 'delete feature';
+# --add new data sources and match new uuids for each data source to each record
+# ALTER TABLE cabd.data_source ADD CONSTRAINT unique_name (name);
+# INSERT INTO cabd.data_source (name, id, source_type)
+#     SELECT DISTINCT data_source, gen_random_uuid(), 'non-spatial' FROM {script.sourceTable}
+#     ON CONFLICT DO NOTHING;
+# ALTER TABLE cabd.data_source DROP CONSTRAINT unique_name;
 
-"""
-#print(mappingquery)
-script.do_work(mappingquery)
+# --add data source ids to the table
+# ALTER TABLE {script.sourceTable} RENAME COLUMN data_source to data_source_text;
+# ALTER TABLE {script.sourceTable} ADD COLUMN data_source uuid;
+# UPDATE {script.sourceTable} AS s SET data_source = d.id FROM cabd.data_source AS d WHERE d.name = s.data_source_text;
+
+# --TO DO: create damUpdateTable with proper format if not exists
+# --should include all attributes from dams.dams plus lat/long,
+# --entry_classification, data_source, and data_source_text
+
+# --TO DO: add remaining fields once this script has been tested
+# INSERT INTO {script.damUpdateTable} (
+#     cabd_id,
+#     entry_classification,
+#     data_source,
+#     data_source_text,
+#     latitude,
+#     longitude,
+#     use_analysis,
+#     dam_name_en
+# )
+# SELECT
+#     cabd_id,
+#     entry_classification,
+#     data_source,
+#     data_source_text,
+#     latitude,
+#     longitude,
+#     use_analysis,
+#     dam_name_en
+# FROM {script.sourceTable};
+
+# """
+
+# with conn.cursor() as cursor:
+#     cursor.execute(loadQuery)
+# conn.commit()
+conn.close()

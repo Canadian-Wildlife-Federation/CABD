@@ -15,20 +15,16 @@ class MappingScript:
     sourceSchema = "source_data"
     sourceTable = ""
 
-    damTableNewModify = sourceSchema + '.dams_new_modify'
-    damTableDelete = sourceSchema + '.dams_delete'
-
-    fishTableNewModify = sourceSchema + '.fishways_new_modify'
-    fishTableDelete = sourceSchema + '.fishways_delete'
+    updateSchema = "featurecopy"
+    damUpdateTable = updateSchema + '.dam_updates'
+    fishUpdateTable = updateSchema + '.fishway_updates'
 
     damSchema = "dams"
-
     damTable = damSchema + ".dams"
     damAttributeTable = damSchema + ".dams_attribute_source"
     damFeatureTable = damSchema + ".dams_feature_source"
 
     fishSchema = "fishways"
-
     fishTable = fishSchema + ".fishways"
     fishAttributeTable = fishSchema + ".fishways_attribute_source"
     fishFeatureTable = fishSchema + ".fishways_feature_source"
@@ -47,11 +43,11 @@ class MappingScript:
         print("dataFile: " + self.dataFile)
 
         if len(sys.argv) != 4:
-            print('Invalid usage: py dams_user_submitted_updates.py "<dataFile>" <dbUser> <dbPassword>')
+            print("Invalid usage: py map_<featureType>_updates.py <dbUser> <dbPassword>")
             sys.exit()
 
     def do_work(self, mappingquery):
-        print("Loading csv file " + self.dataFile)
+        print("Updating live data")
 
         self.conn = pg2.connect(database=dbName, 
                    user=dbUser, 
@@ -59,24 +55,13 @@ class MappingScript:
                    password=dbPassword, 
                    port=dbPort)
 
-        self.load_data(self.dataFile)
-    #     #print("Updating live data")
-    #     #self.run_mapping_query(mappingquery)
+        self.run_mapping_query(mappingquery)
 
         self.conn.commit()
         self.conn.close()
         
-        print("Script complete")
-    #     #print("Live data updated")
+        print("Script complete - live data updated")
 
-    # def run_mapping_query(self, mappingquery):
-    #     with self.conn.cursor() as cursor:
-    #         cursor.execute(mappingquery)
-
-    #load data from csv file into the database
-    def load_data(self, filename):
-        #load data using ogr
-        orgDb = "dbname='" + dbName + "' host='"+ dbHost +"' port='"+ dbPort + "' user='" + dbUser + "' password='" + dbPassword + "'"
-        pycmd = '"' + ogr + '" -f "PostgreSQL" PG:"' + orgDb + ' "' + filename + '"' + ' -nln "' + self.sourceTable + '" -oo AUTODETECT_TYPE = YES'
-        print(pycmd)
-        subprocess.run(pycmd)
+    def run_mapping_query(self, mappingquery):
+        with self.conn.cursor() as cursor:
+            cursor.execute(mappingquery)
