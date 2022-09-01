@@ -48,28 +48,15 @@ subprocess.run(pycmd)
 
 # --TO DO: add code to clean CSV - deal with coded value fields, trim fields, etc.
 
-# --add new data sources and match new uuids for each data source to each record
-# ALTER TABLE cabd.data_source ADD CONSTRAINT unique_name (name);
-# INSERT INTO cabd.data_source (name, id, source_type)
-#     SELECT DISTINCT data_source, gen_random_uuid(), 'non-spatial' FROM {script.sourceTable}
-#     ON CONFLICT DO NOTHING;
-# ALTER TABLE cabd.data_source DROP CONSTRAINT unique_name;
-
-# --add data source ids to the table
-# ALTER TABLE {script.sourceTable} RENAME COLUMN data_source to data_source_text;
-# ALTER TABLE {script.sourceTable} ADD COLUMN data_source uuid;
-# UPDATE {script.sourceTable} AS s SET data_source = d.id FROM cabd.data_source AS d WHERE d.name = s.data_source_text;
-
 # --TO DO: create damUpdateTable with proper format if not exists
 # --should include all attributes from dams.dams plus lat/long,
-# --entry_classification, data_source, and data_source_text
+# --entry_classification, and data_source
 
 # --TO DO: add remaining fields once this script has been tested
 # INSERT INTO {script.damUpdateTable} (
 #     cabd_id,
 #     entry_classification,
 #     data_source,
-#     data_source_text,
 #     latitude,
 #     longitude,
 #     use_analysis,
@@ -79,7 +66,6 @@ subprocess.run(pycmd)
 #     cabd_id,
 #     entry_classification,
 #     data_source,
-#     data_source_text,
 #     latitude,
 #     longitude,
 #     use_analysis,
