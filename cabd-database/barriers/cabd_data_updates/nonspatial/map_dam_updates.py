@@ -7,14 +7,13 @@ mappingquery = f"""
 --add new data sources and match new uuids for each data source to each record
 ALTER TABLE cabd.data_source ADD CONSTRAINT unique_name (name);
 INSERT INTO cabd.data_source (name, id, source_type)
-    SELECT DISTINCT data_source, gen_random_uuid(), 'non-spatial' FROM  {script.damUpdateTable}
+    SELECT DISTINCT data_source_short_name, gen_random_uuid(), 'non-spatial' FROM  {script.damUpdateTable}
     ON CONFLICT DO NOTHING;
 ALTER TABLE cabd.data_source DROP CONSTRAINT unique_name;
 
 --add data source ids to the table
-ALTER TABLE  {script.damUpdateTable} RENAME COLUMN data_source to data_source_text;
 ALTER TABLE  {script.damUpdateTable} ADD COLUMN data_source uuid;
-UPDATE {script.damUpdateTable} AS s SET data_source = d.id FROM cabd.data_source AS d WHERE d.name = s.data_source_text;
+UPDATE {script.damUpdateTable} AS s SET data_source = d.id FROM cabd.data_source AS d WHERE d.name = s.data_source_short_name;
 
 --deal with new and modified records
 INSERT INTO {script.damTable} (original_point)
