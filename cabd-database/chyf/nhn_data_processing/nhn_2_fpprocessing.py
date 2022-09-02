@@ -14,6 +14,7 @@ dbPassword = sys.argv[5]
 workunit = sys.argv[6].upper()
 fromschema = "nhn" + workunit.lower()
 toschema = "fpinput"
+outschema = "fpoutput"
 srid = 4617
 
 def log(message):
@@ -86,6 +87,14 @@ def copytonhnraw(conn):
     delete from {toschema}.shoreline where aoi_id in (select id from {toschema}.aoi where name = '{workunit}');
     delete from {toschema}.terminal_node where aoi_id in (select id from {toschema}.aoi where name = '{workunit}');
     delete from {toschema}.aoi where name = '{workunit}';
+    delete from {outschema}.eflowpath where aoi_id in (select id from {outschema}.aoi where name = '{workunit}');
+    delete from {outschema}.ecatchment where aoi_id in (select id from {outschema}.aoi where name = '{workunit}');
+    delete from {outschema}.shoreline where aoi_id in (select id from {outschema}.aoi where name = '{workunit}');
+    delete from {outschema}.terminal_node where aoi_id in (select id from {outschema}.aoi where name = '{workunit}');
+    delete from {outschema}.construction_points where aoi_id in (select id from {outschema}.aoi where name = '{workunit}');
+    delete from {outschema}.errors where aoi_id in (select id from {outschema}.aoi where name = '{workunit}');     
+    delete from {outschema}.feature_names where aoi_id in (select id from {outschema}.aoi where name = '{workunit}');         
+    delete from {outschema}.aoi where name = '{workunit}';
     
     insert into {toschema}.aoi (id, name, geometry) 
     select id, '{workunit}', st_transform(geometry, {srid}) from {fromschema}.aoi;
