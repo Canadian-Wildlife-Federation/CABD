@@ -91,6 +91,9 @@ def copytonhnraw(conn):
     delete from {outschema}.ecatchment where aoi_id in (select id from {outschema}.aoi where name = '{workunit}');
     delete from {outschema}.shoreline where aoi_id in (select id from {outschema}.aoi where name = '{workunit}');
     delete from {outschema}.terminal_node where aoi_id in (select id from {outschema}.aoi where name = '{workunit}');
+    delete from {outschema}.construction_points where aoi_id in (select id from {outschema}.aoi where name = '{workunit}');
+    delete from {outschema}.errors where aoi_id in (select id from {outschema}.aoi where name = '{workunit}');     
+    delete from {outschema}.feature_names where aoi_id in (select id from {outschema}.aoi where name = '{workunit}');         
     delete from {outschema}.aoi where name = '{workunit}';
     
     insert into {toschema}.aoi (id, name, geometry) 
