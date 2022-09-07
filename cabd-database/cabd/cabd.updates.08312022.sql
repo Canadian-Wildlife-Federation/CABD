@@ -2301,3 +2301,493 @@ or (view_name = 'cabd.dams_view' and field_name in ('dam_name_en', 'dam_name_fr'
 or (view_name = 'cabd.fishways_view' and field_name in ('structure_name_en', 'structure_name_fr'))
 or (view_name = 'cabd.waterfalls_view' and field_name in ('fall_name_en', 'fall_name_fr'))
                     
+
+
+
+
+
+alter table medium.code_attribute_1 rename column name to name_en;
+alter table medium.code_attribute_1 rename column description to description_en;
+alter table medium.code_attribute_1 add column name_fr varchar(64);
+alter table medium.code_attribute_1 add column description_fr text;
+alter table medium.code_attribute_2 rename column name to name_en;
+alter table medium.code_attribute_2 rename column description to description_en;
+alter table medium.code_attribute_2 add column name_fr varchar(64);
+alter table medium.code_attribute_2 add column description_fr text;
+alter table medium.code_attribute_3 rename column name to name_en;
+alter table medium.code_attribute_3 rename column description to description_en;
+alter table medium.code_attribute_3 add column name_fr varchar(64);
+alter table medium.code_attribute_3 add column description_fr text;
+alter table medium.code_attribute_4 rename column name to name_en;
+alter table medium.code_attribute_4 rename column description to description_en;
+alter table medium.code_attribute_4 add column name_fr varchar(64);
+alter table medium.code_attribute_4 add column description_fr text;
+alter table medium.code_attribute_5 rename column name to name_en;
+alter table medium.code_attribute_5 rename column description to description_en;
+alter table medium.code_attribute_5 add column name_fr varchar(64);
+alter table medium.code_attribute_5 add column description_fr text;
+alter table medium.code_attribute_6 rename column name to name_en;
+alter table medium.code_attribute_6 rename column description to description_en;
+alter table medium.code_attribute_6 add column name_fr varchar(64);
+alter table medium.code_attribute_6 add column description_fr text;
+alter table medium.code_attribute_7 rename column name to name_en;
+alter table medium.code_attribute_7 rename column description to description_en;
+alter table medium.code_attribute_7 add column name_fr varchar(64);
+alter table medium.code_attribute_7 add column description_fr text;
+alter table medium.code_attribute_8 rename column name to name_en;
+alter table medium.code_attribute_8 rename column description to description_en;
+alter table medium.code_attribute_8 add column name_fr varchar(64);
+alter table medium.code_attribute_8 add column description_fr text;
+alter table medium.code_attribute_9 rename column name to name_en;
+alter table medium.code_attribute_9 rename column description to description_en;
+alter table medium.code_attribute_9 add column name_fr varchar(64);
+alter table medium.code_attribute_9 add column description_fr text;
+alter table medium.code_attribute_10 rename column name to name_en;
+alter table medium.code_attribute_10 rename column description to description_en;
+alter table medium.code_attribute_10 add column name_fr varchar(64);
+alter table medium.code_attribute_10 add column description_fr text;
+
+update medium.code_attribute_1 set name_fr = name_en, description_fr = description_en;
+update medium.code_attribute_2 set name_fr = name_en, description_fr = description_en;
+update medium.code_attribute_3 set name_fr = name_en, description_fr = description_en;
+update medium.code_attribute_4 set name_fr = name_en, description_fr = description_en;
+update medium.code_attribute_5 set name_fr = name_en, description_fr = description_en;
+update medium.code_attribute_6 set name_fr = name_en, description_fr = description_en;
+update medium.code_attribute_7 set name_fr = name_en, description_fr = description_en;
+update medium.code_attribute_8 set name_fr = name_en, description_fr = description_en;
+update medium.code_attribute_9 set name_fr = name_en, description_fr = description_en;
+update medium.code_attribute_10 set name_fr = name_en, description_fr = description_en;
+
+alter table big.code_attribute_1 rename column name to name_en;
+alter table big.code_attribute_1 rename column description to description_en;
+alter table big.code_attribute_1 add column name_fr varchar(64);
+alter table big.code_attribute_1 add column description_fr text;
+alter table big.code_attribute_2 rename column name to name_en;
+alter table big.code_attribute_2 rename column description to description_en;
+alter table big.code_attribute_2 add column name_fr varchar(64);
+alter table big.code_attribute_2 add column description_fr text;
+alter table big.code_attribute_3 rename column name to name_en;
+alter table big.code_attribute_3 rename column description to description_en;
+alter table big.code_attribute_3 add column name_fr varchar(64);
+alter table big.code_attribute_3 add column description_fr text;
+alter table big.code_attribute_4 rename column name to name_en;
+alter table big.code_attribute_4 rename column description to description_en;
+alter table big.code_attribute_4 add column name_fr varchar(64);
+alter table big.code_attribute_4 add column description_fr text;
+alter table big.code_attribute_5 rename column name to name_en;
+alter table big.code_attribute_5 rename column description to description_en;
+alter table big.code_attribute_5 add column name_fr varchar(64);
+alter table big.code_attribute_5 add column description_fr text;
+alter table big.code_attribute_6 rename column name to name_en;
+alter table big.code_attribute_6 rename column description to description_en;
+alter table big.code_attribute_6 add column name_fr varchar(64);
+alter table big.code_attribute_6 add column description_fr text;
+alter table big.code_attribute_7 rename column name to name_en;
+alter table big.code_attribute_7 rename column description to description_en;
+alter table big.code_attribute_7 add column name_fr varchar(64);
+alter table big.code_attribute_7 add column description_fr text;
+alter table big.code_attribute_8 rename column name to name_en;
+alter table big.code_attribute_8 rename column description to description_en;
+alter table big.code_attribute_8 add column name_fr varchar(64);
+alter table big.code_attribute_8 add column description_fr text;
+alter table big.code_attribute_9 rename column name to name_en;
+alter table big.code_attribute_9 rename column description to description_en;
+alter table big.code_attribute_9 add column name_fr varchar(64);
+alter table big.code_attribute_9 add column description_fr text;
+alter table big.code_attribute_10 rename column name to name_en;
+alter table big.code_attribute_10 rename column description to description_en;
+alter table big.code_attribute_10 add column name_fr varchar(64);
+alter table big.code_attribute_10 add column description_fr text;
+
+update big.code_attribute_1 set name_fr = name_en, description_fr = description_en;
+update big.code_attribute_2 set name_fr = name_en, description_fr = description_en;
+update big.code_attribute_3 set name_fr = name_en, description_fr = description_en;
+update big.code_attribute_4 set name_fr = name_en, description_fr = description_en;
+update big.code_attribute_5 set name_fr = name_en, description_fr = description_en;
+update big.code_attribute_6 set name_fr = name_en, description_fr = description_en;
+update big.code_attribute_7 set name_fr = name_en, description_fr = description_en;
+update big.code_attribute_8 set name_fr = name_en, description_fr = description_en;
+update big.code_attribute_9 set name_fr = name_en, description_fr = description_en;
+update big.code_attribute_10 set name_fr = name_en, description_fr = description_en;
+
+update cabd.feature_type_metadata set value_options_reference = 'medium.code_attribute_1;;name;description' where view_name = 'cabd.medium_view' and field_name = 'code_attribute_1_name';
+update cabd.feature_type_metadata set value_options_reference = 'medium.code_attribute_2;;name;description' where view_name = 'cabd.medium_view' and field_name = 'code_attribute_2_name';
+update cabd.feature_type_metadata set value_options_reference = 'medium.code_attribute_3;;name;description' where view_name = 'cabd.medium_view' and field_name = 'code_attribute_3_name';
+update cabd.feature_type_metadata set value_options_reference = 'medium.code_attribute_4;;name;description' where view_name = 'cabd.medium_view' and field_name = 'code_attribute_4_name';
+update cabd.feature_type_metadata set value_options_reference = 'medium.code_attribute_5;;name;description' where view_name = 'cabd.medium_view' and field_name = 'code_attribute_5_name';
+update cabd.feature_type_metadata set value_options_reference = 'medium.code_attribute_6;;name;description' where view_name = 'cabd.medium_view' and field_name = 'code_attribute_6_name';
+update cabd.feature_type_metadata set value_options_reference = 'medium.code_attribute_7;;name;description' where view_name = 'cabd.medium_view' and field_name = 'code_attribute_7_name';
+update cabd.feature_type_metadata set value_options_reference = 'medium.code_attribute_8;;name;description' where view_name = 'cabd.medium_view' and field_name = 'code_attribute_8_name';
+update cabd.feature_type_metadata set value_options_reference = 'medium.code_attribute_9;;name;description' where view_name = 'cabd.medium_view' and field_name = 'code_attribute_9_name';
+update cabd.feature_type_metadata set value_options_reference = 'medium.code_attribute_10;;name;description' where view_name = 'cabd.medium_view' and field_name = 'code_attribute_10_name';
+
+update cabd.feature_type_metadata set value_options_reference = 'big.code_attribute_1;;name;description' where view_name = 'cabd.big_view' and field_name = 'code_attribute_1_name';
+update cabd.feature_type_metadata set value_options_reference = 'big.code_attribute_2;;name;description' where view_name = 'cabd.big_view' and field_name = 'code_attribute_2_name';
+update cabd.feature_type_metadata set value_options_reference = 'big.code_attribute_3;;name;description' where view_name = 'cabd.big_view' and field_name = 'code_attribute_3_name';
+update cabd.feature_type_metadata set value_options_reference = 'big.code_attribute_4;;name;description' where view_name = 'cabd.big_view' and field_name = 'code_attribute_4_name';
+update cabd.feature_type_metadata set value_options_reference = 'big.code_attribute_5;;name;description' where view_name = 'cabd.big_view' and field_name = 'code_attribute_5_name';
+update cabd.feature_type_metadata set value_options_reference = 'big.code_attribute_6;;name;description' where view_name = 'cabd.big_view' and field_name = 'code_attribute_6_name';
+update cabd.feature_type_metadata set value_options_reference = 'big.code_attribute_7;;name;description' where view_name = 'cabd.big_view' and field_name = 'code_attribute_7_name';
+update cabd.feature_type_metadata set value_options_reference = 'big.code_attribute_8;;name;description' where view_name = 'cabd.big_view' and field_name = 'code_attribute_8_name';
+update cabd.feature_type_metadata set value_options_reference = 'big.code_attribute_9;;name;description' where view_name = 'cabd.big_view' and field_name = 'code_attribute_9_name';
+update cabd.feature_type_metadata set value_options_reference = 'big.code_attribute_10;;name;description' where view_name = 'cabd.big_view' and field_name = 'code_attribute_10_name';
+
+
+
+-- cabd.big_view source
+drop view cabd.big_view;
+
+CREATE OR REPLACE VIEW cabd.big_view_en
+AS SELECT 'big'::text AS feature_type,
+    d.cabd_id,
+    st_y(d.snapped_point) AS latitude,
+    st_x(d.snapped_point) AS longitude,
+    d.name_en,
+    d.name_fr,
+    d.nhn_workunit_id,
+    nhn.sub_sub_drainage_area,
+    d.province_territory_code,
+    pt.name_en AS province_territory,
+    d.passability_status_code,
+    ps.name_en AS passability_status,
+    d.up_passage_type_code,
+    up.name_en AS up_passage_type,
+    d.code_attribute_1,
+    d1.name_en AS code_attribute_1_name,
+    d.code_attribute_2,
+    d2.name_en AS code_attribute_2_name,
+    d.code_attribute_3,
+    d3.name_en AS code_attribute_3_name,
+    d.code_attribute_4,
+    d4.name_en AS code_attribute_4_name,
+    d.code_attribute_5,
+    d5.name_en AS code_attribute_5_name,
+    d.code_attribute_6,
+    d6.name_en AS code_attribute_6_name,
+    d.code_attribute_7,
+    d7.name_en AS code_attribute_7_name,
+    d.code_attribute_8,
+    d8.name_en AS code_attribute_8_name,
+    d.code_attribute_9,
+    d9.name_en AS code_attribute_9_name,
+    d.code_attribute_10,
+    d10.name_en AS code_attribute_10_name,
+    d.number_attribute_1,
+    d.number_attribute_2,
+    d.number_attribute_3,
+    d.number_attribute_4,
+    d.number_attribute_5,
+    d.number_attribute_6,
+    d.number_attribute_7,
+    d.number_attribute_8,
+    d.number_attribute_9,
+    d.number_attribute_10,
+    d.text_attribute_1,
+    d.text_attribute_2,
+    d.text_attribute_3,
+    d.text_attribute_4,
+    d.text_attribute_5,
+    d.text_attribute_6,
+    d.text_attribute_7,
+    d.text_attribute_8,
+    d.text_attribute_9,
+    d.text_attribute_10,
+    d.date_attribute_1,
+    d.date_attribute_2,
+    d.date_attribute_3,
+    d.date_attribute_4,
+    d.date_attribute_5,
+    d.date_attribute_6,
+    d.date_attribute_7,
+    d.date_attribute_8,
+    d.date_attribute_9,
+    d.date_attribute_10,
+    d.snapped_point AS geometry
+   FROM big.big d
+     JOIN cabd.province_territory_codes pt ON pt.code::text = d.province_territory_code::text
+     LEFT JOIN cabd.upstream_passage_type_codes up ON up.code = d.up_passage_type_code
+     LEFT JOIN cabd.nhn_workunit nhn ON nhn.id::text = d.nhn_workunit_id::text
+     LEFT JOIN cabd.passability_status_codes ps ON ps.code = d.passability_status_code
+     LEFT JOIN big.code_attribute_1 d1 ON d1.code = d.code_attribute_1
+     LEFT JOIN big.code_attribute_2 d2 ON d2.code = d.code_attribute_2
+     LEFT JOIN big.code_attribute_3 d3 ON d3.code = d.code_attribute_3
+     LEFT JOIN big.code_attribute_4 d4 ON d4.code = d.code_attribute_4
+     LEFT JOIN big.code_attribute_5 d5 ON d5.code = d.code_attribute_5
+     LEFT JOIN big.code_attribute_6 d6 ON d6.code = d.code_attribute_6
+     LEFT JOIN big.code_attribute_7 d7 ON d7.code = d.code_attribute_7
+     LEFT JOIN big.code_attribute_8 d8 ON d8.code = d.code_attribute_8
+     LEFT JOIN big.code_attribute_9 d9 ON d9.code = d.code_attribute_9
+     LEFT JOIN big.code_attribute_10 d10 ON d10.code = d.code_attribute_10;
+     
+     
+
+CREATE OR REPLACE VIEW cabd.big_view_fr
+AS SELECT 'big'::text AS feature_type,
+    d.cabd_id,
+    st_y(d.snapped_point) AS latitude,
+    st_x(d.snapped_point) AS longitude,
+    d.name_en,
+    d.name_fr,
+    d.nhn_workunit_id,
+    nhn.sub_sub_drainage_area,
+    d.province_territory_code,
+    pt.name_fr AS province_territory,
+    d.passability_status_code,
+    ps.name_fr AS passability_status,
+    d.up_passage_type_code,
+    up.name_fr AS up_passage_type,
+    d.code_attribute_1,
+    d1.name_fr AS code_attribute_1_name,
+    d.code_attribute_2,
+    d2.name_fr AS code_attribute_2_name,
+    d.code_attribute_3,
+    d3.name_fr AS code_attribute_3_name,
+    d.code_attribute_4,
+    d4.name_fr AS code_attribute_4_name,
+    d.code_attribute_5,
+    d5.name_fr AS code_attribute_5_name,
+    d.code_attribute_6,
+    d6.name_fr AS code_attribute_6_name,
+    d.code_attribute_7,
+    d7.name_fr AS code_attribute_7_name,
+    d.code_attribute_8,
+    d8.name_fr AS code_attribute_8_name,
+    d.code_attribute_9,
+    d9.name_fr AS code_attribute_9_name,
+    d.code_attribute_10,
+    d10.name_fr AS code_attribute_10_name,
+    d.number_attribute_1,
+    d.number_attribute_2,
+    d.number_attribute_3,
+    d.number_attribute_4,
+    d.number_attribute_5,
+    d.number_attribute_6,
+    d.number_attribute_7,
+    d.number_attribute_8,
+    d.number_attribute_9,
+    d.number_attribute_10,
+    d.text_attribute_1,
+    d.text_attribute_2,
+    d.text_attribute_3,
+    d.text_attribute_4,
+    d.text_attribute_5,
+    d.text_attribute_6,
+    d.text_attribute_7,
+    d.text_attribute_8,
+    d.text_attribute_9,
+    d.text_attribute_10,
+    d.date_attribute_1,
+    d.date_attribute_2,
+    d.date_attribute_3,
+    d.date_attribute_4,
+    d.date_attribute_5,
+    d.date_attribute_6,
+    d.date_attribute_7,
+    d.date_attribute_8,
+    d.date_attribute_9,
+    d.date_attribute_10,
+    d.snapped_point AS geometry
+   FROM big.big d
+     JOIN cabd.province_territory_codes pt ON pt.code::text = d.province_territory_code::text
+     LEFT JOIN cabd.upstream_passage_type_codes up ON up.code = d.up_passage_type_code
+     LEFT JOIN cabd.nhn_workunit nhn ON nhn.id::text = d.nhn_workunit_id::text
+     LEFT JOIN cabd.passability_status_codes ps ON ps.code = d.passability_status_code
+     LEFT JOIN big.code_attribute_1 d1 ON d1.code = d.code_attribute_1
+     LEFT JOIN big.code_attribute_2 d2 ON d2.code = d.code_attribute_2
+     LEFT JOIN big.code_attribute_3 d3 ON d3.code = d.code_attribute_3
+     LEFT JOIN big.code_attribute_4 d4 ON d4.code = d.code_attribute_4
+     LEFT JOIN big.code_attribute_5 d5 ON d5.code = d.code_attribute_5
+     LEFT JOIN big.code_attribute_6 d6 ON d6.code = d.code_attribute_6
+     LEFT JOIN big.code_attribute_7 d7 ON d7.code = d.code_attribute_7
+     LEFT JOIN big.code_attribute_8 d8 ON d8.code = d.code_attribute_8
+     LEFT JOIN big.code_attribute_9 d9 ON d9.code = d.code_attribute_9
+     LEFT JOIN big.code_attribute_10 d10 ON d10.code = d.code_attribute_10;
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+-- cabd.medium_view source
+drop view cabd.medium_view;
+
+CREATE OR REPLACE VIEW cabd.medium_view_en
+AS SELECT 'medium'::text AS feature_type,
+    d.cabd_id,
+    st_y(d.snapped_point) AS latitude,
+    st_x(d.snapped_point) AS longitude,
+    d.name_en,
+    d.name_fr,
+    d.nhn_workunit_id,
+    nhn.sub_sub_drainage_area,
+    d.province_territory_code,
+    pt.name_en AS province_territory,
+    d.passability_status_code,
+    ps.name_en AS passability_status,
+    d.up_passage_type_code,
+    up.name_en AS up_passage_type,
+    d.code_attribute_1,
+    d1.name_en AS code_attribute_1_name,
+    d.code_attribute_2,
+    d2.name_en AS code_attribute_2_name,
+    d.code_attribute_3,
+    d3.name_en AS code_attribute_3_name,
+    d.code_attribute_4,
+    d4.name_en AS code_attribute_4_name,
+    d.code_attribute_5,
+    d5.name_en AS code_attribute_5_name,
+    d.code_attribute_6,
+    d6.name_en AS code_attribute_6_name,
+    d.code_attribute_7,
+    d7.name_en AS code_attribute_7_name,
+    d.code_attribute_8,
+    d8.name_en AS code_attribute_8_name,
+    d.code_attribute_9,
+    d9.name_en AS code_attribute_9_name,
+    d.code_attribute_10,
+    d10.name_en AS code_attribute_10_name,
+    d.number_attribute_1,
+    d.number_attribute_2,
+    d.number_attribute_3,
+    d.number_attribute_4,
+    d.number_attribute_5,
+    d.number_attribute_6,
+    d.number_attribute_7,
+    d.number_attribute_8,
+    d.number_attribute_9,
+    d.number_attribute_10,
+    d.text_attribute_1,
+    d.text_attribute_2,
+    d.text_attribute_3,
+    d.text_attribute_4,
+    d.text_attribute_5,
+    d.text_attribute_6,
+    d.text_attribute_7,
+    d.text_attribute_8,
+    d.text_attribute_9,
+    d.text_attribute_10,
+    d.date_attribute_1,
+    d.date_attribute_2,
+    d.date_attribute_3,
+    d.date_attribute_4,
+    d.date_attribute_5,
+    d.date_attribute_6,
+    d.date_attribute_7,
+    d.date_attribute_8,
+    d.date_attribute_9,
+    d.date_attribute_10,
+    d.snapped_point AS geometry
+   FROM medium.medium d
+     JOIN cabd.province_territory_codes pt ON pt.code::text = d.province_territory_code::text
+     LEFT JOIN cabd.upstream_passage_type_codes up ON up.code = d.up_passage_type_code
+     LEFT JOIN cabd.nhn_workunit nhn ON nhn.id::text = d.nhn_workunit_id::text
+     LEFT JOIN cabd.passability_status_codes ps ON ps.code = d.passability_status_code
+     LEFT JOIN medium.code_attribute_1 d1 ON d1.code = d.code_attribute_1
+     LEFT JOIN medium.code_attribute_2 d2 ON d2.code = d.code_attribute_2
+     LEFT JOIN medium.code_attribute_3 d3 ON d3.code = d.code_attribute_3
+     LEFT JOIN medium.code_attribute_4 d4 ON d4.code = d.code_attribute_4
+     LEFT JOIN medium.code_attribute_5 d5 ON d5.code = d.code_attribute_5
+     LEFT JOIN medium.code_attribute_6 d6 ON d6.code = d.code_attribute_6
+     LEFT JOIN medium.code_attribute_7 d7 ON d7.code = d.code_attribute_7
+     LEFT JOIN medium.code_attribute_8 d8 ON d8.code = d.code_attribute_8
+     LEFT JOIN medium.code_attribute_9 d9 ON d9.code = d.code_attribute_9
+     LEFT JOIN medium.code_attribute_10 d10 ON d10.code = d.code_attribute_10;     
+     
+     
+
+CREATE OR REPLACE VIEW cabd.medium_view_fr
+AS SELECT 'medium'::text AS feature_type,
+    d.cabd_id,
+    st_y(d.snapped_point) AS latitude,
+    st_x(d.snapped_point) AS longitude,
+    d.name_en,
+    d.name_fr,
+    d.nhn_workunit_id,
+    nhn.sub_sub_drainage_area,
+    d.province_territory_code,
+    pt.name_fr AS province_territory,
+    d.passability_status_code,
+    ps.name_fr AS passability_status,
+    d.up_passage_type_code,
+    up.name_fr AS up_passage_type,
+    d.code_attribute_1,
+    d1.name_fr AS code_attribute_1_name,
+    d.code_attribute_2,
+    d2.name_fr AS code_attribute_2_name,
+    d.code_attribute_3,
+    d3.name_fr AS code_attribute_3_name,
+    d.code_attribute_4,
+    d4.name_fr AS code_attribute_4_name,
+    d.code_attribute_5,
+    d5.name_fr AS code_attribute_5_name,
+    d.code_attribute_6,
+    d6.name_fr AS code_attribute_6_name,
+    d.code_attribute_7,
+    d7.name_fr AS code_attribute_7_name,
+    d.code_attribute_8,
+    d8.name_fr AS code_attribute_8_name,
+    d.code_attribute_9,
+    d9.name_fr AS code_attribute_9_name,
+    d.code_attribute_10,
+    d10.name_fr AS code_attribute_10_name,
+    d.number_attribute_1,
+    d.number_attribute_2,
+    d.number_attribute_3,
+    d.number_attribute_4,
+    d.number_attribute_5,
+    d.number_attribute_6,
+    d.number_attribute_7,
+    d.number_attribute_8,
+    d.number_attribute_9,
+    d.number_attribute_10,
+    d.text_attribute_1,
+    d.text_attribute_2,
+    d.text_attribute_3,
+    d.text_attribute_4,
+    d.text_attribute_5,
+    d.text_attribute_6,
+    d.text_attribute_7,
+    d.text_attribute_8,
+    d.text_attribute_9,
+    d.text_attribute_10,
+    d.date_attribute_1,
+    d.date_attribute_2,
+    d.date_attribute_3,
+    d.date_attribute_4,
+    d.date_attribute_5,
+    d.date_attribute_6,
+    d.date_attribute_7,
+    d.date_attribute_8,
+    d.date_attribute_9,
+    d.date_attribute_10,
+    d.snapped_point AS geometry
+   FROM medium.medium d
+     JOIN cabd.province_territory_codes pt ON pt.code::text = d.province_territory_code::text
+     LEFT JOIN cabd.upstream_passage_type_codes up ON up.code = d.up_passage_type_code
+     LEFT JOIN cabd.nhn_workunit nhn ON nhn.id::text = d.nhn_workunit_id::text
+     LEFT JOIN cabd.passability_status_codes ps ON ps.code = d.passability_status_code
+     LEFT JOIN medium.code_attribute_1 d1 ON d1.code = d.code_attribute_1
+     LEFT JOIN medium.code_attribute_2 d2 ON d2.code = d.code_attribute_2
+     LEFT JOIN medium.code_attribute_3 d3 ON d3.code = d.code_attribute_3
+     LEFT JOIN medium.code_attribute_4 d4 ON d4.code = d.code_attribute_4
+     LEFT JOIN medium.code_attribute_5 d5 ON d5.code = d.code_attribute_5
+     LEFT JOIN medium.code_attribute_6 d6 ON d6.code = d.code_attribute_6
+     LEFT JOIN medium.code_attribute_7 d7 ON d7.code = d.code_attribute_7
+     LEFT JOIN medium.code_attribute_8 d8 ON d8.code = d.code_attribute_8
+     LEFT JOIN medium.code_attribute_9 d9 ON d9.code = d.code_attribute_9
+     LEFT JOIN medium.code_attribute_10 d10 ON d10.code = d.code_attribute_10;          
+     
+update cabd.feature_type_metadata set value_options_reference = 'cabd.upstream_passage_type_codes;;name;description' where view_name = 'cabd.big_view' and field_name = 'up_passage_type';
+update cabd.feature_type_metadata set value_options_reference = 'cabd.upstream_passage_type_codes;;name;description' where view_name = 'cabd.medium_view' and field_name = 'up_passage_type';
+
+
+grant all privileges on cabd.medium_view_en to cabd;
+grant all privileges on cabd.medium_view_fr to cabd;   
+grant all privileges on cabd.big_view_en to cabd;
+grant all privileges on cabd.big_view_fr to cabd;
