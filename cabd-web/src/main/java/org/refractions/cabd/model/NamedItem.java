@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Canadian Wildlife Federation
+ * Copyright 2022 Canadian Wildlife Federation
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); 
  * you may not use this file except in compliance with the License. 
@@ -15,27 +15,28 @@
  */
 package org.refractions.cabd.model;
 
+import org.refractions.cabd.CabdApplication;
+
 /**
- * Valid list item for code/list attributes
+ * Simple object containing english and french name fields that
+ * returns the correct name based on the request locale.
  * 
  * @author Emily
  *
  */
-public class FeatureTypeListValue extends NamedDescriptionItem{
+public class NamedItem {
 
-	private Object value;
+	protected String name_en;
+	protected String name_fr;
 	
-	
-	public FeatureTypeListValue(Object value, String name_en, 
-			String name_fr, String description_en, String description_fr) {
-		super(name_en, name_fr, description_en, description_fr);
-		
-		this.value = value;
+	public NamedItem(String name_en, String name_fr) {
+		this.name_en = name_en;
+		this.name_fr = name_fr;
 	}
 	
-	public Object getValue() {
-		if (this.value == null) return getName();
-		return this.value;
-	}
 	
+	public String getName() {
+		if (CabdApplication.isFrench())  return name_fr;
+		return name_en;	
+	}
 }

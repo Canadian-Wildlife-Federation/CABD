@@ -17,6 +17,8 @@ package org.refractions.cabd.model;
 
 import java.util.Collection;
 
+import org.refractions.cabd.CabdApplication;
+
 /**
  * Represents the metadata about a view containing
  * feature details. 
@@ -29,8 +31,14 @@ public class FeatureViewMetadata {
 	/**
 	 * The database view that lists all features
 	 */
-	public static final String ALL_FEATURES_VIEW = "cabd.all_features_view";
+	private static final String ALL_FEATURES_VIEW_EN = "cabd.all_features_view_en";
+	private static final String ALL_FEATURES_VIEW_FR = "cabd.all_features_view_fr";
+	public static final String ALL_FEATURES_VIEW_ROOT = "cabd.all_features_view";
 	
+	public static String getAllFeaturesView() {
+		if (CabdApplication.isFrench()) return ALL_FEATURES_VIEW_FR;
+		return ALL_FEATURES_VIEW_EN;
+	}
 	/**
 	 * attribute key for link to feature 
 	 */
@@ -45,7 +53,8 @@ public class FeatureViewMetadata {
 	}
 	
 	public String getFeatureView() {
-		return this.featureView;
+		if (CabdApplication.isFrench()) return this.featureView + "_fr";
+		return this.featureView + "_en";
 	}
 	
 	public Collection<FeatureViewMetadataField> getFields(){

@@ -95,7 +95,7 @@ if (srid is None):
 #transform data
 query = f"""
 --create aoi and update referenced tables
-ALTER TABLE {workingSchema}.aoi ADD column id uuid default uuid_generate_v4() not null;
+ALTER TABLE {workingSchema}.aoi ADD column id uuid default gen_random_uuid() not null;
 ALTER TABLE {workingSchema}.aoi RENAME column datasetname to name;
 ALTER TABLE {workingSchema}.aoi ADD column status varchar default 'READY';
 
@@ -120,9 +120,9 @@ ALTER TABLE {workingSchema}.shoreline add column aoi_id uuid;
 UPDATE {workingSchema}.shoreline set aoi_id = (SELECT id from {workingSchema}.aoi);
 
 --add id column
-ALTER TABLE {workingSchema}.shoreline add column id uuid default uuid_generate_v4();
-ALTER TABLE {workingSchema}.ecatchment add column id uuid default uuid_generate_v4();
-ALTER TABLE {workingSchema}.eflowpath add column id uuid default uuid_generate_v4();
+ALTER TABLE {workingSchema}.shoreline add column id uuid default gen_random_uuid();
+ALTER TABLE {workingSchema}.ecatchment add column id uuid default gen_random_uuid();
+ALTER TABLE {workingSchema}.eflowpath add column id uuid default gen_random_uuid();
 
 --eflowpath
 --nhnflowpath type  -1 Unknown , 0 - None, 1 - Observed, 2 - Inferred, 3 - Constructed 
@@ -194,7 +194,16 @@ UPDATE {workingSchema}.aoi set geometry = ST_RemoveRepeatedPoints(st_snaptogrid(
 UPDATE {workingSchema}.shoreline set geometry = ST_RemoveRepeatedPoints(st_snaptogrid(geometry, {snaptogrid}));
  
 --populate terminal points table the best we can
-CREATE TABLE {workingSchema}.terminal_node(id uuid primary key, aoi_id uuid, flow_direction int, geometry geometry(POINT, {srid}));
+CREATE TABLE {workingSchema}.terminal_node(
+id uuid primary key, 
+aoi_id uuid, 
+flow_direction int,
+rivernameid1 varchar(32),
+rivernameid2 varchar(32),
+rivername1 varchar(32),
+rivername2 varchar(32) ,
+geodbname varchar,
+geometry geometry(POINT, {srid}));
  
 --eflowpath intersections with aoi
 with points as (
@@ -210,14 +219,14 @@ union
 select st_endpoint(geometry) from {workingSchema}.eflowpath where ef_type in (1,4)
 )
 INSERT INTO {workingSchema}.terminal_node(id, geometry)
-select uuid_generate_v4(), points.geometry 
+select gen_random_uuid(), points.geometry 
 from points where geometry in (select geometry from startend);
 
 --ecatchment intersections with aoi
 
 --point intersections
 INSERT INTO {workingSchema}.terminal_node(id, geometry) 
-SELECT uuid_generate_v4(), geometry
+SELECT gen_random_uuid(), geometry
 FROM
 (
   SELECT st_geometryn(geometry, generate_series(1, st_numgeometries(geometry)))  as geometry
@@ -234,13 +243,11 @@ FROM
   ) foo
 ) bar 
 WHERE upper(st_geometrytype(geometry)) = 'ST_POINT';
-
-
-    
+   
 -- linear intersections
 INSERT INTO {workingSchema}.terminal_node(id, geometry) 
 with eintersect as (
-  select st_Geometryn(geometry, generate_series(1, st_numgeometries(geometry))) as geometry, uuid_generate_v4() as uuid
+  select st_Geometryn(geometry, generate_series(1, st_numgeometries(geometry))) as geometry, gen_random_uuid() as uuid
   from(
     select st_linemerge(st_intersection(a.geometry, b.geometry)) as geometry
     from {workingSchema}.ecatchment a,  
@@ -252,12 +259,24 @@ with eintersect as (
     where a.ec_type in (4) and a.geometry && b.geometry and st_intersects(a.geometry, b.geometry)
   ) as foo
 )
-select uuid_generate_v4(), st_closestpoint(st_union(geom), st_centroid(rawg))
+select gen_random_uuid(), st_closestpoint(st_union(geom), st_centroid(rawg))
 from (
 select st_pointn(geometry, generate_series(1, st_numpoints(geometry))) as geom, uuid, geometry as rawg from eintersect) a
 group by uuid, rawg;
 
+-- apply names to terminal points
+-- this will only work for linear intersections when the centroid of the intersection
+-- is closest to the skeleton line (this is generally the case but it doesn't have to be)
+-- these should be reviewed
+UPDATE {workingSchema}.terminal_node
+SET rivernameid1 = a.nameid1, rivernameid2 = a.nameid2, rivername1 = a.name1, rivername2 = a.name2, geodbname = a.geographicalnamedb
+FROM
+{workingSchema}.eflowpath a
+WHERE st_intersects(a.geometry, {workingSchema}.terminal_node.geometry)
+AND a.ef_type in (1, 3, 4); 
 
+
+--apply flow direction to terminal nodes
 UPDATE {workingSchema}.terminal_node SET flow_direction = z.fd
 FROM (
 select b.id, e.geometry, case when e.flowdirection != 1 then null when st_equals(st_startpoint(e.geometry), b.geometry) then 1 else 2 end as fd
@@ -277,6 +296,8 @@ ALTER TABLE {workingSchema}.eflowpath OWNER TO chyf;
 ALTER TABLE {workingSchema}.shoreline OWNER TO chyf;
 ALTER TABLE {workingSchema}.terminal_node OWNER TO chyf;
 
+
+
 """
 log(query)
 
@@ -284,6 +305,18 @@ with conn.cursor() as cursor:
     cursor.execute(query);
 conn.commit();
 
+
+conn.set_session(autocommit=True)
+log(query)
+with conn.cursor() as cursor:
+    cursor.execute(f"VACUUM ANALYZE {workingSchema}.aoi");
+    cursor.execute(f"VACUUM ANALYZE {workingSchema}.delimiter");
+    cursor.execute(f"VACUUM ANALYZE {workingSchema}.ecatchment");
+    cursor.execute(f"VACUUM ANALYZE {workingSchema}.eflowpath");
+    cursor.execute(f"VACUUM ANALYZE {workingSchema}.shoreline");
+    cursor.execute(f"VACUUM ANALYZE {workingSchema}.terminal_node");
+conn.set_session(autocommit=False)    
+    
 run_qa(conn, nhnworkunit)
 
 print ("LOAD DONE")

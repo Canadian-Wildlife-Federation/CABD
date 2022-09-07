@@ -22,6 +22,7 @@
 		<geotools.version>26.1</geotools.version>
 		<jts.version>1.17.1</jts.version>
 		<springdoc.version>1.5.0</springdoc.version>
+		<opencsv.version>5.6</opencsv.version>
 	</properties>
 
 	<repositories>
@@ -100,6 +101,11 @@
 			<groupId>org.geotools.xsd</groupId>
 			<artifactId>gt-xsd-kml</artifactId>
 			<version>${geotools.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.opencsv</groupId>
+			<artifactId>opencsv</artifactId>
+			<version>${opencsv.version}</version>
 		</dependency>
 	</dependencies>
 

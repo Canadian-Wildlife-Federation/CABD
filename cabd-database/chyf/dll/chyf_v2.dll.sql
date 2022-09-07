@@ -1,3 +1,6 @@
+--create extension postgis;
+--create extension "uuid-ossp";
+
 drop schema if exists chyf2 cascade;
 create schema chyf2;
 
@@ -32,7 +35,8 @@ create index terminal_point_aoi_id_idx on chyf2.terminal_point(aoi_id);
 
 create table chyf2.ecatchment(
   id uuid not null primary key,
-  ec_type smallint not null check (ec_type in(1,2,3,4,5)),
+  nid varchar(32),
+  ec_type smallint not null,
   ec_subtype smallint,
   area double precision not null,
   aoi_id uuid not null references chyf2.aoi(id),
@@ -44,15 +48,16 @@ create index ecatchment_aoi_id_idx on chyf2.ecatchment (aoi_id);
 
 create table chyf2.nexus(
   id uuid not null primary key,
-  nexus_type smallint not null check (nexus_type in (1,2,3,4,5,6,7,99)),
+  nexus_type smallint not null ,
   bank_ecatchment_id uuid references chyf2.ecatchment(id),
   geometry geometry(POINT, 4617)
 );
 
 create table chyf2.eflowpath(
   id uuid not null primary key,
-  ef_type smallint not null check (ef_type in (1,2,3,4)),
-  ef_subtype smallint check (ef_subtype in (10, 20, 99)),
+  nid varchar(32),
+  ef_type smallint not null,
+  ef_subtype smallint,
   rank smallint not null,
   length double precision not null,
   name_id uuid references chyf2.names(name_id),

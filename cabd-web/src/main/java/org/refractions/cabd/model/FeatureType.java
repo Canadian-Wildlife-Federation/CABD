@@ -15,6 +15,8 @@
  */
 package org.refractions.cabd.model;
 
+import org.refractions.cabd.CabdApplication;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
@@ -23,11 +25,11 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
  * @author Emily
  *
  */
-public class FeatureType {
+public class FeatureType extends NamedItem{
 
 	private String type;
 	private String dataView;
-	private String name;
+	
 	private String attributeSourceTable;
 	private String featureSourceTable;
 	private String defaultNameField;
@@ -37,11 +39,11 @@ public class FeatureType {
 	
 	private FeatureViewMetadata metadata;
 	
-	public FeatureType(String type, String dataView, String name, String attributeSourceTable, 
+	public FeatureType(String type, String dataView, String name_en, String name_fr, String attributeSourceTable, 
 			String featureSourceTable, String defaultNameField) {
+		super(name_en, name_fr);
 		this.type = type;
-		this.dataView = dataView;	
-		this.name = name;
+		this.dataView = dataView;
 		this.attributeSourceTable = attributeSourceTable;
 		this.featureSourceTable = featureSourceTable;
 		this.defaultNameField = defaultNameField;
@@ -62,10 +64,6 @@ public class FeatureType {
 		return type;
 	}
 
-	public String getName() {
-		return this.name;
-	}
-	
 	public String getDataUrl() {
 		return this.dataurl;
 	}
@@ -79,9 +77,29 @@ public class FeatureType {
 		this.metadataurl = metadata + "/" + getType();
 	}
 	
+	/**
+	 * Returns the "core" name of the view containing the metadata
+	 * for the feature type. This is the name referenced in the metadata table.
+	 *  If you want the actual view with the data
+	 * use the getDataView() function
+	 * @return
+	 */
+	@JsonIgnore
+	public String getDataViewName() {
+		return this.dataView;
+	}
+	
+	/**
+	 * Returns the name of the view in the database containing the data
+	 * for this feature type AND the request local
+	 * @return
+	 */
 	@JsonIgnore
 	public String getDataView() {
-		return this.dataView;
+		if (CabdApplication.isFrench()) {
+			return this.dataView + "_fr";
+		}
+		return this.dataView + "_en";
 	}
 
 	@JsonIgnore
