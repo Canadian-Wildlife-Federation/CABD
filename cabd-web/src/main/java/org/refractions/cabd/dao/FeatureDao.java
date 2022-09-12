@@ -32,12 +32,13 @@ import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Envelope;
 import org.refractions.cabd.CabdConfigurationProperties;
 import org.refractions.cabd.controllers.AttributeSet;
+import org.refractions.cabd.controllers.ParsedRequestParameters;
 import org.refractions.cabd.controllers.TooManyFeaturesException;
 import org.refractions.cabd.controllers.VectorTileController;
-import org.refractions.cabd.dao.filter.Filter;
 import org.refractions.cabd.exceptions.InvalidDatabaseConfigException;
 import org.refractions.cabd.model.DataSource;
 import org.refractions.cabd.model.Feature;
+import org.refractions.cabd.model.FeatureList;
 import org.refractions.cabd.model.FeatureType;
 import org.refractions.cabd.model.FeatureViewMetadata;
 import org.refractions.cabd.model.FeatureViewMetadataField;
@@ -97,7 +98,7 @@ public class FeatureDao {
 	public Feature getFeature(UUID uuid) {
 		String type = null;
 		try {
-			String query = "SELECT " + FEATURE_TYPE_FIELD  + " FROM " + FeatureViewMetadata.ALL_FEATURES_VIEW + " WHERE " + ID_FIELD + " = ? ";
+			String query = "SELECT " + FEATURE_TYPE_FIELD  + " FROM " + FeatureViewMetadata.getAllFeaturesView() + " WHERE " + ID_FIELD + " = ? ";
 			type = jdbcTemplate.queryForObject(query, String.class, uuid);
 		}catch(EmptyResultDataAccessException ex) {
 			return null;
@@ -134,101 +135,82 @@ public class FeatureDao {
 	}
 	
 	/**
-	 * Get all features of the given types within the given envelope.
-	 * Both parameters can be null.  This will only return attributes
+	 * Get all features of the given types within based on the request parameters.
+	 * 
+	 * This will only return attributes
 	 * that are shared across all feature types.
 	 * 
 	 * @param types set of feature types to search, can be null
-	 * @param env the envelope to search, can be null
+	 * @param parmas request parameters to apply to search
 	 * @return
 	 */
-	public List<Feature> getFeatures(List<FeatureType> types, Envelope env, Integer maxresults, Filter filter, AttributeSet attributes) {
+	public FeatureList getFeatures(List<FeatureType> types, ParsedRequestParameters params) {
 		FeatureViewMetadata vmetadata = typeManager.getAllViewMetadata();
-		return getFeaturesInternal(vmetadata, types, env, maxresults, filter, attributes);
+		if (params.getSearchPoint() != null) {
+			return getFeaturesInternal(vmetadata, types, params.getSearchPoint(), params);	
+		}
+		return getFeaturesInternal(vmetadata, types, params.getEnvelope(), params);
+		
+		
+		
 	}
 	
 	/**
-	 * Get all features of the given type within the envelope.
+	 * Get all features of the given type based on the request parameters.
 	 * 
 	 * This will return all attributes for the schema associated with the type.
 	 * 
 	 * @param type the feature type, must be provided
-	 * @param env the envelope to search, can be null
+	 * @param params request parameters to apply to search
 	 * @return
 	 */
-	public List<Feature> getFeatures(FeatureType type, Envelope env, Integer maxresults, Filter filter, AttributeSet attributes) {
+	public FeatureList getFeatures(FeatureType type, ParsedRequestParameters params) {
 		FeatureViewMetadata vmetadata = type.getViewMetadata();
-		return getFeaturesInternal(vmetadata, null, env, maxresults, filter, attributes);
+		if (params.getSearchPoint() != null) {
+			return getFeaturesInternal(vmetadata, null, params.getSearchPoint(), params);	
+		}
+		return getFeaturesInternal(vmetadata, null, params.getEnvelope(), params);
 	}
 	
-	/**
-	 * Returns the N-nearest features of the given type to the point.  
-	 * This will return all attribute for the schema associated with the
-	 * feature type.
-	 * 
-	 * @param type the feature type, must be provided
-	 * @param pnt the center point
-	 * @param maxResults the maximum number of results to return
-	 * @return
-	 */
-	public List<Feature> getFeatures(FeatureType type, Coordinate pnt, Integer maxResults, Filter filter, AttributeSet attributes) {
-		FeatureViewMetadata vmetadata = type.getViewMetadata();
-		return getFeaturesInternal(vmetadata, null, pnt, maxResults, filter, attributes);
-	}
-	
-	/**
-	 * Returns the N-nearest features of the given types to the point.  
-	 * This will return only attributes shared accross all feature types.
-	 * 
-	 * 
-	 * Throws a TooManyFeatureException if more than the maximum results are returned
-	 * from the query
-	 * 
-	 * @param types the feature types to search
-	 * @param pnt the center point
-	 * @param maxResults the maximum number of results to return
-	 * @return
-	 */
-	public List<Feature> getFeatures(List<FeatureType> types, Coordinate pnt, Integer maxResults, Filter filter, AttributeSet attributes) {
-		FeatureViewMetadata vmetadata = typeManager.getAllViewMetadata();
-		return getFeaturesInternal(vmetadata, types, pnt, maxResults, filter, attributes);
-	}
 	
 	/*
 	 * Searches metadata based on envelope
 	 */
 	@SuppressWarnings("unchecked")
-	private List<Feature> getFeaturesInternal(FeatureViewMetadata vmetadata,
+	private FeatureList getFeaturesInternal(FeatureViewMetadata vmetadata,
 			List<FeatureType> types,
-			Envelope env, Integer maxresults,
-			Filter filter, 
-			AttributeSet attributes){
+			Envelope env, ParsedRequestParameters requestparams){
 		
 		String geomField = null;
 		
-		StringBuilder sb = new StringBuilder();
-		sb.append("SELECT ");
-		sb.append(ID_FIELD);
-
+		StringBuilder selectcountSql = new StringBuilder();
+		selectcountSql.append("SELECT count(*) ");
+		
+		StringBuilder selectallSql = new StringBuilder();
+		selectallSql.append("SELECT ");
+		selectallSql.append(ID_FIELD);
+		
 		boolean hasftype = false;
 		for (FeatureViewMetadataField field : vmetadata.getFields()) {
 			
 			if (!field.isGeometry()) {
-				if (attributes == AttributeSet.ALL || field.includeVectorTile()) {
-					sb.append("," + field.getFieldName() );
+				if (requestparams.getAttributeSet() == AttributeSet.ALL || field.includeVectorTile()) {
+					selectallSql.append("," + field.getFieldName() );
 					if (field.getFieldName().equals(FEATURE_TYPE_FIELD)) hasftype = true;
 				}
 			}else {
 				geomField = field.getFieldName();
-				sb.append(", st_asbinary(" + field.getFieldName() + ") as " + field.getFieldName() );
+				selectallSql.append(", st_asbinary(" + field.getFieldName() + ") as " + field.getFieldName() );
 			}
 		}
 		//feature type is required
 		if (!hasftype) {
-			sb.append("," + FEATURE_TYPE_FIELD );
+			selectallSql.append("," + FEATURE_TYPE_FIELD );
 		}
-		sb.append(" FROM " );
-		sb.append(vmetadata.getFeatureView());
+		
+		StringBuilder fromWhereSql = new StringBuilder();
+		fromWhereSql.append(" FROM " );
+		fromWhereSql.append(vmetadata.getFeatureView());
 		
 		
 		List<Object> params = new ArrayList<>();
@@ -239,57 +221,88 @@ public class FeatureDao {
 		
 			for (FeatureType type : types) params.add(type.getType());
 		
-			if (where != null) sb.append(" WHERE ");
+			if (where != null) fromWhereSql.append(" WHERE ");
 			where = null;
 			and = " AND ";
 
-			sb.append(FEATURE_TYPE_FIELD );
-			sb.append(" IN (");
-			sb.append(String.join(",", Collections.nCopies(types.size(), "?")));
-			sb.append(")");
+			fromWhereSql.append(FEATURE_TYPE_FIELD );
+			fromWhereSql.append(" IN (");
+			fromWhereSql.append(String.join(",", Collections.nCopies(types.size(), "?")));
+			fromWhereSql.append(")");
 		}
 		
 		if (env != null && geomField != null) {
-			if (where != null) sb.append(" WHERE ");
+			if (where != null) fromWhereSql.append(" WHERE ");
 			where = null;
-			if (and != null) sb.append(and);
+			if (and != null) fromWhereSql.append(and);
 			and = " AND ";
 			
-			sb.append(" st_intersects(");
-			sb.append( geomField);
-			sb.append(", ST_MakeEnvelope(");
-			sb.append(env.getMinX());
-			sb.append(",");
-			sb.append(env.getMinY());
-			sb.append(",");
-			sb.append(env.getMaxX());
-			sb.append(",");
-			sb.append(env.getMaxY());
-			sb.append(", ");
-			sb.append(DATABASE_SRID);
-			sb.append(" ) )" );
+			fromWhereSql.append(" st_intersects(");
+			fromWhereSql.append( geomField);
+			fromWhereSql.append(", ST_MakeEnvelope(");
+			fromWhereSql.append(env.getMinX());
+			fromWhereSql.append(",");
+			fromWhereSql.append(env.getMinY());
+			fromWhereSql.append(",");
+			fromWhereSql.append(env.getMaxX());
+			fromWhereSql.append(",");
+			fromWhereSql.append(env.getMaxY());
+			fromWhereSql.append(", ");
+			fromWhereSql.append(DATABASE_SRID);
+			fromWhereSql.append(" ) )" );
 		}
-		if (filter != null) {
-			if (where != null) sb.append(" WHERE ");
+		if (requestparams.getFilter() != null) {
+			if (where != null) fromWhereSql.append(" WHERE ");
 			where = null;
-			if (and != null) sb.append(and);
+			if (and != null) fromWhereSql.append(and);
 			and = " AND ";
 			
-			Object[] fstr = filter.toSql(vmetadata);
-			sb.append(fstr[0]);
+			Object[] fstr = requestparams.getFilter().toSql(vmetadata);
+			fromWhereSql.append(fstr[0]);
 			params.addAll((List<Object>)fstr[1]);
 		}
-		sb.append(" LIMIT ");
-		sb.append(getMaxResults(maxresults));
+		
+		if (requestparams.getNameFilter() != null) {
+			if (where != null) fromWhereSql.append(" WHERE ");	
+			where = null;
+			if (and != null) fromWhereSql.append(and);
+			and = " AND ";
+			
+			Object[] fstr = requestparams.getNameFilter().toSql(vmetadata);
+			if (fstr != null) {
+				fromWhereSql.append(fstr[0]);
+				params.addAll((List<Object>)fstr[1]);
+			}
+		}
+		
+		StringBuilder limit = new StringBuilder();
+		limit.append(" LIMIT ");
+		limit.append(getMaxResults(requestparams.getMaxResults()));
+		
+		StringBuilder getCount = new StringBuilder();
+		getCount.append(selectcountSql);
+		getCount.append(fromWhereSql);
+		
+		StringBuilder getFeatures = new StringBuilder();
+		getFeatures.append(selectallSql);
+		getFeatures.append(fromWhereSql);
+		getFeatures.append(limit);
 		
 		List<Feature> features = 
-				jdbcTemplate.query(sb.toString(), 
-						new FeatureRowMapper(vmetadata, attributes), params.toArray());
+				jdbcTemplate.query(getFeatures.toString(), 
+						new FeatureRowMapper(vmetadata, requestparams.getAttributeSet()), params.toArray());
 		
 		if (features.size() > properties.getMaxresults()) {
 			throw new TooManyFeaturesException();
 		}
-		return features;
+		
+		FeatureList featurelist = new FeatureList(features);
+		
+		//add total count 
+		long total = jdbcTemplate.queryForObject(getCount.toString(), Long.class, params.toArray());
+		featurelist.setTotalResults(total);
+		
+		return featurelist;
 	}
 	
 	private int getMaxResults(Integer maxresults) {
@@ -301,6 +314,8 @@ public class FeatureDao {
 	}
 	
 	/**
+	 * Searches based on the n-nearest features from a point.
+	 * 
 	 * throws a TooManyFeatureException if more than the maximum results are returned
 	 * from the query 
 	 * 
@@ -314,39 +329,45 @@ public class FeatureDao {
 	//nearest neighbour searching
 	//https://postgis.net/workshops/postgis-intro/knn.html
 	@SuppressWarnings("unchecked")
-	private List<Feature> getFeaturesInternal(FeatureViewMetadata vmetadata,
+	private FeatureList getFeaturesInternal(FeatureViewMetadata vmetadata,
 			List<FeatureType> types,
-			Coordinate c, Integer maxResults, Filter filter,
-			AttributeSet attributes){
+			Coordinate c, ParsedRequestParameters requestparams){
 		
 		String geomField = null;
 		
-		StringBuilder sb = new StringBuilder();
-		sb.append("SELECT ");
-		sb.append(ID_FIELD);
-
+		StringBuilder selectcountSql = new StringBuilder();
+		selectcountSql.append("SELECT count(*) ");
+		
+		StringBuilder selectallSql = new StringBuilder();
+		selectallSql.append("SELECT ");
+		selectallSql.append(ID_FIELD);
+		
+		
 		boolean hasftype = false;
+		
 		for (FeatureViewMetadataField field : vmetadata.getFields()) {
+			
 			if (!field.isGeometry()) {
-				if (attributes == AttributeSet.ALL || field.includeVectorTile()) {
-					sb.append("," + field.getFieldName() );
+				if (requestparams.getAttributeSet() == AttributeSet.ALL || field.includeVectorTile()) {
+					selectallSql.append("," + field.getFieldName() );
 					if (field.getFieldName().equals(FEATURE_TYPE_FIELD)) hasftype = true;
 				}
 			}else {
 				geomField = field.getFieldName();
-				sb.append(", st_asbinary(" + field.getFieldName() + ") as " + field.getFieldName() );
+				selectallSql.append(", st_asbinary(" + field.getFieldName() + ") as " + field.getFieldName() );
 			}
 		}
 		//feature type is required
 		if (!hasftype) {
-			sb.append("," + FEATURE_TYPE_FIELD );
+			selectallSql.append("," + FEATURE_TYPE_FIELD );
 		}
 		if (geomField == null) {
 			throw new InvalidDatabaseConfigException(MessageFormat.format("Not geometry column found for the view ''{0}''", vmetadata.getFeatureView()));
 		}
 		
-		sb.append(" FROM " );
-		sb.append(vmetadata.getFeatureView());
+		StringBuilder fromWhereSql = new StringBuilder();
+		fromWhereSql.append(" FROM " );
+		fromWhereSql.append(vmetadata.getFeatureView());
 		
 		List<Object> params = new ArrayList<>();
 		String and = null;
@@ -354,43 +375,83 @@ public class FeatureDao {
 		if (types != null && !types.isEmpty()) {
 			for (FeatureType type : types) params.add(type.getType());
 			
-			if (where != null) sb.append(" WHERE ");	
+			if (where != null) fromWhereSql.append(" WHERE ");	
 			where = null;
 			and = " AND ";
-			sb.append( FEATURE_TYPE_FIELD );
-			sb.append(" IN (");
-			sb.append(String.join(",", Collections.nCopies(types.size(), "?")));
-			sb.append(")");
+			fromWhereSql.append( FEATURE_TYPE_FIELD );
+			fromWhereSql.append(" IN (");
+			fromWhereSql.append(String.join(",", Collections.nCopies(types.size(), "?")));
+			fromWhereSql.append(")");
 			
 		}
 		
-		if (filter != null) {
-			if (where != null) sb.append(" WHERE ");	
+		if (requestparams.getFilter() != null) {
+			if (where != null) fromWhereSql.append(" WHERE ");	
 			where = null;
-			if (and != null) sb.append(and);
+			if (and != null) fromWhereSql.append(and);
 			and = " AND ";
 			
-			Object[] fstr = filter.toSql(vmetadata);
-			sb.append(fstr[0]);
+			Object[] fstr = requestparams.getFilter().toSql(vmetadata);
+			fromWhereSql.append(fstr[0]);
 			params.addAll((List<Object>)fstr[1]);
 		}
 		
-		sb.append(" ORDER BY ");
-		sb.append(geomField);
-		sb.append(" <-> ");
-		sb.append(" st_setsrid(st_makepoint(" + c.x + "," + c.y + "),");
-		sb.append(DATABASE_SRID);
-		sb.append(")");
-		sb.append(" LIMIT " );
-		sb.append(getMaxResults(maxResults));
+		if (requestparams.getNameFilter() != null) {
+			if (where != null) fromWhereSql.append(" WHERE ");	
+			where = null;
+			if (and != null) fromWhereSql.append(and);
+			and = " AND ";
+			
+			Object[] fstr = requestparams.getNameFilter().toSql(vmetadata);
+			if (fstr != null) {
+				fromWhereSql.append(fstr[0]);
+				params.addAll((List<Object>)fstr[1]);
+			}
+		}
+		
+		StringBuilder orderbylimitSql = new StringBuilder();
+		orderbylimitSql.append(" ORDER BY ");
+		orderbylimitSql.append(geomField);
+		orderbylimitSql.append(" <-> ");
+		orderbylimitSql.append(" st_setsrid(st_makepoint(" + c.x + "," + c.y + "),");
+		orderbylimitSql.append(DATABASE_SRID);
+		orderbylimitSql.append(")");
+		orderbylimitSql.append(" LIMIT " );
+		orderbylimitSql.append(getMaxResults(requestparams.getMaxResults()));
+		
+//		List<Feature> features = 
+//				jdbcTemplate.query(sb.toString(), 
+//						new FeatureRowMapper(vmetadata, attributes), params.toArray());
+//		if (features.size() > properties.getMaxresults()) {
+//			throw new TooManyFeaturesException();
+//		}
+//		return new FeatureList(features);
+		
+		
+		StringBuilder getCount = new StringBuilder();
+		getCount.append(selectcountSql);
+		getCount.append(fromWhereSql);
+		
+		StringBuilder getFeatures = new StringBuilder();
+		getFeatures.append(selectallSql);
+		getFeatures.append(fromWhereSql);
+		getFeatures.append(orderbylimitSql);
 		
 		List<Feature> features = 
-				jdbcTemplate.query(sb.toString(), 
-						new FeatureRowMapper(vmetadata, attributes), params.toArray());
+				jdbcTemplate.query(getFeatures.toString(), 
+						new FeatureRowMapper(vmetadata, requestparams.getAttributeSet() ), params.toArray());
+		
 		if (features.size() > properties.getMaxresults()) {
 			throw new TooManyFeaturesException();
 		}
-		return features;
+		
+		FeatureList featurelist = new FeatureList(features);
+		
+		//add total count 
+		long total = jdbcTemplate.queryForObject(getCount.toString(), Long.class, params.toArray());
+		featurelist.setTotalResults(total);
+		
+		return featurelist;
 	}
 	
 	/**
@@ -622,7 +683,7 @@ public class FeatureDao {
 			sb.append("SELECT ");
 			sb.append(FEATURE_TYPE_FIELD);
 			sb.append(" FROM ");
-			sb.append( FeatureViewMetadata.ALL_FEATURES_VIEW);
+			sb.append( FeatureViewMetadata.getAllFeaturesView());
 			sb.append(" WHERE ");
 			sb.append( ID_FIELD);
 			sb.append( " = ? ");
@@ -676,8 +737,8 @@ public class FeatureDao {
 		sb.append(" ), ");
 		sb.append("	mvtgeom AS (");
 		
-		String schema = FeatureViewMetadata.ALL_FEATURES_VIEW .split("\\.")[0];
-		String table = FeatureViewMetadata.ALL_FEATURES_VIEW .split("\\.")[1];
+		String schema = FeatureViewMetadata.getAllFeaturesView() .split("\\.")[0];
+		String table = FeatureViewMetadata.getAllFeaturesView() .split("\\.")[1];
 		
 		if (ftype != null) {
 			schema = ftype.getDataView().split("\\.")[0];

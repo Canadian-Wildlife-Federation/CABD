@@ -20,6 +20,7 @@ import java.util.List;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Envelope;
 import org.refractions.cabd.dao.filter.Filter;
+import org.refractions.cabd.dao.filter.NameFilter;
 import org.refractions.cabd.model.FeatureType;
 
 public class ParsedRequestParameters {
@@ -29,15 +30,18 @@ public class ParsedRequestParameters {
 	private Coordinate searchPoint = null;
 	private List<FeatureType> ftypes = null;
 	private Filter filter;
+	private NameFilter namefilter;
 	private AttributeSet attributes;
 	
 	public ParsedRequestParameters(Envelope env, Coordinate searchPoint, 
-			Integer maxResults, Filter filter, AttributeSet attributes) {
+			Integer maxResults, Filter filter, NameFilter namefilter, 
+			AttributeSet attributes) {
 		this.env  = env;
 		this.searchPoint = searchPoint;
 		this.maxResults = maxResults;
 		this.filter = filter;
 		this.attributes = attributes;
+		this.namefilter = namefilter;
 	}
 	
 	public AttributeSet getAttributeSet() {
@@ -66,5 +70,9 @@ public class ParsedRequestParameters {
 
 	public Filter getFilter() {
 		return this.filter;
+	}
+	
+	public NameFilter getNameFilter() {
+		return this.namefilter;
 	}
 }

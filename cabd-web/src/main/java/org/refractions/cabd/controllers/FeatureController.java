@@ -16,7 +16,6 @@
 package org.refractions.cabd.controllers;
 
 import java.text.MessageFormat;
-import java.util.List;
 import java.util.UUID;
 
 import javax.servlet.http.HttpServletRequest;
@@ -68,9 +67,7 @@ public class FeatureController {
 	
 	@Autowired
 	FeatureTypeManager typeManager;
-	
-
-	
+		
 	/**
 	 * Gets an individual feature by identifier
 	 * 
@@ -88,7 +85,9 @@ public class FeatureController {
 			 			content = {
 						@Content(mediaType = "application/json", schema = @Schema(implementation = ApiError.class))})})
 	@GetMapping(value = "/{id:[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}}",
-			produces = {MediaType.APPLICATION_JSON_VALUE, "application/geo+json",  CabdApplication.GEOPKG_MEDIA_TYPE_STR})
+			produces = {MediaType.APPLICATION_JSON_VALUE, "application/geo+json",
+					CabdApplication.CSV_MEDIA_TYPE_STR,
+					CabdApplication.GEOPKG_MEDIA_TYPE_STR})
 	public ResponseEntity<Feature> getFeature(
 			@Parameter(description = "unique feature identifier") 
 			@PathVariable("id") UUID id,
@@ -96,6 +95,7 @@ public class FeatureController {
 		
 		Feature f = featureDao.getFeature(id);
 		if (f == null) throw new NotFoundException(MessageFormat.format("No feature with id ''{0}'' found.", id));
+		
 		return ResponseEntity.ok(f);
 	}
 	
@@ -129,7 +129,8 @@ public class FeatureController {
 			produces = {MediaType.APPLICATION_JSON_VALUE, "application/geo+json", 
 					CabdApplication.GEOPKG_MEDIA_TYPE_STR,
 					CabdApplication.SHP_MEDIA_TYPE_STR, 
-					CabdApplication.KML_MEDIA_TYPE_STR})
+					CabdApplication.KML_MEDIA_TYPE_STR,
+					CabdApplication.CSV_MEDIA_TYPE_STR})
 	public ResponseEntity<FeatureList> getFeatureByType(
 			@Parameter(description = "the feature type to search") @PathVariable("type") String type,
 			@ParameterObject FeatureRequestParameters params, HttpServletRequest request) {
@@ -138,13 +139,7 @@ public class FeatureController {
 
 		FeatureType btype = typeManager.getFeatureType(type);
 		if (btype == null) throw new NotFoundException(MessageFormat.format("The feature type ''{0}'' is not supported.", type));
-		
-		if (parameters.getSearchPoint() != null) {
-			return ResponseEntity.ok(new FeatureList(featureDao.getFeatures(btype, parameters.getSearchPoint(), parameters.getMaxResults(), parameters.getFilter(), parameters.getAttributeSet())));
-		}
-		
-		List<Feature> features = featureDao.getFeatures(btype, parameters.getEnvelope(), parameters.getMaxResults(), parameters.getFilter(), parameters.getAttributeSet());
-		return ResponseEntity.ok(new FeatureList(features));
+		return ResponseEntity.ok(featureDao.getFeatures(btype, parameters));
 	}
 	
 	/**
@@ -170,21 +165,15 @@ public class FeatureController {
 		produces = {MediaType.APPLICATION_JSON_VALUE, "application/geo+json", 
 				CabdApplication.GEOPKG_MEDIA_TYPE_STR,
 				CabdApplication.SHP_MEDIA_TYPE_STR, 
-				CabdApplication.KML_MEDIA_TYPE_STR})
+				CabdApplication.KML_MEDIA_TYPE_STR,
+				CabdApplication.CSV_MEDIA_TYPE_STR})
 	
 	public ResponseEntity<FeatureList> getFeatures(
 			@ParameterObject FeatureRequestTypeParameters params, 
 			HttpServletRequest request) {
 
 		ParsedRequestParameters parameters = params.parseAndValidate(typeManager);
-
-		if (parameters.getSearchPoint() != null) {
-			return ResponseEntity.ok(new FeatureList(featureDao.getFeatures(parameters.getFeatureTypes(), parameters.getSearchPoint(), parameters.getMaxResults(), parameters.getFilter(), parameters.getAttributeSet())));
-		}
-		
-		FeatureList flist = new FeatureList(featureDao.getFeatures(parameters.getFeatureTypes(), parameters.getEnvelope(), parameters.getMaxResults(), parameters.getFilter(), parameters.getAttributeSet()));
-		
-		return ResponseEntity.ok(flist);
+		return ResponseEntity.ok(featureDao.getFeatures(parameters.getFeatureTypes(), parameters));
 	}
 		
 }

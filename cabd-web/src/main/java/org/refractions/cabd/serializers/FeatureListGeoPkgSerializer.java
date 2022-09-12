@@ -38,10 +38,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpInputMessage;
 import org.springframework.http.HttpOutputMessage;
-import org.springframework.http.converter.AbstractHttpMessageConverter;
-import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.http.converter.HttpMessageNotWritableException;
 import org.springframework.stereotype.Component;
 
@@ -52,7 +49,7 @@ import org.springframework.stereotype.Component;
  *
  */
 @Component
-public class FeatureListGeoPkgSerializer extends AbstractHttpMessageConverter<FeatureList>{
+public class FeatureListGeoPkgSerializer extends AbstractFeatureListSerializer{
 
 	@Autowired
 	private FeatureTypeManager typeManager;
@@ -66,20 +63,11 @@ public class FeatureListGeoPkgSerializer extends AbstractHttpMessageConverter<Fe
 	}
 
 	@Override
-	protected boolean supports(Class<?> clazz) {
-		return FeatureList.class.isAssignableFrom(clazz);
-	}
-
-	@Override
-	protected FeatureList readInternal(Class<? extends FeatureList> clazz, HttpInputMessage inputMessage)
-			throws IOException, HttpMessageNotReadableException {
-		return null;
-	}
-
-	@Override
 	protected void writeInternal(FeatureList features, HttpOutputMessage outputMessage)
 			throws IOException, HttpMessageNotWritableException {
-	
+
+		super.writeInternal(features, outputMessage);
+		
 		if (features.getItems().isEmpty()) return;
 		
 		ImmutableTriple<String, FeatureViewMetadata, Envelope> metadataitems = FeatureListUtil.getMetadata(features, typeManager);

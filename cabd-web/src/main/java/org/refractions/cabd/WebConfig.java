@@ -38,6 +38,7 @@ public class WebConfig implements WebMvcConfigurer {
 				.mediaType("shp", CabdApplication.SHP_MEDIA_TYPE)
 				.mediaType("kml", CabdApplication.KML_MEDIA_TYPE)
 				.mediaType("csv", CabdApplication.CSV_MEDIA_TYPE)
+				
 			;
 	}
 	

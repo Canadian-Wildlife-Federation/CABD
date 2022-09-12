@@ -31,12 +31,24 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 //feature collection
 public class FeatureList extends ItemList<Feature>{
 
+	private long totalResults = 0;
+	
 	public FeatureList(List<Feature> features) {
 		super(features);
 		
 		//add url attribute to link to individual feature
 		String rooturl = ServletUriComponentsBuilder.fromCurrentContextPath().path("/").path(FeatureController.PATH).build().toUriString();		
 		features.forEach(f->f.addAttribute(FeatureViewMetadata.URL_ATTRIBUTE, rooturl + "/" + f.getId().toString()));
+		
+		this.totalResults = features.size();
+	}
+	
+	public void setTotalResults(long totalResults) {
+		this.totalResults = totalResults;
+	}
+	
+	public long getTotalResults() {
+		return this.totalResults;
 	}
 
 }
