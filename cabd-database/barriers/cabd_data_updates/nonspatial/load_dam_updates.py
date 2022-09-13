@@ -131,58 +131,58 @@ UPDATE {sourceTable} SET operating_status_code =
     ELSE operating_status_code END;
 ALTER TABLE {sourceTable} ALTER COLUMN operating_status_code TYPE int2 USING operating_status_code::int2;
 
---TO DO: update this with final codes
-UPDATE {sourceTable} SET structure_type_code =
-    CASE
-    WHEN structure_type_code = 'dam - arch' THEN
-    WHEN structure_type_code = 'dam - buttress' THEN
-    WHEN structure_type_code = 'dam - embankment' THEN
-    WHEN structure_type_code = 'dam - gravity' THEN
-    WHEN structure_type_code = 'dam - multiple arch' THEN
-    WHEN structure_type_code = 'weir' THEN
-    WHEN structure_type_code = 'powerhouse' THEN
-    WHEN structure_type_code = 'spillway' THEN
-    WHEN structure_type_code = 'dike/canal/embankment' THEN
-    WHEN structure_type_code = 'lock' THEN
-    WHEN structure_type_code = 'aboiteau/tide gate' THEN
-    WHEN structure_type_code = 'unknown' THEN
-    WHEN structure_type_code = 'other' THEN
-    WHEN structure_type_code IS NULL THEN NULL
-    ELSE structure_type_code END;
-ALTER TABLE {sourceTable} ALTER COLUMN structure_type_code TYPE int2 USING structure_type_code::int2;
+-- TO DO: update this with final codes
+-- UPDATE {sourceTable} SET structure_type_code =
+--     CASE
+--     WHEN structure_type_code = 'dam - arch' THEN
+--     WHEN structure_type_code = 'dam - buttress' THEN
+--     WHEN structure_type_code = 'dam - embankment' THEN
+--     WHEN structure_type_code = 'dam - gravity' THEN
+--     WHEN structure_type_code = 'dam - multiple arch' THEN
+--     WHEN structure_type_code = 'weir' THEN
+--     WHEN structure_type_code = 'powerhouse' THEN
+--     WHEN structure_type_code = 'spillway' THEN
+--     WHEN structure_type_code = 'dike/canal/embankment' THEN
+--     WHEN structure_type_code = 'lock' THEN
+--     WHEN structure_type_code = 'aboiteau/tide gate' THEN
+--     WHEN structure_type_code = 'unknown' THEN
+--     WHEN structure_type_code = 'other' THEN
+--     WHEN structure_type_code IS NULL THEN NULL
+--     ELSE structure_type_code END;
+-- ALTER TABLE {sourceTable} ALTER COLUMN structure_type_code TYPE int2 USING structure_type_code::int2;
 
---TO DO: update this with final codes
-UPDATE {sourceTable} SET construction_material_code =
-    CASE
-    WHEN construction_material_code = 'concrete' THEN
-    WHEN construction_material_code = 'masonry' THEN
-    WHEN construction_material_code = 'earth' THEN
-    WHEN construction_material_code = 'rock' THEN
-    WHEN construction_material_code = 'timber' THEN
-    WHEN construction_material_code = 'steel' THEN
-    WHEN construction_material_code = 'other' THEN
-    WHEN construction_material_code = 'unknown' THEN
-    WHEN construction_material_code IS NULL THEN NULL
-    ELSE construction_material_code END;
-ALTER TABLE {sourceTable} ALTER COLUMN construction_material_code TYPE int2 USING construction_material_code::int2;
+-- TO DO: update this with final codes
+-- UPDATE {sourceTable} SET construction_material_code =
+--     CASE
+--     WHEN construction_material_code = 'concrete' THEN
+--     WHEN construction_material_code = 'masonry' THEN
+--     WHEN construction_material_code = 'earth' THEN
+--     WHEN construction_material_code = 'rock' THEN
+--     WHEN construction_material_code = 'timber' THEN
+--     WHEN construction_material_code = 'steel' THEN
+--     WHEN construction_material_code = 'other' THEN
+--     WHEN construction_material_code = 'unknown' THEN
+--     WHEN construction_material_code IS NULL THEN NULL
+--     ELSE construction_material_code END;
+-- ALTER TABLE {sourceTable} ALTER COLUMN construction_material_code TYPE int2 USING construction_material_code::int2;
 
---TO DO: update this with final codes
-UPDATE {sourceTable} SET function_code =
-    CASE
-    WHEN function_code = 'storage' THEN
-    WHEN function_code = 'diversion' THEN
-    WHEN function_code = 'detention' THEN
-    WHEN function_code = 'saddle' THEN
-    WHEN function_code = 'hydro - closed-cycle pumped storage' THEN
-    WHEN function_code = 'hydro - conventional storage' THEN
-    WHEN function_code = 'hydro - open-cycle pumped storage' THEN
-    WHEN function_code = 'hydro - run-of-river' THEN
-    WHEN function_code = 'hydro - tidal' THEN
-    WHEN function_code = 'other' THEN
-    WHEN function_code = 'unknown' THEN
-    WHEN function_code IS NULL THEN NULL
-    ELSE function_code END;
-ALTER TABLE {sourceTable} ALTER COLUMN function_code TYPE int2 USING function_code::int2;
+-- TO DO: update this with final codes
+-- UPDATE {sourceTable} SET function_code =
+--     CASE
+--     WHEN function_code = 'storage' THEN
+--     WHEN function_code = 'diversion' THEN
+--     WHEN function_code = 'detention' THEN
+--     WHEN function_code = 'saddle' THEN
+--     WHEN function_code = 'hydro - closed-cycle pumped storage' THEN
+--     WHEN function_code = 'hydro - conventional storage' THEN
+--     WHEN function_code = 'hydro - open-cycle pumped storage' THEN
+--     WHEN function_code = 'hydro - run-of-river' THEN
+--     WHEN function_code = 'hydro - tidal' THEN
+--     WHEN function_code = 'other' THEN
+--     WHEN function_code = 'unknown' THEN
+--     WHEN function_code IS NULL THEN NULL
+--     ELSE function_code END;
+-- ALTER TABLE {sourceTable} ALTER COLUMN function_code TYPE int2 USING function_code::int2;
 
 UPDATE {sourceTable} SET use_code =
     CASE
