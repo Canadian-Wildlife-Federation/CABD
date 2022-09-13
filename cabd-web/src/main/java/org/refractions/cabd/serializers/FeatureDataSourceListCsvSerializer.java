@@ -85,7 +85,7 @@ public class FeatureDataSourceListCsvSerializer extends AbstractHttpMessageConve
 			seqW.write(new String[] {features.getFeatureId().toString(), ""});
 			
 			seqW.write(new String[] {"", ""});
-			seqW.write(new String[] {"Complete list of data source names and links:", "https://aquaticbarriers.ca/data-sources"});
+			seqW.write(new String[] {"Complete list of data source names and links:", "https://cabd-docs.netlify.app/docs_user/docs_user_data_sources.html"});
 			seqW.write(new String[] {"", ""});
 			
 			seqW.write(new String[] {"Spatial Data Sources", ""});
