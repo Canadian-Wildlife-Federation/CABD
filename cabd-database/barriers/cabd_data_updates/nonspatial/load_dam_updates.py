@@ -20,6 +20,9 @@ sourceTable = sourceSchema + "." + sourceTableRaw
 updateSchema = "featurecopy"
 damUpdateTable = updateSchema + '.dam_updates'
 
+damSchema = "dams"
+damTable = damSchema + ".dams"
+
 if len(sys.argv) != 5:
     print("Invalid usage: py load_dam_updates.py <dataFile> <tableName> <dbUser> <dbPassword>")
     sys.exit()
@@ -47,12 +50,25 @@ print("Data loaded to table")
 
 loadQuery = f"""
 
---clean CSV input from form
+--create damUpdateTable with proper format
+CREATE TABLE IF NOT EXISTS {damUpdateTable} (LIKE {damTable});
+ALTER TABLE {damUpdateTable} ADD COLUMN IF NOT EXISTS latitude decimal(8,6);
+ALTER TABLE {damUpdateTable} ADD COLUMN IF NOT EXISTS longitude decimal(9,6);
+ALTER TABLE {damUpdateTable} ADD COLUMN IF NOT EXISTS entry_classification varchar;
+ALTER TABLE {damUpdateTable} ADD COLUMN IF NOT EXISTS data_source_short_name varchar;
+
+--make sure records are not duplicated
+ALTER TABLE {damUpdateTable} DROP CONSTRAINT IF EXISTS record_unique;
+ALTER TABLE {damUpdateTable} ADD CONSTRAINT record_unique UNIQUE (cabd_id, data_source_short_name);
+
+--clean CSV input
+--check that entry_classification meets constraints
+ALTER TABLE {sourceTable} ADD CONSTRAINT entry_classification_check CHECK (entry_classification IN ('add feature', 'modify feature', 'delete feature'));
+
 --trim fields that are getting a type conversion
 UPDATE {sourceTable} SET cabd_id = TRIM(cabd_id);
 UPDATE {sourceTable} SET maintenance_last = TRIM(maintenance_last);
 UPDATE {sourceTable} SET maintenance_next = TRIM(maintenance_next);
-UPDATE {sourceTable} SET generating_capacity_mwh = TRIM(generating_capacity_mwh);
 UPDATE {sourceTable} SET spillway_capacity = TRIM(spillway_capacity);
 UPDATE {sourceTable} SET avg_rate_of_discharge_ls = TRIM(avg_rate_of_discharge_ls);
 
@@ -60,7 +76,6 @@ UPDATE {sourceTable} SET avg_rate_of_discharge_ls = TRIM(avg_rate_of_discharge_l
 ALTER TABLE {sourceTable} ALTER COLUMN cabd_id TYPE uuid USING cabd_id::uuid;
 ALTER TABLE {sourceTable} ALTER COLUMN maintenance_last TYPE date USING maintenance_last::date;
 ALTER TABLE {sourceTable} ALTER COLUMN maintenance_next TYPE date USING maintenance_next::date;
-ALTER TABLE {sourceTable} ALTER COLUMN generating_capacity_mwh TYPE double USING generating_capacity_mwh::double;
 ALTER TABLE {sourceTable} ALTER COLUMN spillway_capacity TYPE double USING spillway_capacity::double;
 ALTER TABLE {sourceTable} ALTER COLUMN avg_rate_of_discharge_ls TYPE double USING avg_rate_of_discharge_ls::double;
 
@@ -353,10 +368,6 @@ UPDATE {sourceTable} SET condition_code =
     WHEN condition_code IS NULL THEN NULL
     ELSE condition_code END;
 ALTER TABLE {sourceTable} ALTER COLUMN condition_code TYPE int2 USING condition_code::int2;
-
---TO DO: create damUpdateTable with proper format if not exists
---should include all attributes from dams.dams plus lat/long,
---entry_classification, and data_source_short_name
 
 --TO DO: add remaining fields once this script has been tested
 --INSERT INTO {damUpdateTable} (
