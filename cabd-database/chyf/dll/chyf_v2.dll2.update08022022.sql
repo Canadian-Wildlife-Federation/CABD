@@ -78,4 +78,46 @@ alter table fpoutput.errors alter column geometry type geometry(geometry, 4617);
 alter table fpoutput.errors add column process varchar;
 update fpoutput.errors set process = 'FLOWPATHFULL';
 
+-- chyf2.ecatchment_vw source
 
+DROP VIEW chyf2.ecatchment_vw;
+
+CREATE OR REPLACE VIEW chyf2.ecatchment_vw
+AS SELECT a.id,
+    a.ec_type,
+    a.ec_subtype,
+    a.area,
+    a.aoi_id,
+    a.lakenameid1,
+    a.lakenameid2,
+    a.rivernameid1,
+    a.rivernameid2,
+    a.is_reservoir,
+    a.nid,
+    a.geometry
+   FROM chyf2.ecatchment a
+     JOIN chyf2.aoi b ON a.aoi_id = b.id
+  WHERE b.display_status = 1;
+
+GRANT select on chyf2.ecatchment_vw to CHYF;
+
+
+DROP VIEW chyf2.eflowpath_vw;
+CREATE OR REPLACE VIEW chyf2.eflowpath_vw
+AS SELECT a.id,
+    a.ef_type,
+    a.ef_subtype,
+    a.rank,
+    a.length,
+    a.rivernameid1,
+    a.rivernameid2,
+    a.aoi_id,
+    a.from_nexus_id,
+    a.to_nexus_id,
+    a.ecatchment_id,
+    a.nid,
+    a.geometry
+   FROM chyf2.eflowpath a
+     JOIN chyf2.aoi b ON a.aoi_id = b.id
+  WHERE b.display_status = 1;
+GRANT select on chyf2.eflowpath_vw to CHYF;
