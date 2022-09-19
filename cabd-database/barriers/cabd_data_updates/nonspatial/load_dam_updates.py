@@ -56,7 +56,7 @@ orgDb = "dbname='" + dbName + "' host='"+ dbHost +"' port='"+ dbPort + "' user='
 pycmd = '"' + ogr + '" -f "PostgreSQL" PG:"' + orgDb + '" "' + dataFile + '"' + ' -nln "' + sourceTable + '" -oo AUTODETECT_TYPE=YES -oo EMPTY_STRING_AS_NULL=YES'
 print(pycmd)
 subprocess.run(pycmd)
-print("Data loaded to table")
+print("Data loaded to table: " + sourceTable)
 
 loadQuery = f"""
 
@@ -78,8 +78,8 @@ ALTER TABLE {damUpdateTable} ADD CONSTRAINT update_type_check CHECK (update_type
 ALTER TABLE {damUpdateTable} DROP CONSTRAINT IF EXISTS record_unique;
 ALTER TABLE {damUpdateTable} ADD CONSTRAINT record_unique UNIQUE (cabd_id, data_source_short_name);
 
-ALTER TABLE IF EXISTS {damUpdateTable}
-    OWNER to cabd;
+ALTER TABLE IF EXISTS {damUpdateTable} OWNER to cabd;
+ALTER TABLE IF EXISTS {sourceTable} OWNER to cabd;
 
 --clean CSV input
 
@@ -89,17 +89,29 @@ ALTER TABLE {sourceTable} ADD COLUMN update_type varchar default 'cwf';
 
 --trim fields that are getting a type conversion
 UPDATE {sourceTable} SET cabd_id = TRIM(cabd_id);
+UPDATE {sourceTable} SET removed_year = TRIM(removed_year);
 UPDATE {sourceTable} SET maintenance_last = TRIM(maintenance_last);
 UPDATE {sourceTable} SET maintenance_next = TRIM(maintenance_next);
 UPDATE {sourceTable} SET spillway_capacity = TRIM(spillway_capacity);
 UPDATE {sourceTable} SET avg_rate_of_discharge_ls = TRIM(avg_rate_of_discharge_ls);
+UPDATE {sourceTable} SET hydro_peaking_system = TRIM(hydro_peaking_system);
+UPDATE {sourceTable} SET expected_life = TRIM(expected_life);
+UPDATE {sourceTable} SET federal_flow_req = TRIM(federal_flow_req);
+UPDATE {sourceTable} SET provincial_flow_req = TRIM(provincial_flow_req);
+UPDATE {sourceTable} SET degree_of_regulation_pc = TRIM(degree_of_regulation_pc);
 
 --change field types
 ALTER TABLE {sourceTable} ALTER COLUMN cabd_id TYPE uuid USING cabd_id::uuid;
+ALTER TABLE {sourceTable} ALTER COLUMN removed_year TYPE numeric USING removed_year::numeric;
 ALTER TABLE {sourceTable} ALTER COLUMN maintenance_last TYPE date USING maintenance_last::date;
 ALTER TABLE {sourceTable} ALTER COLUMN maintenance_next TYPE date USING maintenance_next::date;
 ALTER TABLE {sourceTable} ALTER COLUMN spillway_capacity TYPE double precision USING spillway_capacity::double precision;
 ALTER TABLE {sourceTable} ALTER COLUMN avg_rate_of_discharge_ls TYPE double precision USING avg_rate_of_discharge_ls::double precision;
+ALTER TABLE {sourceTable} ALTER COLUMN hydro_peaking_system TYPE boolean USING hydro_peaking_system::boolean;
+ALTER TABLE {sourceTable} ALTER COLUMN expected_life TYPE smallint USING expected_life::smallint;
+ALTER TABLE {sourceTable} ALTER COLUMN federal_flow_req TYPE double precision USING federal_flow_req::double precision;
+ALTER TABLE {sourceTable} ALTER COLUMN provincial_flow_req TYPE double precision USING provincial_flow_req::double precision;
+ALTER TABLE {sourceTable} ALTER COLUMN degree_of_regulation_pc TYPE real USING degree_of_regulation_pc::real;
 
 --trim varchars and categorical fields that are not coded values
 UPDATE {sourceTable} SET email = TRIM(email);
@@ -114,12 +126,10 @@ UPDATE {sourceTable} SET reservoir_name_en = TRIM(reservoir_name_en);
 UPDATE {sourceTable} SET reservoir_name_fr = TRIM(reservoir_name_fr);
 UPDATE {sourceTable} SET "owner" = TRIM("owner");
 UPDATE {sourceTable} SET operating_notes = TRIM(operating_notes);
-UPDATE {sourceTable} SET hydro_peaking_system = TRIM(hydro_peaking_system);
 UPDATE {sourceTable} SET passability_status_note = TRIM(passability_status_note);
 UPDATE {sourceTable} SET assess_schedule = TRIM(assess_schedule);
 UPDATE {sourceTable} SET federal_compliance_status = TRIM(federal_compliance_status);
 UPDATE {sourceTable} SET provincial_compliance_status = TRIM(provincial_compliance_status);
-UPDATE {sourceTable} SET degree_of_regulation_pc = TRIM(degree_of_regulation_pc);
 UPDATE {sourceTable} SET "comments" = TRIM("comments");
 
 --deal with coded value fields
@@ -390,30 +400,144 @@ UPDATE {sourceTable} SET condition_code =
 ALTER TABLE {sourceTable} ALTER COLUMN condition_code TYPE int2 USING condition_code::int2;
 
 --TO DO: add remaining fields once data structure is finalized
---INSERT INTO {damUpdateTable} (
---     cabd_id,
---     entry_classification,
---     data_source_short_name,
---     "status",
---     update_type,
---     latitude,
---     longitude,
---     use_analysis,
---     dam_name_en
--- )
--- SELECT
---     cabd_id,
---     entry_classification,
---     data_source_short_name,
---     "status",
---     update_type,
---     latitude,
---     longitude,
---     use_analysis,
---     dam_name_en
--- FROM {sourceTable};
-
+INSERT INTO {damUpdateTable} (
+    cabd_id,
+    province_territory_code,
+    entry_classification,
+    latitude,
+    longitude,
+    data_source_short_name,
+    use_analysis,
+    dam_name_en,
+    dam_name_fr,
+    facility_name_en,
+    facility_name_fr,
+    waterbody_name_en,
+    waterbody_name_fr,
+    reservoir_present,
+    reservoir_name_en,
+    reservoir_name_fr,
+    reservoir_area_skm,
+    reservoir_depth_m,
+    storage_capacity_mcm,
+    owner,
+    ownership_type_code,
+    operating_status_code,
+    removed_year,
+    operating_notes,
+    construction_year,
+    maintenance_last,
+    height_m,
+    length_m,
+  --structure_type_code,
+  --construction_material_code,
+  --function_code,
+    use_code,
+    use_electricity_code,
+    use_fish_code,
+    use_floodcontrol_code,
+    use_invasivespecies_code,
+    use_irrigation_code,
+    use_navigation_code,
+    use_other_code,
+    use_pollution_code,
+    use_recreation_code,
+    use_supply_code,
+    generating_capacity_mwh,
+    turbine_number,
+    turbine_type_code,
+    hydro_peaking_system,
+    lake_control_code,
+    spillway_type_code,
+    spillway_capacity,
+    avg_rate_of_discharge_ls,
+    up_passage_type_code,
+    passability_status_code,
+    passability_status_note,
+    down_passage_route_code,
+    assess_schedule,
+    maintenance_next,
+    condition_code,
+    expected_life,
+    federal_compliance_status,
+    provincial_compliance_status,
+    federal_flow_req,
+    provincial_flow_req,
+    degree_of_regulation_pc,
+    comments,
+    status,
+    update_type
+)
+ SELECT
+    cabd_id,
+    province_territory_code,
+    entry_classification,
+    latitude,
+    longitude,
+    data_source_short_name,
+    use_analysis,
+    dam_name_en,
+    dam_name_fr,
+    facility_name_en,
+    facility_name_fr,
+    waterbody_name_en,
+    waterbody_name_fr,
+    reservoir_present,
+    reservoir_name_en,
+    reservoir_name_fr,
+    reservoir_area_skm,
+    reservoir_depth_m,
+    storage_capacity_mcm,
+    owner,
+    ownership_type_code,
+    operating_status_code,
+    removed_year,
+    operating_notes,
+    construction_year,
+    maintenance_last,
+    height_m,
+    length_m,
+  --structure_type_code,
+  --construction_material_code,
+  --function_code,
+    use_code,
+    use_electricity_code,
+    use_fish_code,
+    use_floodcontrol_code,
+    use_invasivespecies_code,
+    use_irrigation_code,
+    use_navigation_code,
+    use_other_code,
+    use_pollution_code,
+    use_recreation_code,
+    use_supply_code,
+    generating_capacity_mwh,
+    turbine_number,
+    turbine_type_code,
+    hydro_peaking_system,
+    lake_control_code,
+    spillway_type_code,
+    spillway_capacity,
+    avg_rate_of_discharge_ls,
+    up_passage_type_code,
+    passability_status_code,
+    passability_status_note,
+    down_passage_route_code,
+    assess_schedule,
+    maintenance_next,
+    condition_code,
+    expected_life,
+    federal_compliance_status,
+    provincial_compliance_status,
+    federal_flow_req,
+    provincial_flow_req,
+    degree_of_regulation_pc,
+    comments,
+    status,
+    update_type
+FROM {sourceTable};
 """
+
 print("Cleaning CSV and adding records to " + damUpdateTable)
 # print(loadQuery)
 with conn.cursor() as cursor:
