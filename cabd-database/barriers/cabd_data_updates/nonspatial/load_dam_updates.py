@@ -1,3 +1,13 @@
+# This script loads a CSV into the database containing updated attribute information for dams
+# Your CSV requires 4 additional fields beyond CABD attributes fields for tracking purposes
+# These fields are: latitude, longitude, entry_classification, and data_source_short_name
+# 
+# IMPORTANT: You must review your CSV for encoding issues before import. The expected encoding
+# for your CSV is UTF-8 and the only non-unicode characters allowed are French characters
+# You should also check for % signs in your CSV. SharePoint's CSV exporter changes # signs
+# to % signs, so you will need to find and replace these instances.
+# Avoid replacing legitimate % signs in your CSV.
+
 import psycopg2 as pg2
 import subprocess
 import sys
@@ -56,14 +66,26 @@ ALTER TABLE {damUpdateTable} ADD COLUMN IF NOT EXISTS latitude decimal(8,6);
 ALTER TABLE {damUpdateTable} ADD COLUMN IF NOT EXISTS longitude decimal(9,6);
 ALTER TABLE {damUpdateTable} ADD COLUMN IF NOT EXISTS entry_classification varchar;
 ALTER TABLE {damUpdateTable} ADD COLUMN IF NOT EXISTS data_source_short_name varchar;
+ALTER TABLE {damUpdateTable} ADD COLUMN IF NOT EXISTS "status" varchar;
+ALTER TABLE {damUpdateTable} ADD COLUMN IF NOT EXISTS update_type varchar;
+
+ALTER TABLE {damUpdateTable} DROP CONSTRAINT IF EXISTS status_check;
+ALTER TABLE {damUpdateTable} ADD CONSTRAINT status_check CHECK ("status" IN ('needs review', 'ready', 'done'));
+ALTER TABLE {damUpdateTable} DROP CONSTRAINT IF EXISTS update_type_check;
+ALTER TABLE {damUpdateTable} ADD CONSTRAINT update_type_check CHECK (update_type IN ('cwf', 'user'));
 
 --make sure records are not duplicated
 ALTER TABLE {damUpdateTable} DROP CONSTRAINT IF EXISTS record_unique;
 ALTER TABLE {damUpdateTable} ADD CONSTRAINT record_unique UNIQUE (cabd_id, data_source_short_name);
 
+ALTER TABLE IF EXISTS {damUpdateTable}
+    OWNER to cabd;
+
 --clean CSV input
---check that entry_classification meets constraints
+
 ALTER TABLE {sourceTable} ADD CONSTRAINT entry_classification_check CHECK (entry_classification IN ('add feature', 'modify feature', 'delete feature'));
+ALTER TABLE {sourceTable} ADD COLUMN "status" varchar default 'ready';
+ALTER TABLE {sourceTable} ADD COLUMN update_type varchar default 'cwf';
 
 --trim fields that are getting a type conversion
 UPDATE {sourceTable} SET cabd_id = TRIM(cabd_id);
@@ -101,6 +123,8 @@ UPDATE {sourceTable} SET degree_of_regulation_pc = TRIM(degree_of_regulation_pc)
 UPDATE {sourceTable} SET "comments" = TRIM("comments");
 
 --deal with coded value fields
+UPDATE {sourceTable} SET province_territory_code = LOWER(province_territory_code);
+
 UPDATE {sourceTable} SET ownership_type_code =
     CASE
     WHEN ownership_type_code = 'charity/non-profit' THEN '1'
@@ -365,11 +389,13 @@ UPDATE {sourceTable} SET condition_code =
     ELSE condition_code END;
 ALTER TABLE {sourceTable} ALTER COLUMN condition_code TYPE int2 USING condition_code::int2;
 
---TO DO: add remaining fields once this script has been tested
+--TO DO: add remaining fields once data structure is finalized
 --INSERT INTO {damUpdateTable} (
 --     cabd_id,
 --     entry_classification,
 --     data_source_short_name,
+--     "status",
+--     update_type,
 --     latitude,
 --     longitude,
 --     use_analysis,
@@ -379,6 +405,8 @@ ALTER TABLE {sourceTable} ALTER COLUMN condition_code TYPE int2 USING condition_
 --     cabd_id,
 --     entry_classification,
 --     data_source_short_name,
+--     "status",
+--     update_type,
 --     latitude,
 --     longitude,
 --     use_analysis,
@@ -387,10 +415,10 @@ ALTER TABLE {sourceTable} ALTER COLUMN condition_code TYPE int2 USING condition_
 
 """
 print("Cleaning CSV and adding records to " + damUpdateTable)
-print(loadQuery)
-# with conn.cursor() as cursor:
-#     cursor.execute(loadQuery)
-# conn.commit()
+# print(loadQuery)
+with conn.cursor() as cursor:
+    cursor.execute(loadQuery)
+conn.commit()
 conn.close()
 
 print("Script complete")
