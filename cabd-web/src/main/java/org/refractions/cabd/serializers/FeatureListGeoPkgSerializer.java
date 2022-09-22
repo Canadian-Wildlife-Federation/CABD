@@ -55,8 +55,6 @@ public class FeatureListGeoPkgSerializer extends AbstractFeatureListSerializer{
 	private FeatureTypeManager typeManager;
 	
 	private Logger logger = LoggerFactory.getLogger(FeatureListGeoPkgSerializer.class);
-
-	private static final String FILENAME = "features";
 	
 	public FeatureListGeoPkgSerializer() {
 		super(CabdApplication.GEOPKG_MEDIA_TYPE);
@@ -94,7 +92,7 @@ public class FeatureListGeoPkgSerializer extends AbstractFeatureListSerializer{
 				tx.commit();
 			}
 			
-			outputMessage.getHeaders().set(HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=" + FILENAME + ".gpkg");
+			outputMessage.getHeaders().set(HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=cabd-" + metadataitems.getLeft() + ".gpkg");
 			outputMessage.getHeaders().set(HttpHeaders.CONTENT_TYPE, CabdApplication.GEOPKG_MEDIA_TYPE_STR);
 	
 			Files.copy(temp, outputMessage.getBody());

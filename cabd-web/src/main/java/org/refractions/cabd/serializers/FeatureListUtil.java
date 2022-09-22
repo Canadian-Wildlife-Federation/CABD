@@ -47,6 +47,19 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
  */
 public class FeatureListUtil {
 
+	public static final String MULTI_TYPES_TYPENAME = "features";
+	
+	/**
+	 * For determining filenames for export formats that require content
+	 * disposition header
+	 * @param ftype feature type as string (used for filename)
+	 * @param extension format extension
+	 * @return
+	 */
+	public static String getContentDispositionHeader(String ftype, String extension) {
+		return "attachment;filename=cabd-" + ftype + "." + extension;
+	}
+	
 	public static ImmutableTriple<String, FeatureViewMetadata, Envelope> getMetadata(FeatureList features, FeatureTypeManager typeManager) throws IOException{
 
 		Set<String> ftypes = new HashSet<>();
@@ -61,7 +74,7 @@ public class FeatureListUtil {
 		}
 		
 		FeatureViewMetadata metadata = null;
-		String barriertype = "allbarriers";
+		String barriertype = MULTI_TYPES_TYPENAME;
 		if (ftypes.size() == 1) {
 			//create a schema specific to the feature type
 			barriertype = ftypes.iterator().next();
