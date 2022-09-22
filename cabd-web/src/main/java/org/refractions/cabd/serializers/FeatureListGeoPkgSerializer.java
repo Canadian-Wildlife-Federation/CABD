@@ -92,7 +92,7 @@ public class FeatureListGeoPkgSerializer extends AbstractFeatureListSerializer{
 				tx.commit();
 			}
 			
-			outputMessage.getHeaders().set(HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=cabd-" + metadataitems.getLeft() + ".gpkg");
+			outputMessage.getHeaders().set(HttpHeaders.CONTENT_DISPOSITION, FeatureListUtil.getContentDispositionHeader(metadataitems.getLeft(), "gpkg"));
 			outputMessage.getHeaders().set(HttpHeaders.CONTENT_TYPE, CabdApplication.GEOPKG_MEDIA_TYPE_STR);
 	
 			Files.copy(temp, outputMessage.getBody());
