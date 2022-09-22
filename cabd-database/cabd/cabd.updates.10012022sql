@@ -1,0 +1,14 @@
+create table cabd.contacts(
+  id uuid default gen_random_uuid(),
+  email varchar unique not null,
+  name varchar not null,
+  organization varchar,
+  datasource_id uuid references cabd.data_source(id),
+  primary key (id)
+);
+
+grant all privileges on cabd.contacts to cabd;
+
+alter table cabd.feature_types add column data_version varchar;
+
+update cabd.feature_types set data_version = '1';
