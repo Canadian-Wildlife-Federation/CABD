@@ -62,8 +62,6 @@ public class FeatureListShpSerializer extends AbstractFeatureListSerializer{
 
 	private Logger logger = LoggerFactory.getLogger(FeatureListShpSerializer.class);
 
-	private static final String FILENAME = "features";
-	
 	public FeatureListShpSerializer() {
 		super(CabdApplication.SHP_MEDIA_TYPE);
 	}
@@ -127,18 +125,22 @@ public class FeatureListShpSerializer extends AbstractFeatureListSerializer{
 		}
 		
 		
-		outputMessage.getHeaders().set(HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=" + FILENAME + ".zip");
+		//file all files with same name as temp and zip them up
+				
+		String rootExportName = "cabd-" + metadataitems.getLeft();
+		
+		outputMessage.getHeaders().set(HttpHeaders.CONTENT_DISPOSITION, FeatureListUtil.getContentDispositionHeader(metadataitems.getLeft(), "zip"));
 		outputMessage.getHeaders().set(HttpHeaders.CONTENT_TYPE, CabdApplication.SHP_MEDIA_TYPE.getType());
 
 		//zip file
 		try(ZipOutputStream out = new ZipOutputStream(outputMessage.getBody())){
 			for (Path file : filesToZip) {
-				ZipEntry entry = new ZipEntry(FILENAME + "." + FilenameUtils.getExtension(file.getFileName().toString()));
+				ZipEntry entry = new ZipEntry(rootExportName + "." + FilenameUtils.getExtension(file.getFileName().toString()));
 				out.putNextEntry(entry);
 				Files.copy(file, out);
 			}
 			//add metadata files
-			ZipEntry entry = new ZipEntry(FILENAME + "." + FeatureListUtil.METADATA_KEY + "." + FilenameUtils.getExtension(metadatafile.getFileName().toString()));
+			ZipEntry entry = new ZipEntry(rootExportName + "." + FeatureListUtil.METADATA_KEY + "." + FilenameUtils.getExtension(metadatafile.getFileName().toString()));
 			out.putNextEntry(entry);
 			Files.copy(metadatafile, out);
 		}
