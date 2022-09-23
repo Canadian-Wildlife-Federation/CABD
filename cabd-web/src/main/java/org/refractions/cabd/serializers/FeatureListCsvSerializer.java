@@ -22,12 +22,14 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.locationtech.jts.io.WKTWriter;
 import org.refractions.cabd.CabdApplication;
 import org.refractions.cabd.dao.FeatureDao;
 import org.refractions.cabd.model.Feature;
 import org.refractions.cabd.model.FeatureList;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpOutputMessage;
 import org.springframework.http.converter.HttpMessageNotWritableException;
 import org.springframework.stereotype.Component;
@@ -55,6 +57,9 @@ public class FeatureListCsvSerializer extends AbstractFeatureListSerializer{
 		
 		if (features.getItems().isEmpty()) return ;
 		
+		List<String> types = features.getItems().stream().map(e->e.getFeatureType()).distinct().collect(Collectors.toList());
+
+		
 		WKTWriter wktwriter = new WKTWriter();
 		
 		//determine attributes; sort
@@ -68,6 +73,13 @@ public class FeatureListCsvSerializer extends AbstractFeatureListSerializer{
 		List<String> orderedAttributes = new ArrayList<>(attributes);
 		Collections.sort(orderedAttributes);
 		if (hasId) orderedAttributes.add(0, FeatureDao.ID_FIELD);
+		
+		
+		String fname = FeatureListUtil.MULTI_TYPES_TYPENAME;
+		if (types.size() == 1) fname = types.get(0);
+		
+		outputMessage.getHeaders().set(HttpHeaders.CONTENT_DISPOSITION, FeatureListUtil.getContentDispositionHeader(fname, "csv"));
+		outputMessage.getHeaders().set(HttpHeaders.CONTENT_TYPE, CabdApplication.CSV_MEDIA_TYPE_STR);
 		
 		try(OutputStreamWriter outwriter = new OutputStreamWriter(outputMessage.getBody());
 				CSVWriter csvWriter = new CSVWriter(outwriter)){
@@ -97,5 +109,7 @@ public class FeatureListCsvSerializer extends AbstractFeatureListSerializer{
 				csvWriter.writeNext(data);
 			}
 		}
+		
+		
 	}
 }
