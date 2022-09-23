@@ -48,7 +48,9 @@ public class FeatureListKmlSerializer extends AbstractFeatureListSerializer{
 
 	@Autowired
 	private FeatureTypeManager typeManager;
-		
+	
+	private static final String FILENAME = "features";
+	
 	public FeatureListKmlSerializer() {
 		super(CabdApplication.KML_MEDIA_TYPE);
 	}
@@ -93,7 +95,7 @@ public class FeatureListKmlSerializer extends AbstractFeatureListSerializer{
 			cfeatures.add(sf);
 		}
 		
-		outputMessage.getHeaders().set(HttpHeaders.CONTENT_DISPOSITION, FeatureListUtil.getContentDispositionHeader(metadataitems.getLeft(), "kml"));
+		outputMessage.getHeaders().set(HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=" + FILENAME + ".kml");
 		outputMessage.getHeaders().set(HttpHeaders.CONTENT_TYPE, CabdApplication.KML_MEDIA_TYPE.getType());
 		
 		Encoder encoder = new Encoder(new org.geotools.kml.v22.KMLConfiguration());
