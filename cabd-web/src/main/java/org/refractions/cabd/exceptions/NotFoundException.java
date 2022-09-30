@@ -15,6 +15,8 @@
  */
 package org.refractions.cabd.exceptions;
 
+import org.springframework.http.HttpStatus;
+
 public class NotFoundException extends RuntimeException {
 	
 	private static final long serialVersionUID = 1L;
@@ -23,7 +25,7 @@ public class NotFoundException extends RuntimeException {
 	
 	public NotFoundException(String message) {
 		super(message);
-		errorMessage = new ApiError(message);
+		errorMessage = new ApiError(message, HttpStatus.NOT_FOUND);
 	}
 	
 	public ApiError getError() {

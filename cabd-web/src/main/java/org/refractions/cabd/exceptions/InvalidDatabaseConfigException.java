@@ -15,6 +15,8 @@
  */
 package org.refractions.cabd.exceptions;
 
+import org.springframework.http.HttpStatus;
+
 public class InvalidDatabaseConfigException extends RuntimeException {
 	
 	private static final long serialVersionUID = 1L;
@@ -23,7 +25,7 @@ public class InvalidDatabaseConfigException extends RuntimeException {
 	
 	public InvalidDatabaseConfigException(String message) {
 		super(message);
-		errorMessage = new ApiError(message);
+		errorMessage = new ApiError(message, HttpStatus.INTERNAL_SERVER_ERROR);
 	}
 	
 	public ApiError getError() {
