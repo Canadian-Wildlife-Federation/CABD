@@ -106,7 +106,7 @@ public class FeatureController {
 	
 	//requires content-type = application/json in request
 	@PutMapping(value = "/{id:[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}}")
-	public ResponseEntity putFeature(
+	public ResponseEntity<Object> putFeature(
 			@Parameter(description = "unique feature identifier") 
 			@PathVariable("id") UUID id,
 			@RequestBody FeatureChangeRequest changeRequest,

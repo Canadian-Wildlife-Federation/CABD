@@ -837,6 +837,7 @@ CREATE TABLE cabd.audit_log (
   revision serial not null primary key,
   datetime timestamp without time zone not null default now(),
   username varchar(32) not null default CURRENT_USER,
+  schemaname varchar(64) not null,
   tablename varchar(64) not null,
   action varchar(6),
   cabd_id uuid,
@@ -852,7 +853,7 @@ CREATE TABLE cabd.audit_log (
 CREATE OR REPLACE FUNCTION cabd.audit_cabdid_insert()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO public.audit_log(action, tablename, cabd_id, newvalues) VALUES('INSERT', TG_TABLE_NAME::regclass::text, NEW.cabd_id, to_jsonb(NEW)::jsonb);
+  INSERT INTO cabd.audit_log(action, schemaname, tablename, cabd_id, newvalues) VALUES('INSERT', TG_TABLE_SCHEMA::text, TG_TABLE_NAME::text, NEW.cabd_id, to_jsonb(NEW)::jsonb);
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
@@ -860,7 +861,7 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION cabd.audit_cabdid_delete()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO public.audit_log(action, tablename, cabd_id, oldvalues) VALUES('DELETE', TG_TABLE_NAME::regclass::text, OLD.cabd_id, to_jsonb(OLD)::jsonb);
+  INSERT INTO cabd.audit_log(action, schemaname, tablename, cabd_id, oldvalues) VALUES('DELETE', TG_TABLE_SCHEMA::text, TG_TABLE_NAME::text, OLD.cabd_id, to_jsonb(OLD)::jsonb);
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
@@ -871,7 +872,7 @@ DECLARE
   js_new jsonb := row_to_json(NEW)::jsonb;
   js_old jsonb := row_to_json(OLD)::jsonb;
 BEGIN
-  INSERT INTO public.audit_log(action, tablename, cabd_id, oldvalues, newvalues) VALUES('UPDATE', TG_TABLE_NAME::regclass::text, NEW.cabd_id, js_old - js_new, js_new - js_old);
+  INSERT INTO cabd.audit_log(action, schemaname, tablename, cabd_id, oldvalues, newvalues) VALUES('UPDATE', TG_TABLE_SCHEMA::text, TG_TABLE_NAME::text, NEW.cabd_id, js_old - js_new, js_new - js_old);
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
@@ -882,7 +883,7 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION cabd.audit_cabddatasourceid_insert()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO public.audit_log(action, tablename, cabd_id, datasource_id, newvalues) VALUES('INSERT', TG_TABLE_NAME::regclass::text, NEW.cabd_id, NEW.datasource_id, to_jsonb(NEW)::jsonb);
+  INSERT INTO cabd.audit_log(action, schemaname, tablename, cabd_id, datasource_id, newvalues) VALUES('INSERT', TG_TABLE_SCHEMA::text, TG_TABLE_NAME::text, NEW.cabd_id, NEW.datasource_id, to_jsonb(NEW)::jsonb);
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
@@ -890,7 +891,7 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION cabd.audit_cabddatasourceid_delete()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO public.audit_log(action, tablename, cabd_id, datasource_id, oldvalues) VALUES('DELETE', TG_TABLE_NAME::regclass::text, OLD.cabd_id, OLD.datasource_id, to_jsonb(OLD)::jsonb);
+  INSERT INTO cabd.audit_log(action, schemaname, tablename, cabd_id, datasource_id, oldvalues) VALUES('DELETE', TG_TABLE_SCHEMA::text, TG_TABLE_NAME::text, OLD.cabd_id, OLD.datasource_id, to_jsonb(OLD)::jsonb);
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
@@ -901,7 +902,7 @@ DECLARE
   js_new jsonb := row_to_json(NEW)::jsonb;
   js_old jsonb := row_to_json(OLD)::jsonb;
 BEGIN
-  INSERT INTO public.audit_log(action, tablename, cabd_id, datasource_id, oldvalues, newvalues) VALUES('UPDATE', TG_TABLE_NAME::regclass::text, NEW.cabd_id, NEW.datasource_id, js_old - js_new, js_new - js_old);
+  INSERT INTO cabd.audit_log(action, schemaname, tablename, cabd_id, datasource_id, oldvalues, newvalues) VALUES('UPDATE', TG_TABLE_SCHEMA::text, TG_TABLE_NAME::text, NEW.cabd_id, NEW.datasource_id, js_old - js_new, js_new - js_old);
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
@@ -912,7 +913,7 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION cabd.audit_datasourcetable_insert()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO public.audit_log(action, tablename, datasource_id, newvalues) VALUES('INSERT', TG_TABLE_NAME::regclass::text, NEW.id, to_jsonb(NEW)::jsonb);
+  INSERT INTO cabd.audit_log(action, schemaname, tablename, datasource_id, newvalues) VALUES('INSERT', TG_TABLE_SCHEMA::text, TG_TABLE_NAME::text, NEW.id, to_jsonb(NEW)::jsonb);
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
@@ -920,7 +921,7 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION cabd.audit_datasourcetable_delete()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO public.audit_log(action, tablename, datasource_id, oldvalues) VALUES('DELETE', TG_TABLE_NAME::regclass::text, OLD.id, to_jsonb(OLD)::jsonb);
+  INSERT INTO cabd.audit_log(action, schemaname, tablename, datasource_id, oldvalues) VALUES('DELETE', TG_TABLE_SCHEMA::text, TG_TABLE_NAME::text, OLD.id, to_jsonb(OLD)::jsonb);
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
@@ -931,7 +932,7 @@ DECLARE
   js_new jsonb := row_to_json(NEW)::jsonb;
   js_old jsonb := row_to_json(OLD)::jsonb;
 BEGIN
-  INSERT INTO public.audit_log(action, tablename, datasource_id, oldvalues, newvalues) VALUES('UPDATE', TG_TABLE_NAME::regclass::text,  NEW.id, js_old - js_new, js_new - js_old);
+  INSERT INTO cabd.audit_log(action, schemaname, tablename, datasource_id, oldvalues, newvalues) VALUES('UPDATE', TG_TABLE_SCHEMA::text, TG_TABLE_NAME::text,  NEW.id, js_old - js_new, js_new - js_old);
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
@@ -944,7 +945,7 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION cabd.audit_id_insert()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO public.audit_log(action, tablename, id_pk, newvalues) VALUES('INSERT', TG_TABLE_NAME::regclass::text, NEW.id, to_jsonb(NEW)::jsonb);
+  INSERT INTO cabd.audit_log(action, schemaname, tablename, id_pk, newvalues) VALUES('INSERT', TG_TABLE_SCHEMA::text, TG_TABLE_NAME::text, NEW.id, to_jsonb(NEW)::jsonb);
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
@@ -952,7 +953,7 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION cabd.audit_id_delete()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO public.audit_log(action, tablename, id_pk, oldvalues) VALUES('DELETE', TG_TABLE_NAME::regclass::text, OLD.id, to_jsonb(OLD)::jsonb);
+  INSERT INTO cabd.audit_log(action, schemaname, tablename, id_pk, oldvalues) VALUES('DELETE', TG_TABLE_SCHEMA::text, TG_TABLE_NAME::text, OLD.id, to_jsonb(OLD)::jsonb);
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
@@ -963,7 +964,7 @@ DECLARE
   js_new jsonb := row_to_json(NEW)::jsonb;
   js_old jsonb := row_to_json(OLD)::jsonb;
 BEGIN
-  INSERT INTO public.audit_log(action, tablename, id_pk, oldvalues, newvalues) VALUES('UPDATE', TG_TABLE_NAME::regclass::text,  NEW.id, js_old - js_new, js_new - js_old);
+  INSERT INTO cabd.audit_log(action, schemaname, tablename, id_pk, oldvalues, newvalues) VALUES('UPDATE', TG_TABLE_SCHEMA::text, TG_TABLE_NAME::text,  NEW.id, js_old - js_new, js_new - js_old);
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
@@ -975,7 +976,7 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION cabd.audit_speciesmappingtable_insert()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO public.audit_log(action, tablename, cabd_id, id_pk, newvalues) VALUES('INSERT', TG_TABLE_NAME::regclass::text, NEW.fishway_id, NEW.species_id, to_jsonb(NEW)::jsonb);
+  INSERT INTO cabd.audit_log(action, schemaname, tablename, cabd_id, id_pk, newvalues) VALUES('INSERT', TG_TABLE_SCHEMA::text, TG_TABLE_NAME::text, NEW.fishway_id, NEW.species_id, to_jsonb(NEW)::jsonb);
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
@@ -983,7 +984,7 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION cabd.audit_speciesmappingtable_delete()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO public.audit_log(action, tablename, cabd_id, id_pk, oldvalues) VALUES('DELETE', TG_TABLE_NAME::regclass::text, OLD.fishway_id, OLD.species_id, to_jsonb(OLD)::jsonb);
+  INSERT INTO cabd.audit_log(action, schemaname, tablename, cabd_id, id_pk, oldvalues) VALUES('DELETE', TG_TABLE_SCHEMA::text, TG_TABLE_NAME::text, OLD.fishway_id, OLD.species_id, to_jsonb(OLD)::jsonb);
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
@@ -994,7 +995,7 @@ DECLARE
   js_new jsonb := row_to_json(NEW)::jsonb;
   js_old jsonb := row_to_json(OLD)::jsonb;
 BEGIN
-  INSERT INTO public.audit_log(action, tablename, cabd_id, id_pk, oldvalues, newvalues) VALUES('UPDATE', TG_TABLE_NAME::regclass::text, NEW.fishway_id, NEW.species_id, js_old - js_new, js_new - js_old);
+  INSERT INTO cabd.audit_log(action, schemaname, tablename, cabd_id, id_pk, oldvalues, newvalues) VALUES('UPDATE', TG_TABLE_SCHEMA::text, TG_TABLE_NAME::text, NEW.fishway_id, NEW.species_id, js_old - js_new, js_new - js_old);
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;

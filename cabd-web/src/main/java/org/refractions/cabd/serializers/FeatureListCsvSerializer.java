@@ -17,6 +17,8 @@ package org.refractions.cabd.serializers;
 
 import java.io.IOException;
 import java.io.OutputStreamWriter;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -78,7 +80,8 @@ public class FeatureListCsvSerializer extends AbstractFeatureListSerializer{
 		String fname = FeatureListUtil.MULTI_TYPES_TYPENAME;
 		if (types.size() == 1) fname = types.get(0);
 		
-		outputMessage.getHeaders().set(HttpHeaders.CONTENT_DISPOSITION, FeatureListUtil.getContentDispositionHeader(fname, "csv"));
+		outputMessage.getHeaders().set(HttpHeaders.CONTENT_DISPOSITION, 
+				FeatureListUtil.getContentDispositionHeader(fname + "-" + DateTimeFormatter.ofPattern("YYYYMMddHHmmss").format(LocalDateTime.now()), "csv"));
 		outputMessage.getHeaders().set(HttpHeaders.CONTENT_TYPE, CabdApplication.CSV_MEDIA_TYPE_STR);
 		
 		try(OutputStreamWriter outwriter = new OutputStreamWriter(outputMessage.getBody());
