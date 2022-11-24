@@ -91,7 +91,7 @@ public class FeatureListCsvSerializer extends AbstractFeatureListSerializer{
 		}
 		
 		outputMessage.getHeaders().set(HttpHeaders.CONTENT_DISPOSITION, 
-				FeatureListUtil.getContentDispositionHeader(fname + "-" + DateTimeFormatter.ofPattern("YYYYMMddHHmmss").format(LocalDateTime.now()), "csv"));
+				FeatureListUtil.getContentDispositionHeader(fname + "-" + DateTimeFormatter.ofPattern("YYYYMMdd-HHmmss").format(LocalDateTime.now()), "csv"));
 		outputMessage.getHeaders().set(HttpHeaders.CONTENT_TYPE, CabdApplication.CSV_MEDIA_TYPE_STR);
 		
 		try(OutputStreamWriter outwriter = new OutputStreamWriter(outputMessage.getBody());

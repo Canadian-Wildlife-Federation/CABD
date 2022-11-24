@@ -370,8 +370,10 @@ AS SELECT d.cabd_id,
     f.name_en AS function_name,
     d.condition_code,
     dc.name_en AS dam_condition,
-    d.construction_type_code,
+    d.structure_type_code,
     dct.name_en AS construction_type,
+    d.construction_material_code,
+    dcm.name_en AS construction_material,
     d.height_m,
     d.length_m,
     d.size_class_code,
@@ -425,7 +427,8 @@ AS SELECT d.cabd_id,
      LEFT JOIN dams.use_codes c10 ON c10.code = d.use_other_code
      LEFT JOIN dams.function_codes f ON f.code = d.function_code
      LEFT JOIN dams.condition_codes dc ON dc.code = d.condition_code
-     LEFT JOIN dams.construction_type_codes dct ON dct.code = d.construction_type_code
+     LEFT JOIN dams.structure_type_codes dct ON dct.code = d.structure_type_code
+     LEFT JOIN dams.construction_material_codes dcm ON dcm.code = d.construction_material_code
      LEFT JOIN dams.size_codes ds ON ds.code = d.size_class_code
      LEFT JOIN dams.spillway_type_codes dsp ON dsp.code = d.spillway_type_code
      LEFT JOIN dams.turbine_type_codes dt ON dt.code = d.turbine_type_code
@@ -498,8 +501,10 @@ AS SELECT d.cabd_id,
     f.name_fr AS function_name,
     d.condition_code,
     dc.name_fr AS dam_condition,
-    d.construction_type_code,
+    d.structure_type_code,
     dct.name_fr AS construction_type,
+    d.construction_material_code
+    dmc.name_fr AS construction_material,
     d.height_m,
     d.length_m,
     d.size_class_code,
@@ -553,7 +558,8 @@ AS SELECT d.cabd_id,
      LEFT JOIN dams.use_codes c10 ON c10.code = d.use_other_code
      LEFT JOIN dams.function_codes f ON f.code = d.function_code
      LEFT JOIN dams.condition_codes dc ON dc.code = d.condition_code
-     LEFT JOIN dams.construction_type_codes dct ON dct.code = d.construction_type_code
+     LEFT JOIN dams.structure_type_codes dct ON dct.code = d.structure_type_code
+     LEFT JOIN dams.construction_material_codes dcm ON dcm.code = d.construction_material_code
      LEFT JOIN dams.size_codes ds ON ds.code = d.size_class_code
      LEFT JOIN dams.spillway_type_codes dsp ON dsp.code = d.spillway_type_code
      LEFT JOIN dams.turbine_type_codes dt ON dt.code = d.turbine_type_code
