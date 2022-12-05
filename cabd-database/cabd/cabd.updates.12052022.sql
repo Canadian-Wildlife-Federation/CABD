@@ -123,7 +123,7 @@ SELECT d.cabd_id,
     d.structure_type_code,
     dst.name_en AS structure_type,
     d.construction_material_code,
-    dcm.name_en AS constructional_material,
+    dcm.name_en AS construction_material,
     d.height_m,
     d.length_m,
     d.size_class_code,
@@ -261,7 +261,7 @@ SELECT d.cabd_id,
     d.structure_type_code,
     dst.name_fr AS structure_type,
     d.construction_material_code,
-    dcm.name_fr AS constructional_material,
+    dcm.name_fr AS construction_material,
     d.height_m,
     d.length_m,
     d.size_class_code,
@@ -445,6 +445,13 @@ VALUES
     )
 ;
 
-SELECT * FROM cabd.feature_type_metadata
-WHERE view_name = 'cabd.dams_view'
-ORDER BY vw_all_order ASC;
+update cabd.feature_type_metadata set value_options_reference = 'dams.structure_type_codes;;name;description' where view_name = 'cabd.dams_view' and field_name = 'structure_type';
+
+update cabd.feature_type_metadata set value_options_reference = 'dams.structure_type_codes;code;name;description' where view_name = 'cabd.dams_view' and field_name = 'structure_type_code';
+
+update cabd.feature_type_metadata set value_options_reference = 'dams.construction_material_codes;;name;description' where view_name = 'cabd.dams_view' and field_name = 'construction_material'
+
+-- check your work
+-- SELECT * FROM cabd.feature_type_metadata
+-- WHERE view_name = 'cabd.dams_view'
+-- ORDER BY vw_all_order ASC;
