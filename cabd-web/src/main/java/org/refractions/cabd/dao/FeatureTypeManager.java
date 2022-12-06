@@ -98,6 +98,20 @@ public class FeatureTypeManager {
 	}
 	
 	/**
+	 * the maximum version associated with any feature type 
+	 * 
+	 * @return
+	 */
+	public String getMaxVersion() {
+		String version = types.get(0).getDataVersion();
+		for (FeatureType t : types) {
+			if (t.getDataVersion().compareTo(version) > 0) {
+				version = t.getDataVersion();
+			}
+		}
+		return version;
+	}
+	/**
 	 * Initializes the feature type cache from the database
 	 * on startup.
 	 */

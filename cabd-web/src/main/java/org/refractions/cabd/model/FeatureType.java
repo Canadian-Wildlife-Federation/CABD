@@ -29,6 +29,7 @@ public class FeatureType extends NamedItem{
 
 	private String type;
 	private String dataView;
+	private String dataVersion;
 	
 	private String attributeSourceTable;
 	private String featureSourceTable;
@@ -39,16 +40,20 @@ public class FeatureType extends NamedItem{
 	
 	private FeatureViewMetadata metadata;
 	
-	public FeatureType(String type, String dataView, String name_en, String name_fr, String attributeSourceTable, 
+	public FeatureType(String type, String dataView, String dataVersion, String name_en, String name_fr, String attributeSourceTable, 
 			String featureSourceTable, String defaultNameField) {
 		super(name_en, name_fr);
 		this.type = type;
+		this.dataVersion = dataVersion;
 		this.dataView = dataView;
 		this.attributeSourceTable = attributeSourceTable;
 		this.featureSourceTable = featureSourceTable;
 		this.defaultNameField = defaultNameField;
 	}
 
+	public String getDataVersion() {
+		return this.dataVersion;
+	}
 	public String getFeatureSourceTable() {
 		return this.featureSourceTable;
 	}

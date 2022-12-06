@@ -17,6 +17,8 @@ package org.refractions.cabd.serializers;
 
 import java.io.IOException;
 import java.io.OutputStreamWriter;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -27,8 +29,11 @@ import java.util.stream.Collectors;
 import org.locationtech.jts.io.WKTWriter;
 import org.refractions.cabd.CabdApplication;
 import org.refractions.cabd.dao.FeatureDao;
+import org.refractions.cabd.dao.FeatureTypeManager;
 import org.refractions.cabd.model.Feature;
 import org.refractions.cabd.model.FeatureList;
+import org.refractions.cabd.model.FeatureType;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpOutputMessage;
 import org.springframework.http.converter.HttpMessageNotWritableException;
@@ -45,6 +50,9 @@ import com.opencsv.CSVWriter;
 @Component
 public class FeatureListCsvSerializer extends AbstractFeatureListSerializer{
 
+	@Autowired
+	private FeatureTypeManager typeManager;
+	
 	public FeatureListCsvSerializer() {
 		super(CabdApplication.CSV_MEDIA_TYPE);
 	}
@@ -76,9 +84,14 @@ public class FeatureListCsvSerializer extends AbstractFeatureListSerializer{
 		
 		
 		String fname = FeatureListUtil.MULTI_TYPES_TYPENAME;
-		if (types.size() == 1) fname = types.get(0);
+		if (types.size() == 1) {
+			fname = types.get(0);
+			FeatureType t = typeManager.getFeatureType(fname);
+			fname += ".v" + t.getDataVersion();
+		}
 		
-		outputMessage.getHeaders().set(HttpHeaders.CONTENT_DISPOSITION, FeatureListUtil.getContentDispositionHeader(fname, "csv"));
+		outputMessage.getHeaders().set(HttpHeaders.CONTENT_DISPOSITION, 
+				FeatureListUtil.getContentDispositionHeader(fname + "-" + DateTimeFormatter.ofPattern("YYYYMMdd-HHmmss").format(LocalDateTime.now()), "csv"));
 		outputMessage.getHeaders().set(HttpHeaders.CONTENT_TYPE, CabdApplication.CSV_MEDIA_TYPE_STR);
 		
 		try(OutputStreamWriter outwriter = new OutputStreamWriter(outputMessage.getBody());

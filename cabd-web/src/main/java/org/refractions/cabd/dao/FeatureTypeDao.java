@@ -56,7 +56,8 @@ public class FeatureTypeDao {
 	 * Mapper for feature type query to FeatureType 
 	 */
 	private RowMapper<FeatureType> typeMapper = (rs, rownum)-> 
-		new FeatureType(rs.getString("type"), rs.getString("data_view"), 
+		new FeatureType(rs.getString("type"), rs.getString("data_view"),
+				rs.getString("data_version"),
 				rs.getString("name_en"), rs.getString("name_fr"), 
 				rs.getString("attribute_source_table"),
 				rs.getString("feature_source_table"),
@@ -89,7 +90,7 @@ public class FeatureTypeDao {
 	 * @return
 	 */
 	public List<FeatureType> getFeatureTypes(){
-		String query = "SELECT type, data_view, name_en, name_fr, attribute_source_table, feature_source_table, default_featurename_field FROM " + FEATURE_TYPE_TABLE;
+		String query = "SELECT type, data_view, data_version, name_en, name_fr, attribute_source_table, feature_source_table, default_featurename_field FROM " + FEATURE_TYPE_TABLE;
 		return jdbcTemplate.query(query, typeMapper);		
 	}
 	

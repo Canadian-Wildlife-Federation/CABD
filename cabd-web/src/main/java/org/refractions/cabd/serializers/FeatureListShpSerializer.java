@@ -15,6 +15,7 @@
  */
 package org.refractions.cabd.serializers;
 
+import java.io.BufferedWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -36,6 +37,7 @@ import org.opengis.feature.simple.SimpleFeatureType;
 import org.refractions.cabd.CabdApplication;
 import org.refractions.cabd.dao.FeatureTypeManager;
 import org.refractions.cabd.model.FeatureList;
+import org.refractions.cabd.model.FeatureType;
 import org.refractions.cabd.model.FeatureViewMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -82,6 +84,7 @@ public class FeatureListShpSerializer extends AbstractFeatureListSerializer{
 		Map<String,String> nameMapping = typeInfo.getRight();
 		
 		Path temp = Files.createTempFile("cadbshp", ".shp");
+		String rootFileName = FilenameUtils.getBaseName(temp.getFileName().toString());
 		
 		ShapefileDataStore datastore = new ShapefileDataStore(temp.toUri().toURL());
 		try {
@@ -96,11 +99,33 @@ public class FeatureListShpSerializer extends AbstractFeatureListSerializer{
 		}finally {
 			datastore.dispose();
 		}
+		List<Path> filesToZip = Files.find(temp.getParent(), 1, 
+				(p,a)->FilenameUtils.getBaseName(p.getFileName().toString()).equals(rootFileName))
+				.collect(Collectors.toList());
+		
+		//add metadata file
+		Path metadatafile = temp.getParent().resolve(FeatureListUtil.METADATA_KEY + ".csv");
+		try(BufferedWriter writer =  Files.newBufferedWriter(metadatafile)){
+			writer.write(FeatureListUtil.DATA_LICENSE_KEY);
+			writer.write(",");
+			writer.write(CabdApplication.DATA_LICENCE_URL);
+			writer.newLine();
+			writer.write(FeatureListUtil.DOWNLOAD_DATETIME_KEY);
+			writer.write(",");
+			writer.write(FeatureListUtil.getNowAsString());
+			writer.newLine();
+			
+			for (String sftype : FeatureListUtil.getFeatureTypes(features)) {
+				FeatureType ft = typeManager.getFeatureType(sftype);
+				writer.write(ft.getType() + "_" + FeatureListUtil.DATA_VERSION_KEY);
+				writer.write(",");
+				writer.write(ft.getDataVersion());
+				writer.newLine();
+			}
+		}
+		
 		
 		//file all files with same name as temp and zip them up
-		Path parent = temp.getParent();
-		String rootFileName = FilenameUtils.getBaseName(temp.getFileName().toString());
-		List<Path> filesToZip = Files.find(parent, 1, (p,a)->FilenameUtils.getBaseName(p.getFileName().toString()).equals(rootFileName)).collect(Collectors.toList());
 				
 		String rootExportName = "cabd-" + metadataitems.getLeft();
 		
@@ -114,6 +139,10 @@ public class FeatureListShpSerializer extends AbstractFeatureListSerializer{
 				out.putNextEntry(entry);
 				Files.copy(file, out);
 			}
+			//add metadata files
+			ZipEntry entry = new ZipEntry(rootExportName + "." + FeatureListUtil.METADATA_KEY + "." + FilenameUtils.getExtension(metadatafile.getFileName().toString()));
+			out.putNextEntry(entry);
+			Files.copy(metadatafile, out);
 		}
 
 		for (Path p : filesToZip) {
