@@ -47,7 +47,7 @@ DROP VIEW cabd.waterfalls_view_fr;
 
 CREATE OR REPLACE VIEW cabd.all_features_view_en
 AS SELECT barriers.cabd_id,
-    'features/datasources/'::text || barriers.cabd_id AS datasource_url,
+  'features/datasources/'::text || barriers.cabd_id AS datasource_url,
     barriers.barrier_type AS feature_type,
     barriers.name_en,
     barriers.name_fr,
@@ -195,7 +195,7 @@ AS SELECT barriers.cabd_id,
 
 CREATE OR REPLACE VIEW cabd.barriers_view_en
 AS SELECT barriers.cabd_id,
-    'features/datasources/'::text || barriers.cabd_id AS datasource_url,
+   'features/datasources/'::text || barriers.cabd_id AS datasource_url,
     barriers.feature_type,
     barriers.name_en,
     barriers.name_fr,
@@ -357,13 +357,15 @@ AS SELECT d.cabd_id,
     c8.name_en AS use_pollution,
     d.use_invasivespecies_code,
     c9.name_en AS use_invasivespecies,
+    d.use_conservation_code,
+    c10.name_en AS use_conservation,
     d.use_other_code,
-    c10.name_en AS use_other,
+    c11.name_en AS use_other,
     d.lake_control_code,
     lk.name_en AS lake_control,
     d.construction_year,
     d.assess_schedule,
-    d.expected_life,
+    d.expected_end_of_life,
     d.maintenance_last,
     d.maintenance_next,
     d.function_code,
@@ -371,7 +373,7 @@ AS SELECT d.cabd_id,
     d.condition_code,
     dc.name_en AS dam_condition,
     d.structure_type_code,
-    dct.name_en AS construction_type,
+    dst.name_en AS structure_type,
     d.construction_material_code,
     dcm.name_en AS construction_material,
     d.height_m,
@@ -424,10 +426,11 @@ AS SELECT d.cabd_id,
      LEFT JOIN dams.use_codes c7 ON c7.code = d.use_fish_code
      LEFT JOIN dams.use_codes c8 ON c8.code = d.use_pollution_code
      LEFT JOIN dams.use_codes c9 ON c9.code = d.use_invasivespecies_code
-     LEFT JOIN dams.use_codes c10 ON c10.code = d.use_other_code
+     LEFT JOIN dams.use_codes c10 ON c10.code = d.use_conservation_code
+     LEFT JOIN dams.use_codes c11 ON c11.code = d.use_other_code
      LEFT JOIN dams.function_codes f ON f.code = d.function_code
      LEFT JOIN dams.condition_codes dc ON dc.code = d.condition_code
-     LEFT JOIN dams.structure_type_codes dct ON dct.code = d.structure_type_code
+     LEFT JOIN dams.structure_type_codes dst ON dst.code = d.structure_type_code
      LEFT JOIN dams.construction_material_codes dcm ON dcm.code = d.construction_material_code
      LEFT JOIN dams.size_codes ds ON ds.code = d.size_class_code
      LEFT JOIN dams.spillway_type_codes dsp ON dsp.code = d.spillway_type_code
@@ -488,13 +491,15 @@ AS SELECT d.cabd_id,
     c8.name_fr AS use_pollution,
     d.use_invasivespecies_code,
     c9.name_fr AS use_invasivespecies,
+    d.use_conservation_code,
+    c10.name_fr AS use_conservation,
     d.use_other_code,
-    c10.name_fr AS use_other,
+    c11.name_fr AS use_other,
     d.lake_control_code,
     lk.name_fr AS lake_control,
     d.construction_year,
     d.assess_schedule,
-    d.expected_life,
+    d.expected_end_of_life,
     d.maintenance_last,
     d.maintenance_next,
     d.function_code,
@@ -502,9 +507,9 @@ AS SELECT d.cabd_id,
     d.condition_code,
     dc.name_fr AS dam_condition,
     d.structure_type_code,
-    dct.name_fr AS construction_type,
-    d.construction_material_code
-    dmc.name_fr AS construction_material,
+    dst.name_fr AS structure_type,
+    d.construction_material_code,
+    dcm.name_fr AS construction_material,
     d.height_m,
     d.length_m,
     d.size_class_code,
@@ -542,7 +547,7 @@ AS SELECT d.cabd_id,
     case when upd.cabd_id is not null then true else false end as updates_pending,    
     d.snapped_point AS geometry
    FROM dams.dams d
-     JOIN cabd.province_territory_codes pt ON pt.code::text = d.province_territory_code::text
+    JOIN cabd.province_territory_codes pt ON pt.code::text = d.province_territory_code::text
      LEFT JOIN cabd.barrier_ownership_type_codes ow ON ow.code = d.ownership_type_code
      LEFT JOIN dams.operating_status_codes os ON os.code = d.operating_status_code
      LEFT JOIN dams.dam_use_codes duc ON duc.code = d.use_code
@@ -555,10 +560,11 @@ AS SELECT d.cabd_id,
      LEFT JOIN dams.use_codes c7 ON c7.code = d.use_fish_code
      LEFT JOIN dams.use_codes c8 ON c8.code = d.use_pollution_code
      LEFT JOIN dams.use_codes c9 ON c9.code = d.use_invasivespecies_code
-     LEFT JOIN dams.use_codes c10 ON c10.code = d.use_other_code
+     LEFT JOIN dams.use_codes c10 ON c10.code = d.use_conservation_code
+     LEFT JOIN dams.use_codes c11 ON c11.code = d.use_other_code
      LEFT JOIN dams.function_codes f ON f.code = d.function_code
      LEFT JOIN dams.condition_codes dc ON dc.code = d.condition_code
-     LEFT JOIN dams.structure_type_codes dct ON dct.code = d.structure_type_code
+     LEFT JOIN dams.structure_type_codes dst ON dst.code = d.structure_type_code
      LEFT JOIN dams.construction_material_codes dcm ON dcm.code = d.construction_material_code
      LEFT JOIN dams.size_codes ds ON ds.code = d.size_class_code
      LEFT JOIN dams.spillway_type_codes dsp ON dsp.code = d.spillway_type_code
@@ -651,7 +657,7 @@ AS SELECT d.cabd_id,
      
 CREATE OR REPLACE VIEW cabd.fishways_view_fr
 AS SELECT d.cabd_id,
-    'features/datasources/'::text || d.cabd_id AS datasource_url,
+     'features/datasources/'::text || d.cabd_id AS datasource_url,
     'fishways'::text AS feature_type,
     st_y(d.original_point) AS latitude,
     st_x(d.original_point) AS longitude,
@@ -793,9 +799,9 @@ AS SELECT w.cabd_id,
      LEFT JOIN cabd.updates_pending up on up.cabd_id = w.cabd_id;
 
 
-   insert into cabd.feature_type_metadata
+insert into cabd.feature_type_metadata
    (view_name, field_name, name_en, description_en, is_link, data_type, vw_simple_order, vw_all_order, include_vector_tile, value_options_reference, name_fr, description_fr, is_name_search)
-   values
+values
    ('cabd.all_features_view', 'updates_pending', 'Updates Pending', 'There are updates pending for this feature.', false, 'boolean', null, 18, false, null, 'Updates Pending', 'There are updates pending for this feature', false),
    ('cabd.barriers_view', 'updates_pending', 'Updates Pending', 'There are updates pending for this feature.', false, 'boolean', null, 18, false, null, 'Updates Pending', 'There are updates pending for this feature', false),
    ('cabd.fishways_view', 'updates_pending', 'Updates Pending', 'There are updates pending for this feature.', false, 'boolean', null, 52, false, null, 'Updates Pending', 'There are updates pending for this feature', false),
