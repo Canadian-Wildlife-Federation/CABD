@@ -6,7 +6,7 @@
 	
 	<groupId>org.refractions.cabd</groupId>
 	<artifactId>cabd</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>0.0.3-SNAPSHOT</version>
 	<name>CABD Web Services Root Project</name>
 	<description>Canadian Aquatic Barriers Database Project</description>
 	<packaging>pom</packaging>

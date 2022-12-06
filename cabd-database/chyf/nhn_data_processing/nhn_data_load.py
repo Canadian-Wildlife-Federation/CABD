@@ -4,8 +4,8 @@ import subprocess
 import os
 from nhn_data_qa import run_qa
 
-#alternate ogr option
-ogr = "C:\\OSGeo4W64\\bin\\ogr2ogr.exe";
+#alternate ogr options
+ogr = "C:\\OSGeo4W64\\bin\\ogr2ogr.exe"
 #ogr = "C:\\Program Files\\QGIS 3.22.3\\bin\\ogr2ogr.exe"
 
 
@@ -26,24 +26,24 @@ snaptogrid = 0.0000001
 
 def log(message):
     if (1):
-        print(message);
+        print(message)
 
 #temporary schema for loading and manipulating data 
-workingSchema = "nhn" + nhnworkunit.lower();
+workingSchema = "nhn" + nhnworkunit.lower()
 log("loading data into: " + workingSchema)
 
 conn = pg2.connect(database=dbName, 
                    user=dbUser, 
                    host=dbHost, 
                    password=dbPassword, 
-                   port=dbPort);
+                   port=dbPort)
                    #sslmode='require')
 
 
 with conn.cursor() as cursor:
     cursor.execute("DROP SCHEMA IF EXISTS " + workingSchema + " CASCADE");
-    cursor.execute("CREATE SCHEMA " + workingSchema);
-conn.commit();
+    cursor.execute("CREATE SCHEMA " + workingSchema)
+conn.commit()
 
 #load files into db
 orgDb="dbname='" + dbName + "' host='"+ dbHost+"' port='"+dbPort+"' user='"+dbUser+"' password='"+ dbPassword+"'"
@@ -53,44 +53,32 @@ my_env = os.environ.copy()
 #my_env["PGCLIENTENCODING"] = "LATIN1"
 
 #flowpaths
-pycmd = '"' + ogr + '" -f "PostgreSQL" PG:"' + orgDb + '" -nln "' + workingSchema + '.eflowpath" -lco GEOMETRY_NAME=geometry -nlt LINESTRING "' + nhnzipfile + '" "NHN_HN_NLFLOW_1"' 
+pycmd = '"' + ogr + '" -f "PostgreSQL" PG:"' + orgDb + '" -nln "' + workingSchema + '.eflowpath" -lco GEOMETRY_NAME=geometry -nlt LINESTRING "' + nhnzipfile + '" "NHN_HN_NLFLOW_1" -t_srs EPSG:4617"' 
 log(pycmd)
 subprocess.run(pycmd, env=my_env)
 
 #waterbodies
-pycmd = '"' + ogr + '" -f "PostgreSQL" PG:"' + orgDb + '" -nln "' + workingSchema + '.ecatchment" -lco GEOMETRY_NAME=geometry -nlt POLYGON "' + nhnzipfile + '" "NHN_HD_WATERBODY_2"'
+pycmd = '"' + ogr + '" -f "PostgreSQL" PG:"' + orgDb + '" -nln "' + workingSchema + '.ecatchment" -lco GEOMETRY_NAME=geometry -nlt POLYGON "' + nhnzipfile + '" "NHN_HD_WATERBODY_2" -t_srs EPSG:4617"'
 log(pycmd)
 subprocess.run(pycmd, env=my_env)
 
 #workunit limit
-pycmd = '"' + ogr + '" -f "PostgreSQL" PG:"' + orgDb + '" -nln "' + workingSchema + '.aoi" -lco GEOMETRY_NAME=geometry -nlt POLYGON "' + nhnzipfile + '" "NHN_WORKUNIT_LIMIT_2"'
+pycmd = '"' + ogr + '" -f "PostgreSQL" PG:"' + orgDb + '" -nln "' + workingSchema + '.aoi" -lco GEOMETRY_NAME=geometry -nlt POLYGON "' + nhnzipfile + '" "NHN_WORKUNIT_LIMIT_2" -t_srs EPSG:4617"'
 log(pycmd)
 subprocess.run(pycmd, env=my_env)
 
 #COASTLINE
-pycmd = '"' + ogr + '" -f "PostgreSQL" PG:"' + orgDb + '" -nln "' + workingSchema + '.shoreline" -lco GEOMETRY_NAME=geometry -nlt LINESTRING "' + nhnzipfile + '" "NHN_HN_LITTORAL_1"'
+pycmd = '"' + ogr + '" -f "PostgreSQL" PG:"' + orgDb + '" -nln "' + workingSchema + '.shoreline" -lco GEOMETRY_NAME=geometry -nlt LINESTRING "' + nhnzipfile + '" "NHN_HN_LITTORAL_1" -t_srs EPSG:4617"'
 log(pycmd)
 subprocess.run(pycmd, env=my_env)
       
-#DELIMITORS
-pycmd = '"' + ogr + '" -f "PostgreSQL" PG:"' + orgDb + '" -nln "' + workingSchema + '.delimiter" -lco GEOMETRY_NAME=geometry -nlt LINESTRING "' + nhnzipfile + '" "NHN_HN_DELIMITER_1"'
+#DELIMITERS
+pycmd = '"' + ogr + '" -f "PostgreSQL" PG:"' + orgDb + '" -nln "' + workingSchema + '.delimiter" -lco GEOMETRY_NAME=geometry -nlt LINESTRING "' + nhnzipfile + '" "NHN_HN_DELIMITER_1" -t_srs EPSG:4617"'
 log(pycmd)
 subprocess.run(pycmd, env=my_env)
 
-#determine SRID of datasets
-srid = None
-query = f"""
-select srid from public.geometry_columns where f_table_schema = '{workingSchema}' and f_table_name = 'eflowpath';
-"""
-log(query)
-with conn.cursor() as cursor:
-    cursor.execute(query)
-    srid = cursor.fetchone()[0]
-
-if (srid is None):
-    print ("ERROR: unable to determine SRID for eflowpath table")
-    sys.exit();
-
+#set SRID
+srid = 4617
 
 #transform data
 query = f"""
@@ -302,19 +290,19 @@ ALTER TABLE {workingSchema}.terminal_node OWNER TO chyf;
 log(query)
 
 with conn.cursor() as cursor:
-    cursor.execute(query);
-conn.commit();
+    cursor.execute(query)
+conn.commit()
 
 
 conn.set_session(autocommit=True)
 log(query)
 with conn.cursor() as cursor:
-    cursor.execute(f"VACUUM ANALYZE {workingSchema}.aoi");
-    cursor.execute(f"VACUUM ANALYZE {workingSchema}.delimiter");
-    cursor.execute(f"VACUUM ANALYZE {workingSchema}.ecatchment");
-    cursor.execute(f"VACUUM ANALYZE {workingSchema}.eflowpath");
-    cursor.execute(f"VACUUM ANALYZE {workingSchema}.shoreline");
-    cursor.execute(f"VACUUM ANALYZE {workingSchema}.terminal_node");
+    cursor.execute(f"VACUUM ANALYZE {workingSchema}.aoi")
+    cursor.execute(f"VACUUM ANALYZE {workingSchema}.delimiter")
+    cursor.execute(f"VACUUM ANALYZE {workingSchema}.ecatchment")
+    cursor.execute(f"VACUUM ANALYZE {workingSchema}.eflowpath")
+    cursor.execute(f"VACUUM ANALYZE {workingSchema}.shoreline")
+    cursor.execute(f"VACUUM ANALYZE {workingSchema}.terminal_node")
 conn.set_session(autocommit=False)    
     
 run_qa(conn, nhnworkunit)
