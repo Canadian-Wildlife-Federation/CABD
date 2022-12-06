@@ -29,8 +29,10 @@ alter table cabd.user_feature_updates add constraint user_feature_update_status_
 
 
 --TODO: add other staging tables to this
+--create view cabd.updates_pending as 
+--select cabd_id from cabd.user_feature_updates;
 create view cabd.updates_pending as 
-select cabd_id from cabd.user_feature_updates;
+select null::uuid as cabd_id;
 
  
 DROP VIEW cabd.all_features_view_en;
@@ -1073,6 +1075,9 @@ CREATE TRIGGER fish_species_delete_trg AFTER DELETE ON cabd.fish_species FOR EAC
 CREATE TRIGGER fish_species_update_trg AFTER UPDATE ON cabd.fish_species FOR EACH ROW EXECUTE PROCEDURE cabd.audit_id_update();
 
 
+grant all privileges on cabd.user_feature_updates to cabd;
+grant all privileges on cabd.audit_log to cabd;
+grant all privileges on cabd.audit_log_revision_seq to cabd;
 
 
 
