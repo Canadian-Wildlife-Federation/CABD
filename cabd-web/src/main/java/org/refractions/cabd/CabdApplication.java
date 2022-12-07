@@ -55,6 +55,8 @@ public class CabdApplication extends SpringBootServletInitializer {
 	public static final String CSV_MEDIA_TYPE_STR = "text/csv";
 	public static final MediaType CSV_MEDIA_TYPE = new MediaType("text", "csv");
 		
+	public static final String DATA_LICENCE_URL = "https://creativecommons.org/licenses/by-nc-sa/4.0/";
+	
 	public static void main(String[] args) {
 		SpringApplication.run(CabdApplication.class, args);
 	}

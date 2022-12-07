@@ -24,9 +24,12 @@ import org.refractions.cabd.CabdApplication;
 import org.refractions.cabd.CabdConfigurationProperties;
 import org.refractions.cabd.dao.FeatureDao;
 import org.refractions.cabd.dao.FeatureTypeManager;
+import org.refractions.cabd.dao.UserFeatureUpdateDao;
 import org.refractions.cabd.exceptions.ApiError;
+import org.refractions.cabd.exceptions.InvalidParameterException;
 import org.refractions.cabd.exceptions.NotFoundException;
 import org.refractions.cabd.model.Feature;
+import org.refractions.cabd.model.FeatureChangeRequest;
 import org.refractions.cabd.model.FeatureList;
 import org.refractions.cabd.model.FeatureType;
 import org.springdoc.api.annotations.ParameterObject;
@@ -35,6 +38,8 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -64,7 +69,8 @@ public class FeatureController {
 	
 	@Autowired
 	FeatureDao featureDao;
-	
+	@Autowired
+	UserFeatureUpdateDao featureUpdateDao;
 	@Autowired
 	FeatureTypeManager typeManager;
 		
@@ -74,7 +80,7 @@ public class FeatureController {
 	 * @param id
 	 * @return
 	 */
-	@Operation(summary = "Find an individual feature.")
+	@Operation(summary = "Adds a feature update record the Find an individual feature.")
 	@ApiResponses(value = { 
 			@ApiResponse(responseCode = "200",
 						description = "The feature as a GeoJson feature. Feature attributes will vary by feature type.",
@@ -95,8 +101,23 @@ public class FeatureController {
 		
 		Feature f = featureDao.getFeature(id);
 		if (f == null) throw new NotFoundException(MessageFormat.format("No feature with id ''{0}'' found.", id));
-		
 		return ResponseEntity.ok(f);
+	}
+	
+	//requires content-type = application/json in request
+	@PutMapping(value = "/{id:[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}}")
+	public ResponseEntity<Object> putFeature(
+			@Parameter(description = "unique feature identifier") 
+			@PathVariable("id") UUID id,
+			@RequestBody FeatureChangeRequest changeRequest,
+			HttpServletRequest request) {
+		
+		String error = changeRequest.validate();
+		if (error != null) throw new InvalidParameterException(error);
+		
+		featureUpdateDao.newFeatureUpdate(id, changeRequest);
+		
+		return ResponseEntity.ok().build();
 	}
 	
 	/**

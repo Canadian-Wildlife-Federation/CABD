@@ -17,11 +17,15 @@ package org.refractions.cabd.serializers;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Set;
 
 import org.refractions.cabd.CabdApplication;
 import org.refractions.cabd.controllers.GeoJsonUtils;
+import org.refractions.cabd.dao.FeatureTypeManager;
 import org.refractions.cabd.model.Feature;
 import org.refractions.cabd.model.FeatureList;
+import org.refractions.cabd.model.FeatureType;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpOutputMessage;
 import org.springframework.http.MediaType;
 import org.springframework.http.converter.HttpMessageNotWritableException;
@@ -36,6 +40,9 @@ import org.springframework.stereotype.Component;
 @Component
 public class FeatureListJsonSerializer extends AbstractFeatureListSerializer{
 
+	@Autowired
+	private FeatureTypeManager typeManager;
+	
 	public FeatureListJsonSerializer() {
 		super(CabdApplication.GEOJSON_MEDIA_TYPE,MediaType.APPLICATION_JSON);
 	}
@@ -46,10 +53,27 @@ public class FeatureListJsonSerializer extends AbstractFeatureListSerializer{
 		
 		super.writeInternal(features, outputMessage);
 		
+		
 		StringBuilder sb = new StringBuilder();
 		sb.append("{");
-		sb.append("\"type\": \"FeatureCollection\",");
-		sb.append("\"features\":");
+		sb.append(formatString("type") + ":" + formatString("FeatureCollection") + ",");
+		sb.append(formatString(FeatureListUtil.METADATA_KEY) + ": {"); 
+		sb.append(formatString(FeatureListUtil.DOWNLOAD_DATETIME_KEY ) + ": "+ formatString(FeatureListUtil.getNowAsString()) + ",");
+		sb.append(formatString(FeatureListUtil.DATA_LICENSE_KEY) + ": "+ formatString(CabdApplication.DATA_LICENCE_URL) + ",");
+		
+		Set<String> ftypes = FeatureListUtil.getFeatureTypes(features);
+		if (!ftypes.isEmpty()) {
+			sb.append(formatString(FeatureListUtil.DATA_VERSION_KEY) + ": {");
+			for (String ftype : ftypes) {
+				FeatureType type = typeManager.getFeatureType(ftype) ;
+				sb.append(formatString(type.getType())  + ": " + formatString(type.getDataVersion()) + ",");
+			}
+			sb.deleteCharAt(sb.length() - 1);
+			sb.append("},");
+		}
+		sb.deleteCharAt(sb.length() - 1);
+		sb.append("}, ");
+		sb.append(formatString("features") + ":");
 		sb.append("[");
 		
 		writeString(outputMessage.getBody(), sb.toString());
@@ -62,6 +86,9 @@ public class FeatureListJsonSerializer extends AbstractFeatureListSerializer{
 		}
 		writeString(outputMessage.getBody(), "]}");
 		
+	}
+	private String formatString(String value) {
+		return "\"" + value  + "\"";
 	}
 	
 	private void writeString(OutputStream stream, String value) throws IOException {

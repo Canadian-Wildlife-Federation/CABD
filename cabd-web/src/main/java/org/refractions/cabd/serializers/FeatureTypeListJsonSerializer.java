@@ -46,6 +46,7 @@ public class FeatureTypeListJsonSerializer extends JsonSerializer<List<FeatureTy
 			gen.writeStringField("name", type.getName());
 			gen.writeStringField("metadata", type.getMetadataUrl());
 			gen.writeStringField("features", type.getDataUrl());
+			gen.writeStringField("data_version", type.getDataVersion());
 			gen.writeEndObject();
 		}
 		gen.writeEndArray();

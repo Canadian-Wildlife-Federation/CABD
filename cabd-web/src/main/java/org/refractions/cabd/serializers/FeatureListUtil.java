@@ -16,11 +16,14 @@
 package org.refractions.cabd.serializers;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.ImmutableTriple;
@@ -47,6 +50,36 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
  */
 public class FeatureListUtil {
 
+
+	public static final String MULTI_TYPES_TYPENAME = "features";
+	
+	public static final String METADATA_KEY = "metadata";
+	public static final String DATA_LICENSE_KEY = "data_licence";
+	public static final String DATA_VERSION_KEY = "data_version";
+	public static final String DOWNLOAD_DATETIME_KEY = "download_datetime";
+	
+	/**
+	 * Get the current date type as  ISO 8601 local datetime string
+	 * 
+	 * @return
+	 */
+	public static String getNowAsString() {
+		return DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(LocalDateTime.now());
+	}	
+		
+	
+	/**
+	 * For determining filenames for export formats that require content
+	 * disposition header
+	 * @param ftype feature type as string (used for filename)
+	 * @param extension format extension
+	 * @return
+	 */
+	public static String getContentDispositionHeader(String ftype, String extension) {
+		return "attachment;filename=cabd-" + ftype + "." + extension;
+	}
+	
+
 	public static ImmutableTriple<String, FeatureViewMetadata, Envelope> getMetadata(FeatureList features, FeatureTypeManager typeManager) throws IOException{
 
 		Set<String> ftypes = new HashSet<>();
@@ -61,7 +94,7 @@ public class FeatureListUtil {
 		}
 		
 		FeatureViewMetadata metadata = null;
-		String barriertype = "allbarriers";
+		String barriertype = MULTI_TYPES_TYPENAME;
 		if (ftypes.size() == 1) {
 			//create a schema specific to the feature type
 			barriertype = ftypes.iterator().next();
@@ -75,6 +108,10 @@ public class FeatureListUtil {
 			metadata = typeManager.getAllViewMetadata();
 		}
 		return  new ImmutableTriple<>(barriertype, metadata, env);
+	}
+	
+	public static Set<String> getFeatureTypes(FeatureList features){
+		return features.getItems().stream().map(e->e.getFeatureType()).distinct().collect(Collectors.toSet());
 	}
 	
 	public static SimpleFeatureType asFeatureType(String featureType, FeatureViewMetadata metadata) throws IOException{

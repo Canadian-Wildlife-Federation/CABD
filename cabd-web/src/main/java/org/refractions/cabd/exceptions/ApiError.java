@@ -17,6 +17,9 @@ package org.refractions.cabd.exceptions;
 
 import java.time.LocalDateTime;
 
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+
 import com.fasterxml.jackson.annotation.JsonFormat;
 
 /**
@@ -29,19 +32,35 @@ public class ApiError {
 	@JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy hh:mm:ss")
 	private LocalDateTime timestamp;
 	private String message;
-
+	private HttpStatus status;
+	
 	private ApiError() {
 		timestamp = LocalDateTime.now();
+		this.message = "";
+		this.status = HttpStatus.INTERNAL_SERVER_ERROR;
 	}
 
-	ApiError(Throwable ex) {
-		this();
-		this.message = ex.getMessage();
-	}
-
-	ApiError(String message) {
+	public ApiError(String message, HttpStatus status) {
 		this();
 		this.message = message;
+		this.status = status;
+	}
+	
+	public ApiError(Throwable ex, HttpStatus status) {
+		this(ex.getMessage(), status);
+	}
+
+	
+	public ResponseEntity<ApiError> toResponseEntity(){
+		return new ResponseEntity<ApiError>(this, this.status);
+	}
+	
+	public int getStatusCode() {
+		return this.status.value();
+	}
+	
+	public String getStatusMessage() {
+		return this.status.getReasonPhrase();
 	}
 	
 	public String getMessage() {

@@ -13,11 +13,12 @@
  * See the License for the specific language governing permissions and 
  * limitations under the License.
  */
-package org.refractions.cabd.controllers;
+package org.refractions.cabd.exceptions;
 
 import java.text.MessageFormat;
 
 import org.refractions.cabd.CabdConfigurationProperties;
+import org.refractions.cabd.controllers.TooManyFeaturesException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,13 +45,30 @@ public class CabdExceptionHandler extends ResponseEntityExceptionHandler {
 	@Autowired
 	private CabdConfigurationProperties properties;
 	
+	@ExceptionHandler(InvalidParameterException.class)
+	public ResponseEntity<ApiError> handleInvalidParameterException(
+			InvalidParameterException ipe) {
+		return new ResponseEntity<ApiError>(ipe.getError(), HttpStatus.BAD_REQUEST);
+	}
+	
+	@ExceptionHandler(NotFoundException.class)
+	public ResponseEntity<ApiError> handleNotFoundException(NotFoundException nfe) {
+		return nfe.getError().toResponseEntity();
+	}
+	
+	@ExceptionHandler(InvalidDatabaseConfigException.class)
+	public ResponseEntity<ApiError> handleInvalidDatabaseConfiguration(
+			InvalidDatabaseConfigException nfe) {
+		return nfe.getError().toResponseEntity();
+	}
+	
     @ExceptionHandler(TooManyFeaturesException.class)
     public ResponseEntity<Object> handleExceptions( TooManyFeaturesException exception, WebRequest request) {
     	HttpHeaders headers = new HttpHeaders();
     	headers.setContentType(MediaType.APPLICATION_JSON);
     	
     	String message = MessageFormat.format("The results would return more than the maximum allowable features of {0}. Limit your request by adding a query filter to reduce the number of features or providing a custom max-results value less than {1}.", properties.getMaxresults(), properties.getMaxresults());
-    	return handleExceptionInternal(exception, new CabdError(message, HttpStatus.FORBIDDEN), headers, HttpStatus.FORBIDDEN, request);
+    	return handleExceptionInternal(exception, new ApiError(message, HttpStatus.FORBIDDEN), headers, HttpStatus.FORBIDDEN, request);
     }
     
     @ExceptionHandler(RuntimeException.class)
@@ -59,29 +77,7 @@ public class CabdExceptionHandler extends ResponseEntityExceptionHandler {
     	
     	HttpHeaders headers = new HttpHeaders();
     	headers.setContentType(MediaType.APPLICATION_JSON);
-    	return handleExceptionInternal(exception, new CabdError(exception.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR), headers, HttpStatus.INTERNAL_SERVER_ERROR, request);
+    	return handleExceptionInternal(exception, new ApiError(exception.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR), headers, HttpStatus.INTERNAL_SERVER_ERROR, request);
     }
-    
-    /*
-     * Error class for convert to JSON respose
-     */
-    private class CabdError{
-    	String message;
-    	HttpStatus status;
-    	
-    	public CabdError(String message, HttpStatus status) {
-    		this.message = message;
-    		this.status = status;
-    	}
-    	public String getMessage() {
-    		return this.message;
-    	}
-    	public int getStatusCode() {
-    		return this.status.value();
-    	}
-    	public String getStatusMessage() {
-    		return this.status.getReasonPhrase();
-    	}
-    	
-    }
+
 }
