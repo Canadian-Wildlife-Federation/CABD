@@ -27,7 +27,7 @@ sourceSchema = "source_data"
 sourceTableRaw = sys.argv[2]
 sourceTable = sourceSchema + "." + sourceTableRaw
 
-updateSchema = "featurecopy"
+updateSchema = "cabd"
 damUpdateTable = updateSchema + '.dam_updates'
 
 damSchema = "dams"
@@ -60,7 +60,7 @@ print("Data loaded to table: " + sourceTable)
 
 loadQuery = f"""
 
---create damUpdateTable with proper format
+--create damUpdateTable with proper format if not exists
 CREATE TABLE IF NOT EXISTS {damUpdateTable} (LIKE {damTable});
 ALTER TABLE {damUpdateTable} ADD COLUMN IF NOT EXISTS latitude decimal(8,6);
 ALTER TABLE {damUpdateTable} ADD COLUMN IF NOT EXISTS longitude decimal(9,6);
@@ -95,7 +95,7 @@ UPDATE {sourceTable} SET maintenance_next = TRIM(maintenance_next);
 UPDATE {sourceTable} SET spillway_capacity = TRIM(spillway_capacity);
 UPDATE {sourceTable} SET avg_rate_of_discharge_ls = TRIM(avg_rate_of_discharge_ls);
 UPDATE {sourceTable} SET hydro_peaking_system = TRIM(hydro_peaking_system);
-UPDATE {sourceTable} SET expected_life = TRIM(expected_life);
+UPDATE {sourceTable} SET expected_end_of_life = TRIM(expected_end_of_life);
 UPDATE {sourceTable} SET federal_flow_req = TRIM(federal_flow_req);
 UPDATE {sourceTable} SET provincial_flow_req = TRIM(provincial_flow_req);
 UPDATE {sourceTable} SET degree_of_regulation_pc = TRIM(degree_of_regulation_pc);
@@ -108,7 +108,7 @@ ALTER TABLE {sourceTable} ALTER COLUMN maintenance_next TYPE date USING maintena
 ALTER TABLE {sourceTable} ALTER COLUMN spillway_capacity TYPE double precision USING spillway_capacity::double precision;
 ALTER TABLE {sourceTable} ALTER COLUMN avg_rate_of_discharge_ls TYPE double precision USING avg_rate_of_discharge_ls::double precision;
 ALTER TABLE {sourceTable} ALTER COLUMN hydro_peaking_system TYPE boolean USING hydro_peaking_system::boolean;
-ALTER TABLE {sourceTable} ALTER COLUMN expected_life TYPE smallint USING expected_life::smallint;
+ALTER TABLE {sourceTable} ALTER COLUMN expected_end_of_life TYPE smallint USING expected_end_of_life::smallint;
 ALTER TABLE {sourceTable} ALTER COLUMN federal_flow_req TYPE double precision USING federal_flow_req::double precision;
 ALTER TABLE {sourceTable} ALTER COLUMN provincial_flow_req TYPE double precision USING provincial_flow_req::double precision;
 ALTER TABLE {sourceTable} ALTER COLUMN degree_of_regulation_pc TYPE real USING degree_of_regulation_pc::real;
@@ -164,19 +164,20 @@ ALTER TABLE {sourceTable} ALTER COLUMN operating_status_code TYPE int2 USING ope
 -- TO DO: update this with final codes
 -- UPDATE {sourceTable} SET structure_type_code =
 --     CASE
---     WHEN structure_type_code = 'dam - arch' THEN
---     WHEN structure_type_code = 'dam - buttress' THEN
---     WHEN structure_type_code = 'dam - embankment' THEN
---     WHEN structure_type_code = 'dam - gravity' THEN
---     WHEN structure_type_code = 'dam - multiple arch' THEN
---     WHEN structure_type_code = 'weir' THEN
---     WHEN structure_type_code = 'powerhouse' THEN
---     WHEN structure_type_code = 'spillway' THEN
---     WHEN structure_type_code = 'dike/canal/embankment' THEN
---     WHEN structure_type_code = 'lock' THEN
---     WHEN structure_type_code = 'aboiteau/tide gate' THEN
---     WHEN structure_type_code = 'unknown' THEN
---     WHEN structure_type_code = 'other' THEN
+--     WHEN structure_type_code = 'dam - arch' THEN '1'
+--     WHEN structure_type_code = 'dam - buttress' THEN '2'
+--     WHEN structure_type_code = 'dam - embankment' THEN '3'
+--     WHEN structure_type_code = 'dam - gravity' THEN '4'
+--     WHEN structure_type_code = 'dam - multiple arch' THEN '5'
+--     WHEN structure_type_code = 'dam - other' THEN '6'
+--     WHEN structure_type_code = 'weir' THEN '7'
+--     WHEN structure_type_code = 'spillway' THEN '8'
+--     WHEN structure_type_code = 'powerhouse' THEN '9'
+--     WHEN structure_type_code = 'lateral barrier' THEN '10'
+--     WHEN structure_type_code = 'lock' THEN '11'
+--     WHEN structure_type_code = 'aboiteau/tide gate' THEN '12'
+--     WHEN structure_type_code = 'other' THEN '13'
+--     WHEN structure_type_code = 'unknown' THEN '99'
 --     WHEN structure_type_code IS NULL THEN NULL
 --     ELSE structure_type_code END;
 -- ALTER TABLE {sourceTable} ALTER COLUMN structure_type_code TYPE int2 USING structure_type_code::int2;
@@ -184,14 +185,14 @@ ALTER TABLE {sourceTable} ALTER COLUMN operating_status_code TYPE int2 USING ope
 -- TO DO: update this with final codes
 -- UPDATE {sourceTable} SET construction_material_code =
 --     CASE
---     WHEN construction_material_code = 'concrete' THEN
---     WHEN construction_material_code = 'masonry' THEN
---     WHEN construction_material_code = 'earth' THEN
---     WHEN construction_material_code = 'rock' THEN
---     WHEN construction_material_code = 'timber' THEN
---     WHEN construction_material_code = 'steel' THEN
---     WHEN construction_material_code = 'other' THEN
---     WHEN construction_material_code = 'unknown' THEN
+--     WHEN construction_material_code = 'concrete' THEN '1'
+--     WHEN construction_material_code = 'masonry' THEN '2'
+--     WHEN construction_material_code = 'earth' THEN '3'
+--     WHEN construction_material_code = 'rock' THEN '4'
+--     WHEN construction_material_code = 'timber' THEN '5'
+--     WHEN construction_material_code = 'steel' THEN '6'
+--     WHEN construction_material_code = 'other' THEN '7'
+--     WHEN construction_material_code = 'unknown' THEN '99'
 --     WHEN construction_material_code IS NULL THEN NULL
 --     ELSE construction_material_code END;
 -- ALTER TABLE {sourceTable} ALTER COLUMN construction_material_code TYPE int2 USING construction_material_code::int2;
@@ -199,17 +200,18 @@ ALTER TABLE {sourceTable} ALTER COLUMN operating_status_code TYPE int2 USING ope
 -- TO DO: update this with final codes
 -- UPDATE {sourceTable} SET function_code =
 --     CASE
---     WHEN function_code = 'storage' THEN
---     WHEN function_code = 'diversion' THEN
---     WHEN function_code = 'detention' THEN
---     WHEN function_code = 'saddle' THEN
---     WHEN function_code = 'hydro - closed-cycle pumped storage' THEN
---     WHEN function_code = 'hydro - conventional storage' THEN
---     WHEN function_code = 'hydro - open-cycle pumped storage' THEN
---     WHEN function_code = 'hydro - run-of-river' THEN
---     WHEN function_code = 'hydro - tidal' THEN
---     WHEN function_code = 'other' THEN
---     WHEN function_code = 'unknown' THEN
+--     WHEN function_code = 'storage' THEN '1'
+--     WHEN function_code = 'diversion' THEN '2'
+--     WHEN function_code = 'detention' THEN '3'
+--     WHEN function_code = 'saddle' THEN '4'
+--     WHEN function_code = 'hydro - closed-cycle pumped storage' THEN '5'
+--     WHEN function_code = 'hydro - conventional storage' THEN '6'
+--     WHEN function_code = 'hydro - open-cycle pumped storage' THEN '7'
+--     WHEN function_code = 'hydro - run-of-river' THEN '8'
+--     WHEN function_code = 'hydro - tidal' THEN '9'
+--     WHEN function_code = 'hydro - other' THEN '10'
+--     WHEN function_code = 'other' THEN '11'
+--     WHEN function_code = 'unknown' THEN '99'
 --     WHEN function_code IS NULL THEN NULL
 --     ELSE function_code END;
 -- ALTER TABLE {sourceTable} ALTER COLUMN function_code TYPE int2 USING function_code::int2;
@@ -227,6 +229,7 @@ UPDATE {sourceTable} SET use_code =
     WHEN use_code = 'invasive species control' THEN '9'
     WHEN use_code = 'other' THEN '10'
     WHEN use_code = 'unknown' THEN '11'
+    WHEN use_code = 'wildlife conservation' THEN '12'
     WHEN use_code IS NULL THEN NULL
     ELSE use_code END;
 ALTER TABLE {sourceTable} ALTER COLUMN use_code TYPE int2 USING use_code::int2;
@@ -311,6 +314,15 @@ UPDATE {sourceTable} SET use_invasivespecies_code =
     WHEN use_invasivespecies_code IS NULL THEN NULL
     ELSE use_invasivespecies_code END;
 ALTER TABLE {sourceTable} ALTER COLUMN use_invasivespecies_code TYPE int2 USING use_invasivespecies_code::int2;
+
+UPDATE {sourceTable} SET use_conservation_code =
+    CASE
+    WHEN use_conservation_code = 'main' THEN '1'
+    WHEN use_conservation_code = 'major' THEN '2'
+    WHEN use_conservation_code = 'secondary' THEN '3'
+    WHEN use_conservation_code IS NULL THEN NULL
+    ELSE use_conservation_code END;
+ALTER TABLE {sourceTable} ALTER COLUMN use_conservation_code TYPE int2 USING use_conservation_code::int2;
 
 UPDATE {sourceTable} SET use_other_code =
     CASE
@@ -399,142 +411,148 @@ UPDATE {sourceTable} SET condition_code =
     ELSE condition_code END;
 ALTER TABLE {sourceTable} ALTER COLUMN condition_code TYPE int2 USING condition_code::int2;
 
---TO DO: add remaining fields once data structure is finalized
+--move updates into staging table
 INSERT INTO {damUpdateTable} (
     cabd_id,
-    province_territory_code,
-    entry_classification,
     latitude,
     longitude,
+    entry_classification,
     data_source_short_name,
-    use_analysis,
+    update_status,
+    update_type,
     dam_name_en,
     dam_name_fr,
-    facility_name_en,
-    facility_name_fr,
     waterbody_name_en,
     waterbody_name_fr,
-    reservoir_present,
     reservoir_name_en,
     reservoir_name_fr,
+    province_territory_code,
+    municipality,
+    owner,
+    ownership_type_code,
+    provincial_compliance_status,
+    federal_compliance_status,
+    operating_notes,
+    operating_status_code,
+    use_code,
+    use_irrigation_code,
+    use_electricity_code,
+    use_supply_code,
+    use_floodcontrol_code,
+    use_recreation_code,
+    use_navigation_code,
+    use_fish_code,
+    use_pollution_code,
+    use_invasivespecies_code,
+    use_conservation_code,
+    use_other_code,
+    lake_control_code,
+    construction_year,
+    removed_year,
+    assess_schedule,
+    expected_end_of_life,
+    maintenance_last,
+    maintenance_next,
+    function_code,
+    condition_code,
+    structure_type_code,
+    construction_material_code,
+    height_m,
+    length_m,
+    spillway_capacity,
+    spillway_type_code,
+    reservoir_present,
     reservoir_area_skm,
     reservoir_depth_m,
     storage_capacity_mcm,
-    owner,
-    ownership_type_code,
-    operating_status_code,
-    removed_year,
-    operating_notes,
-    construction_year,
-    maintenance_last,
-    height_m,
-    length_m,
-  --structure_type_code,
-  --construction_material_code,
-  --function_code,
-    use_code,
-    use_electricity_code,
-    use_fish_code,
-    use_floodcontrol_code,
-    use_invasivespecies_code,
-    use_irrigation_code,
-    use_navigation_code,
-    use_other_code,
-    use_pollution_code,
-    use_recreation_code,
-    use_supply_code,
+    avg_rate_of_discharge_ls,
+    degree_of_regulation_pc,
+    provincial_flow_req,
+    federal_flow_req,
+    catchment_area_skm,
+    hydro_peaking_system,
     generating_capacity_mwh,
     turbine_number,
     turbine_type_code,
-    hydro_peaking_system,
-    lake_control_code,
-    spillway_type_code,
-    spillway_capacity,
-    avg_rate_of_discharge_ls,
     up_passage_type_code,
+    down_passage_route_code,
+    comments,
     passability_status_code,
     passability_status_note,
-    down_passage_route_code,
-    assess_schedule,
-    maintenance_next,
-    condition_code,
-    expected_life,
-    federal_compliance_status,
-    provincial_compliance_status,
-    federal_flow_req,
-    provincial_flow_req,
-    degree_of_regulation_pc,
-    comments,
-    status,
-    update_type
+    use_analysis,
+    facility_name_en,
+    facility_name_fr
 )
- SELECT
+SELECT
     cabd_id,
-    province_territory_code,
-    entry_classification,
     latitude,
     longitude,
+    entry_classification,
     data_source_short_name,
-    use_analysis,
+    update_status,
+    update_type,
     dam_name_en,
     dam_name_fr,
-    facility_name_en,
-    facility_name_fr,
     waterbody_name_en,
     waterbody_name_fr,
-    reservoir_present,
     reservoir_name_en,
     reservoir_name_fr,
+    province_territory_code,
+    municipality,
+    owner,
+    ownership_type_code,
+    provincial_compliance_status,
+    federal_compliance_status,
+    operating_notes,
+    operating_status_code,
+    use_code,
+    use_irrigation_code,
+    use_electricity_code,
+    use_supply_code,
+    use_floodcontrol_code,
+    use_recreation_code,
+    use_navigation_code,
+    use_fish_code,
+    use_pollution_code,
+    use_invasivespecies_code,
+    use_conservation_code,
+    use_other_code,
+    lake_control_code,
+    construction_year,
+    removed_year,
+    assess_schedule,
+    expected_end_of_life,
+    maintenance_last,
+    maintenance_next,
+    function_code,
+    condition_code,
+    structure_type_code,
+    construction_material_code,
+    height_m,
+    length_m,
+    spillway_capacity,
+    spillway_type_code,
+    reservoir_present,
     reservoir_area_skm,
     reservoir_depth_m,
     storage_capacity_mcm,
-    owner,
-    ownership_type_code,
-    operating_status_code,
-    removed_year,
-    operating_notes,
-    construction_year,
-    maintenance_last,
-    height_m,
-    length_m,
-  --structure_type_code,
-  --construction_material_code,
-  --function_code,
-    use_code,
-    use_electricity_code,
-    use_fish_code,
-    use_floodcontrol_code,
-    use_invasivespecies_code,
-    use_irrigation_code,
-    use_navigation_code,
-    use_other_code,
-    use_pollution_code,
-    use_recreation_code,
-    use_supply_code,
+    avg_rate_of_discharge_ls,
+    degree_of_regulation_pc,
+    provincial_flow_req,
+    federal_flow_req,
+    catchment_area_skm,
+    hydro_peaking_system,
     generating_capacity_mwh,
     turbine_number,
     turbine_type_code,
-    hydro_peaking_system,
-    lake_control_code,
-    spillway_type_code,
-    spillway_capacity,
-    avg_rate_of_discharge_ls,
     up_passage_type_code,
+    down_passage_route_code,
+    comments,
     passability_status_code,
     passability_status_note,
-    down_passage_route_code,
-    assess_schedule,
-    maintenance_next,
-    condition_code,
-    expected_life,
-    federal_compliance_status,
-    provincial_compliance_status,
-    federal_flow_req,
-    provincial_flow_req,
-    degree_of_regulation_pc,
-    comments,
-    status,
-    update_type
+    use_analysis,
+    facility_name_en,
+    facility_name_fr
 FROM {sourceTable};
 """
 

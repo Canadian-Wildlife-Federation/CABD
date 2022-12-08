@@ -2,8 +2,6 @@ import psycopg2 as pg2
 import subprocess
 import sys
 
-ogr = "C:\\OSGeo4W64\\bin\\ogr2ogr.exe"
-
 dbHost = "cabd-postgres-dev.postgres.database.azure.com"
 dbPort = "5432"
 dbName = "cabd"
@@ -15,9 +13,10 @@ class MappingScript:
     sourceSchema = "source_data"
     sourceTable = ""
 
-    updateSchema = "featurecopy"
+    updateSchema = "cabd"
     damUpdateTable = updateSchema + '.dam_updates'
     fishUpdateTable = updateSchema + '.fishway_updates'
+    fallUpdateTable = updateSchema + '.waterfall_updates'
 
     damSchema = "dams"
     damTable = damSchema + ".dams"
@@ -28,6 +27,11 @@ class MappingScript:
     fishTable = fishSchema + ".fishways"
     fishAttributeTable = fishSchema + ".fishways_attribute_source"
     fishFeatureTable = fishSchema + ".fishways_feature_source"
+
+    fallSchema = "waterfalls"
+    fallTable = fallSchema + ".waterfalls"
+    fallAttributeTable = fallSchema + ".waterfalls_attribute_source"
+    fallFeatureTable = fallSchema + ".waterfalls_feature_source"
 
     datasetName = ""
     dataFile = ""
