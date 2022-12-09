@@ -16,7 +16,7 @@ ALTER TABLE cabd.dam_updates ADD CONSTRAINT status_check CHECK (update_status IN
 ALTER TABLE cabd.dam_updates ADD CONSTRAINT update_type_check CHECK (update_type IN ('cwf', 'user'));
 
 --make sure records are not duplicated
-ALTER TABLE cabd.dam_updates ADD CONSTRAINT record_unique UNIQUE (cabd_id, data_source_short_name);
+ALTER TABLE cabd.dam_updates ADD CONSTRAINT dam_record_unique UNIQUE (cabd_id, data_source_short_name);
 
 ALTER TABLE cabd.dam_updates OWNER to cabd;
 
@@ -34,7 +34,7 @@ ALTER TABLE cabd.fishway_updates ADD CONSTRAINT status_check CHECK (update_statu
 ALTER TABLE cabd.fishway_updates ADD CONSTRAINT update_type_check CHECK (update_type IN ('cwf', 'user'));
 
 --make sure records are not duplicated
-ALTER TABLE cabd.fishway_updates ADD CONSTRAINT record_unique UNIQUE (cabd_id, data_source_short_name);
+ALTER TABLE cabd.fishway_updates ADD CONSTRAINT fish_record_unique UNIQUE (cabd_id, data_source_short_name);
 
 ALTER TABLE cabd.fishway_updates OWNER to cabd;
 
@@ -52,6 +52,6 @@ ALTER TABLE cabd.waterfall_updates ADD CONSTRAINT status_check CHECK (update_sta
 ALTER TABLE cabd.waterfall_updates ADD CONSTRAINT update_type_check CHECK (update_type IN ('cwf', 'user'));
 
 --make sure records are not duplicated
-ALTER TABLE cabd.waterfall_updates ADD CONSTRAINT record_unique UNIQUE (cabd_id, data_source_short_name);
+ALTER TABLE cabd.waterfall_updates ADD CONSTRAINT fall_record_unique UNIQUE (cabd_id, data_source_short_name);
 
 ALTER TABLE cabd.waterfall_updates OWNER to cabd;
