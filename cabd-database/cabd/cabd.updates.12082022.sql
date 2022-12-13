@@ -58,7 +58,7 @@ ALTER TABLE cabd.waterfall_updates OWNER to cabd;
 
 
 CREATE OR REPLACE view cabd.updates_pending as 
-select cabd_id as cabd_id from cabd.dams_updates
+select cabd_id as cabd_id from cabd.dam_updates
 union
 select cabd_id as cabd_id from cabd.fishway_updates
 union
