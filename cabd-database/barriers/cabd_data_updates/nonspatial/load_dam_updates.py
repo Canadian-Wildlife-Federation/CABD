@@ -15,7 +15,7 @@ import sys
 ogr = "C:\\OSGeo4W64\\bin\\ogr2ogr.exe"
 
 dbName = "cabd"
-dbHost = "cabd-postgres-dev.postgres.database.azure.com"
+dbHost = "cabd-postgres.postgres.database.azure.com"
 dbPort = "5432"
 dbUser = sys.argv[3]
 dbPassword = sys.argv[4]
@@ -66,11 +66,11 @@ ALTER TABLE {damUpdateTable} ADD COLUMN IF NOT EXISTS latitude decimal(8,6);
 ALTER TABLE {damUpdateTable} ADD COLUMN IF NOT EXISTS longitude decimal(9,6);
 ALTER TABLE {damUpdateTable} ADD COLUMN IF NOT EXISTS entry_classification varchar;
 ALTER TABLE {damUpdateTable} ADD COLUMN IF NOT EXISTS data_source_short_name varchar;
-ALTER TABLE {damUpdateTable} ADD COLUMN IF NOT EXISTS "status" varchar;
+ALTER TABLE {damUpdateTable} ADD COLUMN IF NOT EXISTS reviewer_comments varchar;
 ALTER TABLE {damUpdateTable} ADD COLUMN IF NOT EXISTS update_type varchar;
 
 ALTER TABLE {damUpdateTable} DROP CONSTRAINT IF EXISTS status_check;
-ALTER TABLE {damUpdateTable} ADD CONSTRAINT status_check CHECK ("status" IN ('needs review', 'ready', 'done'));
+ALTER TABLE {damUpdateTable} ADD CONSTRAINT status_check CHECK (update_status IN ('needs review', 'ready', 'done'));
 ALTER TABLE {damUpdateTable} DROP CONSTRAINT IF EXISTS update_type_check;
 ALTER TABLE {damUpdateTable} ADD CONSTRAINT update_type_check CHECK (update_type IN ('cwf', 'user'));
 
@@ -83,8 +83,10 @@ ALTER TABLE IF EXISTS {sourceTable} OWNER to cabd;
 
 --clean CSV input
 
-ALTER TABLE {sourceTable} ADD CONSTRAINT entry_classification_check CHECK (entry_classification IN ('add feature', 'modify feature', 'delete feature'));
-ALTER TABLE {sourceTable} ADD COLUMN "status" varchar default 'ready';
+ALTER TABLE {sourceTable} ADD CONSTRAINT entry_classification_check CHECK (entry_classification IN ('new feature', 'modify feature', 'delete feature'));
+ALTER TABLE {sourceTable} ADD COLUMN "status" varchar;
+UPDATE {sourceTable} SET "status" = 'ready' WHERE reviewer_comments IS NULL;
+UPDATE {sourceTable} SET "status" = 'needs review' WHERE reviewer_comments IS NOT NULL;
 ALTER TABLE {sourceTable} ADD COLUMN update_type varchar default 'cwf';
 
 --trim fields that are getting a type conversion
@@ -93,9 +95,7 @@ UPDATE {sourceTable} SET removed_year = TRIM(removed_year);
 UPDATE {sourceTable} SET maintenance_last = TRIM(maintenance_last);
 UPDATE {sourceTable} SET maintenance_next = TRIM(maintenance_next);
 UPDATE {sourceTable} SET spillway_capacity = TRIM(spillway_capacity);
-UPDATE {sourceTable} SET avg_rate_of_discharge_ls = TRIM(avg_rate_of_discharge_ls);
 UPDATE {sourceTable} SET hydro_peaking_system = TRIM(hydro_peaking_system);
-UPDATE {sourceTable} SET expected_end_of_life = TRIM(expected_end_of_life);
 UPDATE {sourceTable} SET federal_flow_req = TRIM(federal_flow_req);
 UPDATE {sourceTable} SET provincial_flow_req = TRIM(provincial_flow_req);
 UPDATE {sourceTable} SET degree_of_regulation_pc = TRIM(degree_of_regulation_pc);
@@ -112,6 +112,8 @@ ALTER TABLE {sourceTable} ALTER COLUMN expected_end_of_life TYPE smallint USING 
 ALTER TABLE {sourceTable} ALTER COLUMN federal_flow_req TYPE double precision USING federal_flow_req::double precision;
 ALTER TABLE {sourceTable} ALTER COLUMN provincial_flow_req TYPE double precision USING provincial_flow_req::double precision;
 ALTER TABLE {sourceTable} ALTER COLUMN degree_of_regulation_pc TYPE real USING degree_of_regulation_pc::real;
+ALTER TABLE {sourceTable} ALTER COLUMN reservoir_depth_m TYPE real USING reservoir_depth_m::real;
+ALTER TABLE {sourceTable} ALTER COLUMN turbine_number TYPE smallint USING turbine_number::smallint;
 
 --trim varchars and categorical fields that are not coded values
 UPDATE {sourceTable} SET email = TRIM(email);
@@ -161,60 +163,57 @@ UPDATE {sourceTable} SET operating_status_code =
     ELSE operating_status_code END;
 ALTER TABLE {sourceTable} ALTER COLUMN operating_status_code TYPE int2 USING operating_status_code::int2;
 
--- TO DO: update this with final codes
--- UPDATE {sourceTable} SET structure_type_code =
---     CASE
---     WHEN structure_type_code = 'dam - arch' THEN '1'
---     WHEN structure_type_code = 'dam - buttress' THEN '2'
---     WHEN structure_type_code = 'dam - embankment' THEN '3'
---     WHEN structure_type_code = 'dam - gravity' THEN '4'
---     WHEN structure_type_code = 'dam - multiple arch' THEN '5'
---     WHEN structure_type_code = 'dam - other' THEN '6'
---     WHEN structure_type_code = 'weir' THEN '7'
---     WHEN structure_type_code = 'spillway' THEN '8'
---     WHEN structure_type_code = 'powerhouse' THEN '9'
---     WHEN structure_type_code = 'lateral barrier' THEN '10'
---     WHEN structure_type_code = 'lock' THEN '11'
---     WHEN structure_type_code = 'aboiteau/tide gate' THEN '12'
---     WHEN structure_type_code = 'other' THEN '13'
---     WHEN structure_type_code = 'unknown' THEN '99'
---     WHEN structure_type_code IS NULL THEN NULL
---     ELSE structure_type_code END;
--- ALTER TABLE {sourceTable} ALTER COLUMN structure_type_code TYPE int2 USING structure_type_code::int2;
+UPDATE {sourceTable} SET structure_type_code =
+    CASE
+    WHEN structure_type_code = 'dam - arch' THEN '1'
+    WHEN structure_type_code = 'dam - buttress' THEN '2'
+    WHEN structure_type_code = 'dam - embankment' THEN '3'
+    WHEN structure_type_code = 'dam - gravity' THEN '4'
+    WHEN structure_type_code = 'dam - multiple arch' THEN '5'
+    WHEN structure_type_code = 'dam - other' THEN '6'
+    WHEN structure_type_code = 'weir' THEN '7'
+    WHEN structure_type_code = 'spillway' THEN '8'
+    WHEN structure_type_code = 'powerhouse' THEN '9'
+    WHEN structure_type_code = 'lateral barrier' THEN '10'
+    WHEN structure_type_code = 'lock' THEN '11'
+    WHEN structure_type_code = 'aboiteau/tide gate' THEN '12'
+    WHEN structure_type_code = 'other' THEN '13'
+    WHEN structure_type_code = 'unknown' THEN '99'
+    WHEN structure_type_code IS NULL THEN NULL
+    ELSE structure_type_code END;
+ALTER TABLE {sourceTable} ALTER COLUMN structure_type_code TYPE int2 USING structure_type_code::int2;
 
--- TO DO: update this with final codes
--- UPDATE {sourceTable} SET construction_material_code =
---     CASE
---     WHEN construction_material_code = 'concrete' THEN '1'
---     WHEN construction_material_code = 'masonry' THEN '2'
---     WHEN construction_material_code = 'earth' THEN '3'
---     WHEN construction_material_code = 'rock' THEN '4'
---     WHEN construction_material_code = 'timber' THEN '5'
---     WHEN construction_material_code = 'steel' THEN '6'
---     WHEN construction_material_code = 'other' THEN '7'
---     WHEN construction_material_code = 'unknown' THEN '99'
---     WHEN construction_material_code IS NULL THEN NULL
---     ELSE construction_material_code END;
--- ALTER TABLE {sourceTable} ALTER COLUMN construction_material_code TYPE int2 USING construction_material_code::int2;
+UPDATE {sourceTable} SET construction_material_code =
+    CASE
+    WHEN construction_material_code = 'concrete' THEN '1'
+    WHEN construction_material_code = 'masonry' THEN '2'
+    WHEN construction_material_code = 'earth' THEN '3'
+    WHEN construction_material_code = 'rock' THEN '4'
+    WHEN construction_material_code = 'timber' THEN '5'
+    WHEN construction_material_code = 'steel' THEN '6'
+    WHEN construction_material_code = 'other' THEN '7'
+    WHEN construction_material_code = 'unknown' THEN '99'
+    WHEN construction_material_code IS NULL THEN NULL
+    ELSE construction_material_code END;
+ALTER TABLE {sourceTable} ALTER COLUMN construction_material_code TYPE int2 USING construction_material_code::int2;
 
--- TO DO: update this with final codes
--- UPDATE {sourceTable} SET function_code =
---     CASE
---     WHEN function_code = 'storage' THEN '1'
---     WHEN function_code = 'diversion' THEN '2'
---     WHEN function_code = 'detention' THEN '3'
---     WHEN function_code = 'saddle' THEN '4'
---     WHEN function_code = 'hydro - closed-cycle pumped storage' THEN '5'
---     WHEN function_code = 'hydro - conventional storage' THEN '6'
---     WHEN function_code = 'hydro - open-cycle pumped storage' THEN '7'
---     WHEN function_code = 'hydro - run-of-river' THEN '8'
---     WHEN function_code = 'hydro - tidal' THEN '9'
---     WHEN function_code = 'hydro - other' THEN '10'
---     WHEN function_code = 'other' THEN '11'
---     WHEN function_code = 'unknown' THEN '99'
---     WHEN function_code IS NULL THEN NULL
---     ELSE function_code END;
--- ALTER TABLE {sourceTable} ALTER COLUMN function_code TYPE int2 USING function_code::int2;
+UPDATE {sourceTable} SET function_code =
+    CASE
+    WHEN function_code = 'storage' THEN '1'
+    WHEN function_code = 'diversion' THEN '2'
+    WHEN function_code = 'detention' THEN '3'
+    WHEN function_code = 'saddle' THEN '4'
+    WHEN function_code = 'hydro - closed-cycle pumped storage' THEN '5'
+    WHEN function_code = 'hydro - conventional storage' THEN '6'
+    WHEN function_code = 'hydro - open-cycle pumped storage' THEN '7'
+    WHEN function_code = 'hydro - run-of-river' THEN '8'
+    WHEN function_code = 'hydro - tidal' THEN '9'
+    WHEN function_code = 'hydro - other' THEN '10'
+    WHEN function_code = 'other' THEN '11'
+    WHEN function_code = 'unknown' THEN '99'
+    WHEN function_code IS NULL THEN NULL
+    ELSE function_code END;
+ALTER TABLE {sourceTable} ALTER COLUMN function_code TYPE int2 USING function_code::int2;
 
 UPDATE {sourceTable} SET use_code =
     CASE
@@ -419,6 +418,7 @@ INSERT INTO {damUpdateTable} (
     entry_classification,
     data_source_short_name,
     update_status,
+    reviewer_comments,
     update_type,
     dam_name_en,
     dam_name_fr,
@@ -427,8 +427,7 @@ INSERT INTO {damUpdateTable} (
     reservoir_name_en,
     reservoir_name_fr,
     province_territory_code,
-    municipality,
-    owner,
+    "owner",
     ownership_type_code,
     provincial_compliance_status,
     federal_compliance_status,
@@ -469,14 +468,13 @@ INSERT INTO {damUpdateTable} (
     degree_of_regulation_pc,
     provincial_flow_req,
     federal_flow_req,
-    catchment_area_skm,
     hydro_peaking_system,
     generating_capacity_mwh,
     turbine_number,
     turbine_type_code,
     up_passage_type_code,
     down_passage_route_code,
-    comments,
+    "comments",
     passability_status_code,
     passability_status_note,
     use_analysis,
@@ -489,7 +487,8 @@ SELECT
     longitude,
     entry_classification,
     data_source_short_name,
-    update_status,
+    "status",
+    reviewer_comments,
     update_type,
     dam_name_en,
     dam_name_fr,
@@ -498,8 +497,7 @@ SELECT
     reservoir_name_en,
     reservoir_name_fr,
     province_territory_code,
-    municipality,
-    owner,
+    "owner",
     ownership_type_code,
     provincial_compliance_status,
     federal_compliance_status,
@@ -540,14 +538,13 @@ SELECT
     degree_of_regulation_pc,
     provincial_flow_req,
     federal_flow_req,
-    catchment_area_skm,
     hydro_peaking_system,
     generating_capacity_mwh,
     turbine_number,
     turbine_type_code,
     up_passage_type_code,
     down_passage_route_code,
-    comments,
+    "comments",
     passability_status_code,
     passability_status_note,
     use_analysis,
