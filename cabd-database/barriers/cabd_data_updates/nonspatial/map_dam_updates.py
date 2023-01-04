@@ -1,34 +1,77 @@
+##################
+
+# Expected usage: py map_dam_updates.py <dbUser> <dbPassword>
+# Please ensure you have run load_data_sources.py for the data sources you are mapping from
+# Otherwise any updates missing a data source id will not be made
+
+# This script will pull all updates with an update_status of 'ready'
+
+##################
+
 import user_submit as main
 
-#change the datasetName below for each round of updates
-script = main.MappingScript("user_submitted_updates")
+script = main.MappingScript("dam_updates")
 
 mappingquery = f"""
---add new data sources and match new uuids for each data source to each record
-ALTER TABLE cabd.data_source ADD CONSTRAINT unique_name (name);
-INSERT INTO cabd.data_source (name, id, source_type)
-    SELECT DISTINCT data_source_short_name, gen_random_uuid(), 'non-spatial' FROM  {script.damUpdateTable}
-    ON CONFLICT DO NOTHING;
-ALTER TABLE cabd.data_source DROP CONSTRAINT unique_name;
+-- add data source ids to the table
+ALTER TABLE {script.damUpdateTable} ADD COLUMN data_source uuid;
+UPDATE {script.damUpdateTable} AS s SET data_source = d.id FROM cabd.data_source AS d
+    WHERE d.name = s.data_source_short_name
+    AND s.update_status = 'ready';
 
---add data source ids to the table
-ALTER TABLE  {script.damUpdateTable} ADD COLUMN data_source uuid;
-UPDATE {script.damUpdateTable} AS s SET data_source = d.id FROM cabd.data_source AS d WHERE d.name = s.data_source_short_name;
+------------------
+-- TO DO: add dsfid records to damAttributeTable for updates coming from BC water rights database
+------------------
 
---deal with new and modified records
-INSERT INTO {script.damTable} (original_point)
-    (SELECT (ST_SetSRID(ST_MakePoint(cast(longitude as float), cast(latitude as float)),4617)) FROM {script.damUpdateTable}
-    WHERE entry_classification = 'new feature');
+-- deal with new and modified records
+WITH new_points AS (
+    SELECT (ST_SetSRID(ST_MakePoint(cast(longitude as float), cast(latitude as float)),4617)) AS geom, cabd_id AS id, province_territory_code AS loc
+    FROM {script.damUpdateTable}
+    WHERE entry_classification = 'new feature'
+    AND latitude IS NOT NULL
+    AND longitude IS NOT NULL
+    AND update_status = 'ready'
+    )
+INSERT INTO {script.damTable} (original_point, cabd_id, province_territory_code)
+    SELECT geom, id, loc FROM new_points;
+
+INSERT INTO {script.damAttributeTable} (cabd_id)
+    SELECT cabd_id FROM {script.damUpdateTable}
+    WHERE entry_classification = 'new feature'
+    AND latitude IS NOT NULL
+    AND longitude IS NOT NULL
+    AND update_status = 'ready';
 
 UPDATE {script.damTable} SET snapped_point = original_point WHERE snapped_point IS NULL;
 
-UPDATE {script.damTable} SET snapped_point = 
-    (SELECT (ST_SetSRID(ST_MakePoint(cast(longitude as float), cast(latitude as float)),4617)) FROM {script.damUpdateTable}
+WITH move_points AS (
+    SELECT (ST_SetSRID(ST_MakePoint(cast(longitude as float), cast(latitude as float)),4617)) AS geom, cabd_id AS id
+    FROM {script.damUpdateTable}
     WHERE entry_classification = 'modify feature'
     AND latitude IS NOT NULL
-    AND longitude IS NOT NULL);
+    AND longitude IS NOT NULL
+    AND update_status = 'ready'
+    )
+UPDATE {script.damTable} AS foo 
+    SET snapped_point = bar.geom,
+        original_point = bar.geom
+    FROM move_points AS bar
+    WHERE cabd_id = bar.id;
 
---update attribute_source table for live data
+-- add records to feature_source table
+INSERT INTO {script.damFeatureTable} (cabd_id, datasource_id)
+SELECT cabd_id, data_source FROM {script.damUpdateTable} WHERE update_status = 'ready'
+ON CONFLICT DO NOTHING;
+
+--------------------------------------------------------------------------
+-- CHECK FOR ACCURACY
+-- this should return 457 (pilot region features only) as of Jan 2023
+-- if rows have been added for pilot region features since then, this should return 0
+-- SELECT COUNT(*) FROM dams.dams
+-- WHERE cabd_id NOT IN (SELECT cabd_id FROM dams.dams_feature_source);
+--------------------------------------------------------------------------
+
+-- update attribute_source table for live data
 UPDATE
     {script.damAttributeTable} AS cabdsource
 SET    
@@ -43,7 +86,7 @@ SET
     provincial_compliance_status_ds = CASE WHEN ({script.datasetName}.provincial_compliance_status IS NOT NULL AND {script.datasetName}.provincial_compliance_status IS DISTINCT FROM cabd.provincial_compliance_status) THEN {script.datasetName}.data_source ELSE cabdsource.provincial_compliance_status_ds END,
     federal_compliance_status_ds = CASE WHEN ({script.datasetName}.federal_compliance_status IS NOT NULL AND {script.datasetName}.federal_compliance_status IS DISTINCT FROM cabd.federal_compliance_status) THEN {script.datasetName}.data_source ELSE cabdsource.federal_compliance_status_ds END,
     operating_notes_ds = CASE WHEN ({script.datasetName}.operating_notes IS NOT NULL AND {script.datasetName}.operating_notes IS DISTINCT FROM cabd.operating_notes) THEN {script.datasetName}.data_source ELSE cabdsource.operating_notes_ds END,
-    operating_status_ds = CASE WHEN ({script.datasetName}.operating_status IS NOT NULL AND {script.datasetName}.operating_status IS DISTINCT FROM cabd.operating_status) THEN {script.datasetName}.data_source ELSE cabdsource.operating_status_ds END,
+    operating_status_code_ds = CASE WHEN ({script.datasetName}.operating_status_code IS NOT NULL AND {script.datasetName}.operating_status_code IS DISTINCT FROM cabd.operating_status_code) THEN {script.datasetName}.data_source ELSE cabdsource.operating_status_code_ds END,
     use_code_ds = CASE WHEN ({script.datasetName}.use_code IS NOT NULL AND {script.datasetName}.use_code IS DISTINCT FROM cabd.use_code) THEN {script.datasetName}.data_source ELSE cabdsource.use_code_ds END,
     use_irrigation_code_ds = CASE WHEN ({script.datasetName}.use_irrigation_code IS NOT NULL AND {script.datasetName}.use_irrigation_code IS DISTINCT FROM cabd.use_irrigation_code) THEN {script.datasetName}.data_source ELSE cabdsource.use_irrigation_code_ds END,
     use_electricity_code_ds = CASE WHEN ({script.datasetName}.use_electricity_code IS NOT NULL AND {script.datasetName}.use_electricity_code IS DISTINCT FROM cabd.use_electricity_code) THEN {script.datasetName}.data_source ELSE cabdsource.use_electricity_code_ds END,
@@ -88,7 +131,6 @@ SET
     comments_ds = CASE WHEN ({script.datasetName}.comments IS NOT NULL AND {script.datasetName}.comments IS DISTINCT FROM cabd.comments) THEN {script.datasetName}.data_source ELSE cabdsource.comments_ds END,
     passability_status_code_ds = CASE WHEN ({script.datasetName}.passability_status_code IS NOT NULL AND {script.datasetName}.passability_status_code IS DISTINCT FROM cabd.passability_status_code) THEN {script.datasetName}.data_source ELSE cabdsource.passability_status_code_ds END,
     passability_status_note_ds = CASE WHEN ({script.datasetName}.passability_status_note IS NOT NULL AND {script.datasetName}.passability_status_note IS DISTINCT FROM cabd.passability_status_note) THEN {script.datasetName}.data_source ELSE cabdsource.passability_status_note_ds END,
-    use_analysis_ds = CASE WHEN ({script.datasetName}.use_analysis IS NOT NULL AND {script.datasetName}.use_analysis IS DISTINCT FROM cabd.use_analysis) THEN {script.datasetName}.data_source ELSE cabdsource.use_analysis_ds END,
     facility_name_en_ds = CASE WHEN ({script.datasetName}.facility_name_en IS NOT NULL AND {script.datasetName}.facility_name_en IS DISTINCT FROM cabd.facility_name_en) THEN {script.datasetName}.data_source ELSE cabdsource.facility_name_en_ds END,
     facility_name_fr_ds = CASE WHEN ({script.datasetName}.facility_name_fr IS NOT NULL AND {script.datasetName}.facility_name_fr IS DISTINCT FROM cabd.facility_name_fr) THEN {script.datasetName}.data_source ELSE cabdsource.facility_name_fr_ds END
 FROM
@@ -96,7 +138,9 @@ FROM
     {script.damUpdateTable} AS {script.datasetName}
 WHERE
     cabdsource.cabd_id = {script.datasetName}.cabd_id and cabd.cabd_id = cabdsource.cabd_id
-    AND {script.datasetName}.entry_classification IN ('new feature', 'modify feature');
+    AND {script.datasetName}.entry_classification IN ('new feature', 'modify feature')
+    AND {script.datasetName}.update_status = 'ready'
+    AND {script.datasetName}.data_source IS NOT NULL;
 
 --update attributes in live data
 UPDATE
@@ -161,19 +205,37 @@ SET
     use_analysis = CASE WHEN ({script.datasetName}.use_analysis IS NOT NULL AND {script.datasetName}.use_analysis IS DISTINCT FROM cabd.use_analysis) THEN {script.datasetName}.use_analysis ELSE cabd.use_analysis END,    
     facility_name_en = CASE WHEN ({script.datasetName}.facility_name_en IS NOT NULL AND {script.datasetName}.facility_name_en IS DISTINCT FROM cabd.facility_name_en) THEN {script.datasetName}.facility_name_en ELSE cabd.facility_name_en END,    
     facility_name_fr = CASE WHEN ({script.datasetName}.facility_name_fr IS NOT NULL AND {script.datasetName}.facility_name_fr IS DISTINCT FROM cabd.facility_name_fr) THEN {script.datasetName}.facility_name_fr ELSE cabd.facility_name_fr END
-
 FROM
     {script.damUpdateTable} AS {script.datasetName}
 WHERE
     cabd.cabd_id = {script.datasetName}.cabd_id
-    AND {script.datasetName}.entry_classification IN ('new feature', 'modify feature');
+    AND {script.datasetName}.entry_classification IN ('new feature', 'modify feature')
+    AND {script.datasetName}.update_status = 'ready'
+    AND {script.datasetName}.data_source IS NOT NULL;
 
---deal with records to be deleted
-DELETE FROM {script.damAttributeTable} WHERE cabd_id IN (SELECT cabd_id FROM {script.damUpdateTable} WHERE entry_classification = 'delete feature');
-DELETE FROM {script.damFeatureTable} WHERE cabd_id IN (SELECT cabd_id FROM {script.damUpdateTable} WHERE entry_classification = 'delete feature');
-DELETE FROM {script.damTable} WHERE cabd_id IN (SELECT cabd_id FROM {script.damUpdateTable} WHERE entry_classification = 'delete feature');
+-- deal with records to be deleted
+DELETE FROM {script.damAttributeTable} WHERE cabd_id IN (SELECT cabd_id FROM {script.damUpdateTable} WHERE entry_classification = 'delete feature' AND update_status = 'ready');
+DELETE FROM {script.damFeatureTable} WHERE cabd_id IN (SELECT cabd_id FROM {script.damUpdateTable} WHERE entry_classification = 'delete feature' AND update_status = 'ready');
+DELETE FROM {script.damTable} WHERE cabd_id IN (SELECT cabd_id FROM {script.damUpdateTable} WHERE entry_classification = 'delete feature' AND update_status = 'ready');
+
+--------------------------------------------------------------------------
+-- CHECK FOR ACCURACY
+-- use counts from entry_classification field to check your work
+-- e.g., for status of 'ready' and entry_classification of 'new feature'
+-- two counts below should match
+-- SELECT COUNT(DISTINCT cabd_id) FROM cabd.audit_log
+-- WHERE action = 'INSERT'
+-- and tablename = 'dams';
+-- SELECT COUNT(DISTINCT cabd_id) FROM cabd.audit_log
+-- WHERE action = 'INSERT'
+-- and tablename = 'dams_attribute_source';
+--------------------------------------------------------------------------
+
+-- set records to 'done' and delete from update table
+UPDATE {script.damUpdateTable} SET update_status = 'done' WHERE update_status = 'ready';
+DELETE FROM {script.damUpdateTable} WHERE update_status = 'done';
 
 """
 
-print(mappingquery)
-# script.do_work(mappingquery)
+# print(mappingquery)
+script.do_work(mappingquery)
