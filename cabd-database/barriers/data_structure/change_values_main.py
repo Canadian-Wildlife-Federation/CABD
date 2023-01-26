@@ -18,14 +18,17 @@ class MappingScript:
     damSchema = "dams"
     damTable = damSchema + ".dams"
     damAttributeTable = damSchema + ".dams_attribute_source"
+    damFeatureTable = damSchema + ".dams_feature_source"
 
     waterfallSchema = "waterfalls"
     waterfallTable = waterfallSchema + ".waterfalls"
     waterfallAttributeTable = waterfallSchema + ".waterfalls_attribute_source"
+    waterfallFeatureTable = waterfallSchema + ".waterfalls_feature_source"
 
     fishwaySchema = "fishways"
     fishwayTable = fishwaySchema + ".fishways"
     fishwayAttributeTable = fishwaySchema + ".fishways_attribute_source"
+    fishwayFeatureTable = fishwaySchema + ".fishways_feature_source"
 
     featureType = sys.argv[1]
     
