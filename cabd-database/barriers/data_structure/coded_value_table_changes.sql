@@ -65,25 +65,25 @@ WHERE size_class_code = 4;
 -- dam use
 --------------------------------------------
 
-UPDATE dams.use_codes
+UPDATE dams.dam_use_codes
 SET code = 99 WHERE name_en = 'Unknown';
 
 UPDATE dams.dams
-SET use_code = (SELECT code FROM dams.use_codes WHERE name_en = 'Unknown') 
+SET use_code = (SELECT code FROM dams.dam_use_codes WHERE name_en = 'Unknown') 
 WHERE use_code = 11;
 
-UPDATE dams.use_codes
+UPDATE dams.dam_use_codes
 SET code = 10 WHERE name_en = 'Wildlife Conservation';
 
 UPDATE dams.dams
-SET use_code = (SELECT code FROM dams.use_codes WHERE name_en = 'Wildlife Conservation')
+SET use_code = (SELECT code FROM dams.dam_use_codes WHERE name_en = 'Wildlife Conservation')
 WHERE use_code = 12;
 
-UPDATE dams.use_codes
+UPDATE dams.dam_use_codes
 SET code = 11 WHERE name_en = 'Other';
 
 UPDATE dams.dams
-SET use_code = (SELECT code FROM dams.use_codes WHERE name_en = 'Other')
+SET use_code = (SELECT code FROM dams.dam_use_codes WHERE name_en = 'Other')
 WHERE use_code = 10;
 
 --------------------------------------------
