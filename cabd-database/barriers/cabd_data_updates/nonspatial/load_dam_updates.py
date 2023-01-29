@@ -3,7 +3,8 @@
 # These fields are: latitude, longitude, entry_classification, and data_source_short_name
 # 
 # IMPORTANT: You must review your CSV for encoding issues before import. The expected encoding
-# for your CSV is UTF-8 and the only non-unicode characters allowed are French characters
+# for your CSV is ANSI (for records containing French characters) or UTF-8 (for records 
+# without French characters) and the only non-unicode characters allowed are French characters.
 # You should also check for % signs in your CSV. SharePoint's CSV exporter changes # signs
 # to % signs, so you will need to find and replace these instances.
 # Avoid replacing legitimate % signs in your CSV.
@@ -14,8 +15,8 @@ import sys
 
 ogr = "C:\\OSGeo4W64\\bin\\ogr2ogr.exe"
 
-dbName = "cabd"
-dbHost = "cabd-postgres.postgres.database.azure.com"
+dbName = "cabd_dev" # change back to production details when ready
+dbHost = "localhost" # change back to production details when ready
 dbPort = "5432"
 dbUser = sys.argv[3]
 dbPassword = sys.argv[4]
@@ -88,6 +89,8 @@ ALTER TABLE {sourceTable} ADD COLUMN "status" varchar;
 UPDATE {sourceTable} SET "status" = 'ready' WHERE reviewer_comments IS NULL;
 UPDATE {sourceTable} SET "status" = 'needs review' WHERE reviewer_comments IS NOT NULL;
 ALTER TABLE {sourceTable} ADD COLUMN update_type varchar default 'cwf';
+UPDATE {sourceTable} SET cabd_id = gen_random_uuid() WHERE entry_classification = 'new feature';
+
 
 --trim fields that are getting a type conversion
 UPDATE {sourceTable} SET cabd_id = TRIM(cabd_id);
@@ -139,273 +142,273 @@ UPDATE {sourceTable} SET province_territory_code = LOWER(province_territory_code
 
 UPDATE {sourceTable} SET ownership_type_code =
     CASE
-    WHEN ownership_type_code = 'charity/non-profit' THEN '1'
-    WHEN ownership_type_code = 'federal' THEN '2'
-    WHEN ownership_type_code = 'municipal' THEN '3'
-    WHEN ownership_type_code = 'private' THEN '4'
-    WHEN ownership_type_code = 'provincial/territorial' THEN '5'
-    WHEN ownership_type_code = 'other' THEN '6'
-    WHEN ownership_type_code = 'unknown' THEN '7'
-    WHEN ownership_type_code = 'indigenous' THEN '8'
+    WHEN ownership_type_code = 'charity/non-profit' THEN (SELECT code FROM cabd.barrier_ownership_type_codes WHERE name_en = 'Charity/Non-profit')
+    WHEN ownership_type_code = 'federal' THEN (SELECT code FROM cabd.barrier_ownership_type_codes WHERE name_en = 'Federal')
+    WHEN ownership_type_code = 'municipal' THEN (SELECT code FROM cabd.barrier_ownership_type_codes WHERE name_en = 'Municipal')
+    WHEN ownership_type_code = 'private' THEN (SELECT code FROM cabd.barrier_ownership_type_codes WHERE name_en = 'Private')
+    WHEN ownership_type_code = 'provincial/territorial' THEN (SELECT code FROM cabd.barrier_ownership_type_codes WHERE name_en = 'Provincial/Territorial')
+    WHEN ownership_type_code = 'other' THEN (SELECT code FROM cabd.barrier_ownership_type_codes WHERE name_en = 'Other')
+    WHEN ownership_type_code = 'unknown' THEN  (SELECT code FROM cabd.barrier_ownership_type_codes WHERE name_en = 'Unknown')
+    WHEN ownership_type_code = 'indigenous' THEN  (SELECT code FROM cabd.barrier_ownership_type_codes WHERE name_en = 'Indigenous')
     WHEN ownership_type_code IS NULL THEN NULL
     ELSE ownership_type_code END;
 ALTER TABLE {sourceTable} ALTER COLUMN ownership_type_code TYPE int2 USING ownership_type_code::int2;
 
 UPDATE {sourceTable} SET operating_status_code =
     CASE
-    WHEN operating_status_code = 'abandoned/orphaned' THEN '1'
-    WHEN operating_status_code = 'active' THEN '2'
-    WHEN operating_status_code = 'decommissioned/removed' THEN '3'
-    WHEN operating_status_code = 'retired/closed' THEN '4'
-    WHEN operating_status_code = 'unknown' THEN '5'
-    WHEN operating_status_code = 'remediated' THEN '6'
+    WHEN operating_status_code = 'abandoned/orphaned' THEN (SELECT code FROM dams.operating_status_codes WHERE name_en = 'Abandoned/Orphaned')
+    WHEN operating_status_code = 'active' THEN (SELECT code FROM dams.operating_status_codes WHERE name_en = 'Active')
+    WHEN operating_status_code = 'decommissioned/removed' THEN (SELECT code FROM dams.operating_status_codes WHERE name_en = 'Decommissioned/Removed')
+    WHEN operating_status_code = 'retired/closed' THEN (SELECT code FROM dams.operating_status_codes WHERE name_en = 'Retired/Closed')
+    WHEN operating_status_code = 'remediated' THEN (SELECT code FROM dams.operating_status_codes WHERE name_en = 'Remediated')
+    WHEN operating_status_code = 'unknown' THEN (SELECT code FROM dams.operating_status_codes WHERE name_en = 'Unknown')
     WHEN operating_status_code IS NULL THEN NULL
     ELSE operating_status_code END;
 ALTER TABLE {sourceTable} ALTER COLUMN operating_status_code TYPE int2 USING operating_status_code::int2;
 
 UPDATE {sourceTable} SET structure_type_code =
     CASE
-    WHEN structure_type_code = 'dam - arch' THEN '1'
-    WHEN structure_type_code = 'dam - buttress' THEN '2'
-    WHEN structure_type_code = 'dam - embankment' THEN '3'
-    WHEN structure_type_code = 'dam - gravity' THEN '4'
-    WHEN structure_type_code = 'dam - multiple arch' THEN '5'
-    WHEN structure_type_code = 'dam - other' THEN '6'
-    WHEN structure_type_code = 'weir' THEN '7'
-    WHEN structure_type_code = 'spillway' THEN '8'
-    WHEN structure_type_code = 'powerhouse' THEN '9'
-    WHEN structure_type_code = 'lateral barrier' THEN '10'
-    WHEN structure_type_code = 'lock' THEN '11'
-    WHEN structure_type_code = 'aboiteau/tide gate' THEN '12'
-    WHEN structure_type_code = 'other' THEN '13'
-    WHEN structure_type_code = 'unknown' THEN '99'
+    WHEN structure_type_code = 'dam - arch' THEN (SELECT code FROM dams.structure_type_codes WHERE name_en = 'Dam - Arch')
+    WHEN structure_type_code = 'dam - buttress' THEN (SELECT code FROM dams.structure_type_codes WHERE name_en = 'Dam - Buttress')
+    WHEN structure_type_code = 'dam - embankment' THEN (SELECT code FROM dams.structure_type_codes WHERE name_en = 'Dam - Embankment')
+    WHEN structure_type_code = 'dam - gravity' THEN (SELECT code FROM dams.structure_type_codes WHERE name_en = 'Dam - Gravity')
+    WHEN structure_type_code = 'dam - multiple arch' THEN (SELECT code FROM dams.structure_type_codes WHERE name_en = 'Dam - Multiple Arch')
+    WHEN structure_type_code = 'dam - other' THEN (SELECT code FROM dams.structure_type_codes WHERE name_en = 'Dam - Other')
+    WHEN structure_type_code = 'weir' THEN (SELECT code FROM dams.structure_type_codes WHERE name_en = 'Weir')
+    WHEN structure_type_code = 'spillway' THEN (SELECT code FROM dams.structure_type_codes WHERE name_en = 'Spillway')
+    WHEN structure_type_code = 'powerhouse' THEN (SELECT code FROM dams.structure_type_codes WHERE name_en = 'Powerhouse')
+    WHEN structure_type_code = 'lateral barrier' THEN (SELECT code FROM dams.structure_type_codes WHERE name_en = 'Lateral Barrier')
+    WHEN structure_type_code = 'lock' THEN (SELECT code FROM dams.structure_type_codes WHERE name_en = 'Lock')
+    WHEN structure_type_code = 'aboiteau/tide gate' THEN (SELECT code FROM dams.structure_type_codes WHERE name_en = 'Aboiteau/Tide Gate')
+    WHEN structure_type_code = 'other' THEN (SELECT code FROM dams.structure_type_codes WHERE name_en = 'Other')
+    WHEN structure_type_code = 'unknown' THEN (SELECT code FROM dams.structure_type_codes WHERE name_en = 'Unknown')
     WHEN structure_type_code IS NULL THEN NULL
     ELSE structure_type_code END;
 ALTER TABLE {sourceTable} ALTER COLUMN structure_type_code TYPE int2 USING structure_type_code::int2;
 
 UPDATE {sourceTable} SET construction_material_code =
     CASE
-    WHEN construction_material_code = 'concrete' THEN '1'
-    WHEN construction_material_code = 'masonry' THEN '2'
-    WHEN construction_material_code = 'earth' THEN '3'
-    WHEN construction_material_code = 'rock' THEN '4'
-    WHEN construction_material_code = 'timber' THEN '5'
-    WHEN construction_material_code = 'steel' THEN '6'
-    WHEN construction_material_code = 'other' THEN '7'
-    WHEN construction_material_code = 'unknown' THEN '99'
+    WHEN construction_material_code = 'concrete' THEN (SELECT code FROM dams.construction_materail_codes WHERE name_en = 'Concrete')
+    WHEN construction_material_code = 'masonry' THEN (SELECT code FROM dams.construction_materail_codes WHERE name_en = 'Masonry')
+    WHEN construction_material_code = 'earth' THEN (SELECT code FROM dams.construction_materail_codes WHERE name_en = 'Earth')
+    WHEN construction_material_code = 'rock' THEN (SELECT code FROM dams.construction_materail_codes WHERE name_en = 'Rock')
+    WHEN construction_material_code = 'timber' THEN (SELECT code FROM dams.construction_materail_codes WHERE name_en = 'Timber')
+    WHEN construction_material_code = 'steel' THEN (SELECT code FROM dams.construction_materail_codes WHERE name_en = 'Steel')
+    WHEN construction_material_code = 'other' THEN (SELECT code FROM dams.construction_materail_codes WHERE name_en = 'Other')
+    WHEN construction_material_code = 'unknown' THEN (SELECT code FROM dams.construction_materail_codes WHERE name_en = 'Unknown')
     WHEN construction_material_code IS NULL THEN NULL
     ELSE construction_material_code END;
 ALTER TABLE {sourceTable} ALTER COLUMN construction_material_code TYPE int2 USING construction_material_code::int2;
 
 UPDATE {sourceTable} SET function_code =
     CASE
-    WHEN function_code = 'storage' THEN '1'
-    WHEN function_code = 'diversion' THEN '2'
-    WHEN function_code = 'detention' THEN '3'
-    WHEN function_code = 'saddle' THEN '4'
-    WHEN function_code = 'hydro - closed-cycle pumped storage' THEN '5'
-    WHEN function_code = 'hydro - conventional storage' THEN '6'
-    WHEN function_code = 'hydro - open-cycle pumped storage' THEN '7'
-    WHEN function_code = 'hydro - run-of-river' THEN '8'
-    WHEN function_code = 'hydro - tidal' THEN '9'
-    WHEN function_code = 'hydro - other' THEN '10'
-    WHEN function_code = 'other' THEN '11'
-    WHEN function_code = 'unknown' THEN '99'
+    WHEN function_code = 'storage' THEN (SELECT code FROM dams.function_codes WHERE name_en = 'Storage')
+    WHEN function_code = 'diversion' THEN (SELECT code FROM dams.function_codes WHERE name_en = 'Diversion')
+    WHEN function_code = 'detention' THEN (SELECT code FROM dams.function_codes WHERE name_en = 'Detention')
+    WHEN function_code = 'saddle' THEN (SELECT code FROM dams.function_codes WHERE name_en = 'Saddle')
+    WHEN function_code = 'hydro - closed-cycle pumped storage' THEN (SELECT code FROM dams.function_codes WHERE name_en = 'Hydro - Closed-cycle pumped storage')
+    WHEN function_code = 'hydro - conventional storage' THEN (SELECT code FROM dams.function_codes WHERE name_en = 'Hydro - Conventional storage')
+    WHEN function_code = 'hydro - open-cycle pumped storage' THEN (SELECT code FROM dams.function_codes WHERE name_en = 'Hydro - Open-cycle pumped storage')
+    WHEN function_code = 'hydro - run-of-river' THEN (SELECT code FROM dams.function_codes WHERE name_en = 'Hydro - Run-of-river')
+    WHEN function_code = 'hydro - tidal' THEN (SELECT code FROM dams.function_codes WHERE name_en = 'Hydro - Tidal')
+    WHEN function_code = 'hydro - other' THEN THEN (SELECT code FROM dams.function_codes WHERE name_en = 'Hydro - Other')
+    WHEN function_code = 'other' THEN THEN (SELECT code FROM dams.function_codes WHERE name_en = 'Other')
+    WHEN function_code = 'unknown' THEN (SELECT code FROM dams.function_codes WHERE name_en = 'Unknown')
     WHEN function_code IS NULL THEN NULL
     ELSE function_code END;
 ALTER TABLE {sourceTable} ALTER COLUMN function_code TYPE int2 USING function_code::int2;
 
 UPDATE {sourceTable} SET use_code =
     CASE
-    WHEN use_code = 'irrigation' THEN '1'
-    WHEN use_code = 'hydroelectricity' THEN '2'
-    WHEN use_code = 'water supply' THEN '3'
-    WHEN use_code = 'flood control' THEN '4'
-    WHEN use_code = 'recreation' THEN '5'
-    WHEN use_code = 'navigation' THEN '6'
-    WHEN use_code = 'fisheries' THEN '7'
-    WHEN use_code = 'pollution control' THEN '8'
-    WHEN use_code = 'invasive species control' THEN '9'
-    WHEN use_code = 'other' THEN '10'
-    WHEN use_code = 'unknown' THEN '11'
-    WHEN use_code = 'wildlife conservation' THEN '12'
+    WHEN use_code = 'irrigation' THEN (SELECT code FROM dams.dam_use_codes WHERE name_en = 'Irrigation')
+    WHEN use_code = 'hydroelectricity' THEN (SELECT code FROM dams.dam_use_codes WHERE name_en = 'Hydroelectricity')
+    WHEN use_code = 'water supply' THEN (SELECT code FROM dams.dam_use_codes WHERE name_en = 'Water supply')
+    WHEN use_code = 'flood control' THEN (SELECT code FROM dams.dam_use_codes WHERE name_en = 'Flood control')
+    WHEN use_code = 'recreation' THEN (SELECT code FROM dams.dam_use_codes WHERE name_en = 'Recreation')
+    WHEN use_code = 'navigation' THEN (SELECT code FROM dams.dam_use_codes WHERE name_en = 'Navigation')
+    WHEN use_code = 'fisheries' THEN (SELECT code FROM dams.dam_use_codes WHERE name_en = 'Fisheries')
+    WHEN use_code = 'pollution control' THEN (SELECT code FROM dams.dam_use_codes WHERE name_en = 'Pollution control')
+    WHEN use_code = 'invasive species control' THEN (SELECT code FROM dams.dam_use_codes WHERE name_en = 'Invasive species control')
+    WHEN use_code = 'wildlife conservation' THEN (SELECT code FROM dams.dam_use_codes WHERE name_en = 'Wildlife Conservation')
+    WHEN use_code = 'other' THEN (SELECT code FROM dams.dam_use_codes WHERE name_en = 'Other')
+    WHEN use_code = 'unknown' THEN (SELECT code FROM dams.dam_use_codes WHERE name_en = 'Unknown')
     WHEN use_code IS NULL THEN NULL
     ELSE use_code END;
 ALTER TABLE {sourceTable} ALTER COLUMN use_code TYPE int2 USING use_code::int2;
 
 UPDATE {sourceTable} SET use_irrigation_code =
     CASE
-    WHEN use_irrigation_code = 'main' THEN '1'
-    WHEN use_irrigation_code = 'major' THEN '2'
-    WHEN use_irrigation_code = 'secondary' THEN '3'
+    WHEN use_irrigation_code = 'main' THEN (SELECT code FROM dams.use_codes WHERE name_en = 'Main')
+    WHEN use_irrigation_code = 'major' THEN (SELECT code FROM dams.use_codes WHERE name_en = 'Major')
+    WHEN use_irrigation_code = 'secondary' THEN (SELECT code FROM dams.use_codes WHERE name_en = 'Secondary')
     WHEN use_irrigation_code IS NULL THEN NULL
     ELSE use_irrigation_code END;
 ALTER TABLE {sourceTable} ALTER COLUMN use_irrigation_code TYPE int2 USING use_irrigation_code::int2;
 
 UPDATE {sourceTable} SET use_electricity_code =
     CASE
-    WHEN use_electricity_code = 'main' THEN '1'
-    WHEN use_electricity_code = 'major' THEN '2'
-    WHEN use_electricity_code = 'secondary' THEN '3'
+    WHEN use_electricity_code = 'main' THEN (SELECT code FROM dams.use_codes WHERE name_en = 'Main')
+    WHEN use_electricity_code = 'major' THEN (SELECT code FROM dams.use_codes WHERE name_en = 'Major')
+    WHEN use_electricity_code = 'secondary' THEN (SELECT code FROM dams.use_codes WHERE name_en = 'Secondary')
     WHEN use_electricity_code IS NULL THEN NULL
     ELSE use_electricity_code END;
 ALTER TABLE {sourceTable} ALTER COLUMN use_electricity_code TYPE int2 USING use_electricity_code::int2;
 
 UPDATE {sourceTable} SET use_supply_code =
     CASE
-    WHEN use_supply_code = 'main' THEN '1'
-    WHEN use_supply_code = 'major' THEN '2'
-    WHEN use_supply_code = 'secondary' THEN '3'
+    WHEN use_supply_code = 'main' THEN (SELECT code FROM dams.use_codes WHERE name_en = 'Main')
+    WHEN use_supply_code = 'major' THEN (SELECT code FROM dams.use_codes WHERE name_en = 'Major')
+    WHEN use_supply_code = 'secondary' THEN (SELECT code FROM dams.use_codes WHERE name_en = 'Secondary')
     WHEN use_supply_code IS NULL THEN NULL
     ELSE use_supply_code END;
 ALTER TABLE {sourceTable} ALTER COLUMN use_supply_code TYPE int2 USING use_supply_code::int2;
 
 UPDATE {sourceTable} SET use_floodcontrol_code =
     CASE
-    WHEN use_floodcontrol_code = 'main' THEN '1'
-    WHEN use_floodcontrol_code = 'major' THEN '2'
-    WHEN use_floodcontrol_code = 'secondary' THEN '3'
+    WHEN use_floodcontrol_code = 'main' THEN (SELECT code FROM dams.use_codes WHERE name_en = 'Main')
+    WHEN use_floodcontrol_code = 'major' THEN (SELECT code FROM dams.use_codes WHERE name_en = 'Major')
+    WHEN use_floodcontrol_code = 'secondary' THEN (SELECT code FROM dams.use_codes WHERE name_en = 'Secondary')
     WHEN use_floodcontrol_code IS NULL THEN NULL
     ELSE use_floodcontrol_code END;
 ALTER TABLE {sourceTable} ALTER COLUMN use_floodcontrol_code TYPE int2 USING use_floodcontrol_code::int2;
 
 UPDATE {sourceTable} SET use_recreation_code =
     CASE
-    WHEN use_recreation_code = 'main' THEN '1'
-    WHEN use_recreation_code = 'major' THEN '2'
-    WHEN use_recreation_code = 'secondary' THEN '3'
+    WHEN use_recreation_code = 'main' THEN (SELECT code FROM dams.use_codes WHERE name_en = 'Main')
+    WHEN use_recreation_code = 'major' THEN (SELECT code FROM dams.use_codes WHERE name_en = 'Major')
+    WHEN use_recreation_code = 'secondary' THEN (SELECT code FROM dams.use_codes WHERE name_en = 'Secondary')
     WHEN use_recreation_code IS NULL THEN NULL
     ELSE use_recreation_code END;
 ALTER TABLE {sourceTable} ALTER COLUMN use_recreation_code TYPE int2 USING use_recreation_code::int2;
 
 UPDATE {sourceTable} SET use_navigation_code =
     CASE
-    WHEN use_navigation_code = 'main' THEN '1'
-    WHEN use_navigation_code = 'major' THEN '2'
-    WHEN use_navigation_code = 'secondary' THEN '3'
+    WHEN use_navigation_code = 'main' THEN (SELECT code FROM dams.use_codes WHERE name_en = 'Main')
+    WHEN use_navigation_code = 'major' THEN (SELECT code FROM dams.use_codes WHERE name_en = 'Major')
+    WHEN use_navigation_code = 'secondary' THEN (SELECT code FROM dams.use_codes WHERE name_en = 'Secondary')
     WHEN use_navigation_code IS NULL THEN NULL
     ELSE use_navigation_code END;
 ALTER TABLE {sourceTable} ALTER COLUMN use_navigation_code TYPE int2 USING use_navigation_code::int2;
 
 UPDATE {sourceTable} SET use_fish_code =
     CASE
-    WHEN use_fish_code = 'main' THEN '1'
-    WHEN use_fish_code = 'major' THEN '2'
-    WHEN use_fish_code = 'secondary' THEN '3'
+    WHEN use_fish_code = 'main' THEN (SELECT code FROM dams.use_codes WHERE name_en = 'Main')
+    WHEN use_fish_code = 'major' THEN (SELECT code FROM dams.use_codes WHERE name_en = 'Major')
+    WHEN use_fish_code = 'secondary' THEN (SELECT code FROM dams.use_codes WHERE name_en = 'Secondary')
     WHEN use_fish_code IS NULL THEN NULL
     ELSE use_fish_code END;
 ALTER TABLE {sourceTable} ALTER COLUMN use_fish_code TYPE int2 USING use_fish_code::int2;
 
 UPDATE {sourceTable} SET use_pollution_code =
     CASE
-    WHEN use_pollution_code = 'main' THEN '1'
-    WHEN use_pollution_code = 'major' THEN '2'
-    WHEN use_pollution_code = 'secondary' THEN '3'
+    WHEN use_pollution_code = 'main' THEN (SELECT code FROM dams.use_codes WHERE name_en = 'Main')
+    WHEN use_pollution_code = 'major' THEN (SELECT code FROM dams.use_codes WHERE name_en = 'Major')
+    WHEN use_pollution_code = 'secondary' THEN (SELECT code FROM dams.use_codes WHERE name_en = 'Secondary')
     WHEN use_pollution_code IS NULL THEN NULL
     ELSE use_pollution_code END;
 ALTER TABLE {sourceTable} ALTER COLUMN use_pollution_code TYPE int2 USING use_pollution_code::int2;
 
 UPDATE {sourceTable} SET use_invasivespecies_code =
     CASE
-    WHEN use_invasivespecies_code = 'main' THEN '1'
-    WHEN use_invasivespecies_code = 'major' THEN '2'
-    WHEN use_invasivespecies_code = 'secondary' THEN '3'
+    WHEN use_invasivespecies_code = 'main' THEN (SELECT code FROM dams.use_codes WHERE name_en = 'Main')
+    WHEN use_invasivespecies_code = 'major' THEN (SELECT code FROM dams.use_codes WHERE name_en = 'Major')
+    WHEN use_invasivespecies_code = 'secondary' THEN (SELECT code FROM dams.use_codes WHERE name_en = 'Secondary')
     WHEN use_invasivespecies_code IS NULL THEN NULL
     ELSE use_invasivespecies_code END;
 ALTER TABLE {sourceTable} ALTER COLUMN use_invasivespecies_code TYPE int2 USING use_invasivespecies_code::int2;
 
-UPDATE {sourceTable} SET use_conservation_code =
-    CASE
-    WHEN use_conservation_code = 'main' THEN '1'
-    WHEN use_conservation_code = 'major' THEN '2'
-    WHEN use_conservation_code = 'secondary' THEN '3'
-    WHEN use_conservation_code IS NULL THEN NULL
-    ELSE use_conservation_code END;
-ALTER TABLE {sourceTable} ALTER COLUMN use_conservation_code TYPE int2 USING use_conservation_code::int2;
+-- UPDATE {sourceTable} SET use_conservation_code =
+--     CASE
+--     WHEN use_conservation_code = 'main' THEN (SELECT code FROM dams.use_codes WHERE name_en = 'Main')
+--     WHEN use_conservation_code = 'major' THEN (SELECT code FROM dams.use_codes WHERE name_en = 'Major')
+--     WHEN use_conservation_code = 'secondary' THEN (SELECT code FROM dams.use_codes WHERE name_en = 'Secondary')
+--     WHEN use_conservation_code IS NULL THEN NULL
+--     ELSE use_conservation_code END;
+-- ALTER TABLE {sourceTable} ALTER COLUMN use_conservation_code TYPE int2 USING use_conservation_code::int2;
 
 UPDATE {sourceTable} SET use_other_code =
     CASE
-    WHEN use_other_code = 'main' THEN '1'
-    WHEN use_other_code = 'major' THEN '2'
-    WHEN use_other_code = 'secondary' THEN '3'
+    WHEN use_other_code = 'main' THEN (SELECT code FROM dams.use_codes WHERE name_en = 'Main')
+    WHEN use_other_code = 'major' THEN (SELECT code FROM dams.use_codes WHERE name_en = 'Major')
+    WHEN use_other_code = 'secondary' THEN (SELECT code FROM dams.use_codes WHERE name_en = 'Secondary')
     WHEN use_other_code IS NULL THEN NULL
     ELSE use_other_code END;
 ALTER TABLE {sourceTable} ALTER COLUMN use_other_code TYPE int2 USING use_other_code::int2;
 
 UPDATE {sourceTable} SET turbine_type_code =
     CASE
-    WHEN turbine_type_code = 'cross-flow' THEN '1'
-    WHEN turbine_type_code = 'francis' THEN '2'
-    WHEN turbine_type_code = 'kaplan' THEN '3'
-    WHEN turbine_type_code = 'pelton' THEN '4'
-    WHEN turbine_type_code = 'unknown' THEN '5'
-    WHEN turbine_type_code = 'other' THEN '6'
+    WHEN turbine_type_code = 'cross-flow' THEN (SELECT code FROM dams.turbine_type_codes WHERE name_en = 'Cross-flow')
+    WHEN turbine_type_code = 'francis' THEN (SELECT code FROM dams.turbine_type_codes WHERE name_en = 'Francis')
+    WHEN turbine_type_code = 'kaplan' THEN (SELECT code FROM dams.turbine_type_codes WHERE name_en = 'Kaplan')
+    WHEN turbine_type_code = 'pelton' THEN (SELECT code FROM dams.turbine_type_codes WHERE name_en = 'Pelton')
+    WHEN turbine_type_code = 'other' THEN (SELECT code FROM dams.turbine_type_codes WHERE name_en = 'Other')
+    WHEN turbine_type_code = 'unknown' THEN (SELECT code FROM dams.turbine_type_codes WHERE name_en = 'Unknown')
     WHEN turbine_type_code IS NULL THEN NULL
     ELSE turbine_type_code END;
 ALTER TABLE {sourceTable} ALTER COLUMN turbine_type_code TYPE int2 USING turbine_type_code::int2;
 
 UPDATE {sourceTable} SET lake_control_code =
     CASE
-    WHEN lake_control_code = 'yes' THEN '1'
-    WHEN lake_control_code = 'enlarged' THEN '2'
-    WHEN lake_control_code = 'maybe' THEN '3'
+    WHEN lake_control_code = 'yes' THEN (SELECT code FROM dams.lake_control_codes WHERE name_en = 'Yes')
+    WHEN lake_control_code = 'enlarged' THEN (SELECT code FROM dams.lake_control_codes WHERE name_en = 'Enlarged')
+    WHEN lake_control_code = 'maybe' THEN (SELECT code FROM dams.lake_control_codes WHERE name_en = 'Maybe')
     WHEN lake_control_code IS NULL THEN NULL
     ELSE lake_control_code END;
 ALTER TABLE {sourceTable} ALTER COLUMN lake_control_code TYPE int2 USING lake_control_code::int2;
 
 UPDATE {sourceTable} SET spillway_type_code =
     CASE
-    WHEN spillway_type_code = 'combined' THEN '1'
-    WHEN spillway_type_code = 'free' THEN '2'
-    WHEN spillway_type_code = 'gated' THEN '3'
-    WHEN spillway_type_code = 'other' THEN '4'
-    WHEN spillway_type_code = 'none' THEN '5'
-    WHEN spillway_type_code = 'unknown' THEN '6'
+    WHEN spillway_type_code = 'combined' THEN (SELECT code FROM dams.spillway_type_codes WHERE name_en = 'Combined')
+    WHEN spillway_type_code = 'free' THEN (SELECT code FROM dams.spillway_type_codes WHERE name_en = 'Free')
+    WHEN spillway_type_code = 'gated' THEN (SELECT code FROM dams.spillway_type_codes WHERE name_en = 'Gated')
+    WHEN spillway_type_code = 'other' THEN (SELECT code FROM dams.spillway_type_codes WHERE name_en = 'Other')
+    WHEN spillway_type_code = 'none' THEN (SELECT code FROM dams.spillway_type_codes WHERE name_en = 'None')
+    WHEN spillway_type_code = 'unknown' THEN (SELECT code FROM dams.spillway_type_codes WHERE name_en = 'Unknown')
     WHEN spillway_type_code IS NULL THEN NULL
     ELSE spillway_type_code END;
 ALTER TABLE {sourceTable} ALTER COLUMN spillway_type_code TYPE int2 USING spillway_type_code::int2;
 
 UPDATE {sourceTable} SET up_passage_type_code =
     CASE
-    WHEN up_passage_type_code = 'denil' THEN '1'
-    WHEN up_passage_type_code = 'nature-like fishway' THEN '2'
-    WHEN up_passage_type_code = 'pool and weir' THEN '3'
-    WHEN up_passage_type_code = 'pool and weir with hole' THEN '4'
-    WHEN up_passage_type_code = 'trap and truck' THEN '5'
-    WHEN up_passage_type_code = 'vertical slot' THEN '6'
-    WHEN up_passage_type_code = 'other' THEN '7'
-    WHEN up_passage_type_code = 'no structure' THEN '8'
-    WHEN up_passage_type_code = 'unknown' THEN '9'
+    WHEN up_passage_type_code = 'denil' THEN (SELECT code FROM cabd.upstream_passage_type_codes WHERE name_en = 'Denil')
+    WHEN up_passage_type_code = 'nature-like fishway' THEN (SELECT code FROM cabd.upstream_passage_type_codes WHERE name_en = 'Nature-like fishway')
+    WHEN up_passage_type_code = 'pool and weir' THEN (SELECT code FROM cabd.upstream_passage_type_codes WHERE name_en = 'Pool and weir')
+    WHEN up_passage_type_code = 'pool and weir with hole' THEN (SELECT code FROM cabd.upstream_passage_type_codes WHERE name_en = 'Pool and weir with hole')
+    WHEN up_passage_type_code = 'trap and truck' THEN (SELECT code FROM cabd.upstream_passage_type_codes WHERE name_en = 'Trap and truck')
+    WHEN up_passage_type_code = 'vertical slot' THEN (SELECT code FROM cabd.upstream_passage_type_codes WHERE name_en = 'Vertical slot')
+    WHEN up_passage_type_code = 'other' THEN (SELECT code FROM cabd.upstream_passage_type_codes WHERE name_en = 'Other')
+    WHEN up_passage_type_code = 'no structure' THEN (SELECT code FROM cabd.upstream_passage_type_codes WHERE name_en = 'No structure')
+    WHEN up_passage_type_code = 'unknown' THEN (SELECT code FROM cabd.upstream_passage_type_codes WHERE name_en = 'Unknown')
     WHEN up_passage_type_code IS NULL THEN NULL
     ELSE up_passage_type_code END;
 ALTER TABLE {sourceTable} ALTER COLUMN up_passage_type_code TYPE int2 USING up_passage_type_code::int2;
 
 UPDATE {sourceTable} SET passability_status_code =
     CASE
-    WHEN passability_status_code = 'barrier' THEN '1'
-    WHEN passability_status_code = 'partial barrier' THEN '2'
-    WHEN passability_status_code = 'passable' THEN '3'
-    WHEN passability_status_code = 'unknown' THEN '4'
+    WHEN passability_status_code = 'barrier' THEN (SELECT code FROM cabd.passability_status_codes WHERE name_en = 'Barrier')
+    WHEN passability_status_code = 'partial barrier' THEN (SELECT code FROM cabd.passability_status_codes WHERE name_en = 'Partial Barrier')
+    WHEN passability_status_code = 'passable' THEN (SELECT code FROM cabd.passability_status_codes WHERE name_en = 'Passable')
+    WHEN passability_status_code = 'unknown' THEN (SELECT code FROM cabd.passability_status_codes WHERE name_en = 'Unknown')
     WHEN passability_status_code IS NULL THEN NULL
     ELSE passability_status_code END;
 ALTER TABLE {sourceTable} ALTER COLUMN passability_status_code TYPE int2 USING passability_status_code::int2;
 
 UPDATE {sourceTable} SET down_passage_route_code =
     CASE
-    WHEN down_passage_route_code = 'bypass' THEN '1'
-    WHEN down_passage_route_code = 'river channel' THEN '2'
-    WHEN down_passage_route_code = 'spillway' THEN '3'
-    WHEN down_passage_route_code = 'turbine' THEN '4'
+    WHEN down_passage_route_code = 'bypass' THEN (SELECT code FROM dams.downstream_passage_route_codes WHERE name_en = 'Bypass')
+    WHEN down_passage_route_code = 'river channel' THEN (SELECT code FROM dams.downstream_passage_route_codes WHERE name_en = 'River channel')
+    WHEN down_passage_route_code = 'spillway' THEN (SELECT code FROM dams.downstream_passage_route_codes WHERE name_en = 'Spillway')
+    WHEN down_passage_route_code = 'turbine' THEN (SELECT code FROM dams.downstream_passage_route_codes WHERE name_en = 'Turbine')
     WHEN down_passage_route_code IS NULL THEN NULL
     ELSE down_passage_route_code END;
 ALTER TABLE {sourceTable} ALTER COLUMN down_passage_route_code TYPE int2 USING down_passage_route_code::int2;
 
 UPDATE {sourceTable} SET condition_code =
     CASE
-    WHEN condition_code = 'good' THEN '1'
-    WHEN condition_code = 'fair' THEN '2'
-    WHEN condition_code = 'poor' THEN '3'
-    WHEN condition_code = 'unreliable' THEN '4'
+    WHEN condition_code = 'good' THEN (SELECT code FROM dams.condition_codes WHERE name_en = 'Good')
+    WHEN condition_code = 'fair' THEN (SELECT code FROM dams.condition_codes WHERE name_en = 'Fair')
+    WHEN condition_code = 'poor' THEN (SELECT code FROM dams.condition_codes WHERE name_en = 'Poor')
+    WHEN condition_code = 'unreliable' THEN (SELECT code FROM dams.condition_codes WHERE name_en = 'Unreliable')
     WHEN condition_code IS NULL THEN NULL
     ELSE condition_code END;
 ALTER TABLE {sourceTable} ALTER COLUMN condition_code TYPE int2 USING condition_code::int2;
@@ -443,7 +446,7 @@ INSERT INTO {damUpdateTable} (
     use_fish_code,
     use_pollution_code,
     use_invasivespecies_code,
-    use_conservation_code,
+    -- use_conservation_code,
     use_other_code,
     lake_control_code,
     construction_year,
@@ -513,7 +516,7 @@ SELECT
     use_fish_code,
     use_pollution_code,
     use_invasivespecies_code,
-    use_conservation_code,
+    -- use_conservation_code,
     use_other_code,
     lake_control_code,
     construction_year,
@@ -554,10 +557,10 @@ FROM {sourceTable};
 """
 
 print("Cleaning CSV and adding records to " + damUpdateTable)
-# print(loadQuery)
-with conn.cursor() as cursor:
-    cursor.execute(loadQuery)
-conn.commit()
-conn.close()
+print(loadQuery)
+# with conn.cursor() as cursor:
+#     cursor.execute(loadQuery)
+# conn.commit()
+# conn.close()
 
-print("Script complete")
+# print("Script complete")
