@@ -159,8 +159,8 @@ UPDATE cabd.upstream_passage_type_codes
 SET code = 99 WHERE name_en = 'Unknown';
 
 UPDATE dams.dams
-SET upstream_passage_type_code = (SELECT code FROM cabd.upstream_passage_type_codes WHERE name_en = 'Unknown') 
-WHERE upstream_passage_type_code = 9;
+SET up_passage_type_code = (SELECT code FROM cabd.upstream_passage_type_codes WHERE name_en = 'Unknown') 
+WHERE up_passage_type_code = 9;
 
 UPDATE fishways.fishways
 SET fishpass_type_code = (SELECT code FROM cabd.upstream_passage_type_codes WHERE name_en = 'Unknown') 
@@ -173,5 +173,5 @@ WHERE fishpass_type_code = 9;
 --------------------------------------------
 
 UPDATE dams.dams
-SET structure_type_code = (SELECT code FROM dams.turbine_type_codes WHERE name_en = 'Other')
+SET structure_type_code = (SELECT code FROM dams.structure_type_codes WHERE name_en = 'Other')
 WHERE structure_type_code = 10;
