@@ -142,11 +142,11 @@ UPDATE {sourceTable} SET province_territory_code = LOWER(province_territory_code
 
 UPDATE {sourceTable} SET ownership_type_code =
     CASE
-    WHEN ownership_type_code = 'charity/non-profit' THEN (SELECT code FROM cabd.barrier_ownership_type_codes WHERE name_en = 'Charity/Non-profit')
+    WHEN ownership_type_code = 'charity/non-profit' THEN (SELECT code FROM cabd.barrier_ownership_type_codes WHERE name_en = 'Charity/ Non-profit')
     WHEN ownership_type_code = 'federal' THEN (SELECT code FROM cabd.barrier_ownership_type_codes WHERE name_en = 'Federal')
     WHEN ownership_type_code = 'municipal' THEN (SELECT code FROM cabd.barrier_ownership_type_codes WHERE name_en = 'Municipal')
     WHEN ownership_type_code = 'private' THEN (SELECT code FROM cabd.barrier_ownership_type_codes WHERE name_en = 'Private')
-    WHEN ownership_type_code = 'provincial/territorial' THEN (SELECT code FROM cabd.barrier_ownership_type_codes WHERE name_en = 'Provincial/Territorial')
+    WHEN ownership_type_code = 'provincial/territorial' THEN (SELECT code FROM cabd.barrier_ownership_type_codes WHERE name_en = 'Provincial/ Territorial')
     WHEN ownership_type_code = 'other' THEN (SELECT code FROM cabd.barrier_ownership_type_codes WHERE name_en = 'Other')
     WHEN ownership_type_code = 'unknown' THEN  (SELECT code FROM cabd.barrier_ownership_type_codes WHERE name_en = 'Unknown')
     WHEN ownership_type_code = 'indigenous' THEN  (SELECT code FROM cabd.barrier_ownership_type_codes WHERE name_en = 'Indigenous')
@@ -156,10 +156,10 @@ ALTER TABLE {sourceTable} ALTER COLUMN ownership_type_code TYPE int2 USING owner
 
 UPDATE {sourceTable} SET operating_status_code =
     CASE
-    WHEN operating_status_code = 'abandoned/orphaned' THEN (SELECT code FROM dams.operating_status_codes WHERE name_en = 'Abandoned/Orphaned')
+    WHEN operating_status_code = 'abandoned/orphaned' THEN (SELECT code FROM dams.operating_status_codes WHERE name_en = 'Abandoned/ Orphaned')
     WHEN operating_status_code = 'active' THEN (SELECT code FROM dams.operating_status_codes WHERE name_en = 'Active')
-    WHEN operating_status_code = 'decommissioned/removed' THEN (SELECT code FROM dams.operating_status_codes WHERE name_en = 'Decommissioned/Removed')
-    WHEN operating_status_code = 'retired/closed' THEN (SELECT code FROM dams.operating_status_codes WHERE name_en = 'Retired/Closed')
+    WHEN operating_status_code = 'decommissioned/removed' THEN (SELECT code FROM dams.operating_status_codes WHERE name_en = 'Decommissioned/ Removed')
+    WHEN operating_status_code = 'retired/closed' THEN (SELECT code FROM dams.operating_status_codes WHERE name_en = 'Retired/ Closed')
     WHEN operating_status_code = 'remediated' THEN (SELECT code FROM dams.operating_status_codes WHERE name_en = 'Remediated')
     WHEN operating_status_code = 'unknown' THEN (SELECT code FROM dams.operating_status_codes WHERE name_en = 'Unknown')
     WHEN operating_status_code IS NULL THEN NULL
@@ -179,7 +179,7 @@ UPDATE {sourceTable} SET structure_type_code =
     WHEN structure_type_code = 'powerhouse' THEN (SELECT code FROM dams.structure_type_codes WHERE name_en = 'Powerhouse')
     WHEN structure_type_code = 'lateral barrier' THEN (SELECT code FROM dams.structure_type_codes WHERE name_en = 'Lateral Barrier')
     WHEN structure_type_code = 'lock' THEN (SELECT code FROM dams.structure_type_codes WHERE name_en = 'Lock')
-    WHEN structure_type_code = 'aboiteau/tide gate' THEN (SELECT code FROM dams.structure_type_codes WHERE name_en = 'Aboiteau/Tide Gate')
+    WHEN structure_type_code = 'aboiteau/tide gate' THEN (SELECT code FROM dams.structure_type_codes WHERE name_en = 'Aboiteau/ Tide Gate')
     WHEN structure_type_code = 'other' THEN (SELECT code FROM dams.structure_type_codes WHERE name_en = 'Other')
     WHEN structure_type_code = 'unknown' THEN (SELECT code FROM dams.structure_type_codes WHERE name_en = 'Unknown')
     WHEN structure_type_code IS NULL THEN NULL
