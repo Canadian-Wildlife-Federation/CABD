@@ -93,6 +93,14 @@ WHERE use_code = 10;
 UPDATE dams.operating_status_codes
 SET code = 99 WHERE name_en = 'Unknown';
 
+UPDATE dams.operating_status_codes
+SET name_en = 
+    CASE 
+    WHEN name_en = 'Abandoned/Orphaned' THEN 'Abandoned/ Orphaned'
+    WHEN name_en = 'Decommissioned/Removed' THEN 'Decommissioned/ Removed'
+    WHEN name_en = 'Retired/Closed' THEN 'Retired/ Closed'
+    ELSE name_en END;
+
 UPDATE dams.dams
 SET operating_status_code = (SELECT code FROM dams.operating_status_codes WHERE name_en = 'Unknown') 
 WHERE operating_status_code = 5;
@@ -110,6 +118,13 @@ WHERE operating_status_code = 6;
 
 UPDATE cabd.barrier_ownership_type_codes
 SET code = 99 WHERE name_en = 'Unknown';
+
+UPDATE cabd.barrier_ownership_type_codes
+SET name_en = 
+    CASE 
+    WHEN name_en = 'Charity/Non-profit' THEN 'Charity/ Non-profit'
+    WHEN name_en = 'Provincial/Territorial' THEN 'Provincial/ Territorial'
+    ELSE name_en END;
 
 UPDATE dams.dams
 SET ownership_type_code = (SELECT code FROM cabd.barrier_ownership_type_codes WHERE name_en = 'Unknown') 
