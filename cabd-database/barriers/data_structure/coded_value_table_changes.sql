@@ -4,24 +4,35 @@
 -- THIS STILL NEEDS TESTING BUT METHOD IS STRAIGHTFORWARD
 ---------------------------------------------------------------------
 
+--------------------------------------------
+-- disable triggers while we make changes
+--------------------------------------------
+
+ALTER TABLE dams.dams DISABLE TRIGGER ALL;
+ALTER TABLE dams.structure_type_codes DISABLE TRIGGER ALL;
+ALTER TABLE dams.function_codes DISABLE TRIGGER ALL;
+ALTER TABLE dams.size_class_codes DISABLE TRIGGER ALL;
+ALTER TABLE dams.dam_use_codes DISABLE TRIGGER ALL;
+ALTER TABLE dams.operating_status_codes DISABLE TRIGGER ALL;
+ALTER TABLE cabd.barrier_ownership_type_codes DISABLE TRIGGER ALL;
+ALTER TABLE dams.spillway_type_codes DISABLE TRIGGER ALL;
+ALTER TABLE dams.turbine_type_codes DISABLE TRIGGER ALL;
+ALTER TABLE cabd.upstream_passage_type_codes DISABLE TRIGGER ALL;
+
 -- replace structure_type and function_code tables entirely
-DELETE * FROM dams.structure_type_codes;
+DELETE FROM dams.structure_type_codes;
 INSERT INTO dams.structure_type_codes
     (code, name_en, description_en, name_fr, description_fr)
 SELECT
     code, name, description, name, description
 FROM dams.temp_structure_type_codes;
 
-DELETE * FROM dams.function_codes;
+DELETE FROM dams.function_codes;
 INSERT INTO dams.function_codes
     (code, name_en, description_en, name_fr, description_fr)
 SELECT
     code, name, description, name, description
 FROM dams.temp_function_codes;
-
-
--- change a number of codes for 'Unknown' to code 99 and
--- reshuffle values where needed
 
 --------------------------------------------
 -- RECORD OLD VALUES - JUST FOR TESTING
@@ -30,7 +41,7 @@ FROM dams.temp_function_codes;
 ALTER TABLE dams.dams ADD COLUMN structure_type_code_old int2;
 ALTER TABLE dams.dams ADD COLUMN function_code_old int2;
 ALTER TABLE dams.dams ADD COLUMN size_class_code_old int2;
-ALTER TABLE dams.dams ADD COLUMN use_code_old int2;
+ALTER TABLE dams.dams ADD COLUMN dam_use_code_old int2;
 ALTER TABLE dams.dams ADD COLUMN operating_status_code_old int2;
 ALTER TABLE dams.dams ADD COLUMN ownership_type_code_old int2;
 ALTER TABLE dams.dams ADD COLUMN spillway_type_code_old int2;
@@ -40,7 +51,7 @@ ALTER TABLE dams.dams ADD COLUMN up_passage_type_code_old int2;
 UPDATE dams.dams SET structure_type_code_old = structure_type_code;
 UPDATE dams.dams SET function_code_old = function_code;
 UPDATE dams.dams SET size_class_code_old = size_class_code;
-UPDATE dams.dams SET use_code_old = use_code;
+UPDATE dams.dams SET dam_use_code_old = use_code;
 UPDATE dams.dams SET operating_status_code_old = operating_status_code;
 UPDATE dams.dams SET ownership_type_code_old = ownership_type_code;
 UPDATE dams.dams SET spillway_type_code_old = spillway_type_code;
@@ -49,6 +60,9 @@ UPDATE dams.dams SET up_passage_type_code_old = up_passage_type_code;
 
 ALTER TABLE fishways.fishways ADD COLUMN fishpass_type_code_old int2;
 UPDATE fishways.fishways SET fishpass_type_code_old = fishpass_type_code;
+
+-- change a number of codes for 'Unknown' to code 99 and
+-- reshuffle values where needed
 
 --------------------------------------------
 -- size class
@@ -190,3 +204,18 @@ WHERE fishpass_type_code = 9;
 UPDATE dams.dams
 SET structure_type_code = (SELECT code FROM dams.structure_type_codes WHERE name_en = 'Other')
 WHERE structure_type_code = 10;
+
+--------------------------------------------
+-- re-enable triggers
+--------------------------------------------
+
+ALTER TABLE dams.dams ENABLE TRIGGER ALL;
+ALTER TABLE dams.structure_type_codes ENABLE TRIGGER ALL;
+ALTER TABLE dams.function_codes ENABLE TRIGGER ALL;
+ALTER TABLE dams.size_class_codes ENABLE TRIGGER ALL;
+ALTER TABLE dams.dam_use_codes ENABLE TRIGGER ALL;
+ALTER TABLE dams.operating_status_codes ENABLE TRIGGER ALL;
+ALTER TABLE cabd.barrier_ownership_type_codes ENABLE TRIGGER ALL;
+ALTER TABLE dams.spillway_type_codes ENABLE TRIGGER ALL;
+ALTER TABLE dams.turbine_type_codes ENABLE TRIGGER ALL;
+ALTER TABLE cabd.upstream_passage_type_codes ENABLE TRIGGER ALL;
