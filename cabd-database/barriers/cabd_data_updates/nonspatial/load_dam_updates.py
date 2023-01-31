@@ -211,8 +211,8 @@ UPDATE {sourceTable} SET function_code =
     WHEN function_code = 'hydro - open-cycle pumped storage' THEN (SELECT code FROM dams.function_codes WHERE name_en = 'Hydro - Open-cycle pumped storage')
     WHEN function_code = 'hydro - run-of-river' THEN (SELECT code FROM dams.function_codes WHERE name_en = 'Hydro - Run-of-river')
     WHEN function_code = 'hydro - tidal' THEN (SELECT code FROM dams.function_codes WHERE name_en = 'Hydro - Tidal')
-    WHEN function_code = 'hydro - other' THEN THEN (SELECT code FROM dams.function_codes WHERE name_en = 'Hydro - Other')
-    WHEN function_code = 'other' THEN THEN (SELECT code FROM dams.function_codes WHERE name_en = 'Other')
+    WHEN function_code = 'hydro - other' THEN (SELECT code FROM dams.function_codes WHERE name_en = 'Hydro - Other')
+    WHEN function_code = 'other' THEN (SELECT code FROM dams.function_codes WHERE name_en = 'Other')
     WHEN function_code = 'unknown' THEN (SELECT code FROM dams.function_codes WHERE name_en = 'Unknown')
     WHEN function_code IS NULL THEN NULL
     ELSE function_code END;
@@ -446,7 +446,7 @@ INSERT INTO {damUpdateTable} (
     use_fish_code,
     use_pollution_code,
     use_invasivespecies_code,
-    -- use_conservation_code,
+    --use_conservation_code,
     use_other_code,
     lake_control_code,
     construction_year,
