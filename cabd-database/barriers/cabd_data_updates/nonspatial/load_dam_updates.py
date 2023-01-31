@@ -63,12 +63,14 @@ loadQuery = f"""
 
 --create damUpdateTable with proper format if not exists
 CREATE TABLE IF NOT EXISTS {damUpdateTable} (LIKE {damTable});
+ALTER TABLE {damUpdateTable} ADD COLUMN IF NOT EXISTS id serial PRIMARY KEY;
 ALTER TABLE {damUpdateTable} ADD COLUMN IF NOT EXISTS latitude decimal(8,6);
 ALTER TABLE {damUpdateTable} ADD COLUMN IF NOT EXISTS longitude decimal(9,6);
 ALTER TABLE {damUpdateTable} ADD COLUMN IF NOT EXISTS entry_classification varchar;
 ALTER TABLE {damUpdateTable} ADD COLUMN IF NOT EXISTS data_source_short_name varchar;
 ALTER TABLE {damUpdateTable} ADD COLUMN IF NOT EXISTS reviewer_comments varchar;
 ALTER TABLE {damUpdateTable} ADD COLUMN IF NOT EXISTS update_type varchar;
+ALTER TABLE {damUpdateTable} ADD COLUMN IF NOT EXISTS submitted_on varchar;
 
 ALTER TABLE {damUpdateTable} DROP CONSTRAINT IF EXISTS status_check;
 ALTER TABLE {damUpdateTable} ADD CONSTRAINT status_check CHECK (update_status IN ('needs review', 'ready', 'wait', 'done'));
@@ -423,6 +425,7 @@ INSERT INTO {damUpdateTable} (
     update_status,
     reviewer_comments,
     update_type,
+    submitted_on,
     dam_name_en,
     dam_name_fr,
     waterbody_name_en,
@@ -493,6 +496,7 @@ SELECT
     "status",
     reviewer_comments,
     update_type,
+    submitted_on,
     dam_name_en,
     dam_name_fr,
     waterbody_name_en,

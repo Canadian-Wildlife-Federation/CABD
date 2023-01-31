@@ -106,10 +106,10 @@ ALTER TABLE cabd.data_source DROP CONSTRAINT ds_unique_name;
 """
 
 print("Cleaning CSV and adding records to " + updateTable)
-print(updateQuery)
-# with conn.cursor() as cursor:
-#     cursor.execute(updateQuery)
-# conn.commit()
-# conn.close()
+# print(updateQuery)
+with conn.cursor() as cursor:
+    cursor.execute(updateQuery)
+conn.commit()
+conn.close()
 
-# print("Script complete")
+print("Script complete")
