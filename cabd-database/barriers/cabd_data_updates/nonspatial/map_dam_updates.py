@@ -26,7 +26,7 @@ SET update_status = 'wait'
 
 mappingquery = f"""
 -- add data source ids to the table
-ALTER TABLE {script.damUpdateTable} ADD COLUMN data_source uuid;
+ALTER TABLE {script.damUpdateTable} ADD COLUMN IF NOT EXISTS data_source uuid;
 UPDATE {script.damUpdateTable} AS s SET data_source = d.id FROM cabd.data_source AS d
     WHERE d.name = s.data_source_short_name
     AND s.update_status = 'ready';
@@ -77,7 +77,7 @@ ON CONFLICT DO NOTHING;
 
 --------------------------------------------------------------------------
 -- CHECK FOR ACCURACY
--- this should return 457 (pilot region features only) as of Jan 2023
+-- this should return 456 (pilot region features only) as of Jan 2023
 -- if rows have been added for pilot region features since then, this should return 0
 -- SELECT COUNT(*) FROM dams.dams
 -- WHERE cabd_id NOT IN (SELECT cabd_id FROM dams.dams_feature_source);
@@ -233,14 +233,14 @@ DELETE FROM {script.damTable} WHERE cabd_id IN (SELECT cabd_id FROM {script.damU
 --------------------------------------------------------------------------
 -- CHECK FOR ACCURACY
 -- use counts from entry_classification field to check your work
--- e.g., for status of 'ready' and entry_classification of 'new feature'
+-- e.g., for update_status of 'ready' and entry_classification of 'new feature'
 -- two counts below should match
+--
 -- SELECT COUNT(DISTINCT cabd_id) FROM cabd.audit_log
--- WHERE action = 'INSERT'
--- and tablename = 'dams';
+-- WHERE action = 'INSERT' AND datetime::date = current_date AND tablename = 'dams';
+--
 -- SELECT COUNT(DISTINCT cabd_id) FROM cabd.audit_log
--- WHERE action = 'INSERT'
--- and tablename = 'dams_attribute_source';
+-- WHERE action = 'INSERT' AND datetime::date = current_date AND tablename = 'dams_attribute_source';
 --------------------------------------------------------------------------
 
 -- set records to 'done' and delete from update table
