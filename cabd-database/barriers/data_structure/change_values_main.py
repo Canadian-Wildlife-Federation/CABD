@@ -54,14 +54,14 @@ class MappingScript:
                    password=dbPassword, 
                    port=dbPort)
         
-        print(updatequery)
-        # self.run_mapping_query(updatequery)
+        # print(updatequery)
+        self.run_mapping_query(updatequery)
         
-        # self.conn.commit()
-        # self.conn.close()
+        self.conn.commit()
+        self.conn.close()
         
-        # print("Script complete")
-        # print("Values updated in " + self.damTable + " from " + self.datasetname)
+        print("Script complete")
+        print("Values updated in " + self.damTable + " from " + self.datasetname)
 
     def run_mapping_query(self, updatequery):
         with self.conn.cursor() as cursor:

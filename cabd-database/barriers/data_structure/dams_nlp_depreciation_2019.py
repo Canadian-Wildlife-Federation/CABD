@@ -5,7 +5,7 @@
 # the new values will match the updated codes and values
 # as defined on the CABD documentation site as part of version 1.1 of the dams dataset
 
-# this script is different from the others as all but one structure represent powerhouses
+# this script is different from the others as all structures represent powerhouses
 
 ################################################################################################
 
@@ -34,13 +34,21 @@ CREATE TABLE dams.temp AS (
 
 ALTER TABLE dams.temp ADD COLUMN structure_type_new int2;
 
-UPDATE dams.temp SET structure_type_new = (SELECT code FROM dams.structure_type_codes WHERE name_en = 'Powerhouse')
-WHERE dam_name_en != 'Fall Pond Dam and Powerhouse';
+UPDATE dams.temp SET structure_type_new = (SELECT code FROM dams.structure_type_codes WHERE name_en = 'Powerhouse');
 
-UPDATE dams.temp SET structure_type_new = (SELECT code FROM dams.structure_type_codes WHERE name_en = 'Dam - Gravity')
-WHERE dam_name_en = 'Fall Pond Dam and Powerhouse';
+UPDATE
+    {script.damTable} d
+SET
+    structure_type_code = t.structure_type_new
+FROM
+    {script.damSchema}.temp t
+WHERE
+    d.cabd_id = t.cabd_id
+    AND t.structure_type_new IS NOT NULL
+    AND d.cabd_id IN (
+    SELECT cabd_id FROM {script.damSchema}.temp);
 
---DROP TABLE {script.damSchema}.temp;
+DROP TABLE {script.damSchema}.temp;
 
 """
 

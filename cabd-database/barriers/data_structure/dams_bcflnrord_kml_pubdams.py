@@ -1,6 +1,6 @@
 ################################################################################################
 
-# this script updates function, structure type, and construction material values for dams
+# this script updates structure type and construction material values for dams
 # where the existing values come from the data source specified on line 12
 # the new values will match the updated codes and values
 # as defined on the CABD documentation site as part of version 1.1 of the dams dataset
@@ -12,22 +12,6 @@ import change_values_main as main
 script = main.MappingScript("bcflnrord_kml_pubdams")
 
 updatequery = f"""
-
--------------------------------------------
---function
--------------------------------------------
-
-WITH features AS (
-    SELECT cabd_id FROM {script.damAttributeTable} WHERE function_code_ds = (SELECT id FROM {script.dataSourceTable} WHERE name = '{script.datasetname}')
-)
-
-UPDATE
-    {script.damTable}
-SET
-    function_code = CASE
-    WHEN function_code = 6 THEN (SELECT code FROM dams.function_codes WHERE name_en = 'Saddle')
-    ELSE function_code END;
-WHERE cabd_id IN (SELECT cabd_id FROM features);
 
 -------------------------------------------
 --structure type and construction material
@@ -118,7 +102,7 @@ WHERE
     AND d.cabd_id IN (
     SELECT cabd_id FROM {script.damSchema}.temp);
 
---DROP TABLE {script.damSchema}.temp;
+DROP TABLE {script.damSchema}.temp;
 
 """
 

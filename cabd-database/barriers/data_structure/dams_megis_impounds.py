@@ -95,7 +95,7 @@ WHERE
     AND d.cabd_id IN (
     SELECT cabd_id FROM {script.damSchema}.temp);
 
---DROP TABLE {script.damSchema}.temp;
+DROP TABLE {script.damSchema}.temp;
 
 """
 

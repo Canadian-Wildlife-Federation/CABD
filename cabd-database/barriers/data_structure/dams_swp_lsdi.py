@@ -19,7 +19,7 @@ updatequery = f"""
 
 CREATE TABLE dams.temp AS (
     with features AS (
-        SELECT BID, dam_name, Barr_Type FROM source_data.{script.datasetname}
+        SELECT BID, Barr_Type FROM source_data.{script.datasetname}
     ),
 
     sources AS (
@@ -100,7 +100,7 @@ WHERE
     AND d.cabd_id IN (
     SELECT cabd_id FROM {script.damSchema}.temp);
 
---DROP TABLE {script.damSchema}.temp;
+DROP TABLE {script.damSchema}.temp;
 
 """
 
