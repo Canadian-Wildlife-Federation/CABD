@@ -2,9 +2,7 @@
 --This script updates DAMS only.
 --RUN THIS SCRIPT AFTER FISHWAYS FINAL ATTRIBUTE UPDATE
 
---Ensure various fields are populated with most up-to-date info after mapping from multiple sources
--- BEGIN;
-
+--Ensures various fields are populated with most up-to-date info after mapping from multiple sources
 UPDATE
     dams.dams
 SET 
@@ -18,10 +16,10 @@ SET
     reservoir_present =
     CASE
     WHEN 
-        reservoir_area_skm IS NOT NULL 
+        (reservoir_area_skm IS NOT NULL 
         OR reservoir_depth_m IS NOT NULL
         OR reservoir_name_en IS NOT NULL
-        OR reservoir_name_fr IS NOT NULL
+        OR reservoir_name_fr IS NOT NULL)
         THEN TRUE
     ELSE reservoir_present END;
 
@@ -37,16 +35,12 @@ UPDATE dams.dams SET province_territory_code = 'us' WHERE province_territory_cod
 UPDATE dams.dams AS dams SET nhn_watershed_id = n.id FROM cabd.nhn_workunit AS n WHERE st_contains(n.polygon, dams.snapped_point);
 UPDATE dams.dams AS dams SET municipality = n.csdname FROM cabd.census_subdivisions AS n WHERE st_contains(n.geometry, dams.snapped_point);
 
---TO DO: Add foreign table to reference ecatchment and eflowpath tables, make sure 2 lines below work
+--TO DO: Add foreign table to reference ecatchment and eflowpath tables, make sure code below works
 --Should waterbody name simply be overwritten here as long as we have a value from the chyf networks?
---UPDATE dams.dams AS cabd SET waterbody_name_en = c.name FROM fpoutput.ecatchment AS c WHERE st_contains(c.geometry, cabd.geometry) AND waterbody_name_en IS NOT NULL;
---UPDATE dams.dams AS cabd SET waterbody_name_en = f.name FROM fpoutput.eflowpath AS f WHERE st_contains(f.geometry, cabd.geometry) AND waterbody_name_en IS NOT NULL;
-
--- COMMIT;
+--UPDATE dams.dams AS cabd SET waterbody_name_en = c.name FROM fpoutput.ecatchment AS c WHERE st_contains(c.geometry, cabd.geometry) AND c.name IS NOT NULL;
+--UPDATE dams.dams AS cabd SET waterbody_name_en = f.name FROM fpoutput.eflowpath AS f WHERE st_contains(f.geometry, cabd.geometry) AND f.name IS NOT NULL;
 
 --Change null values to "unknown" for user benefit
--- BEGIN;
-
 UPDATE dams.dams SET structure_type_code = (SELECT code FROM dams.structure_type_codes WHERE name_en = 'Unknown') 
     WHERE structure_type_code IS NULL;
 UPDATE dams.dams SET ownership_type_code = (SELECT code FROM cabd.barrier_ownership_type_codes WHERE name_en = 'Unknown')
@@ -56,15 +50,12 @@ UPDATE dams.dams SET use_code = (SELECT code FROM dams.dam_use_codes WHERE name_
 UPDATE dams.dams SET function_code = (SELECT code FROM dams.function_codes WHERE name_en = 'Unknown')
     WHERE function_code IS NULL;
 UPDATE dams.dams SET turbine_type_code = (SELECT code FROM dams.turbine_type_codes WHERE name_en = 'Unknown')
-    WHERE turbine_type_code IS NULL AND (use_code = 2 OR use_electricity_code IS NOT NULL);
+    WHERE turbine_type_code IS NULL AND (use_code = (SELECT code FROM dams.dam_use_codes WHERE name_en = 'Hydroelectricity') OR use_electricity_code IS NOT NULL);
 UPDATE dams.dams SET operating_status_code = (SELECT code FROM dams.operating_status_codes WHERE name_en = 'Unknown')
     WHERE operating_status_code IS NULL;
 
--- COMMIT;
 
 --Set completeness level code
--- BEGIN;
-
 UPDATE dams.dams SET complete_level_code = 
     CASE 
     WHEN
@@ -86,14 +77,14 @@ UPDATE dams.dams SET complete_level_code =
         THEN (SELECT code FROM dams.dam_complete_level_codes WHERE name_en = 'Complete')
 
     WHEN
-        ((dam_name_en IS NOT NULL OR dam_name_fr IS NOT NULL)
+        (((dam_name_en IS NOT NULL OR dam_name_fr IS NOT NULL)
         AND (waterbody_name_en IS NOT NULL OR waterbody_name_fr IS NOT NULL))
         AND operating_status_code <> (SELECT code FROM dams.operating_status_codes WHERE name_en = 'Unknown')
         AND use_code <> (SELECT code FROM dams.dam_use_codes WHERE name_en = 'Unknown')
         AND function_code <> (SELECT code FROM dams.function_codes WHERE name_en = 'Unknown')
         AND construction_year IS NOT NULL 
         AND height_m IS NOT NULL
-        AND ("owner" IS NOT NULL OR ownership_type_code <> (SELECT code FROM cabd.barrier_ownership_type_codes WHERE name_en = 'Unknown'))
+        AND ("owner" IS NOT NULL OR ownership_type_code <> (SELECT code FROM cabd.barrier_ownership_type_codes WHERE name_en = 'Unknown')))
         THEN (SELECT code FROM dams.dam_complete_level_codes WHERE name_en = 'Moderate')
 
     WHEN
@@ -109,5 +100,3 @@ UPDATE dams.dams SET complete_level_code =
         THEN (SELECT code FROM dams.dam_complete_level_codes WHERE name_en = 'Minimal')
 
     ELSE (SELECT code FROM dams.dam_complete_level_codes WHERE name_en = 'Unverified') END;
-
--- COMMIT;
