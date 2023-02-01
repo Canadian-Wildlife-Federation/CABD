@@ -17,8 +17,8 @@ import sys
 
 ogr = "C:\\OSGeo4W64\\bin\\ogr2ogr.exe"
 
-dbName = "cabd_dev" # change back to production details when ready
-dbHost = "localhost" # change back to production details when ready
+dbName = "cabd"
+dbHost = "cabd-postgres.postgres.database.azure.com"
 dbPort = "5432"
 dbUser = sys.argv[3]
 dbPassword = sys.argv[4]
