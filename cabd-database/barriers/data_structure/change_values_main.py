@@ -2,9 +2,9 @@ import psycopg2 as pg2
 import subprocess
 import sys
 
-dbHost = "localhost" # change this when ready to use on live data
+dbHost = "cabd-postgres.postgres.database.azure.com"
 dbPort = "5432"
-dbName = "cabd_dev" # change this when ready to use on live data
+dbName = "cabd"
 dbUser = sys.argv[2]
 dbPassword = sys.argv[3]
 
