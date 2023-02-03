@@ -142,6 +142,24 @@ def run_qa(conn, workunit):
     with conn.cursor() as cursor:
         cursor.execute(qa2)            
 
+    #SKELETON FLOWPATH OUTSIDE OF WATERBODY
+    qa2 = f"""
+        with fps AS (
+            select DISTINCT a.id, st_pointonsurface(a.geometry) as pnt
+            from {workingSchema}.eflowpath a, {workingSchema}.ecatchment b
+            WHERE a.ef_type = 3 and a.id NOT IN (
+                SELECT a.id from {workingSchema}.eflowpath a, {workingSchema}.ecatchment b
+                WHERE ST_Within(a.geometry, b.geometry)
+	        ))
+
+        insert into {workingSchema}.qaerrors (type, message, geometry)
+        select 'ERROR', 'skeleton flowpath outside waterbody' || ' ' || id, ST_SetSRID(pnt,4617)
+        from fps;
+    """
+    log (qa2)
+    with conn.cursor() as cursor:
+        cursor.execute(qa2)        
+
     #DEGREE 4+ nodes (for review)
     qa2 = f"""
         with nodes as (
