@@ -55,7 +55,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 @RequestMapping("/" + FeatureTypeController.PATH)
 public class FeatureTypeController {
 	
-	public static final String PATH = "features/types";
+	public static final String PATH = FeatureController.PATH + "/types";
 	
 	@Autowired
 	FeatureTypeManager typeManager;

@@ -16,6 +16,9 @@
 package org.refractions.cabd.model;
 
 import java.util.UUID;
+import java.util.regex.Pattern;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
  * Contact model object 
@@ -31,6 +34,9 @@ public class Contact {
 	private String organization;
 	private UUID dataSource;
 	
+	public Contact() {
+		
+	}
 	public Contact(UUID id, String email, String name, String organization, UUID dataSource) {
 		this.id = id;
 		this.email = email;
@@ -68,11 +74,32 @@ public class Contact {
 		this.organization = organization;
 	}
 	
+	@JsonIgnore
 	public UUID getDataSource() {
 		return this.dataSource;
 	}
 	
+	@JsonIgnore
 	public void setDataSource(UUID dataSource) {
 		this.dataSource = dataSource;
+	}
+	
+	/**
+	 * Performs a required and basic regex expression check for
+	 * email and returns error message or null if no error
+	 * 
+	 * @param email
+	 * @return
+	 */
+	public static final String validateEmail(String email) {
+		if (email == null || email.isBlank()) return "Email is required";
+		//regex validate email
+		//https://www.oreilly.com/library/view/regular-expressions-cookbook/9781449327453/ch04s01.html
+		//basic email check
+		String regex = "\\A[A-Z0-9+_.-]+@[A-Z0-9.-]+\\Z";
+		if (!Pattern.compile(regex, Pattern.CASE_INSENSITIVE).matcher(email).find())
+			return "Email is invalid. Must be of the form localpart@domain.com";
+
+		return null;
 	}
 }

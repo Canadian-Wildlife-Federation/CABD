@@ -1,6 +1,5 @@
 package org.refractions.cabd.dao;
 
-import java.sql.Types;
 import java.util.UUID;
 
 import org.refractions.cabd.exceptions.NotFoundException;

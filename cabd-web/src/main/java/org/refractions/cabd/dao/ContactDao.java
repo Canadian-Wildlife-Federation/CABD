@@ -41,6 +41,11 @@ public class ContactDao {
 				rs.getString("name"), rs.getString("organization"), (UUID)rs.getObject("datasource_id")); 
 				
 	
+	/**
+	 * Find a contact with the given email address or return null if none found
+	 * @param email
+	 * @return
+	 */
 	public Contact getContact(String email) {
 		try {
 			String query = "SELECT id, email, name, organization, datasource_id FROM  " + TABLE + " WHERE email = ? ";
@@ -50,6 +55,15 @@ public class ContactDao {
 		}
 	}
 	
+	/**
+	 * Finds the contact with the email and updates the information. If no contact is found
+	 * a new contact is created.
+	 * 
+	 * @param email
+	 * @param name
+	 * @param organization
+	 * @return
+	 */
 	public Contact getUpdateOrCreateContact(String email, String name, String organization) {
 		Contact c = getContact(email);
 		if (c == null) {
