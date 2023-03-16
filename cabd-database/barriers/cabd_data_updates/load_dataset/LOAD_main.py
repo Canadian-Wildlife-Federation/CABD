@@ -4,7 +4,7 @@ import sys
 
 ogr = "C:\\OSGeo4W64\\bin\\ogr2ogr.exe"
 
-dbHost = "cabd-postgres-dev.postgres.database.azure.com"
+dbHost = "cabd-postgres.postgres.database.azure.com"
 dbPort = "5432"
 dbName = "cabd"
 dbUser = sys.argv[2]
