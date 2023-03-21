@@ -270,35 +270,35 @@ drop table if exists nb_Data.temp6;
 drop table if exists nb_Data.temp5;
 drop table if exists nb_Data.temp4;
 drop table if exists nb_Data.temp3;
-drop table if exists nb_data.modelled_crossings_1;
-alter table nb_data.temp1 rename to modelled_crossings_1;
+drop table if exists nb_data.modelled_crossings;
+alter table nb_data.temp1 rename to modelled_crossings;
 
 --add 4617 geometry
-alter table nb_data.modelled_crossings_1 rename column geometry to geometry_m;
-alter table nb_data.modelled_crossings_1 add column geometry geometry(point, 4617);
-update nb_data.modelled_crossings_1 set geometry = st_Transform(geometry_m, 4617);
+alter table nb_data.modelled_crossings rename column geometry to geometry_m;
+alter table nb_data.modelled_crossings add column geometry geometry(point, 4617);
+update nb_data.modelled_crossings set geometry = st_Transform(geometry_m, 4617);
 
 --add stream details
 --in the chyf data; need to copy over the names for modelled crossings
 
-alter table nb_data.modelled_crossings_1 rename column eflowpath_id to chyf_stream_id;
-alter table nb_data.modelled_crossings_1 add column stream_name_id1 uuid;
-alter table nb_data.modelled_crossings_1 add column stream_name_id2 uuid;
-alter table nb_data.modelled_crossings_1 add column stream_name_1 varchar;
-alter table nb_data.modelled_crossings_1 add column stream_name_2 varchar;
-alter table nb_data.modelled_crossings_1 add column strahler_order varchar;
+alter table nb_data.modelled_crossings rename column eflowpath_id to chyf_stream_id;
+alter table nb_data.modelled_crossings add column stream_name_id1 uuid;
+alter table nb_data.modelled_crossings add column stream_name_id2 uuid;
+alter table nb_data.modelled_crossings add column stream_name_1 varchar;
+alter table nb_data.modelled_crossings add column stream_name_2 varchar;
+alter table nb_data.modelled_crossings add column strahler_order varchar;
 
-update nb_data.modelled_crossings_1 set strahler_order = a.strahler_order 
-from nb_data.eflowpath_properties a where a.id = nb_data.modelled_crossings_1.chyf_stream_id;
+update nb_data.modelled_crossings set strahler_order = a.strahler_order 
+from nb_data.eflowpath_properties a where a.id = nb_data.modelled_crossings.chyf_stream_id;
 
-update nb_data.modelled_crossings_1 set stream_name_id1 = a.rivernameid1, stream_name_id2 = a.rivernameid2 
-from nb_data.eflowpath a where a.id = nb_data.modelled_crossings_1.chyf_stream_id;
+update nb_data.modelled_crossings set stream_name_id1 = a.rivernameid1, stream_name_id2 = a.rivernameid2 
+from nb_data.eflowpath a where a.id = nb_data.modelled_crossings.chyf_stream_id;
 
-update nb_data.modelled_crossings_1 set stream_name_1 = a.name_en 
-from nb_data.names a where a.name_id = nb_data.modelled_crossings_1.stream_name_id1;
+update nb_data.modelled_crossings set stream_name_1 = a.name_en 
+from nb_data.names a where a.name_id = nb_data.modelled_crossings.stream_name_id1;
 
-update nb_data.modelled_crossings_1 set stream_name_2 = a.name_en 
-from nb_data.names a where a.name_id = nb_data.modelled_crossings_1.stream_name_id2;
+update nb_data.modelled_crossings set stream_name_2 = a.name_en 
+from nb_data.names a where a.name_id = nb_data.modelled_crossings.stream_name_id2;
 
 
 --add road/rail network details
@@ -307,7 +307,7 @@ from nb_data.names a where a.name_id = nb_data.modelled_crossings_1.stream_name_
 drop table if exists nb_data.temp1;
 create table nb_data.temp1 as 
 select a.cluster_id, b.*
-from nb_data.modelled_crossings_1 a, nb_data.all_crossings  b 
+from nb_data.modelled_crossings a, nb_data.all_crossings  b 
 where a.geometry_m = b.geometry_m;
 
 --deal with duplicates
@@ -436,28 +436,28 @@ where a.fid = nb_data.temp2.canvec_fid
 and nb_data.temp2.canvec_fid is not null;
 
 
-alter table nb_data.modelled_crossings_1 add column transport_feature_source varchar(6);
-alter table nb_data.modelled_crossings_1 add constraint feature_source_ch CHECK (transport_feature_source in ('NBRN', 'CANVEC', 'GNB'));
+alter table nb_data.modelled_crossings add column transport_feature_source varchar(6);
+alter table nb_data.modelled_crossings add constraint feature_source_ch CHECK (transport_feature_source in ('NBRN', 'CANVEC', 'GNB'));
 
-alter table nb_data.modelled_crossings_1 add column transport_feature_type varchar(15);
-alter table nb_data.modelled_crossings_1 add constraint feature_type_ch CHECK (transport_feature_type in ('road', 'resource_road', 'rail', 'trail'));
+alter table nb_data.modelled_crossings add column transport_feature_type varchar(15);
+alter table nb_data.modelled_crossings add constraint feature_type_ch CHECK (transport_feature_type in ('road', 'resource_road', 'rail', 'trail'));
 
-alter table nb_data.modelled_crossings_1 add column transport_feature_name varchar;
+alter table nb_data.modelled_crossings add column transport_feature_name varchar;
 
-alter table nb_data.modelled_crossings_1 add column crossing_type varchar(255);
-alter table nb_data.modelled_crossings_1 add column route_name_1 varchar(100);
-alter table nb_data.modelled_crossings_1 add column route_name_2 varchar(100);
-alter table nb_data.modelled_crossings_1 add column roadway_type varchar(255);
-alter table nb_data.modelled_crossings_1 add column roadway_paved_status varchar(255);
-alter table nb_data.modelled_crossings_1 add column roadway_surface varchar(255);
+alter table nb_data.modelled_crossings add column crossing_type varchar(255);
+alter table nb_data.modelled_crossings add column route_name_1 varchar(100);
+alter table nb_data.modelled_crossings add column route_name_2 varchar(100);
+alter table nb_data.modelled_crossings add column roadway_type varchar(255);
+alter table nb_data.modelled_crossings add column roadway_paved_status varchar(255);
+alter table nb_data.modelled_crossings add column roadway_surface varchar(255);
 
-alter table nb_data.modelled_crossings_1 add column transport_feature_owner  varchar(100);
-alter table nb_data.modelled_crossings_1 add column railway_operator  varchar(100);
-alter table nb_data.modelled_crossings_1 add column num_railway_tracks integer;
-alter table nb_data.modelled_crossings_1 add column transport_feature_condition varchar(16);
-alter table nb_data.modelled_crossings_1 add constraint feature_condition_ch CHECK (transport_feature_condition in ('unknown', 'discontinued', 'operational'));
+alter table nb_data.modelled_crossings add column transport_feature_owner  varchar(100);
+alter table nb_data.modelled_crossings add column railway_operator  varchar(100);
+alter table nb_data.modelled_crossings add column num_railway_tracks integer;
+alter table nb_data.modelled_crossings add column transport_feature_condition varchar(16);
+alter table nb_data.modelled_crossings add constraint feature_condition_ch CHECK (transport_feature_condition in ('unknown', 'discontinued', 'operational'));
 
-update nb_data.modelled_crossings_1 set 
+update nb_data.modelled_crossings set 
 transport_feature_source = a.transport_feature_source,
 transport_feature_type = a.transport_feature_type,
 transport_feature_name = a.transport_feature_name,
@@ -471,7 +471,11 @@ transport_feature_owner = a.transport_feature_owner,
 railway_operator = a.railway_operator,
 num_railway_tracks = a.num_railway_tracks,
 transport_feature_condition = a.transport_feature_condition
-from nb_data.temp2 a where a.cluster_id = nb_data.modelled_Crossings_1.cluster_id; 
+from nb_data.temp2 a where a.cluster_id = nb_data.modelled_crossings.cluster_id; 
+
+alter table nb_data.modelled_crossings add column modelled_crossing_id uuid;
+update nb_data.modelled_crossings set modelled_crossing_id = gen_random_uuid();
+alter table nb_data.modelled_crossings add primary key (modelled_crossing_id);
 
 drop table if exists nb_Data.temp2;
 drop table if exists nb_Data.temp1;
