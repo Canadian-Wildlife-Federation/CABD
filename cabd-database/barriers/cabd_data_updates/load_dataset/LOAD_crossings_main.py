@@ -41,8 +41,8 @@ class LoadingScript:
         self.tidalSites = self.workingSchema + ".tidal_sites_" + datasetname
         self.tidalStructures = self.workingSchema + ".tidal_structures_" + datasetname        
 
-        self.materialMappingTable = self.workingSchema + "." + self.materialMapping
-        self.physicalBarrierMappingTable = self.workingSchema + "." + self.physicalBarrierMapping
+        self.materialMappingTable = self.workingSchema + "." + self.materialMapping # these need to already be set up
+        self.physicalBarrierMappingTable = self.workingSchema + "." + self.physicalBarrierMapping # these need to already be set up
         
         self.datafile = sys.argv[1]
         
@@ -62,19 +62,20 @@ class LoadingScript:
         self.initdb()
         self.load_data(self.datafile)
         print("Splitting by site type and mapping attributes to data model...")
+        # print(loadquery)
         self.run_load_query(loadquery)
         
         self.conn.commit()
         self.conn.close()
         
         print("Script complete")
-        print("Data loaded into schemas: " + self.sourceSchema + " (original data), " + self.workingSchema + " (mapped data)")
+        print("Data loaded into following schemas: " + self.sourceSchema + " (original data), " + self.workingSchema + " (mapped data)")
 
     #load data from geopackage file into the database
     def load_data(self, filename):
         #load data using ogr
         orgDb="dbname='" + dbName + "' host='"+ dbHost+"' port='"+dbPort+"' user='"+dbUser+"' password='"+ dbPassword+"'"
-        pycmd = '"' + ogr + '" -f "PostgreSQL" PG:"' + orgDb + '" -nln "' + self.sourceTable + '" -lco GEOMETRY_NAME=geometry -nlt PROMOTE_TO_MULTI ' + '"' + filename + '"'
+        pycmd = '"' + ogr + '" -f "PostgreSQL" PG:"' + orgDb + '" -nln "' + self.sourceTable + '" -lco GEOMETRY_NAME=geometry -nlt POINT ' + '"' + filename + '"'
         print(pycmd)
         subprocess.run(pycmd)
 
