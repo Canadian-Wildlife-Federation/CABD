@@ -2,7 +2,7 @@ import psycopg2 as pg2
 import subprocess
 import sys
 
-ogr = "C:\\OSGeo4W64\\bin\\ogr2ogr.exe"
+ogr = "C:\\Program Files\\GDAL\\ogr2ogr.exe"
 
 dbHost = "cabd-postgres.postgres.database.azure.com"
 dbPort = "5432"

@@ -1692,8 +1692,6 @@ CREATE TABLE featurecopy.temp_tidal_structure_1 AS (
         source.structure_substrate_matches_stream,
         source.structure_substrate_type,
         source.structure_substrate_coverage,
-        source.water_depth_matches_stream,
-        source.water_velocity_matches_stream,
         source.structure_material,
         source.outlet_shape,
         source.outlet_armouring,
@@ -1743,8 +1741,6 @@ ALTER TABLE featurecopy.temp_tidal_structure_1
     ADD COLUMN substrate_type_code integer,
     ADD COLUMN substrate_coverage_code integer,
     ADD COLUMN physical_barrier_severity_code integer,
-    ADD COLUMN water_depth_matches_stream_code integer,
-    ADD COLUMN water_velocity_matches_stream_code integer,
     ADD COLUMN dry_passage boolean,
     ADD COLUMN height_above_dry_passage_m numeric,
     ADD COLUMN structure_comments character varying(100000),
@@ -1856,27 +1852,6 @@ UPDATE featurecopy.temp_tidal_structure_1 SET physical_barrier_severity_code =
     WHEN severity = 'severe' THEN (SELECT code FROM stream_crossings.physical_barrier_severity_codes WHERE name_en = 'severe')
     WHEN severity = 'none' THEN (SELECT code FROM stream_crossings.physical_barrier_severity_codes WHERE name_en = 'none')
     ELSE NULL END;
-UPDATE featurecopy.temp_tidal_structure_1 SET water_depth_matches_stream_code =
-    CASE
-    WHEN water_depth_matches_stream = 'dry' THEN (SELECT code FROM stream_crossings.water_depth_matches_stream_codes WHERE name_en = 'dry')
-    WHEN water_depth_matches_stream = 'no_deep' THEN (SELECT code FROM stream_crossings.water_depth_matches_stream_codes WHERE name_en = 'no-deeper')
-    WHEN water_depth_matches_stream = 'no_deeper' THEN (SELECT code FROM stream_crossings.water_depth_matches_stream_codes WHERE name_en = 'no-deeper')
-    WHEN water_depth_matches_stream = 'no_shallow' THEN (SELECT code FROM stream_crossings.water_depth_matches_stream_codes WHERE name_en = 'no-shallower')
-    WHEN water_depth_matches_stream = 'no_shallower' THEN (SELECT code FROM stream_crossings.water_depth_matches_stream_codes WHERE name_en = 'no-shallower')
-    WHEN water_depth_matches_stream = 'unknown' THEN (SELECT code FROM stream_crossings.water_depth_matches_stream_codes WHERE name_en = 'unknown')
-    WHEN water_depth_matches_stream = 'yes' THEN (SELECT code FROM stream_crossings.water_depth_matches_stream_codes WHERE name_en = 'yes')
-    ELSE NULL END;
-UPDATE featurecopy.temp_tidal_structure_1 SET water_velocity_matches_stream_code =
-    CASE 
-    WHEN water_velocity_matches_stream = 'dry' THEN (SELECT code FROM stream_crossings.water_velocity_matches_stream_codes WHERE name_en = 'dry')
-    WHEN water_velocity_matches_stream = 'dry_' THEN (SELECT code FROM stream_crossings.water_velocity_matches_stream_codes WHERE name_en = 'dry')
-    WHEN water_velocity_matches_stream = 'no_fast' THEN (SELECT code FROM stream_crossings.water_velocity_matches_stream_codes WHERE name_en = 'no-faster')
-    WHEN water_velocity_matches_stream = 'no_faster' THEN (SELECT code FROM stream_crossings.water_velocity_matches_stream_codes WHERE name_en = 'no-faster')
-    WHEN water_velocity_matches_stream = 'no_slow' THEN (SELECT code FROM stream_crossings.water_velocity_matches_stream_codes WHERE name_en = 'no-slower')
-    WHEN water_velocity_matches_stream = 'no_slower' THEN (SELECT code FROM stream_crossings.water_velocity_matches_stream_codes WHERE name_en = 'no-slower')
-    WHEN water_velocity_matches_stream = 'unknown' THEN (SELECT code FROM stream_crossings.water_velocity_matches_stream_codes WHERE name_en = 'unknown')
-    WHEN water_velocity_matches_stream = 'yes' THEN (SELECT code FROM stream_crossings.water_velocity_matches_stream_codes WHERE name_en = 'yes')
-    ELSE NULL END;
 UPDATE featurecopy.temp_tidal_structure_1 SET dry_passage = 
     CASE
     WHEN dry_passage_through_structure = 'yes' THEN true
@@ -1952,8 +1927,6 @@ CREATE TABLE featurecopy.temp_tidal_structure_2 AS (
         source.structure_substrate_matches_stream_1 AS structure_substrate_matches_stream,
         source.structure_substrate_type_1 AS structure_substrate_type,
         source.structure_substrate_coverage_1 AS structure_substrate_coverage,
-        source.water_depth_matches_stream_1 AS water_depth_matches_stream,
-        source.water_velocity_matches_stream_1 AS water_velocity_matches_stream,
         source.structure_material_1 AS structure_material,
         source.outlet_shape_1 AS outlet_shape,
         source.outlet_armouring_1 AS outlet_armouring,
@@ -2003,8 +1976,6 @@ ALTER TABLE featurecopy.temp_tidal_structure_2
     ADD COLUMN substrate_type_code integer,
     ADD COLUMN substrate_coverage_code integer,
     ADD COLUMN physical_barrier_severity_code integer,
-    ADD COLUMN water_depth_matches_stream_code integer,
-    ADD COLUMN water_velocity_matches_stream_code integer,
     ADD COLUMN dry_passage boolean,
     ADD COLUMN height_above_dry_passage_m numeric,
     ADD COLUMN structure_comments character varying(100000);
@@ -2115,27 +2086,6 @@ UPDATE featurecopy.temp_tidal_structure_2 SET physical_barrier_severity_code =
     WHEN severity = 'severe' THEN (SELECT code FROM stream_crossings.physical_barrier_severity_codes WHERE name_en = 'severe')
     WHEN severity = 'none' THEN (SELECT code FROM stream_crossings.physical_barrier_severity_codes WHERE name_en = 'none')
     ELSE NULL END;
-UPDATE featurecopy.temp_tidal_structure_2 SET water_depth_matches_stream_code =
-    CASE
-    WHEN water_depth_matches_stream = 'dry' THEN (SELECT code FROM stream_crossings.water_depth_matches_stream_codes WHERE name_en = 'dry')
-    WHEN water_depth_matches_stream = 'no_deep' THEN (SELECT code FROM stream_crossings.water_depth_matches_stream_codes WHERE name_en = 'no-deeper')
-    WHEN water_depth_matches_stream = 'no_deeper' THEN (SELECT code FROM stream_crossings.water_depth_matches_stream_codes WHERE name_en = 'no-deeper')
-    WHEN water_depth_matches_stream = 'no_shallow' THEN (SELECT code FROM stream_crossings.water_depth_matches_stream_codes WHERE name_en = 'no-shallower')
-    WHEN water_depth_matches_stream = 'no_shallower' THEN (SELECT code FROM stream_crossings.water_depth_matches_stream_codes WHERE name_en = 'no-shallower')
-    WHEN water_depth_matches_stream = 'unknown' THEN (SELECT code FROM stream_crossings.water_depth_matches_stream_codes WHERE name_en = 'unknown')
-    WHEN water_depth_matches_stream = 'yes' THEN (SELECT code FROM stream_crossings.water_depth_matches_stream_codes WHERE name_en = 'yes')
-    ELSE NULL END;
-UPDATE featurecopy.temp_tidal_structure_2 SET water_velocity_matches_stream_code =
-    CASE 
-    WHEN water_velocity_matches_stream = 'dry' THEN (SELECT code FROM stream_crossings.water_velocity_matches_stream_codes WHERE name_en = 'dry')
-    WHEN water_velocity_matches_stream = 'dry_' THEN (SELECT code FROM stream_crossings.water_velocity_matches_stream_codes WHERE name_en = 'dry')
-    WHEN water_velocity_matches_stream = 'no_fast' THEN (SELECT code FROM stream_crossings.water_velocity_matches_stream_codes WHERE name_en = 'no-faster')
-    WHEN water_velocity_matches_stream = 'no_faster' THEN (SELECT code FROM stream_crossings.water_velocity_matches_stream_codes WHERE name_en = 'no-faster')
-    WHEN water_velocity_matches_stream = 'no_slow' THEN (SELECT code FROM stream_crossings.water_velocity_matches_stream_codes WHERE name_en = 'no-slower')
-    WHEN water_velocity_matches_stream = 'no_slower' THEN (SELECT code FROM stream_crossings.water_velocity_matches_stream_codes WHERE name_en = 'no-slower')
-    WHEN water_velocity_matches_stream = 'unknown' THEN (SELECT code FROM stream_crossings.water_velocity_matches_stream_codes WHERE name_en = 'unknown')
-    WHEN water_velocity_matches_stream = 'yes' THEN (SELECT code FROM stream_crossings.water_velocity_matches_stream_codes WHERE name_en = 'yes')
-    ELSE NULL END;
 UPDATE featurecopy.temp_tidal_structure_2 SET dry_passage = 
     CASE
     WHEN dry_passage_through_structure = 'yes' THEN true
@@ -2207,8 +2157,6 @@ CREATE TABLE featurecopy.temp_tidal_structure_3 AS (
         source.structure_substrate_matches_stream_2 AS structure_substrate_matches_stream,
         source.structure_substrate_type_2 AS structure_substrate_type,
         source.structure_substrate_coverage_2 AS structure_substrate_coverage,
-        source.water_depth_matches_stream_2 AS water_depth_matches_stream,
-        source.water_velocity_matches_stream_2 AS water_velocity_matches_stream,
         source.structure_material_2 AS structure_material,
         source.outlet_shape_2 AS outlet_shape,
         source.outlet_armouring_2 AS outlet_armouring,
@@ -2258,8 +2206,6 @@ ALTER TABLE featurecopy.temp_tidal_structure_3
     ADD COLUMN substrate_type_code integer,
     ADD COLUMN substrate_coverage_code integer,
     ADD COLUMN physical_barrier_severity_code integer,
-    ADD COLUMN water_depth_matches_stream_code integer,
-    ADD COLUMN water_velocity_matches_stream_code integer,
     ADD COLUMN dry_passage boolean,
     ADD COLUMN height_above_dry_passage_m numeric,
     ADD COLUMN structure_comments character varying(100000);
@@ -2370,27 +2316,6 @@ UPDATE featurecopy.temp_tidal_structure_3 SET physical_barrier_severity_code =
     WHEN severity = 'severe' THEN (SELECT code FROM stream_crossings.physical_barrier_severity_codes WHERE name_en = 'severe')
     WHEN severity = 'none' THEN (SELECT code FROM stream_crossings.physical_barrier_severity_codes WHERE name_en = 'none')
     ELSE NULL END;
-UPDATE featurecopy.temp_tidal_structure_3 SET water_depth_matches_stream_code =
-    CASE
-    WHEN water_depth_matches_stream = 'dry' THEN (SELECT code FROM stream_crossings.water_depth_matches_stream_codes WHERE name_en = 'dry')
-    WHEN water_depth_matches_stream = 'no_deep' THEN (SELECT code FROM stream_crossings.water_depth_matches_stream_codes WHERE name_en = 'no-deeper')
-    WHEN water_depth_matches_stream = 'no_deeper' THEN (SELECT code FROM stream_crossings.water_depth_matches_stream_codes WHERE name_en = 'no-deeper')
-    WHEN water_depth_matches_stream = 'no_shallow' THEN (SELECT code FROM stream_crossings.water_depth_matches_stream_codes WHERE name_en = 'no-shallower')
-    WHEN water_depth_matches_stream = 'no_shallower' THEN (SELECT code FROM stream_crossings.water_depth_matches_stream_codes WHERE name_en = 'no-shallower')
-    WHEN water_depth_matches_stream = 'unknown' THEN (SELECT code FROM stream_crossings.water_depth_matches_stream_codes WHERE name_en = 'unknown')
-    WHEN water_depth_matches_stream = 'yes' THEN (SELECT code FROM stream_crossings.water_depth_matches_stream_codes WHERE name_en = 'yes')
-    ELSE NULL END;
-UPDATE featurecopy.temp_tidal_structure_3 SET water_velocity_matches_stream_code =
-    CASE 
-    WHEN water_velocity_matches_stream = 'dry' THEN (SELECT code FROM stream_crossings.water_velocity_matches_stream_codes WHERE name_en = 'dry')
-    WHEN water_velocity_matches_stream = 'dry_' THEN (SELECT code FROM stream_crossings.water_velocity_matches_stream_codes WHERE name_en = 'dry')
-    WHEN water_velocity_matches_stream = 'no_fast' THEN (SELECT code FROM stream_crossings.water_velocity_matches_stream_codes WHERE name_en = 'no-faster')
-    WHEN water_velocity_matches_stream = 'no_faster' THEN (SELECT code FROM stream_crossings.water_velocity_matches_stream_codes WHERE name_en = 'no-faster')
-    WHEN water_velocity_matches_stream = 'no_slow' THEN (SELECT code FROM stream_crossings.water_velocity_matches_stream_codes WHERE name_en = 'no-slower')
-    WHEN water_velocity_matches_stream = 'no_slower' THEN (SELECT code FROM stream_crossings.water_velocity_matches_stream_codes WHERE name_en = 'no-slower')
-    WHEN water_velocity_matches_stream = 'unknown' THEN (SELECT code FROM stream_crossings.water_velocity_matches_stream_codes WHERE name_en = 'unknown')
-    WHEN water_velocity_matches_stream = 'yes' THEN (SELECT code FROM stream_crossings.water_velocity_matches_stream_codes WHERE name_en = 'yes')
-    ELSE NULL END;
 UPDATE featurecopy.temp_tidal_structure_3 SET dry_passage = 
     CASE
     WHEN dry_passage_through_structure = 'yes' THEN true
@@ -2462,8 +2387,6 @@ CREATE TABLE featurecopy.temp_tidal_structure_4 AS (
         source.structure_substrate_matches_stream_3 AS structure_substrate_matches_stream,
         source.structure_substrate_type_3 AS structure_substrate_type,
         source.structure_substrate_coverage_3 AS structure_substrate_coverage,
-        source.water_depth_matches_stream_3 AS water_depth_matches_stream,
-        source.water_velocity_matches_stream_3 AS water_velocity_matches_stream,
         source.structure_material_3 AS structure_material,
         source.outlet_shape_3 AS outlet_shape,
         source.outlet_armouring_3 AS outlet_armouring,
@@ -2513,8 +2436,6 @@ ALTER TABLE featurecopy.temp_tidal_structure_4
     ADD COLUMN substrate_type_code integer,
     ADD COLUMN substrate_coverage_code integer,
     ADD COLUMN physical_barrier_severity_code integer,
-    ADD COLUMN water_depth_matches_stream_code integer,
-    ADD COLUMN water_velocity_matches_stream_code integer,
     ADD COLUMN dry_passage boolean,
     ADD COLUMN height_above_dry_passage_m numeric,
     ADD COLUMN structure_comments character varying(100000);
@@ -2625,27 +2546,6 @@ UPDATE featurecopy.temp_tidal_structure_4 SET physical_barrier_severity_code =
     WHEN severity = 'severe' THEN (SELECT code FROM stream_crossings.physical_barrier_severity_codes WHERE name_en = 'severe')
     WHEN severity = 'none' THEN (SELECT code FROM stream_crossings.physical_barrier_severity_codes WHERE name_en = 'none')
     ELSE NULL END;
-UPDATE featurecopy.temp_tidal_structure_4 SET water_depth_matches_stream_code =
-    CASE
-    WHEN water_depth_matches_stream = 'dry' THEN (SELECT code FROM stream_crossings.water_depth_matches_stream_codes WHERE name_en = 'dry')
-    WHEN water_depth_matches_stream = 'no_deep' THEN (SELECT code FROM stream_crossings.water_depth_matches_stream_codes WHERE name_en = 'no-deeper')
-    WHEN water_depth_matches_stream = 'no_deeper' THEN (SELECT code FROM stream_crossings.water_depth_matches_stream_codes WHERE name_en = 'no-deeper')
-    WHEN water_depth_matches_stream = 'no_shallow' THEN (SELECT code FROM stream_crossings.water_depth_matches_stream_codes WHERE name_en = 'no-shallower')
-    WHEN water_depth_matches_stream = 'no_shallower' THEN (SELECT code FROM stream_crossings.water_depth_matches_stream_codes WHERE name_en = 'no-shallower')
-    WHEN water_depth_matches_stream = 'unknown' THEN (SELECT code FROM stream_crossings.water_depth_matches_stream_codes WHERE name_en = 'unknown')
-    WHEN water_depth_matches_stream = 'yes' THEN (SELECT code FROM stream_crossings.water_depth_matches_stream_codes WHERE name_en = 'yes')
-    ELSE NULL END;
-UPDATE featurecopy.temp_tidal_structure_4 SET water_velocity_matches_stream_code =
-    CASE 
-    WHEN water_velocity_matches_stream = 'dry' THEN (SELECT code FROM stream_crossings.water_velocity_matches_stream_codes WHERE name_en = 'dry')
-    WHEN water_velocity_matches_stream = 'dry_' THEN (SELECT code FROM stream_crossings.water_velocity_matches_stream_codes WHERE name_en = 'dry')
-    WHEN water_velocity_matches_stream = 'no_fast' THEN (SELECT code FROM stream_crossings.water_velocity_matches_stream_codes WHERE name_en = 'no-faster')
-    WHEN water_velocity_matches_stream = 'no_faster' THEN (SELECT code FROM stream_crossings.water_velocity_matches_stream_codes WHERE name_en = 'no-faster')
-    WHEN water_velocity_matches_stream = 'no_slow' THEN (SELECT code FROM stream_crossings.water_velocity_matches_stream_codes WHERE name_en = 'no-slower')
-    WHEN water_velocity_matches_stream = 'no_slower' THEN (SELECT code FROM stream_crossings.water_velocity_matches_stream_codes WHERE name_en = 'no-slower')
-    WHEN water_velocity_matches_stream = 'unknown' THEN (SELECT code FROM stream_crossings.water_velocity_matches_stream_codes WHERE name_en = 'unknown')
-    WHEN water_velocity_matches_stream = 'yes' THEN (SELECT code FROM stream_crossings.water_velocity_matches_stream_codes WHERE name_en = 'yes')
-    ELSE NULL END;
 UPDATE featurecopy.temp_tidal_structure_4 SET dry_passage = 
     CASE
     WHEN dry_passage_through_structure = 'yes' THEN true
@@ -2717,8 +2617,6 @@ CREATE TABLE featurecopy.temp_tidal_structure_5 AS (
         source.stucture_substrate_matches_stream_4 AS structure_substrate_matches_stream,
         source.structure_substrate_type_4 AS structure_substrate_type,
         source.structure_substrate_coverage_4 AS structure_substrate_coverage,
-        source.water_depth_matches_stream_4 AS water_depth_matches_stream,
-        source.water_velocity_matches_stream_4 AS water_velocity_matches_stream,
         source.structure_material_4 AS structure_material,
         source.outlet_shape_4 AS outlet_shape,
         source.outlet_armouring_4 AS outlet_armouring,
@@ -2768,8 +2666,6 @@ ALTER TABLE featurecopy.temp_tidal_structure_5
     ADD COLUMN substrate_type_code integer,
     ADD COLUMN substrate_coverage_code integer,
     ADD COLUMN physical_barrier_severity_code integer,
-    ADD COLUMN water_depth_matches_stream_code integer,
-    ADD COLUMN water_velocity_matches_stream_code integer,
     ADD COLUMN dry_passage boolean,
     ADD COLUMN height_above_dry_passage_m numeric,
     ADD COLUMN structure_comments character varying(100000);
@@ -2880,27 +2776,6 @@ UPDATE featurecopy.temp_tidal_structure_5 SET physical_barrier_severity_code =
     WHEN severity = 'severe' THEN (SELECT code FROM stream_crossings.physical_barrier_severity_codes WHERE name_en = 'severe')
     WHEN severity = 'none' THEN (SELECT code FROM stream_crossings.physical_barrier_severity_codes WHERE name_en = 'none')
     ELSE NULL END;
-UPDATE featurecopy.temp_tidal_structure_5 SET water_depth_matches_stream_code =
-    CASE
-    WHEN water_depth_matches_stream = 'dry' THEN (SELECT code FROM stream_crossings.water_depth_matches_stream_codes WHERE name_en = 'dry')
-    WHEN water_depth_matches_stream = 'no_deep' THEN (SELECT code FROM stream_crossings.water_depth_matches_stream_codes WHERE name_en = 'no-deeper')
-    WHEN water_depth_matches_stream = 'no_deeper' THEN (SELECT code FROM stream_crossings.water_depth_matches_stream_codes WHERE name_en = 'no-deeper')
-    WHEN water_depth_matches_stream = 'no_shallow' THEN (SELECT code FROM stream_crossings.water_depth_matches_stream_codes WHERE name_en = 'no-shallower')
-    WHEN water_depth_matches_stream = 'no_shallower' THEN (SELECT code FROM stream_crossings.water_depth_matches_stream_codes WHERE name_en = 'no-shallower')
-    WHEN water_depth_matches_stream = 'unknown' THEN (SELECT code FROM stream_crossings.water_depth_matches_stream_codes WHERE name_en = 'unknown')
-    WHEN water_depth_matches_stream = 'yes' THEN (SELECT code FROM stream_crossings.water_depth_matches_stream_codes WHERE name_en = 'yes')
-    ELSE NULL END;
-UPDATE featurecopy.temp_tidal_structure_5 SET water_velocity_matches_stream_code =
-    CASE 
-    WHEN water_velocity_matches_stream = 'dry' THEN (SELECT code FROM stream_crossings.water_velocity_matches_stream_codes WHERE name_en = 'dry')
-    WHEN water_velocity_matches_stream = 'dry_' THEN (SELECT code FROM stream_crossings.water_velocity_matches_stream_codes WHERE name_en = 'dry')
-    WHEN water_velocity_matches_stream = 'no_fast' THEN (SELECT code FROM stream_crossings.water_velocity_matches_stream_codes WHERE name_en = 'no-faster')
-    WHEN water_velocity_matches_stream = 'no_faster' THEN (SELECT code FROM stream_crossings.water_velocity_matches_stream_codes WHERE name_en = 'no-faster')
-    WHEN water_velocity_matches_stream = 'no_slow' THEN (SELECT code FROM stream_crossings.water_velocity_matches_stream_codes WHERE name_en = 'no-slower')
-    WHEN water_velocity_matches_stream = 'no_slower' THEN (SELECT code FROM stream_crossings.water_velocity_matches_stream_codes WHERE name_en = 'no-slower')
-    WHEN water_velocity_matches_stream = 'unknown' THEN (SELECT code FROM stream_crossings.water_velocity_matches_stream_codes WHERE name_en = 'unknown')
-    WHEN water_velocity_matches_stream = 'yes' THEN (SELECT code FROM stream_crossings.water_velocity_matches_stream_codes WHERE name_en = 'yes')
-    ELSE NULL END;
 UPDATE featurecopy.temp_tidal_structure_5 SET dry_passage = 
     CASE
     WHEN dry_passage_through_structure = 'yes' THEN true
@@ -2960,6 +2835,7 @@ CREATE TABLE {script.tidalStructures} AS TABLE stream_crossings.tidal_structures
 
 INSERT INTO {script.tidalStructures}
     (site_id,
+    structure_id,
     data_source_id,
     cabd_assessment_id,
     structure_number,
@@ -2984,8 +2860,6 @@ INSERT INTO {script.tidalStructures}
     substrate_type_code,
     substrate_coverage_code,
     physical_barrier_severity_code,
-    water_depth_matches_stream_code,
-    water_velocity_matches_stream_code,
     dry_passage,
     height_above_dry_passage_m,
     structure_comments,
@@ -2993,6 +2867,7 @@ INSERT INTO {script.tidalStructures}
     )
 SELECT
     site_id,
+    structure_id,
     data_source_id,
     cabd_assessment_id,
     structure_number,
@@ -3017,8 +2892,6 @@ SELECT
     substrate_type_code,
     substrate_coverage_code,
     physical_barrier_severity_code,
-    water_depth_matches_stream_code,
-    water_velocity_matches_stream_code,
     dry_passage,
     height_above_dry_passage_m,
     structure_comments,
@@ -3027,6 +2900,7 @@ FROM featurecopy.temp_tidal_structure_1;
 
 INSERT INTO {script.tidalStructures}
     (site_id,
+    structure_id,
     data_source_id,
     cabd_assessment_id,
     structure_number,
@@ -3051,14 +2925,13 @@ INSERT INTO {script.tidalStructures}
     substrate_type_code,
     substrate_coverage_code,
     physical_barrier_severity_code,
-    water_depth_matches_stream_code,
-    water_velocity_matches_stream_code,
     dry_passage,
     height_above_dry_passage_m,
     structure_comments
     )
 SELECT
     site_id,
+    structure_id,
     data_source_id,
     cabd_assessment_id,
     structure_number,
@@ -3083,8 +2956,6 @@ SELECT
     substrate_type_code,
     substrate_coverage_code,
     physical_barrier_severity_code,
-    water_depth_matches_stream_code,
-    water_velocity_matches_stream_code,
     dry_passage,
     height_above_dry_passage_m,
     structure_comments
@@ -3092,6 +2963,7 @@ FROM featurecopy.temp_tidal_structure_2;
 
 INSERT INTO {script.tidalStructures}
     (site_id,
+    structure_id,
     data_source_id,
     cabd_assessment_id,
     structure_number,
@@ -3116,14 +2988,13 @@ INSERT INTO {script.tidalStructures}
     substrate_type_code,
     substrate_coverage_code,
     physical_barrier_severity_code,
-    water_depth_matches_stream_code,
-    water_velocity_matches_stream_code,
     dry_passage,
     height_above_dry_passage_m,
     structure_comments
     )
 SELECT
     site_id,
+    structure_id,
     data_source_id,
     cabd_assessment_id,
     structure_number,
@@ -3148,8 +3019,6 @@ SELECT
     substrate_type_code,
     substrate_coverage_code,
     physical_barrier_severity_code,
-    water_depth_matches_stream_code,
-    water_velocity_matches_stream_code,
     dry_passage,
     height_above_dry_passage_m,
     structure_comments
@@ -3157,6 +3026,7 @@ FROM featurecopy.temp_tidal_structure_3;
 
 INSERT INTO {script.tidalStructures}
     (site_id,
+    structure_id,
     data_source_id,
     cabd_assessment_id,
     structure_number,
@@ -3181,14 +3051,13 @@ INSERT INTO {script.tidalStructures}
     substrate_type_code,
     substrate_coverage_code,
     physical_barrier_severity_code,
-    water_depth_matches_stream_code,
-    water_velocity_matches_stream_code,
     dry_passage,
     height_above_dry_passage_m,
     structure_comments
     )
 SELECT
     site_id,
+    structure_id,
     data_source_id,
     cabd_assessment_id,
     structure_number,
@@ -3213,8 +3082,6 @@ SELECT
     substrate_type_code,
     substrate_coverage_code,
     physical_barrier_severity_code,
-    water_depth_matches_stream_code,
-    water_velocity_matches_stream_code,
     dry_passage,
     height_above_dry_passage_m,
     structure_comments
@@ -3222,6 +3089,7 @@ FROM featurecopy.temp_tidal_structure_4;
 
 INSERT INTO {script.tidalStructures}
     (site_id,
+    structure_id,
     data_source_id,
     cabd_assessment_id,
     structure_number,
@@ -3246,14 +3114,13 @@ INSERT INTO {script.tidalStructures}
     substrate_type_code,
     substrate_coverage_code,
     physical_barrier_severity_code,
-    water_depth_matches_stream_code,
-    water_velocity_matches_stream_code,
     dry_passage,
     height_above_dry_passage_m,
     structure_comments
     )
 SELECT
     site_id,
+    structure_id,
     data_source_id,
     cabd_assessment_id,
     structure_number,
@@ -3278,8 +3145,6 @@ SELECT
     substrate_type_code,
     substrate_coverage_code,
     physical_barrier_severity_code,
-    water_depth_matches_stream_code,
-    water_velocity_matches_stream_code,
     dry_passage,
     height_above_dry_passage_m,
     structure_comments
