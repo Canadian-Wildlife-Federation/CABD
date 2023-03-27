@@ -222,8 +222,8 @@ ALTER TABLE {script.nonTidalStructures} DROP COLUMN substrate_type;
 
 UPDATE {script.nonTidalStructures} SET water_velocity_matches_stream_code = (SELECT code FROM stream_crossings.water_velocity_matches_stream_codes WHERE name_en = 'unknown') WHERE "velocity (m3/s)" ~ '[0-9]+';
 
-DELETE FROM {script.physicalBarrierMappingTable} WHERE cabd_assessment_id IN (SELECT cabd_assessment_id FROM {script.nonTidalStructures});
-INSERT INTO {script.physicalBarrierMappingTable} (structure_id, physical_barrier_code, cabd_assessment_id)
+DELETE FROM {script.nonTidalPhysicalBarrierMappingTable} WHERE cabd_assessment_id IN (SELECT cabd_assessment_id FROM {script.nonTidalStructures});
+INSERT INTO {script.nonTidalPhysicalBarrierMappingTable} (structure_id, physical_barrier_code, cabd_assessment_id)
     SELECT structure_id,
     CASE
     WHEN "obstructions/upstream debris" = 'none' THEN (SELECT code FROM stream_crossings.physical_barrier_codes WHERE name_en = 'none')
@@ -233,13 +233,13 @@ INSERT INTO {script.physicalBarrierMappingTable} (structure_id, physical_barrier
     cabd_assessment_id
     FROM {script.nonTidalStructures}
     WHERE "obstructions/upstream debris" IS NOT NULL;
-INSERT INTO {script.physicalBarrierMappingTable} (structure_id, physical_barrier_code, cabd_assessment_id)
+INSERT INTO {script.nonTidalPhysicalBarrierMappingTable} (structure_id, physical_barrier_code, cabd_assessment_id)
     SELECT structure_id,
     (SELECT code FROM stream_crossings.physical_barrier_codes WHERE name_en = 'dry') AS physical_barrier_code,
     cabd_assessment_id
     FROM {script.nonTidalStructures}
     WHERE "outflow water depth in culvert (cm)" ~ '[0-9]+' AND "outflow water depth in culvert (cm)"::numeric < 1;
-INSERT INTO {script.physicalBarrierMappingTable} (structure_id, physical_barrier_code, cabd_assessment_id)
+INSERT INTO {script.nonTidalPhysicalBarrierMappingTable} (structure_id, physical_barrier_code, cabd_assessment_id)
     SELECT structure_id,
     (SELECT code FROM stream_crossings.physical_barrier_codes WHERE name_en = 'deformation') AS physical_barrier_code,
     cabd_assessment_id

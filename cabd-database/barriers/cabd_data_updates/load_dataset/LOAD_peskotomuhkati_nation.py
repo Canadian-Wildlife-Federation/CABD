@@ -416,8 +416,8 @@ UPDATE featurecopy.temp_nontidal_structure_1 SET passability_status_code =
     ELSE (SELECT code FROM cabd.passability_status_codes WHERE name_en = 'Barrier') END;
 
 --insert into material mapping and physical barrier mapping tables
-DELETE FROM {script.materialMappingTable} WHERE cabd_assessment_id IN (SELECT cabd_assessment_id FROM featurecopy.temp_nontidal_structure_1);
-INSERT INTO {script.materialMappingTable} (structure_id, material_code, cabd_assessment_id)
+DELETE FROM {script.nonTidalMaterialMappingTable} WHERE cabd_assessment_id IN (SELECT cabd_assessment_id FROM featurecopy.temp_nontidal_structure_1);
+INSERT INTO {script.nonTidalMaterialMappingTable} (structure_id, material_code, cabd_assessment_id)
     SELECT
         structure_id,
         CASE
@@ -432,7 +432,7 @@ INSERT INTO {script.materialMappingTable} (structure_id, material_code, cabd_ass
         cabd_assessment_id
     FROM featurecopy.temp_nontidal_structure_1 WHERE structure_material IS NOT NULL;
 
-DELETE FROM {script.physicalBarrierMappingTable} WHERE cabd_assessment_id IN (SELECT cabd_assessment_id FROM featurecopy.temp_nontidal_structure_1);
+DELETE FROM {script.nonTidalPhysicalBarrierMappingTable} WHERE cabd_assessment_id IN (SELECT cabd_assessment_id FROM featurecopy.temp_nontidal_structure_1);
 DROP TABLE IF EXISTS featurecopy.temp;
 CREATE TABLE featurecopy.temp AS
     SELECT structure_id,
@@ -440,7 +440,7 @@ CREATE TABLE featurecopy.temp AS
     cabd_assessment_id
     FROM featurecopy.temp_nontidal_structure_1
     WHERE physical_barriers IS NOT NULL;
-INSERT INTO {script.physicalBarrierMappingTable} (structure_id, physical_barrier_code, cabd_assessment_id)
+INSERT INTO {script.nonTidalPhysicalBarrierMappingTable} (structure_id, physical_barrier_code, cabd_assessment_id)
     SELECT structure_id,
     CASE
     WHEN physical_barriers ILIKE '%debris%' THEN (SELECT code FROM stream_crossings.physical_barrier_codes WHERE name_en = 'debris')
@@ -683,8 +683,8 @@ UPDATE featurecopy.temp_nontidal_structure_2 SET structure_comments = structure_
 UPDATE featurecopy.temp_nontidal_structure_2 SET structure_comments = structure_comments || '; inlet comments: ' || other_inlet_type_1 WHERE other_inlet_type_1 IS NOT NULL AND other_inlet_type_1 NOT IN ('Unknown', 'NA');
 
 --insert into material mapping and physical barrier mapping tables
-DELETE FROM {script.materialMappingTable} WHERE cabd_assessment_id IN (SELECT cabd_assessment_id FROM featurecopy.temp_nontidal_structure_2);
-INSERT INTO {script.materialMappingTable} (structure_id, material_code, cabd_assessment_id)
+DELETE FROM {script.nonTidalMaterialMappingTable} WHERE cabd_assessment_id IN (SELECT cabd_assessment_id FROM featurecopy.temp_nontidal_structure_2);
+INSERT INTO {script.nonTidalMaterialMappingTable} (structure_id, material_code, cabd_assessment_id)
     SELECT
         structure_id,
         CASE
@@ -699,7 +699,7 @@ INSERT INTO {script.materialMappingTable} (structure_id, material_code, cabd_ass
         cabd_assessment_id
     FROM featurecopy.temp_nontidal_structure_2 WHERE structure_material_1 IS NOT NULL;
 
-DELETE FROM {script.physicalBarrierMappingTable} WHERE cabd_assessment_id IN (SELECT cabd_assessment_id FROM featurecopy.temp_nontidal_structure_2);
+DELETE FROM {script.nonTidalPhysicalBarrierMappingTable} WHERE cabd_assessment_id IN (SELECT cabd_assessment_id FROM featurecopy.temp_nontidal_structure_2);
 DROP TABLE IF EXISTS featurecopy.temp;
 CREATE TABLE featurecopy.temp AS
     SELECT structure_id,
@@ -707,7 +707,7 @@ CREATE TABLE featurecopy.temp AS
     cabd_assessment_id
     FROM featurecopy.temp_nontidal_structure_2
     WHERE physical_barriers_1 IS NOT NULL;
-INSERT INTO {script.physicalBarrierMappingTable} (structure_id, physical_barrier_code, cabd_assessment_id)
+INSERT INTO {script.nonTidalPhysicalBarrierMappingTable} (structure_id, physical_barrier_code, cabd_assessment_id)
     SELECT structure_id,
     CASE
     WHEN physical_barriers_1 ILIKE '%debris%' THEN (SELECT code FROM stream_crossings.physical_barrier_codes WHERE name_en = 'debris')
@@ -950,8 +950,8 @@ UPDATE featurecopy.temp_nontidal_structure_3 SET structure_comments = structure_
 UPDATE featurecopy.temp_nontidal_structure_3 SET structure_comments = structure_comments || '; inlet comments: ' || other_inlet_type_2 WHERE other_inlet_type_2 IS NOT NULL AND other_inlet_type_2 NOT IN ('Unknown', 'NA');
 
 --insert into material mapping and physical barrier mapping tables
-DELETE FROM {script.materialMappingTable} WHERE cabd_assessment_id IN (SELECT cabd_assessment_id FROM featurecopy.temp_nontidal_structure_3);
-INSERT INTO {script.materialMappingTable} (structure_id, material_code, cabd_assessment_id)
+DELETE FROM {script.nonTidalMaterialMappingTable} WHERE cabd_assessment_id IN (SELECT cabd_assessment_id FROM featurecopy.temp_nontidal_structure_3);
+INSERT INTO {script.nonTidalMaterialMappingTable} (structure_id, material_code, cabd_assessment_id)
     SELECT
         structure_id,
         CASE
@@ -966,7 +966,7 @@ INSERT INTO {script.materialMappingTable} (structure_id, material_code, cabd_ass
         cabd_assessment_id
     FROM featurecopy.temp_nontidal_structure_3 WHERE structure_material_2 IS NOT NULL;
 
-DELETE FROM {script.physicalBarrierMappingTable} WHERE cabd_assessment_id IN (SELECT cabd_assessment_id FROM featurecopy.temp_nontidal_structure_3);
+DELETE FROM {script.nonTidalPhysicalBarrierMappingTable} WHERE cabd_assessment_id IN (SELECT cabd_assessment_id FROM featurecopy.temp_nontidal_structure_3);
 DROP TABLE IF EXISTS featurecopy.temp;
 CREATE TABLE featurecopy.temp AS
     SELECT structure_id,
@@ -974,7 +974,7 @@ CREATE TABLE featurecopy.temp AS
     cabd_assessment_id
     FROM featurecopy.temp_nontidal_structure_3
     WHERE physical_barriers_2 IS NOT NULL;
-INSERT INTO {script.physicalBarrierMappingTable} (structure_id, physical_barrier_code, cabd_assessment_id)
+INSERT INTO {script.nonTidalPhysicalBarrierMappingTable} (structure_id, physical_barrier_code, cabd_assessment_id)
     SELECT structure_id,
     CASE
     WHEN physical_barriers_2 ILIKE '%debris%' THEN (SELECT code FROM stream_crossings.physical_barrier_codes WHERE name_en = 'debris')
@@ -1219,8 +1219,8 @@ UPDATE featurecopy.temp_nontidal_structure_4 SET structure_comments = structure_
 UPDATE featurecopy.temp_nontidal_structure_4 SET structure_comments = structure_comments || '; inlet comments: ' || other_inlet_type_3 WHERE other_inlet_type_3 IS NOT NULL AND other_inlet_type_3 NOT IN ('Unknown', 'NA');
 
 --insert into material mapping and physical barrier mapping tables
-DELETE FROM {script.materialMappingTable} WHERE cabd_assessment_id IN (SELECT cabd_assessment_id FROM featurecopy.temp_nontidal_structure_4);
-INSERT INTO {script.materialMappingTable} (structure_id, material_code, cabd_assessment_id)
+DELETE FROM {script.nonTidalMaterialMappingTable} WHERE cabd_assessment_id IN (SELECT cabd_assessment_id FROM featurecopy.temp_nontidal_structure_4);
+INSERT INTO {script.nonTidalMaterialMappingTable} (structure_id, material_code, cabd_assessment_id)
     SELECT
         structure_id,
         CASE
@@ -1235,7 +1235,7 @@ INSERT INTO {script.materialMappingTable} (structure_id, material_code, cabd_ass
         cabd_assessment_id
     FROM featurecopy.temp_nontidal_structure_4 WHERE structure_material_3 IS NOT NULL;
 
-DELETE FROM {script.physicalBarrierMappingTable} WHERE cabd_assessment_id IN (SELECT cabd_assessment_id FROM featurecopy.temp_nontidal_structure_4);
+DELETE FROM {script.nonTidalPhysicalBarrierMappingTable} WHERE cabd_assessment_id IN (SELECT cabd_assessment_id FROM featurecopy.temp_nontidal_structure_4);
 DROP TABLE IF EXISTS featurecopy.temp;
 CREATE TABLE featurecopy.temp AS
     SELECT structure_id,
@@ -1243,7 +1243,7 @@ CREATE TABLE featurecopy.temp AS
     cabd_assessment_id
     FROM featurecopy.temp_nontidal_structure_4
     WHERE physical_barriers_3 IS NOT NULL;
-INSERT INTO {script.physicalBarrierMappingTable} (structure_id, physical_barrier_code, cabd_assessment_id)
+INSERT INTO {script.nonTidalPhysicalBarrierMappingTable} (structure_id, physical_barrier_code, cabd_assessment_id)
     SELECT structure_id,
     CASE
     WHEN physical_barriers_3 ILIKE '%debris%' THEN (SELECT code FROM stream_crossings.physical_barrier_codes WHERE name_en = 'debris')
@@ -1870,8 +1870,8 @@ UPDATE featurecopy.temp_tidal_structure_1 SET passability_status_code =
     ELSE (SELECT code FROM cabd.passability_status_codes WHERE name_en = 'Barrier') END;
 
 --insert into material mapping and physical barrier mapping tables
-DELETE FROM {script.materialMappingTable} WHERE cabd_assessment_id IN (SELECT cabd_assessment_id FROM featurecopy.temp_tidal_structure_1);
-INSERT INTO {script.materialMappingTable} (structure_id, material_code, cabd_assessment_id)
+DELETE FROM {script.tidalMaterialMappingTable} WHERE cabd_assessment_id IN (SELECT cabd_assessment_id FROM featurecopy.temp_tidal_structure_1);
+INSERT INTO {script.tidalMaterialMappingTable} (structure_id, material_code, cabd_assessment_id)
     SELECT
         structure_id,
         CASE
@@ -1886,7 +1886,7 @@ INSERT INTO {script.materialMappingTable} (structure_id, material_code, cabd_ass
         cabd_assessment_id
     FROM featurecopy.temp_tidal_structure_1 WHERE structure_material IS NOT NULL;
 
-DELETE FROM {script.physicalBarrierMappingTable} WHERE cabd_assessment_id IN (SELECT cabd_assessment_id FROM featurecopy.temp_tidal_structure_1);
+DELETE FROM {script.tidalPhysicalBarrierMappingTable} WHERE cabd_assessment_id IN (SELECT cabd_assessment_id FROM featurecopy.temp_tidal_structure_1);
 DROP TABLE IF EXISTS featurecopy.temp;
 CREATE TABLE featurecopy.temp AS
     SELECT structure_id,
@@ -1894,7 +1894,7 @@ CREATE TABLE featurecopy.temp AS
     cabd_assessment_id
     FROM featurecopy.temp_tidal_structure_1
     WHERE physical_barriers IS NOT NULL;
-INSERT INTO {script.physicalBarrierMappingTable} (structure_id, physical_barrier_code, cabd_assessment_id)
+INSERT INTO {script.tidalPhysicalBarrierMappingTable} (structure_id, physical_barrier_code, cabd_assessment_id)
     SELECT structure_id,
     CASE
     WHEN physical_barriers ILIKE '%debris%' THEN (SELECT code FROM stream_crossings.physical_barrier_codes WHERE name_en = 'debris')
@@ -2100,8 +2100,8 @@ UPDATE featurecopy.temp_tidal_structure_2 SET structure_comments = structure_com
 UPDATE featurecopy.temp_tidal_structure_2 SET structure_comments = structure_comments || '; inlet comments: ' || other_inlet_type WHERE other_inlet_type IS NOT NULL AND other_inlet_type NOT IN ('Unknown', 'NA');
 
 --insert into material mapping and physical barrier mapping tables
-DELETE FROM {script.materialMappingTable} WHERE cabd_assessment_id IN (SELECT cabd_assessment_id FROM featurecopy.temp_tidal_structure_2);
-INSERT INTO {script.materialMappingTable} (structure_id, material_code, cabd_assessment_id)
+DELETE FROM {script.tidalMaterialMappingTable} WHERE cabd_assessment_id IN (SELECT cabd_assessment_id FROM featurecopy.temp_tidal_structure_2);
+INSERT INTO {script.tidalMaterialMappingTable} (structure_id, material_code, cabd_assessment_id)
     SELECT
         structure_id,
         CASE
@@ -2116,7 +2116,7 @@ INSERT INTO {script.materialMappingTable} (structure_id, material_code, cabd_ass
         cabd_assessment_id
     FROM featurecopy.temp_tidal_structure_2 WHERE structure_material IS NOT NULL;
 
-DELETE FROM {script.physicalBarrierMappingTable} WHERE cabd_assessment_id IN (SELECT cabd_assessment_id FROM featurecopy.temp_tidal_structure_2);
+DELETE FROM {script.tidalPhysicalBarrierMappingTable} WHERE cabd_assessment_id IN (SELECT cabd_assessment_id FROM featurecopy.temp_tidal_structure_2);
 DROP TABLE IF EXISTS featurecopy.temp;
 CREATE TABLE featurecopy.temp AS
     SELECT structure_id,
@@ -2124,7 +2124,7 @@ CREATE TABLE featurecopy.temp AS
     cabd_assessment_id
     FROM featurecopy.temp_tidal_structure_2
     WHERE physical_barriers IS NOT NULL;
-INSERT INTO {script.physicalBarrierMappingTable} (structure_id, physical_barrier_code, cabd_assessment_id)
+INSERT INTO {script.tidalPhysicalBarrierMappingTable} (structure_id, physical_barrier_code, cabd_assessment_id)
     SELECT structure_id,
     CASE
     WHEN physical_barriers ILIKE '%debris%' THEN (SELECT code FROM stream_crossings.physical_barrier_codes WHERE name_en = 'debris')
@@ -2330,8 +2330,8 @@ UPDATE featurecopy.temp_tidal_structure_3 SET structure_comments = structure_com
 UPDATE featurecopy.temp_tidal_structure_3 SET structure_comments = structure_comments || '; inlet comments: ' || other_inlet_type WHERE other_inlet_type IS NOT NULL AND other_inlet_type NOT IN ('Unknown', 'NA');
 
 --insert into material mapping and physical barrier mapping tables
-DELETE FROM {script.materialMappingTable} WHERE cabd_assessment_id IN (SELECT cabd_assessment_id FROM featurecopy.temp_tidal_structure_3);
-INSERT INTO {script.materialMappingTable} (structure_id, material_code, cabd_assessment_id)
+DELETE FROM {script.tidalMaterialMappingTable} WHERE cabd_assessment_id IN (SELECT cabd_assessment_id FROM featurecopy.temp_tidal_structure_3);
+INSERT INTO {script.tidalMaterialMappingTable} (structure_id, material_code, cabd_assessment_id)
     SELECT
         structure_id,
         CASE
@@ -2346,7 +2346,7 @@ INSERT INTO {script.materialMappingTable} (structure_id, material_code, cabd_ass
         cabd_assessment_id
     FROM featurecopy.temp_tidal_structure_3 WHERE structure_material IS NOT NULL;
 
-DELETE FROM {script.physicalBarrierMappingTable} WHERE cabd_assessment_id IN (SELECT cabd_assessment_id FROM featurecopy.temp_tidal_structure_3);
+DELETE FROM {script.tidalPhysicalBarrierMappingTable} WHERE cabd_assessment_id IN (SELECT cabd_assessment_id FROM featurecopy.temp_tidal_structure_3);
 DROP TABLE IF EXISTS featurecopy.temp;
 CREATE TABLE featurecopy.temp AS
     SELECT structure_id,
@@ -2354,7 +2354,7 @@ CREATE TABLE featurecopy.temp AS
     cabd_assessment_id
     FROM featurecopy.temp_tidal_structure_3
     WHERE physical_barriers IS NOT NULL;
-INSERT INTO {script.physicalBarrierMappingTable} (structure_id, physical_barrier_code, cabd_assessment_id)
+INSERT INTO {script.tidalPhysicalBarrierMappingTable} (structure_id, physical_barrier_code, cabd_assessment_id)
     SELECT structure_id,
     CASE
     WHEN physical_barriers ILIKE '%debris%' THEN (SELECT code FROM stream_crossings.physical_barrier_codes WHERE name_en = 'debris')
@@ -2560,8 +2560,8 @@ UPDATE featurecopy.temp_tidal_structure_4 SET structure_comments = structure_com
 UPDATE featurecopy.temp_tidal_structure_4 SET structure_comments = structure_comments || '; inlet comments: ' || other_inlet_type WHERE other_inlet_type IS NOT NULL AND other_inlet_type NOT IN ('Unknown', 'NA');
 
 --insert into material mapping and physical barrier mapping tables
-DELETE FROM {script.materialMappingTable} WHERE cabd_assessment_id IN (SELECT cabd_assessment_id FROM featurecopy.temp_tidal_structure_4);
-INSERT INTO {script.materialMappingTable} (structure_id, material_code, cabd_assessment_id)
+DELETE FROM {script.tidalMaterialMappingTable} WHERE cabd_assessment_id IN (SELECT cabd_assessment_id FROM featurecopy.temp_tidal_structure_4);
+INSERT INTO {script.tidalMaterialMappingTable} (structure_id, material_code, cabd_assessment_id)
     SELECT
         structure_id,
         CASE
@@ -2576,7 +2576,7 @@ INSERT INTO {script.materialMappingTable} (structure_id, material_code, cabd_ass
         cabd_assessment_id
     FROM featurecopy.temp_tidal_structure_4 WHERE structure_material IS NOT NULL;
 
-DELETE FROM {script.physicalBarrierMappingTable} WHERE cabd_assessment_id IN (SELECT cabd_assessment_id FROM featurecopy.temp_tidal_structure_4);
+DELETE FROM {script.tidalPhysicalBarrierMappingTable} WHERE cabd_assessment_id IN (SELECT cabd_assessment_id FROM featurecopy.temp_tidal_structure_4);
 DROP TABLE IF EXISTS featurecopy.temp;
 CREATE TABLE featurecopy.temp AS
     SELECT structure_id,
@@ -2584,7 +2584,7 @@ CREATE TABLE featurecopy.temp AS
     cabd_assessment_id
     FROM featurecopy.temp_tidal_structure_4
     WHERE physical_barriers IS NOT NULL;
-INSERT INTO {script.physicalBarrierMappingTable} (structure_id, physical_barrier_code, cabd_assessment_id)
+INSERT INTO {script.tidalPhysicalBarrierMappingTable} (structure_id, physical_barrier_code, cabd_assessment_id)
     SELECT structure_id,
     CASE
     WHEN physical_barriers ILIKE '%debris%' THEN (SELECT code FROM stream_crossings.physical_barrier_codes WHERE name_en = 'debris')
@@ -2790,8 +2790,8 @@ UPDATE featurecopy.temp_tidal_structure_5 SET structure_comments = structure_com
 UPDATE featurecopy.temp_tidal_structure_5 SET structure_comments = structure_comments || '; inlet comments: ' || other_inlet_type WHERE other_inlet_type IS NOT NULL AND other_inlet_type NOT IN ('Unknown', 'NA');
 
 --insert into material mapping and physical barrier mapping tables
-DELETE FROM {script.materialMappingTable} WHERE cabd_assessment_id IN (SELECT cabd_assessment_id FROM featurecopy.temp_tidal_structure_5);
-INSERT INTO {script.materialMappingTable} (structure_id, material_code, cabd_assessment_id)
+DELETE FROM {script.tidalMaterialMappingTable} WHERE cabd_assessment_id IN (SELECT cabd_assessment_id FROM featurecopy.temp_tidal_structure_5);
+INSERT INTO {script.tidalMaterialMappingTable} (structure_id, material_code, cabd_assessment_id)
     SELECT
         structure_id,
         CASE
@@ -2806,7 +2806,7 @@ INSERT INTO {script.materialMappingTable} (structure_id, material_code, cabd_ass
         cabd_assessment_id
     FROM featurecopy.temp_tidal_structure_5 WHERE structure_material IS NOT NULL AND structure_material != 'NA';
 
-DELETE FROM {script.physicalBarrierMappingTable} WHERE cabd_assessment_id IN (SELECT cabd_assessment_id FROM featurecopy.temp_tidal_structure_5);
+DELETE FROM {script.tidalPhysicalBarrierMappingTable} WHERE cabd_assessment_id IN (SELECT cabd_assessment_id FROM featurecopy.temp_tidal_structure_5);
 DROP TABLE IF EXISTS featurecopy.temp;
 CREATE TABLE featurecopy.temp AS
     SELECT structure_id,
@@ -2814,7 +2814,7 @@ CREATE TABLE featurecopy.temp AS
     cabd_assessment_id
     FROM featurecopy.temp_tidal_structure_5
     WHERE physical_barriers IS NOT NULL;
-INSERT INTO {script.physicalBarrierMappingTable} (structure_id, physical_barrier_code, cabd_assessment_id)
+INSERT INTO {script.tidalPhysicalBarrierMappingTable} (structure_id, physical_barrier_code, cabd_assessment_id)
     SELECT structure_id,
     CASE
     WHEN physical_barriers ILIKE '%debris%' THEN (SELECT code FROM stream_crossings.physical_barrier_codes WHERE name_en = 'debris')
