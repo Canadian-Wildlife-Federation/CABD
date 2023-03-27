@@ -726,6 +726,36 @@ create table stream_crossings.nontidal_physical_barrier_mapping (
   physical_barrier_code integer not null references stream_crossings.physical_barrier_codes(code),
   primary key (structure_id, physical_barrier_code)
 );
+
+create table stream_crossings.tidal_feature_source (
+    cabd_id uuid not null references stream_crossings.tidal_sites(cabd_id),
+    datasource_id uuid NOT NULL,
+    datasource_feature_id character varying,
+    CONSTRAINT tidal_sites_feature_source_pkey PRIMARY KEY (cabd_id, datasource_feature_id),
+    CONSTRAINT tidal_sites_data_source_id_fk FOREIGN KEY (datasource_id)
+        REFERENCES cabd.data_source (id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE RESTRICT,
+    CONSTRAINT tidal_sites_feature_source_cabd_id_fk FOREIGN KEY (cabd_id)
+        REFERENCES stream_crossings.tidal_sites (cabd_id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE CASCADE
+);
+
+create table stream_crossings.nontidal_feature_source (
+    cabd_id uuid not null references stream_crossings.nontidal_sites(cabd_id),
+    datasource_id uuid NOT NULL,
+    datasource_feature_id character varying,
+    CONSTRAINT nontidal_sites_feature_source_pkey PRIMARY KEY (cabd_id, datasource_feature_id),
+    CONSTRAINT nontidal_sites_data_source_id_fk FOREIGN KEY (datasource_id)
+        REFERENCES cabd.data_source (id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE RESTRICT,
+    CONSTRAINT nontidal_sites_feature_source_cabd_id_fk FOREIGN KEY (cabd_id)
+        REFERENCES stream_crossings.nontidal_sites (cabd_id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE CASCADE
+);
  
 alter schema stream_crossings owner to cabd;
 
@@ -767,3 +797,5 @@ alter table stream_crossings.tidal_structures owner to cabd;
 alter table stream_crossings.tide_gate_codes owner to cabd;
 alter table stream_crossings.tide_gate_severity_codes owner to cabd;
 alter table stream_crossings.relative_water_depth_codes owner to cabd;
+alter table stream_crossings.tidal_feature_source owner to cabd;
+alter table stream_crossings.nontidal_feature_source owner to cabd;
