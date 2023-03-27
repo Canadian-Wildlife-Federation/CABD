@@ -63,6 +63,9 @@ CREATE TABLE {script.nonTidalSites} AS
     FROM {script.sourceTable}
     WHERE tidal_site IN ('no', 'unknown');
 
+DELETE FROM {script.nonTidalSites} WHERE original_assessment_id = 'Mag533'; --this is a duplicate of another point
+UPDATE {script.nonTidalSites} SET crossing_comments = 'No road; ford that was removed?' WHERE original_assessment_id = 'Mag529'; --add comment to the duplicate of Mag533
+
 ALTER TABLE {script.nonTidalSites} ALTER COLUMN cabd_assessment_id SET NOT NULL;
 ALTER TABLE {script.nonTidalSites} ADD PRIMARY KEY (cabd_assessment_id);
 ALTER TABLE {script.nonTidalSites} ADD CONSTRAINT {script.datasetname}_data_source_fkey FOREIGN KEY (data_source_id) REFERENCES cabd.data_source (id);
@@ -3150,11 +3153,11 @@ SELECT
     structure_comments
 FROM featurecopy.temp_tidal_structure_5;
 
---DROP TABLE featurecopy.temp_tidal_structure_1;
---DROP TABLE featurecopy.temp_tidal_structure_2;
---DROP TABLE featurecopy.temp_tidal_structure_3;
---DROP TABLE featurecopy.temp_tidal_structure_4;
---DROP TABLE featurecopy.temp_tidal_structure_5;
+DROP TABLE featurecopy.temp_tidal_structure_1;
+DROP TABLE featurecopy.temp_tidal_structure_2;
+DROP TABLE featurecopy.temp_tidal_structure_3;
+DROP TABLE featurecopy.temp_tidal_structure_4;
+DROP TABLE featurecopy.temp_tidal_structure_5;
 
 ALTER TABLE {script.tidalStructures} ALTER COLUMN structure_id SET NOT NULL;
 ALTER TABLE {script.tidalStructures} ADD PRIMARY KEY (structure_id);
