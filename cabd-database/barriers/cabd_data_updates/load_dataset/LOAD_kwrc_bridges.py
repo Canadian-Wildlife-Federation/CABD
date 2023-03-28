@@ -31,7 +31,9 @@ CREATE TABLE {script.nonTidalSites} AS
         data_source_name,
         data_source_id,
         geometry
-    FROM {script.sourceTable};
+    FROM {script.sourceTable}
+    WHERE latitude IS NOT NULL
+    AND longitude IS NOT NULL;
 
 ALTER TABLE {script.nonTidalSites} ALTER COLUMN cabd_assessment_id SET NOT NULL;
 ALTER TABLE {script.nonTidalSites} ADD PRIMARY KEY (cabd_assessment_id);

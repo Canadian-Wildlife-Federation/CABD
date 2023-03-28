@@ -44,7 +44,7 @@ ALTER TABLE {script.nonTidalSites}
     ADD COLUMN cabd_id uuid,
     ADD COLUMN constriction_code integer,
     ADD COLUMN crossing_comments varchar,
-    ADD COLUMN flow_condition_code varchar,
+    ADD COLUMN flow_condition_code integer,
     ADD COLUMN original_point geometry(Point,4617);
 
 UPDATE {script.nonTidalSites} SET original_point = ST_Transform(geometry, 4617);
