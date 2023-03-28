@@ -16,24 +16,27 @@ class MappingScript:
     
     datasetname = ""
 
-    damTable = workingSchema + ".dams"
-    damAttributeTable = workingSchema + ".dams_attribute_source"
+    nonTidalSites = "nontidal_sites"
+    nonTidalStructures = "nontidal_structures"
 
-    waterfallTable = workingSchema + ".waterfalls"
-    waterfallAttributeTable = workingSchema + ".waterfalls_attribute_source"
+    tidalSites = "tidal_sites"
+    tidalStructures = "tidal_structures"
 
-    fishwayTable = workingSchema + ".fishways"
-    fishwayAttributeTable = workingSchema + ".fishways_attribute_source"
-
-    featureType = sys.argv[1]
+    siteType = sys.argv[1]
     
     def __init__(self, datasetname):
 
         self.datasetname = datasetname
-        self.workingTable = self.workingSchema + "." + self.featureType + "_" + datasetname
+        self.workingTable = self.workingSchema + "." + self.siteType + "_sites_" + datasetname
+
+        self.nonTidalSitesTable = self.workingSchema + "." + self.nonTidalSites
+        self.nonTidalStructuresTable = self.workingSchema + "." + self.nonTidalStructures
+
+        self.tidalSitesTable = self.workingSchema + "." + self.tidalSites
+        self.tidalStructuresTable = self.workingSchema + "." + self.tidalStructures
 
         if len(sys.argv) != 4:
-            print("Invalid usage: MAP_<featureType>_<datasetid>.py <featureType> <dbUser> <dbPassword>")
+            print("Invalid usage: MAP_<datasetid>.py <siteType> <dbUser> <dbPassword>")
             sys.exit()
 
     def do_work(self, mappingquery):
@@ -53,5 +56,6 @@ class MappingScript:
         print("Attributes mapped to " + self.workingSchema + " from " + self.datasetname)
 
     def run_mapping_query(self, mappingquery):
-        with self.conn.cursor() as cursor:
-            cursor.execute(mappingquery)
+        print(mappingquery)
+        # with self.conn.cursor() as cursor:
+        #     cursor.execute(mappingquery)
