@@ -33,7 +33,8 @@ CREATE TABLE {script.nonTidalSites} AS
         classification,
         geometry
     FROM {script.sourceTable}
-    WHERE classification != 'drain';
+    WHERE classification != 'drain'
+    OR classification IS NULL;
 
 ALTER TABLE {script.nonTidalSites} ALTER COLUMN cabd_assessment_id SET NOT NULL;
 ALTER TABLE {script.nonTidalSites} ADD PRIMARY KEY (cabd_assessment_id);
@@ -54,6 +55,22 @@ UPDATE {script.nonTidalSites} SET crossing_comments =
     WHEN classification = 'WCR' THEN 'water crossing road'
     ELSE classification END;
 UPDATE {script.nonTidalSites} SET flow_condition_code = (SELECT code FROM stream_crossings.flow_condition_codes WHERE name_en = 'unusually low') WHERE classification ILIKE '%intermitted%';
+
+UPDATE {script.nonTidalSites} SET cabd_id = r.modelled_crossing_id::uuid
+FROM {script.reviewTable} AS r
+WHERE
+    (r.source_1 = 'intermitted_and_dry_drains' AND cabd_assessment_id = r.id_1::uuid)
+    OR 
+    (r.source_2 = 'intermitted_and_dry_drains' AND cabd_assessment_id = r.id_2::uuid)
+    OR
+    (r.source_3 = 'intermitted_and_dry_drains' AND cabd_assessment_id = r.id_3::uuid);
+
+ALTER TABLE {script.nonTidalSites} ADD COLUMN entry_classification varchar;
+UPDATE {script.nonTidalSites} SET entry_classification =
+    CASE
+    WHEN cabd_id IS NULL THEN 'new feature'
+    WHEN cabd_id IS NOT NULL THEN 'update feature'
+    ELSE NULL END;
 
 ------------------------------------------
 -- nontidal structures

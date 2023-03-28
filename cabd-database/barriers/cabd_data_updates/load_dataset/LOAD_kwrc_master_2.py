@@ -94,6 +94,22 @@ UPDATE {script.nonTidalSites} SET constriction_code =
     ELSE NULL END;
 UPDATE {script.nonTidalSites} SET tailwater_scour_pool_code = (SELECT code FROM stream_crossings.scour_pool_codes WHERE name_en = 'yes-extent unknown') WHERE "outflow water depth at scour (cm)" ~ '[0-9]+';
 
+UPDATE {script.nonTidalSites} SET cabd_id = r.modelled_crossing_id::uuid
+FROM {script.reviewTable} AS r
+WHERE
+    (r.source_1 = 'master_II' AND cabd_assessment_id = r.id_1::uuid)
+    OR 
+    (r.source_2 = 'master_II' AND cabd_assessment_id = r.id_2::uuid)
+    OR
+    (r.source_3 = 'master_II' AND cabd_assessment_id = r.id_3::uuid);
+
+ALTER TABLE {script.nonTidalSites} ADD COLUMN entry_classification varchar;
+UPDATE {script.nonTidalSites} SET entry_classification =
+    CASE
+    WHEN cabd_id IS NULL THEN 'new feature'
+    WHEN cabd_id IS NOT NULL THEN 'update feature'
+    ELSE NULL END;
+
 ------------------------------------------
 -- nontidal structures
 ------------------------------------------

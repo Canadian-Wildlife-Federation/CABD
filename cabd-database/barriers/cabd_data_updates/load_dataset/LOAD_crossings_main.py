@@ -15,8 +15,11 @@ class LoadingScript:
     #create source data table and tables to be mapped into CABD dataset
     sourceSchema = "source_data"
     workingSchema = "featurecopy"
+    reviewSchema = "nb_data"
     
     sourceTable = ""
+    
+    reviewTable = "nb_crossing_review"
 
     nonTidalSites = ""
     nonTidalStructures = ""
@@ -36,6 +39,7 @@ class LoadingScript:
     def __init__(self, datasetname):
         self.datasetname = datasetname
         self.sourceTable = self.sourceSchema + "." + datasetname
+        self.reviewTable = self.reviewSchema + "." + self.reviewTable
 
         self.nonTidalSites = self.workingSchema + ".nontidal_sites_" + datasetname
         self.nonTidalStructures = self.workingSchema + ".nontidal_structures_" + datasetname

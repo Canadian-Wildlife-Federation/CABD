@@ -60,6 +60,7 @@ ALTER TABLE {script.nonTidalSites}
     ADD COLUMN downstream_bankfull_width_m numeric,
     ADD COLUMN constriction_code integer,
     ADD COLUMN tailwater_scour_pool_code integer,
+    ADD COLUMN crossing_comments varchar,
     ADD COLUMN original_point geometry(Point,4617);
 
 ALTER TABLE {script.nonTidalSites} ALTER COLUMN "date" TYPE date USING "date"::date;
@@ -101,6 +102,23 @@ UPDATE {script.nonTidalSites} SET tailwater_scour_pool_code =
     CASE
     WHEN "outflow water depth at scour (cm)" ~ '[0-9]+' THEN (SELECT code FROM stream_crossings.scour_pool_codes WHERE name_en = 'yes-extent unknown')
     WHEN "outflow water depth at scour (cm)" ILIKE '%pond%' THEN (SELECT code FROM stream_crossings.scour_pool_codes WHERE name_en = 'none')
+    ELSE NULL END;
+UPDATE {script.nonTidalSites} SET crossing_comments = 'CWF: this assessment point is likely in the wrong place; noted as Millstream River watershed but it is positioned in the Upper Kennebecasis' WHERE original_assessment_id = 'MR-MS-032';
+
+UPDATE {script.nonTidalSites} SET cabd_id = r.modelled_crossing_id::uuid
+FROM {script.reviewTable} AS r
+WHERE
+    (r.source_1 = 'current_to_aug_6' AND cabd_assessment_id = r.id_1::uuid)
+    OR 
+    (r.source_2 = 'current_to_aug_6' AND cabd_assessment_id = r.id_2::uuid)
+    OR
+    (r.source_3 = 'current_to_aug_6' AND cabd_assessment_id = r.id_3::uuid);
+
+ALTER TABLE {script.nonTidalSites} ADD COLUMN entry_classification varchar;
+UPDATE {script.nonTidalSites} SET entry_classification =
+    CASE
+    WHEN cabd_id IS NULL THEN 'new feature'
+    WHEN cabd_id IS NOT NULL THEN 'update feature'
     ELSE NULL END;
 
 ------------------------------------------
