@@ -1600,6 +1600,7 @@ CREATE TABLE {script.tidalSites} AS
         alignment,
         road_fill_height,
         bankfull_width,
+        crossing_comments,
         geometry
     FROM {script.sourceTable}
     WHERE tidal_site = 'yes';
