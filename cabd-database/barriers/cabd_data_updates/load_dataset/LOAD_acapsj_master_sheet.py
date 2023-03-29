@@ -10,7 +10,7 @@ ALTER TABLE {script.sourceTable} RENAME COLUMN id TO cabd_assessment_id;
 ALTER TABLE {script.sourceTable} ALTER COLUMN cabd_assessment_id TYPE uuid USING cabd_assessment_id::uuid;
 ALTER TABLE {script.sourceTable} ADD COLUMN data_source_id uuid;
 
-UPDATE {script.sourceTable} SET data_source_id = (SELECT id FROM cabd.data_source WHERE name = 'acapsj'); -- make sure to add a record for the organization to the cabd.data_source table ahead of time
+UPDATE {script.sourceTable} SET data_source_id = (SELECT id FROM cabd.data_source WHERE name = 'acap_saint_john'); -- make sure to add a record for the organization to the cabd.data_source table ahead of time
 ALTER TABLE {script.sourceTable} ADD CONSTRAINT data_source_id_fkey FOREIGN KEY (data_source_id) REFERENCES cabd.data_source (id);
 
 ALTER TABLE {script.sourceTable} DROP CONSTRAINT {script.datasetname}_pkey;
