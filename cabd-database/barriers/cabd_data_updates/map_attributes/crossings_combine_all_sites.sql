@@ -186,6 +186,126 @@ SELECT
 FROM featurecopy.nontidal_sites_peskotomuhkati_nation_01192023
 WHERE entry_classification = 'new feature';
 
+INSERT INTO featurecopy.nontidal_sites (
+    cabd_id,
+    data_source_id,
+    cabd_assessment_id,
+    date_observed,
+    crossing_type_code,
+    road_name,
+    crossing_condition_code,
+    crossing_comments,
+    original_point
+)
+SELECT
+    gen_random_uuid(),
+    data_source_id,
+    cabd_assessment_id,
+    date_observed,
+    crossing_type_code,
+    road_name,
+    crossing_condition_code,
+    crossing_comments,
+    original_point
+FROM featurecopy.nontidal_sites_acapsj_ibof_barriers
+WHERE entry_classification = 'new feature';
+
+INSERT INTO featurecopy.nontidal_sites (
+    cabd_id,
+    data_source_id,
+    cabd_assessment_id,
+    original_assessment_id,
+    date_observed,
+    lead_observer,
+    stream_name,
+    crossing_type_code,
+    road_type_code,
+    road_surface,
+    road_class,
+    crossing_condition_code,
+    flow_condition_code,
+    original_point
+)
+SELECT
+    gen_random_uuid(),
+    data_source_id,
+    cabd_assessment_id,
+    original_assessment_id,
+    date_observed,
+    lead_observer,
+    stream_name,
+    crossing_type_code,
+    road_type_code,
+    road_surface,
+    road_class,
+    crossing_condition_code,
+    flow_condition_code,
+    original_point
+FROM featurecopy.nontidal_sites_acapsj_master_sheet
+WHERE entry_classification = 'new feature';
+
+INSERT INTO featurecopy.nontidal_sites (
+    cabd_id,
+    data_source_id,
+    cabd_assessment_id,
+    crossing_type_code,
+    original_point
+)
+SELECT
+    gen_random_uuid(),
+    data_source_id,
+    cabd_assessment_id,
+    crossing_type_code,
+    original_point
+FROM featurecopy.nontidal_sites_acapsj_salmon_creek_rothesay
+WHERE entry_classification = 'new feature';
+
+INSERT INTO featurecopy.nontidal_sites (
+    cabd_id,
+    data_source_id,
+    cabd_assessment_id,
+    crossing_type_code,
+    stream_name,
+    crossing_comments,
+    site_type,
+    crossing_condition_code,
+    flow_condition_code,
+    original_point
+)
+SELECT
+    gen_random_uuid(),
+    data_source_id,
+    cabd_assessment_id,
+    crossing_type_code,
+    stream_name,
+    crossing_comments,
+    site_type_code,
+    crossing_condition_code,
+    flow_condition_code,
+    original_point
+FROM featurecopy.nontidal_sites_acapsj_stream_barriers
+WHERE entry_classification = 'new feature';
+
+INSERT INTO featurecopy.nontidal_sites (
+    cabd_id,
+    data_source_id,
+    cabd_assessment_id,
+    original_assessment_id,
+    crossing_type_code,
+    crossing_comments,
+    original_point
+)
+SELECT
+    gen_random_uuid(),
+    data_source_id,
+    cabd_assessment_id,
+    original_assessment_id,
+    crossing_type_code,
+    crossing_comments,
+    original_point
+FROM featurecopy.nontidal_sites_acapsj_stream_crossing_layers
+WHERE entry_classification = 'new feature';
+
 ---------------------------------------------------
 -- get all modelled crossings
 ---------------------------------------------------
@@ -227,7 +347,9 @@ SELECT
         END AS crossing_type,
     geometry
 FROM nb_data.modelled_crossings
-WHERE id NOT IN (SELECT cabd_id FROM featurecopy.tidal_sites_peskotomuhkati_nation_01192023 WHERE cabd_id IS NOT NULL);
+WHERE 
+    id NOT IN (SELECT cabd_id FROM featurecopy.tidal_sites_peskotomuhkati_nation_01192023 WHERE cabd_id IS NOT NULL)
+    AND id NOT IN (SELECT cabd_id FROM featurecopy.tidal_sites_acapsj_stream_barriers WHERE cabd_id IS NOT NULL);
 
 ---------------------------------------------------
 -- tidal
@@ -281,6 +403,25 @@ SELECT
 FROM featurecopy.tidal_sites_peskotomuhkati_nation_01192023
 WHERE entry_classification = 'new feature';
 
+INSERT INTO featurecopy.tidal_sites (
+    cabd_id,
+    data_source_id,
+    cabd_assessment_id,
+    crossing_type_code,
+    stream_name,
+    site_type,
+    original_point
+)
+SELECT
+    gen_random_uuid(),
+    data_source_id,
+    cabd_assessment_id,
+    crossing_type_code,
+    stream_name,
+    site_type_code,
+    original_point
+FROM featurecopy.tidal_sites_acapsj_stream_barriers
+WHERE entry_classification = 'new feature';
 
 ---------------------------------------------------
 -- get all modelled crossings
@@ -323,4 +464,6 @@ SELECT
         END AS crossing_type,
     geometry
 FROM nb_data.modelled_crossings
-WHERE id IN (SELECT cabd_id FROM featurecopy.tidal_sites_peskotomuhkati_nation_01192023 WHERE cabd_id IS NOT NULL);
+WHERE 
+    id IN (SELECT cabd_id FROM featurecopy.tidal_sites_peskotomuhkati_nation_01192023 WHERE cabd_id IS NOT NULL)
+    OR id IN (SELECT cabd_id FROM featurecopy.tidal_sites_acapsj_stream_barriers WHERE cabd_id IS NOT NULL);

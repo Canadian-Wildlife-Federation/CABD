@@ -7,6 +7,11 @@ UPDATE featurecopy.nontidal_structures_kwrc_intermitted_dry_drains bar SET site_
 UPDATE featurecopy.nontidal_structures_kwrc_current_aug_6 bar SET site_id = foo.cabd_id FROM featurecopy.nontidal_sites foo WHERE foo.cabd_assessment_id = bar.cabd_assessment_id;
 UPDATE featurecopy.nontidal_structures_kwrc_master_2 bar SET site_id = foo.cabd_id FROM featurecopy.nontidal_sites foo WHERE foo.cabd_assessment_id = bar.cabd_assessment_id;
 UPDATE featurecopy.nontidal_structures_peskotomuhkati_nation_01192023 bar SET site_id = foo.cabd_id FROM featurecopy.nontidal_sites foo WHERE foo.cabd_assessment_id = bar.cabd_assessment_id;
+UPDATE featurecopy.nontidal_structures_acapsj_ibof_barriers bar SET site_id = foo.cabd_id FROM featurecopy.nontidal_sites foo WHERE foo.cabd_assessment_id = bar.cabd_assessment_id;
+UPDATE featurecopy.nontidal_structures_acapsj_master_sheet bar SET site_id = foo.cabd_id FROM featurecopy.nontidal_sites foo WHERE foo.cabd_assessment_id = bar.cabd_assessment_id;
+UPDATE featurecopy.nontidal_structures_acapsj_salmon_creek_rothesay bar SET site_id = foo.cabd_id FROM featurecopy.nontidal_sites foo WHERE foo.cabd_assessment_id = bar.cabd_assessment_id;
+UPDATE featurecopy.nontidal_structures_acapsj_stream_barriers bar SET site_id = foo.cabd_id FROM featurecopy.nontidal_sites foo WHERE foo.cabd_assessment_id = bar.cabd_assessment_id;
+UPDATE featurecopy.nontidal_structures_acapsj_stream_crossing_layers bar SET site_id = foo.cabd_id FROM featurecopy.nontidal_sites foo WHERE foo.cabd_assessment_id = bar.cabd_assessment_id;
 
 TRUNCATE TABLE featurecopy.nontidal_structures;
 
@@ -207,11 +212,119 @@ SELECT
     passability_status_code
 FROM featurecopy.nontidal_structures_peskotomuhkati_nation_01192023;
 
+INSERT INTO featurecopy.nontidal_structures (
+    structure_id,
+    site_id,
+    data_source_id,
+    cabd_assessment_id,
+    structure_comments,
+    passability_status_code,
+    substrate_type_code,
+    outlet_width_m,
+    structure_length_m
+)
+SELECT
+    structure_id,
+    site_id,
+    data_source_id,
+    cabd_assessment_id,
+    structure_comments,
+    passability_status_code,
+    substrate_type_code,
+    outlet_width_m,
+    structure_length_m
+FROM featurecopy.nontidal_structures_acapsj_ibof_barriers;
+
+INSERT INTO featurecopy.nontidal_structures (
+    structure_id,
+    site_id,
+    data_source_id,
+    cabd_assessment_id,
+    original_assessment_id,
+    structure_comments,
+    outlet_shape_code,
+    inlet_shape_code,
+    substrate_type_code,
+    outlet_width_m,
+    inlet_width_m,
+    internal_structures_code,
+    inlet_grade_code
+)
+SELECT
+    structure_id,
+    site_id,
+    data_source_id,
+    cabd_assessment_id,
+    original_assessment_id,
+    structure_comments,
+    outlet_shape_code,
+    inlet_shape_code,
+    substrate_type_code,
+    outlet_width_m,
+    inlet_width_m,
+    internal_structures_code,
+    inlet_grade_code
+FROM featurecopy.nontidal_structures_acapsj_master_sheet;
+
+INSERT INTO featurecopy.nontidal_structures (
+    structure_id,
+    site_id,
+    data_source_id,
+    cabd_assessment_id
+)
+SELECT
+    structure_id,
+    site_id,
+    data_source_id,
+    cabd_assessment_id
+FROM featurecopy.nontidal_structures_acapsj_salmon_creek_rothesay;
+
+INSERT INTO featurecopy.nontidal_structures (
+    structure_id,
+    site_id,
+    data_source_id,
+    cabd_assessment_id,
+    structure_length_m,
+    passability_status_code,
+    internal_structures_code
+)
+SELECT
+    structure_id,
+    site_id,
+    data_source_id,
+    cabd_assessment_id,
+    structure_length_m,
+    passability_status_code,
+    internal_structures_code
+FROM featurecopy.nontidal_structures_acapsj_stream_barriers;
+
+INSERT INTO featurecopy.nontidal_structures (
+    structure_id,
+    site_id,
+    data_source_id,
+    cabd_assessment_id,
+    original_assessment_id,
+    substrate_type_code,
+    outlet_width_m,
+    outlet_height_m
+)
+SELECT
+    structure_id,
+    site_id,
+    data_source_id,
+    cabd_assessment_id,
+    original_assessment_id,
+    substrate_type_code,
+    outlet_width_m,
+    outlet_height_m
+FROM featurecopy.nontidal_structures_acapsj_stream_crossing_layers;
+
 ---------------------------------------------------
 -- tidal
 ---------------------------------------------------
 
 UPDATE featurecopy.tidal_structures_peskotomuhkati_nation_01192023 bar SET site_id = foo.cabd_id FROM featurecopy.tidal_sites foo WHERE foo.cabd_assessment_id = bar.cabd_assessment_id;
+UPDATE featurecopy.tidal_structures_acapsj_stream_barriers bar SET site_id = foo.cabd_id FROM featurecopy.tidal_sites foo WHERE foo.cabd_assessment_id = bar.cabd_assessment_id;
 
 TRUNCATE TABLE featurecopy.tidal_structures;
 
@@ -281,3 +394,18 @@ SELECT
     passability_status_code,
     structure_comments
 FROM featurecopy.tidal_structures_peskotomuhkati_nation_01192023;
+
+INSERT INTO featurecopy.tidal_structures (
+    structure_id,
+    site_id,
+    data_source_id,
+    cabd_assessment_id,
+    tidal_tide_gate_type_code
+)
+SELECT
+    structure_id,
+    site_id,
+    data_source_id,
+    cabd_assessment_id,
+    tidal_tide_gate_type_code
+FROM featurecopy.tidal_structures_acapsj_stream_barriers;
