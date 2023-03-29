@@ -2,7 +2,7 @@ import psycopg2 as pg2
 import subprocess
 import sys
 
-ogr = "C:\\OSGeo4W64\\bin\\ogr2ogr.exe"
+ogr = "C:\\Program Files\\GDAL\\ogr2ogr.exe"
 
 dbHost = "cabd-postgres.postgres.database.azure.com"
 dbPort = "5432"
@@ -15,8 +15,11 @@ class LoadingScript:
     #create source data table and tables to be mapped into CABD dataset
     sourceSchema = "source_data"
     workingSchema = "featurecopy"
+    reviewSchema = "nb_data"
     
     sourceTable = ""
+    
+    reviewTable = "nb_crossing_review"
 
     nonTidalSites = ""
     nonTidalStructures = ""
@@ -24,9 +27,11 @@ class LoadingScript:
     tidalSites = ""
     tidalStructures = ""
 
-    materialMapping = "material_mapping"
+    tidalMaterialMapping = "tidal_material_mapping"
+    nonTidalMaterialMapping = "nontidal_material_mapping"    
 
-    physicalBarrierMapping = "physical_barrier_mapping"
+    tidalPhysicalBarrierMapping = "tidal_physical_barrier_mapping"
+    nonTidalPhysicalBarrierMapping = "nontidal_physical_barrier_mapping"
     
     datasetname = ""
     datafile = ""
@@ -34,6 +39,7 @@ class LoadingScript:
     def __init__(self, datasetname):
         self.datasetname = datasetname
         self.sourceTable = self.sourceSchema + "." + datasetname
+        self.reviewTable = self.reviewSchema + "." + self.reviewTable
 
         self.nonTidalSites = self.workingSchema + ".nontidal_sites_" + datasetname
         self.nonTidalStructures = self.workingSchema + ".nontidal_structures_" + datasetname
@@ -41,8 +47,11 @@ class LoadingScript:
         self.tidalSites = self.workingSchema + ".tidal_sites_" + datasetname
         self.tidalStructures = self.workingSchema + ".tidal_structures_" + datasetname        
 
-        self.materialMappingTable = self.workingSchema + "." + self.materialMapping # these need to already be set up
-        self.physicalBarrierMappingTable = self.workingSchema + "." + self.physicalBarrierMapping # these need to already be set up
+        self.tidalMaterialMappingTable = self.workingSchema + "." + self.tidalMaterialMapping # these need to already be set up
+        self.nonTidalMaterialMappingTable = self.workingSchema + "." + self.nonTidalMaterialMapping # these need to already be set up
+
+        self.tidalPhysicalBarrierMappingTable = self.workingSchema + "." + self.tidalPhysicalBarrierMapping # these need to already be set up
+        self.nonTidalPhysicalBarrierMappingTable = self.workingSchema + "." + self.nonTidalPhysicalBarrierMapping # these need to already be set up
         
         self.datafile = sys.argv[1]
         
