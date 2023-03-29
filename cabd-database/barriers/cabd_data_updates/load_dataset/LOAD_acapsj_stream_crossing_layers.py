@@ -35,7 +35,7 @@ CREATE TABLE {script.nonTidalSites} AS
         crossing_comments,
         geometry
     FROM {script.sourceTable}
-    WHERE include = TRUE; -- e.g., exclude rows that are not stream crossings
+    WHERE include = 'TRUE';
 
 ALTER TABLE {script.nonTidalSites} ALTER COLUMN cabd_assessment_id SET NOT NULL;
 ALTER TABLE {script.nonTidalSites} ADD PRIMARY KEY (cabd_assessment_id);
@@ -45,8 +45,28 @@ ALTER TABLE {script.nonTidalSites}
     ADD COLUMN cabd_id uuid,
     ADD COLUMN original_point geometry(Point,4617);
 
-
 UPDATE {script.nonTidalSites} SET original_point = ST_Transform(geometry, 4617);
+
+UPDATE {script.nonTidalSites} SET cabd_id = r.modelled_crossing_id::uuid
+FROM {script.reviewTable} AS r
+WHERE
+    (r.source_1 = 'ACAP_stream_crossing_layers' AND cabd_assessment_id = r.id_1::uuid)
+    OR 
+    (r.source_2 = 'ACAP_stream_crossing_layers' AND cabd_assessment_id = r.id_2::uuid)
+    OR
+    (r.source_3 = 'ACAP_stream_crossing_layers' AND cabd_assessment_id = r.id_3::uuid);
+
+ALTER TABLE {script.nonTidalSites} ADD COLUMN entry_classification varchar;
+UPDATE {script.nonTidalSites} SET entry_classification =
+    CASE
+    WHEN cabd_id IS NULL THEN 'new feature'
+    WHEN cabd_id IS NOT NULL THEN 'update feature'
+    ELSE NULL END;
+
+------------------------------------------
+-- nontidal structures
+------------------------------------------
+
 
 --add information to structures tables
 
@@ -60,7 +80,9 @@ CREATE TABLE {script.nonTidalStructures} AS (
         site.original_assessment_id,
         source.substrate_type_code,
         source.outlet_width_m,
-        source.outlet_height_m
+        source.outlet_height_m,
+        source.material_code,
+        source.physical_barriers_code
     FROM
         {script.nonTidalSites} AS site,
         {script.sourceTable} AS source
@@ -80,21 +102,13 @@ INSERT INTO {script.nonTidalMaterialMappingTable} (structure_id, material_code, 
         cabd_assessment_id
     FROM {script.nonTidalStructures} WHERE material_code IS NOT NULL;
 
-DELETE FROM {script.nonTidalPhysicalBarrierMapping} WHERE cabd_assessment_id IN (SELECT cabd_assessment_id FROM {script.nonTidalStructures});
-DROP TABLE IF EXISTS featurecopy.temp;
-CREATE TABLE featurecopy.temp AS
-    SELECT structure_id,
-    UNNEST(STRING_TO_ARRAY(physical_barriers_code, ',')) AS physical_barriers_code,
-    cabd_assessment_id
-    FROM {script.nonTidalStructures}
-    WHERE physical_barriers_code IS NOT NULL;
-INSERT INTO {script.nonTidalPhysicalBarrierMapping} (structure_id, physical_barrier_code, cabd_assessment_id)
+DELETE FROM {script.nonTidalPhysicalBarrierMappingTable} WHERE cabd_assessment_id IN (SELECT cabd_assessment_id FROM {script.nonTidalStructures});
+INSERT INTO {script.nonTidalPhysicalBarrierMappingTable} (structure_id, physical_barrier_code, cabd_assessment_id)
     SELECT 
         structure_id,
         physical_barriers_code,
         cabd_assessment_id
-    FROM featurecopy.temp;
-DROP TABLE featurecopy.temp;
+    FROM {script.nonTidalStructures} WHERE physical_barriers_code IS NOT NULL;
 
 """
 

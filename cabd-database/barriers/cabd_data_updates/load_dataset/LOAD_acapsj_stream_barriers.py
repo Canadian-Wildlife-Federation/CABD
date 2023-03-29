@@ -20,7 +20,7 @@ ALTER TABLE {script.sourceTable} ALTER COLUMN geometry TYPE geometry(POINT, 2953
 ALTER TABLE {script.sourceTable} DROP COLUMN fid;
 
 ------------------------------------------
---nontidal crossings
+-- nontidal crossings
 -------------------------------------------
 
 --add information to sites table
@@ -34,12 +34,11 @@ CREATE TABLE {script.nonTidalSites} AS
         location as stream_name,
         notes as crossing_comments,
         site_type_code,
-        crossing_type_code,
         crossing_condition_code,
         flow_condition_code,
         geometry
     FROM {script.sourceTable}
-    WHERE include = TRUE; -- e.g., exclude rows that are not stream crossings
+    WHERE include = 'TRUE' AND site_type_code = 99;
 
 ALTER TABLE {script.nonTidalSites} ALTER COLUMN cabd_assessment_id SET NOT NULL;
 ALTER TABLE {script.nonTidalSites} ADD PRIMARY KEY (cabd_assessment_id);
@@ -49,8 +48,27 @@ ALTER TABLE {script.nonTidalSites}
     ADD COLUMN cabd_id uuid,
     ADD COLUMN original_point geometry(Point,4617);
 
-
 UPDATE {script.nonTidalSites} SET original_point = ST_Transform(geometry, 4617);
+
+UPDATE {script.nonTidalSites} SET cabd_id = r.modelled_crossing_id::uuid
+FROM {script.reviewTable} AS r
+WHERE
+    (r.source_1 = 'ACAP_Stream_Barriers' AND cabd_assessment_id = r.id_1::uuid)
+    OR 
+    (r.source_2 = 'ACAP_Stream_Barriers' AND cabd_assessment_id = r.id_2::uuid)
+    OR
+    (r.source_3 = 'ACAP_Stream_Barriers' AND cabd_assessment_id = r.id_3::uuid);
+
+ALTER TABLE {script.nonTidalSites} ADD COLUMN entry_classification varchar;
+UPDATE {script.nonTidalSites} SET entry_classification =
+    CASE
+    WHEN cabd_id IS NULL THEN 'new feature'
+    WHEN cabd_id IS NOT NULL THEN 'update feature'
+    ELSE NULL END;
+
+------------------------------------------
+-- nontidal structures
+------------------------------------------
 
 --add information to structures tables
 
@@ -61,7 +79,7 @@ CREATE TABLE {script.nonTidalStructures} AS (
         gen_random_uuid() as structure_id,
         source.data_source_id,
         source.cabd_assessment_id,
-        source.structure_length_m,
+        source.stucture_length_m AS structure_length_m,
         source.passability_status_code,
         source.internal_structures_code
     FROM
@@ -75,7 +93,7 @@ ALTER TABLE {script.nonTidalStructures} ALTER COLUMN structure_id SET NOT NULL;
 ALTER TABLE {script.nonTidalStructures} ADD PRIMARY KEY (structure_id);
 
 ------------------------------------------
---tidal crossings
+-- tidal crossings
 -------------------------------------------
 
 --add information to sites table
@@ -85,13 +103,12 @@ CREATE TABLE {script.tidalSites} AS
         cabd_assessment_id,
         data_source_name,
         data_source_id,
-        crossing_type_code,
         location as stream_name,
         site_type_code,
         crossing_type_code,
         geometry
     FROM {script.sourceTable}
-    WHERE include = TRUE; -- e.g., exclude rows that are not stream crossings
+    WHERE include = 'TRUE' AND site_type_code = 1;
 
 ALTER TABLE {script.tidalSites} ALTER COLUMN cabd_assessment_id SET NOT NULL;
 ALTER TABLE {script.tidalSites} ADD PRIMARY KEY (cabd_assessment_id);
@@ -101,8 +118,27 @@ ALTER TABLE {script.tidalSites}
     ADD COLUMN cabd_id uuid,
     ADD COLUMN original_point geometry(Point,4617);
 
-
 UPDATE {script.tidalSites} SET original_point = ST_Transform(geometry, 4617);
+
+UPDATE {script.tidalSites} SET cabd_id = r.modelled_crossing_id::uuid
+FROM {script.reviewTable} AS r
+WHERE
+    (r.source_1 = 'ACAP_Stream_Barriers' AND cabd_assessment_id = r.id_1::uuid)
+    OR 
+    (r.source_2 = 'ACAP_Stream_Barriers' AND cabd_assessment_id = r.id_2::uuid)
+    OR
+    (r.source_3 = 'ACAP_Stream_Barriers' AND cabd_assessment_id = r.id_3::uuid);
+
+ALTER TABLE {script.tidalSites} ADD COLUMN entry_classification varchar;
+UPDATE {script.tidalSites} SET entry_classification =
+    CASE
+    WHEN cabd_id IS NULL THEN 'new feature'
+    WHEN cabd_id IS NOT NULL THEN 'update feature'
+    ELSE NULL END;
+
+------------------------------------------
+-- tidal structures
+------------------------------------------
 
 --add information to structures tables
 
