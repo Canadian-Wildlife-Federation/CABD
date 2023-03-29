@@ -1,6 +1,6 @@
 import LOAD_crossings_main as main # this sets the script. variables referenced below
 
-script = main.LoadingScript("acapsj_master_sheet") # this will be the datasetname variable referenced below
+script = main.LoadingScript("acapsj_stream_barriers") # this will be the datasetname variable referenced below
 
 query = f"""
 
@@ -28,21 +28,18 @@ DROP TABLE IF EXISTS {script.nonTidalSites};
 CREATE TABLE {script.nonTidalSites} AS
     SELECT
         cabd_assessment_id,
-        site AS original_assessment_id, -- update me
         data_source_name,
         data_source_id,
-        date as date_observed,
-        "note taker" as lead_observer,
-        stream as stream_name,
         crossing_type_code,
-        road_type_code,
-        road_surface,
-        road_class,
+        location as stream_name,
+        notes as crossing_comments,
+        site_type_code,
+        crossing_type_code,
         crossing_condition_code,
         flow_condition_code,
         geometry
     FROM {script.sourceTable}
-    WHERE include = 'TRUE'; -- e.g., exclude rows that are not stream crossings
+    WHERE include = TRUE; -- e.g., exclude rows that are not stream crossings
 
 ALTER TABLE {script.nonTidalSites} ALTER COLUMN cabd_assessment_id SET NOT NULL;
 ALTER TABLE {script.nonTidalSites} ADD PRIMARY KEY (cabd_assessment_id);
@@ -64,16 +61,9 @@ CREATE TABLE {script.nonTidalStructures} AS (
         gen_random_uuid() as structure_id,
         source.data_source_id,
         source.cabd_assessment_id,
-        site.original_assessment_id,
-        source.notes as structure_comments,
-        source.outlet_shape_code,
-        source.inlet_shape_code,
-        source.substrate_type_code,
-        source.outlet_width_m,
-        source.inlet_width_m,
-        source.internal_structures_code,
-        source.inlet_grade_code,
-        source.material_code
+        source.structure_length_m,
+        source.passability_status_code,
+        source.internal_structures_code
     FROM
         {script.nonTidalSites} AS site,
         {script.sourceTable} AS source
@@ -84,14 +74,55 @@ CREATE TABLE {script.nonTidalStructures} AS (
 ALTER TABLE {script.nonTidalStructures} ALTER COLUMN structure_id SET NOT NULL;
 ALTER TABLE {script.nonTidalStructures} ADD PRIMARY KEY (structure_id);
 
---insert into material mapping and physical barrier mapping tables
-DELETE FROM {script.nonTidalMaterialMappingTable} WHERE cabd_assessment_id IN (SELECT cabd_assessment_id FROM {script.nonTidalStructures});
-INSERT INTO {script.nonTidalMaterialMappingTable} (structure_id, material_code, cabd_assessment_id)
+------------------------------------------
+--tidal crossings
+-------------------------------------------
+
+--add information to sites table
+DROP TABLE IF EXISTS {script.tidalSites};
+CREATE TABLE {script.tidalSites} AS
     SELECT
-        structure_id,
-        material_code,
-        cabd_assessment_id
-    FROM {script.nonTidalStructures} WHERE material_code IS NOT NULL;
+        cabd_assessment_id,
+        data_source_name,
+        data_source_id,
+        crossing_type_code,
+        location as stream_name,
+        site_type_code,
+        crossing_type_code,
+        geometry
+    FROM {script.sourceTable}
+    WHERE include = TRUE; -- e.g., exclude rows that are not stream crossings
+
+ALTER TABLE {script.tidalSites} ALTER COLUMN cabd_assessment_id SET NOT NULL;
+ALTER TABLE {script.tidalSites} ADD PRIMARY KEY (cabd_assessment_id);
+ALTER TABLE {script.tidalSites} ADD CONSTRAINT {script.datasetname}_data_source_fkey FOREIGN KEY (data_source_id) REFERENCES cabd.data_source (id);
+
+ALTER TABLE {script.tidalSites}
+    ADD COLUMN cabd_id uuid,
+    ADD COLUMN original_point geometry(Point,4617);
+
+
+UPDATE {script.tidalSites} SET original_point = ST_Transform(geometry, 4617);
+
+--add information to structures tables
+
+DROP TABLE IF EXISTS {script.tidalStructures};
+CREATE TABLE {script.tidalStructures} AS (
+    SELECT
+        site.cabd_id AS site_id,
+        gen_random_uuid() as structure_id,
+        source.data_source_id,
+        source.cabd_assessment_id,
+        source.tidal_tide_gate_type_code
+    FROM
+        {script.tidalSites} AS site,
+        {script.sourceTable} AS source
+    WHERE 
+        source.cabd_assessment_id = site.cabd_assessment_id
+);
+
+ALTER TABLE {script.tidalStructures} ALTER COLUMN structure_id SET NOT NULL;
+ALTER TABLE {script.tidalStructures} ADD PRIMARY KEY (structure_id);
 
 """
 

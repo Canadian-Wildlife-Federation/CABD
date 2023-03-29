@@ -1,6 +1,6 @@
 import LOAD_crossings_main as main # this sets the script. variables referenced below
 
-script = main.LoadingScript("acapsj_master_sheet") # this will be the datasetname variable referenced below
+script = main.LoadingScript("acapsj_salmon_creek_rothesay") # this will be the datasetname variable referenced below
 
 query = f"""
 
@@ -28,21 +28,12 @@ DROP TABLE IF EXISTS {script.nonTidalSites};
 CREATE TABLE {script.nonTidalSites} AS
     SELECT
         cabd_assessment_id,
-        site AS original_assessment_id, -- update me
         data_source_name,
         data_source_id,
-        date as date_observed,
-        "note taker" as lead_observer,
-        stream as stream_name,
         crossing_type_code,
-        road_type_code,
-        road_surface,
-        road_class,
-        crossing_condition_code,
-        flow_condition_code,
         geometry
     FROM {script.sourceTable}
-    WHERE include = 'TRUE'; -- e.g., exclude rows that are not stream crossings
+    WHERE include = TRUE; -- e.g., exclude rows that are not stream crossings
 
 ALTER TABLE {script.nonTidalSites} ALTER COLUMN cabd_assessment_id SET NOT NULL;
 ALTER TABLE {script.nonTidalSites} ADD PRIMARY KEY (cabd_assessment_id);
@@ -63,17 +54,7 @@ CREATE TABLE {script.nonTidalStructures} AS (
         site.cabd_id AS site_id,
         gen_random_uuid() as structure_id,
         source.data_source_id,
-        source.cabd_assessment_id,
-        site.original_assessment_id,
-        source.notes as structure_comments,
-        source.outlet_shape_code,
-        source.inlet_shape_code,
-        source.substrate_type_code,
-        source.outlet_width_m,
-        source.inlet_width_m,
-        source.internal_structures_code,
-        source.inlet_grade_code,
-        source.material_code
+        source.cabd_assessment_id
     FROM
         {script.nonTidalSites} AS site,
         {script.sourceTable} AS source
@@ -84,14 +65,21 @@ CREATE TABLE {script.nonTidalStructures} AS (
 ALTER TABLE {script.nonTidalStructures} ALTER COLUMN structure_id SET NOT NULL;
 ALTER TABLE {script.nonTidalStructures} ADD PRIMARY KEY (structure_id);
 
---insert into material mapping and physical barrier mapping tables
-DELETE FROM {script.nonTidalMaterialMappingTable} WHERE cabd_assessment_id IN (SELECT cabd_assessment_id FROM {script.nonTidalStructures});
-INSERT INTO {script.nonTidalMaterialMappingTable} (structure_id, material_code, cabd_assessment_id)
-    SELECT
+DELETE FROM {script.nonTidalPhysicalBarrierMapping} WHERE cabd_assessment_id IN (SELECT cabd_assessment_id FROM {script.nonTidalStructures});
+DROP TABLE IF EXISTS featurecopy.temp;
+CREATE TABLE featurecopy.temp AS
+    SELECT structure_id,
+    UNNEST(STRING_TO_ARRAY(physical_barriers_code, ',')) AS physical_barriers_code,
+    cabd_assessment_id
+    FROM {script.nonTidalStructures}
+    WHERE physical_barriers_code IS NOT NULL;
+INSERT INTO {script.nonTidalPhysicalBarrierMapping} (structure_id, physical_barrier_code, cabd_assessment_id)
+    SELECT 
         structure_id,
-        material_code,
+        physical_barriers_code,
         cabd_assessment_id
-    FROM {script.nonTidalStructures} WHERE material_code IS NOT NULL;
+    FROM featurecopy.temp;
+DROP TABLE featurecopy.temp;
 
 """
 
