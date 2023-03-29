@@ -240,6 +240,7 @@ INSERT INTO featurecopy.tidal_structures (
     physical_barrier_severity_code,
     dry_passage,
     height_above_dry_passage_m,
+    passability_status_code,
     structure_comments
 )
 SELECT
@@ -271,5 +272,6 @@ SELECT
     physical_barrier_severity_code,
     dry_passage,
     height_above_dry_passage_m,
+    passability_status_code,
     structure_comments
 FROM featurecopy.tidal_structures_peskotomuhkati_nation_01192023;
