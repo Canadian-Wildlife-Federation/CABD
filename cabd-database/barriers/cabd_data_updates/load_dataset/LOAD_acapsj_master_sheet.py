@@ -42,7 +42,7 @@ CREATE TABLE {script.nonTidalSites} AS
         flow_condition_code,
         geometry
     FROM {script.sourceTable}
-    WHERE include = TRUE; -- e.g., exclude rows that are not stream crossings
+    WHERE include = 'TRUE'; -- e.g., exclude rows that are not stream crossings
 
 ALTER TABLE {script.nonTidalSites} ALTER COLUMN cabd_assessment_id SET NOT NULL;
 ALTER TABLE {script.nonTidalSites} ADD PRIMARY KEY (cabd_assessment_id);
@@ -71,7 +71,8 @@ CREATE TABLE {script.nonTidalStructures} AS (
         source.outlet_width_m,
         source.inlet_width_m,
         source.internal_structures_code,
-        source.inlet_grade_code
+        source.inlet_grade_code,
+        source.material_code
     FROM
         {script.nonTidalSites} AS site,
         {script.sourceTable} AS source
@@ -91,7 +92,7 @@ INSERT INTO {script.nonTidalMaterialMappingTable} (structure_id, material_code, 
         cabd_assessment_id
     FROM {script.nonTidalStructures} WHERE material_code IS NOT NULL;
 
-DELETE FROM {script.nonTidalPhysicalBarrierMapping} WHERE cabd_assessment_id IN (SELECT cabd_assessment_id FROM {script.nonTidalStructures});
+DELETE FROM {script.nonTidalPhysicalBarrierMappingTable} WHERE cabd_assessment_id IN (SELECT cabd_assessment_id FROM {script.nonTidalStructures});
 DROP TABLE IF EXISTS featurecopy.temp;
 CREATE TABLE featurecopy.temp AS
     SELECT structure_id,
@@ -99,7 +100,7 @@ CREATE TABLE featurecopy.temp AS
     cabd_assessment_id
     FROM {script.nonTidalStructures}
     WHERE physical_barriers_code IS NOT NULL;
-INSERT INTO {script.nonTidalPhysicalBarrierMapping} (structure_id, physical_barrier_code, cabd_assessment_id)
+INSERT INTO {script.nonTidalPhysicalBarrierMappingTable} (structure_id, physical_barrier_code, cabd_assessment_id)
     SELECT 
         structure_id,
         physical_barriers_code,
