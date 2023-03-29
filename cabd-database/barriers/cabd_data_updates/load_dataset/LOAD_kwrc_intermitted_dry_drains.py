@@ -33,8 +33,9 @@ CREATE TABLE {script.nonTidalSites} AS
         classification,
         geometry
     FROM {script.sourceTable}
-    WHERE classification != 'drain'
-    OR classification IS NULL;
+    WHERE (classification != 'drain'
+    OR classification IS NULL)
+    AND "crossing number" NOT IN ('Area of concern', 'Sed event', 'Sed event 2', 'Staining on road');
 
 ALTER TABLE {script.nonTidalSites} ALTER COLUMN cabd_assessment_id SET NOT NULL;
 ALTER TABLE {script.nonTidalSites} ADD PRIMARY KEY (cabd_assessment_id);

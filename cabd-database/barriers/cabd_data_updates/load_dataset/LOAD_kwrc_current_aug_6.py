@@ -91,7 +91,6 @@ UPDATE {script.nonTidalSites} SET upstream_channel_depth_m = ("channel water dep
 UPDATE {script.nonTidalSites} SET downstream_channel_depth_m = ("channel water depth outlet (cm)"::numeric)/100 WHERE "channel water depth outlet (cm)" ~ '[0-9]+';
 UPDATE {script.nonTidalSites} SET upstream_bankfull_width_m = ("dry channel width inlet (cm)"::numeric)/100 WHERE "dry channel width inlet (cm)" ~ '[0-9]+';
 UPDATE {script.nonTidalSites} SET downstream_bankfull_width_m = ("dry channel width outlet (cm)"::numeric)/100 WHERE "dry channel width outlet (cm)" ~ '[0-9]+';
---TO DO: CONFIRM THIS CALCULATION WITH ALEX
 UPDATE {script.nonTidalSites} SET constriction_code = 
     CASE
     WHEN ("structure diameter inlet (cm)"::numeric)/("dry channel width inlet (cm)"::numeric) < 0.5 THEN (SELECT code FROM stream_crossings.constriction_codes WHERE name_en = 'severe')
@@ -139,13 +138,13 @@ CREATE TABLE {script.nonTidalStructures} AS (
         source.cwf_armour_outlet,
         source."undercut outlet (cm)",
         source."structure diameter outlet (cm)",
+        source."rise (cm)",
         source."facility length (cm)",
         source."outflow water depth in culvert (cm)",
         source."outflow water depths at culvert lip (cm)",
         source."undercut inlet (cm)",
         source."structure diameter inlet (cm)",
         source."inlet water depth (cm)",
-        source."slope (cm)",
         source."substrate composition (outlet) bedrock (%)",
         source."substrate composition (outlet) boulder (%)",
         source."substrate composition (outlet) cobble (%)",
@@ -174,15 +173,13 @@ ALTER TABLE {script.nonTidalStructures}
     ADD COLUMN outlet_water_depth_m numeric,
     ADD COLUMN outlet_drop_to_water_surface_m numeric,
     ADD COLUMN outlet_drop_to_stream_bottom_m numeric,
-    ADD COLUMN inlet_type_code integer, --TO DO: confirm with Alex if there is anything to be mapped to this field, else remove
     ADD COLUMN inlet_grade_code integer,
     ADD COLUMN inlet_width_m numeric,
     ADD COLUMN inlet_water_depth_m numeric,
     ADD COLUMN structure_slope_pct numeric,
     ADD COLUMN structure_slope_confidence_code integer,
     ADD COLUMN substrate_type_code integer,
-    ADD COLUMN water_velocity_matches_stream_code integer,
-    ADD COLUMN passability_status_code integer;
+    ADD COLUMN water_velocity_matches_stream_code integer;
 
 UPDATE {script.nonTidalStructures} SET structure_id = gen_random_uuid();
 ALTER TABLE {script.nonTidalStructures} ALTER COLUMN structure_id SET NOT NULL;
@@ -217,9 +214,11 @@ UPDATE {script.nonTidalStructures} SET inlet_grade_code =
 UPDATE {script.nonTidalStructures} SET inlet_width_m = ("structure diameter inlet (cm)"::numeric)/100 WHERE "structure diameter inlet (cm)" ~ '[0-9]+';
 UPDATE {script.nonTidalStructures} SET inlet_water_depth_m = ("inlet water depth (cm)"::numeric)/100 WHERE "inlet water depth (cm)" ~ '[0-9]+';
 
---TO DO: confirm with Alex what to do about negative rise and slope values
-UPDATE {script.nonTidalStructures} SET structure_slope_pct = "slope (cm)"::numeric WHERE "slope (cm)" IS NOT NULL AND "slope (cm)" NOT IN ('n/a', '#DIV/0!');
-UPDATE {script.nonTidalStructures} SET structure_slope_confidence_code = (SELECT code FROM stream_crossings.confidence_codes WHERE name_en = 'high') WHERE "slope (cm)" IS NOT NULL AND "slope (cm)" NOT IN ('N/a', '#DIV/0!');
+UPDATE {script.nonTidalStructures} SET "rise (cm)" = NULL WHERE "rise (cm)" ILIKE '%n/a%';
+ALTER TABLE {script.nonTidalStructures} ALTER COLUMN "rise (cm)" TYPE double precision USING "rise (cm)"::double precision;
+
+UPDATE {script.nonTidalStructures} SET structure_slope_pct = ("rise (cm)" / "facility length (cm)") * 100;
+UPDATE {script.nonTidalStructures} SET structure_slope_confidence_code = (SELECT code FROM stream_crossings.confidence_codes WHERE name_en = 'high') WHERE structure_slope_pct IS NOT NULL;
 
 UPDATE {script.nonTidalStructures} SET "substrate composition (outlet) boulder (%)" = '100' WHERE "substrate composition (outlet) bedrock (%)" = 'boulders';
 UPDATE {script.nonTidalStructures} SET "substrate composition (outlet) bedrock (%)" = '0' WHERE "substrate composition (outlet) bedrock (%)" IN ('Bog', 'boulders', 'n/a') OR "substrate composition (outlet) bedrock (%)" IS NULL;
