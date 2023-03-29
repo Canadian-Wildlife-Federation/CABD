@@ -74,7 +74,8 @@ CREATE TABLE {script.nonTidalStructures} AS (
     SELECT
         site.cabd_id AS site_id,
         source.data_source_id,
-        source.cabd_assessment_id
+        source.cabd_assessment_id,
+        site.original_assessment_id
     FROM
         {script.nonTidalSites} AS site,
         {script.sourceTable} AS source

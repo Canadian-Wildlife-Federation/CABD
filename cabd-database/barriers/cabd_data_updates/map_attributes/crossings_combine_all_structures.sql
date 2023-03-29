@@ -14,13 +14,15 @@ INSERT INTO featurecopy.nontidal_structures (
     structure_id,
     site_id,
     data_source_id,
-    cabd_assessment_id
+    cabd_assessment_id,
+    original_assessment_id
 )
 SELECT
     structure_id,
     site_id,
     data_source_id,
-    cabd_assessment_id
+    cabd_assessment_id,
+    original_assessment_id
 FROM featurecopy.nontidal_structures_kwrc_bridges;
 
 
@@ -29,6 +31,7 @@ INSERT INTO featurecopy.nontidal_structures (
     site_id,
     data_source_id,
     cabd_assessment_id,
+    original_assessment_id,
     outlet_armouring_code,
     outlet_grade_code,
     outlet_width_m,
@@ -43,14 +46,14 @@ INSERT INTO featurecopy.nontidal_structures (
     structure_slope_pct,
     structure_slope_confidence_code,
     substrate_type_code,
-    water_velocity_matches_stream_code,
-    passability_status_code
+    water_velocity_matches_stream_code
 )
 SELECT
     structure_id,
     site_id,
     data_source_id,
     cabd_assessment_id,
+    original_assessment_id,
     outlet_armouring_code,
     outlet_grade_code,
     outlet_width_m,
@@ -65,8 +68,7 @@ SELECT
     structure_slope_pct,
     structure_slope_confidence_code,
     substrate_type_code,
-    water_velocity_matches_stream_code,
-    passability_status_code
+    water_velocity_matches_stream_code
 FROM featurecopy.nontidal_structures_kwrc_current_aug_6;
 
 
@@ -89,6 +91,7 @@ INSERT INTO featurecopy.nontidal_structures (
     site_id,
     data_source_id,
     cabd_assessment_id,
+    original_assessment_id,
     outlet_armouring_code,
     outlet_grade_code,
     outlet_width_m,
@@ -103,14 +106,14 @@ INSERT INTO featurecopy.nontidal_structures (
     structure_slope_pct,
     structure_slope_confidence_code,
     substrate_type_code,
-    water_velocity_matches_stream_code,
-    passability_status_code
+    water_velocity_matches_stream_code
 )
 SELECT
     structure_id,
     site_id,
     data_source_id,
     cabd_assessment_id,
+    original_assessment_id,
     outlet_armouring_code,
     outlet_grade_code,
     outlet_width_m,
@@ -125,8 +128,7 @@ SELECT
     structure_slope_pct,
     structure_slope_confidence_code,
     substrate_type_code,
-    water_velocity_matches_stream_code,
-    passability_status_code
+    water_velocity_matches_stream_code
 FROM featurecopy.nontidal_structures_kwrc_master_2;
 
 
@@ -135,6 +137,7 @@ INSERT INTO featurecopy.nontidal_structures (
     site_id,
     data_source_id,
     cabd_assessment_id,
+    original_assessment_id,
     structure_number,
     primary_structure,
     outlet_shape_code,
@@ -171,6 +174,7 @@ SELECT
     site_id,
     data_source_id,
     cabd_assessment_id,
+    original_assessment_id,
     structure_number,
     primary_structure,
     outlet_shape_code,
@@ -216,6 +220,7 @@ INSERT INTO featurecopy.tidal_structures (
     site_id,
     data_source_id,
     cabd_assessment_id,
+    original_assessment_id,
     structure_number,
     primary_structure,
     outlet_shape_code,
@@ -248,6 +253,7 @@ SELECT
     site_id,
     data_source_id,
     cabd_assessment_id,
+    original_assessment_id,
     structure_number,
     primary_structure,
     outlet_shape_code,

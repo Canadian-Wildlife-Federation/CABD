@@ -120,6 +120,7 @@ CREATE TABLE {script.nonTidalStructures} AS (
         site.cabd_id AS site_id,
         source.data_source_id,
         source.cabd_assessment_id,
+        site.original_assessment_id,
         source.armour,
         source.cwf_armour_inlet,
         source.cwf_armour_outlet,
