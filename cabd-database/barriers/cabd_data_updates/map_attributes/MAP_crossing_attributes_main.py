@@ -36,7 +36,12 @@ class MappingScript:
         self.tidalStructuresTable = self.workingSchema + "." + self.tidalStructures
 
         if len(sys.argv) != 4:
-            print("Invalid usage: MAP_<datasetid>.py <siteType> <dbUser> <dbPassword>")
+            print("Invalid usage: MAP_<siteType>_<datasetid>.py <siteType> <dbUser> <dbPassword>")
+            sys.exit()
+        
+        if sys.argv[1] not in ["tidal", "nontidal"]:
+            print("Invalid usage: siteType must be either tidal or nontidal.")
+            print("Correct usage is: MAP_<siteType>_<datasetid>.py <siteType> <dbUser> <dbPassword>")
             sys.exit()
 
     def do_work(self, mappingquery):
