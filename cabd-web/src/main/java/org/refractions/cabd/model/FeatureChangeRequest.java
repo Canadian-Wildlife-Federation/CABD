@@ -15,8 +15,6 @@
  */
 package org.refractions.cabd.model;
 
-import java.util.regex.Pattern;
-
 /**
  * Feature change request object.
  * 
@@ -72,17 +70,17 @@ public class FeatureChangeRequest {
 		this.dataSource = dataSource;
 	}
 	
+	/**
+	 * Validates the change request. 
+	 * 
+	 * Validation requires a valid email address and an update description
+	 * @return
+	 */
 	public String validate() {
-		if (this.getEmail() == null || this.getEmail().isBlank()) return "Email is required";
-		//regex validate email
-		//https://www.oreilly.com/library/view/regular-expressions-cookbook/9781449327453/ch04s01.html
-		//basic email check
-		String regex = "\\A[A-Z0-9+_.-]+@[A-Z0-9.-]+\\Z";
-		if (!Pattern.compile(regex, Pattern.CASE_INSENSITIVE).matcher(this.getEmail()).find())
-			return "Email is invalid. Must be of the form localpart@domain.com";
+		String email = Contact.validateEmail(getEmail());
+		if (email != null) return email;
 
-		if (this.getDescription() == null || this.getDescription().isBlank()) return "Description is required";		
-		
+		if (this.getDescription() == null || this.getDescription().isBlank()) return "Description is required";				
 		return null;
 	}
 	
