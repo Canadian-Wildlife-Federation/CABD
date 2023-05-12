@@ -5,26 +5,43 @@ create extension postgres_fdw;
 drop server chyf_server cascade;
 CREATE SERVER chyf_server
         FOREIGN DATA WRAPPER postgres_fdw
-        OPTIONS (host 'cabd-postgres-dev.postgres.database.azure.com', 
+        OPTIONS (host 'cabd-postgres.postgres.database.azure.com', 
         port '5432', dbname 'chyf', sslmode 'require', extensions 'postgis');
         
 CREATE USER MAPPING FOR public
         SERVER chyf_server
-        OPTIONS (user 'chyf@cabd-postgres-dev', password 'XXXXXXXXXXX');            
+        OPTIONS (user 'chyf', password 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXX');
         
 CREATE FOREIGN TABLE chyf_flowpath (
- region_id character varying(32),     
- type character varying,    
- rank character varying,        
- length double precision ,        
- name character varying,         
- nameid character varying ,        
+ id uuid,
+ aoi_id uuid,     
+ ef_type integer,
+ ef_subtype integer,
+ rank integer,
+ length float8,
+ rivernameid1 uuid,
+ rivernameid2 uuid,
  geometry geometry(LineString,4617) 
 )
 SERVER chyf_server
 OPTIONS (schema_name 'chyf2', table_name 'eflowpath');  
 
+CREATE FOREIGN TABLE chyf_flowpath_properties (
+ id uuid,
+ aoi_id uuid,
+ strahler_order integer,     
+ graph_id integer,
+ mainstem_id uuid,
+ max_uplength float8,
+ hack_order integer,
+ mainstem_seq integer,
+ shreve_order integer
+)
+SERVER chyf_server
+OPTIONS (schema_name 'chyf2', table_name 'eflowpath_properties_vw');  
+
 grant select on chyf_flowpath to public;
+grant select on chyf_flowpath_properties to public;
 
 CREATE OR REPLACE FUNCTION cabd.snap_to_network(src_schema varchar, src_table varchar, raw_geom varchar, snapped_geom varchar, max_distance_m double precision) RETURNS VOID AS $$
 DECLARE
