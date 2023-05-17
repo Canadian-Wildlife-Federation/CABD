@@ -16,12 +16,12 @@ dbPassword = sys.argv[2]
 schema = "nb_data_test"
 
 #chyf aois that cover road network "'<uuid>,'<uuid>'"
-aois = "'d58f808d-72ca-4652-9a0a-26b1763f4a9f'"
+aois = "'b7e8d9f1-be2f-4eec-b8cc-e517c2d5ad22'"
 
 #the meters based projection for clustering
 #the cluster distance will be based on this projection so this
 #should be appropriate for the data 
-mSRID = 2953
+mSRID = 2953 # use Lambert Conformal Conic if we need one projection for all of Canada otherwise pick an appropriate local projection
 #cabd geometry srid 
 cabdSRID = 4617
 #distance in meters (mSRID projection units) for clustering points
@@ -32,10 +32,10 @@ clusterDistance = 15
 #if one of these tables doesn't exist for your dataset, set
 #the value to None (railTable = None)
 #the geometry fields need geometry indexes
-railTable = "rail"
-roadsTable = "roads"
-resourceRoadsTable = None
-trailTable = "trails"
+railTable = "canvec_rail"
+roadsTable = "gnb_roads"
+resourceRoadsTable = "nbrn_roads"
+trailTable = None
 #geometry and unique id fields from the above tables
 #id MUST be an integer 
 geometry = "geometry"
@@ -49,12 +49,12 @@ streamPropTable = "eflowpath_properties"
 
 
 #all source transport layers to be used for computing crossings
-layers = [railTable, roadsTable, resourceRoadsTable, trailTable];
+layers = [railTable, roadsTable, resourceRoadsTable, trailTable]
 
 #non-rail layers - these are included in the clustering
 #these should be in order of priority for assigning ids to point
-nonRailLayers = [roadsTable, resourceRoadsTable, trailTable];
-railLayers = [railTable];
+nonRailLayers = [roadsTable, resourceRoadsTable, trailTable]
+railLayers = [railTable]
 
 #prioritize roads layer over other layers in clusters for determining what cluster point to keep
 priorityLayer=roadsTable
@@ -71,8 +71,8 @@ def checkEmpty(connection, sql, error):
         cursor.execute(sql)
         count = cursor.fetchone()
         if (count[0] != 0):
-            print ("ERROR: " + error);
-            sys.exit(-1);
+            print ("ERROR: " + error)
+            sys.exit(-1)
     
 
 # -- MAIN SCRIPT --  
@@ -91,6 +91,7 @@ conn = pg2.connect(database=dbName,
 
 #determine if stream network data exists 
 #if not copy over data from chyf using fdw
+#TO DO: update this to look for the matching AOI data instead of just the table
 sql = f"SELECT count(*) FROM pg_catalog.pg_tables WHERE schemaname = '{schema}' and tablename = '{streamTable}'"
 copystreams = True
 with conn.cursor() as cursor:
@@ -120,10 +121,10 @@ if copystreams:
 
 
 sql = f"SELECT case when count(*) = 0 then 1 else 0 end FROM {schema}.{streamTable}"
-checkEmpty(conn, sql, "stream table is empty");
+checkEmpty(conn, sql, "stream table is empty")
 
 sql = f"SELECT case when count(*) = 0 then 1 else 0 end FROM {schema}.{streamPropTable}"
-checkEmpty(conn, sql, "stream property table is empty");
+checkEmpty(conn, sql, "stream property table is empty")
 
 
 # ----
@@ -131,7 +132,7 @@ checkEmpty(conn, sql, "stream property table is empty");
 # ----
 for layer in layers:
     if (layer is None):
-        continue;
+        continue
     
     print("Computing crossings for " + layer)
     
@@ -149,7 +150,7 @@ for layer in layers:
         
         DROP TABLE {schema}.crossing_temp;
     """
-    executeQuery(conn, computeCrossing);
+    executeQuery(conn, computeCrossing)
     
     
 # ----
@@ -161,14 +162,14 @@ sql = f'DROP TABLE IF EXISTS {schema}.all_crossings;'
 sql += f'CREATE TABLE {schema}.all_crossings (id serial, eflowpath_id uuid,'
 for layer in nonRailLayers:
     if (layer is None):
-        continue;
+        continue
     sql = sql + f'{layer}_{id} integer, '
 sql = sql + f'{geometry} geometry(POINT, {cabdSRID})); '
 
-idFields = "";
+idFields = ""
 for layer in nonRailLayers:
     if (layer is None):
-        continue;
+        continue
     idFields = idFields + f'z.{layer}_{id},'
     sql = sql + f'INSERT INTO {schema}.all_crossings ({layer}_{id}, eflowpath_id, {geometry}) SELECT {id}, eflowpath_id, {geometry} FROM {schema}.{layer}_crossings; '
 
@@ -219,14 +220,14 @@ CREATE TABLE {schema}.cluster_by_id_with_data as
 SELECT a.cluster_id, a.{geometry}, z.eflowpath_id, {idFields}
 FROM  {schema}.cluster_by_id a left join {schema}.all_crossings z 
 on a.{geometry} = z.{geometry}_m ;
-""";
+"""
 
-executeQuery(conn, sql);
+executeQuery(conn, sql)
 
 
 #QA check - this should return nothing
 sql = f"SELECT count(*) FROM {schema}.cluster_by_id_with_data WHERE eflowpath_id is null"
-checkEmpty(conn, sql, "cluster_by_id_with_data table should not have any rows with null eflowpath_id");
+checkEmpty(conn, sql, "cluster_by_id_with_data table should not have any rows with null eflowpath_id")
 
 print("Extracting single points from cluster")
 sql = f"""
@@ -249,7 +250,7 @@ DELETE FROM {schema}.cluster_by_id_with_data
 WHERE cluster_id IN (SELECT cluster_id FROM {schema}.crossing_points);
 """
 
-executeQuery(conn, sql);
+executeQuery(conn, sql)
 
 
 print("Computing point to keep for cluster with priority layer crossings")
@@ -258,7 +259,7 @@ print("Computing point to keep for cluster with priority layer crossings")
 # ----
 
 #FIRST - process the "priority layer" - finding the most downstream point
-# on the "biggest" stream using max upstreamm length as the proxy for "biggest" 
+# on the "biggest" stream using max upstream length as the proxy for "biggest" 
 
 sql = f"""
 
@@ -324,11 +325,11 @@ FROM {schema}.cluster_{priorityLayer}_id a JOIN {schema}.temp4 b on a.cluster_id
 GROUP BY a.cluster_id;
 """
 
-executeQuery(conn, sql);
+executeQuery(conn, sql)
 
 #should be empty
-sql = f"SELECT COUNT(*) FROM (select cluster_id from {schema}.cluster_{priorityLayer}_id except select cluster_id from {schema}.temp5) foo";
-checkEmpty(conn, sql, "error when computing clusters with priority layer - error with temporary table 5");
+sql = f"SELECT COUNT(*) FROM (select cluster_id from {schema}.cluster_{priorityLayer}_id except select cluster_id from {schema}.temp5) foo"
+checkEmpty(conn, sql, "error when computing clusters with priority layer - error with temporary table 5")
 
 sql = f"""
 --merge to find downstream point
@@ -338,11 +339,11 @@ SELECT distinct a.cluster_id, a.geometry, a.eflowpath_id
 FROM {schema}.cluster_{priorityLayer}_id a JOIN {schema}.temp5 b on a.cluster_id  = b.cluster_id
 and a.point_on_line = b.min_pol;
 """
-executeQuery(conn, sql);
+executeQuery(conn, sql)
 
 #should be empty
-sql = f" SELECT count(*) FROM (SELECT cluster_id FROM {schema}.cluster_{priorityLayer}_id except SELECT cluster_id FROM {schema}.temp6) foo";
-checkEmpty(conn, sql, "error when computing clusters with priority layer - error with temporary table 6");
+sql = f" SELECT count(*) FROM (SELECT cluster_id FROM {schema}.cluster_{priorityLayer}_id except SELECT cluster_id FROM {schema}.temp6) foo"
+checkEmpty(conn, sql, "error when computing clusters with priority layer - error with temporary table 6")
 
 sql = f"""
 --add to main table and remove from processing
@@ -353,11 +354,11 @@ SELECT cluster_id, geometry, eflowpath_id FROM {schema}.temp6;
 DELETE FROM {schema}.cluster_by_id_with_data WHERE cluster_id IN (SELECT cluster_id FROM {schema}.crossing_points);
 DELETE FROM {schema}.cluster_{priorityLayer}_id WHERE cluster_id IN (SELECT cluster_id FROM {schema}.crossing_points);
 """
-executeQuery(conn, sql);
+executeQuery(conn, sql)
 
 #should be empty
-sql = f"select count(*) from {schema}.cluster_{priorityLayer}_id;";
-checkEmpty(conn, sql, "error when computing clusters with priority layer - not all clusters with point from the priority layer were processed");
+sql = f"select count(*) from {schema}.cluster_{priorityLayer}_id;"
+checkEmpty(conn, sql, "error when computing clusters with priority layer - not all clusters with point from the priority layer were processed")
 
 sql = f"""
 DROP TABLE {schema}.temp6;
@@ -366,7 +367,7 @@ DROP TABLE {schema}.temp4;
 DROP TABLE {schema}.temp3;
 DROP TABLE {schema}.cluster_{priorityLayer}_id ;
 """
-executeQuery(conn, sql);
+executeQuery(conn, sql)
 
 
 print("Computing point to keep for cluster with remaining clusters")
@@ -390,7 +391,7 @@ SET upstream_length = CASE WHEN a.max_uplength is null THEN b.length ELSE a.max_
 FROM {schema}.{streamPropTable} a join {schema}.{streamTable} b on a.id = b.id 
 WHERE {schema}.cluster_by_id_with_data.eflowpath_id = a.id;
 --case statement is to deal with secondaries - these have no upstream length
---there were a few cases where these were crossed by they were all on the same edge so it 
+--there were a few cases where these were crossed but they were all on the same edge so it 
 --doesn't matter
 
 --for each cluster we need edge id with the maximum 
@@ -420,7 +421,7 @@ executeQuery(conn, sql)
 
 #should be empty
 sql = f"select count(*) FROM (select cluster_id from {schema}.cluster_by_id_with_data cni except select cluster_id from {schema}.temp5) foo"
-checkEmpty(conn, sql, "Not all cluster points processed - error with temp5");
+checkEmpty(conn, sql, "Not all cluster points processed - error with temp5")
 
 sql = f"""
 DROP TABLE IF EXISTS {schema}.temp6;
@@ -434,7 +435,7 @@ executeQuery(conn, sql)
 
 #should be empty
 sql = f"select count(*) FROM (SELECT cluster_id from {schema}.cluster_by_id_with_data cni except select cluster_id from {schema}.temp6) foo"
-checkEmpty(conn, sql, "Not all cluster points processed - error with temp6");
+checkEmpty(conn, sql, "Not all cluster points processed - error with temp6")
 
 
 sql = f"""
@@ -447,11 +448,11 @@ DELETE FROM {schema}.cluster_by_id_with_data WHERE cluster_id IN (SELECT cluster
 executeQuery(conn, sql)
 
 #should be empty
-sql = f"select count(*) from {schema}.cluster_by_id_with_data";
-checkEmpty(conn, sql, "error when computing clusters - not all clusters were processed");
+sql = f"select count(*) from {schema}.cluster_by_id_with_data"
+checkEmpty(conn, sql, "error when computing clusters - not all clusters were processed")
 
-sql = f"select count(*) FROM (select cluster_id, count(*) from {schema}.crossing_points group by cluster_id having count(*) > 1) foo";
-checkEmpty(conn, sql, "error when computing clusters - multiple points from cluster retained");
+sql = f"select count(*) FROM (select cluster_id, count(*) from {schema}.crossing_points group by cluster_id having count(*) > 1) foo"
+checkEmpty(conn, sql, "error when computing clusters - multiple points from cluster retained")
 
 sql = f"""
 DROP TABLE {schema}.temp6;
@@ -460,7 +461,7 @@ DROP TABLE {schema}.temp4;
 DROP TABLE {schema}.temp3;
 DROP TABLE {schema}.cluster_by_id_with_data ;
 """
-executeQuery(conn, sql);
+executeQuery(conn, sql)
 
 sql = f"""
 alter table {schema}.crossing_points rename column {geometry} to {geometry}_m;
@@ -468,15 +469,15 @@ alter table {schema}.crossing_points add column {geometry} geometry(point, {cabd
 update {schema}.crossing_points set {geometry} = st_Transform({geometry}_m, {cabdSRID});
 """
 
-executeQuery(conn, sql);
+executeQuery(conn, sql)
 
 print("Adding source data ids to crossing points")
 
 fieldswithtype = ""
-fields = "";
+fields = ""
 for layer in nonRailLayers:
     if (layer is None):
-        continue;
+        continue
     fieldswithtype += f'{layer}_{id} integer,'
     fields += f'{layer}_{id},'
 fields = fields[:-1]
@@ -505,11 +506,11 @@ DELETE FROM {schema}.temp1 WHERE cluster_id in (SELECT cluster_id FROM {schema}.
 """
 executeQuery(conn, sql)
 
-idcasesql = "";
-typecasesql = "";
+idcasesql = ""
+typecasesql = ""
 for layer in nonRailLayers:
     if (layer is None):
-        continue;
+        continue
     idcasesql += f'WHEN {layer}_{id} IS NOT NULL THEN {layer}_{id} '
     typecasesql += f"WHEN {layer}_{id} IS NOT NULL THEN '{layer}' "
     
@@ -523,8 +524,8 @@ for layer in nonRailLayers:
         """
     executeQuery(conn, sql)
 
-checkEmpty(conn, f"select count(*) FROM {schema}.temp1", "error when computing source feature for each modelled crossing - some points not processed");
-checkEmpty(conn, f"select count(*) FROM ( select cluster_id, count(*) from {schema}.temp2 group by cluster_id having count(*) > 1 ) foo", "error when computing source feature for each modelled crossing - multiple values found");
+checkEmpty(conn, f"select count(*) FROM {schema}.temp1", "error when computing source feature for each modelled crossing - some points not processed")
+checkEmpty(conn, f"select count(*) FROM ( select cluster_id, count(*) from {schema}.temp2 group by cluster_id having count(*) > 1 ) foo", "error when computing source feature for each modelled crossing - multiple values found")
 
 
 sql = f"""
@@ -551,10 +552,10 @@ for layer in railLayers:
     SELECT {id}, '{layer}', eflowpath_id, geometry 
     FROM {schema}.{layer}_crossings;
     """
-    executeQuery(conn, sql);
+    executeQuery(conn, sql)
 
-sql = f"select count(*) FROM {schema}.crossing_points WHERE transport_feature_id is null or transport_feature_source is null";
-checkEmpty(conn, sql, "a cluster was found without any source transport layer");
+sql = f"select count(*) FROM {schema}.crossing_points WHERE transport_feature_id is null or transport_feature_source is null"
+checkEmpty(conn, sql, "a cluster was found without any source transport layer")
 
 #clean up
 sql = f"""
@@ -562,6 +563,6 @@ DROP TABLE {schema}.cluster_1;
 DROP TABLE {schema}.cluster_2;
 DROP TABLE {schema}.cluster_by_id;
 """
-executeQuery(conn, sql);
+executeQuery(conn, sql)
 
 print(f"** PROCESSING COMPLETE ** results in {schema}.crossing_points table")
