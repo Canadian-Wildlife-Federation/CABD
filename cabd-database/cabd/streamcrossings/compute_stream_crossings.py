@@ -33,8 +33,8 @@ clusterDistance = 15
 #the value to None (railTable = None)
 #the geometry fields need geometry indexes
 railTable = "canvec_rail"
-roadsTable = "gnb_roads"
-resourceRoadsTable = "nbrn_roads"
+roadsTable = "nbrn_roads"
+resourceRoadsTable = "gnb_roads"
 trailTable = None
 #geometry and unique id fields from the above tables
 #id MUST be an integer 
