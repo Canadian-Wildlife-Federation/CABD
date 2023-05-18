@@ -1,51 +1,69 @@
 import psycopg2 as pg2
 import sys
 import subprocess
+import argparse
+import configparser
+from _ast import Continue
 
-dbHost = "cabd-postgres.postgres.database.azure.com"
-dbPort = "5432"
-dbName = "cabd"
 
-#dbHost = "localhost"
-#dbPort = "5432"
-#dbName = "cabd3"
-dbUser = sys.argv[1]
-dbPassword = sys.argv[2]
+#-- PARSE COMMAND LINE ARGuMENTS --  
+parser = argparse.ArgumentParser(description='Processing stream crossings.')
+parser.add_argument('-c', type=str, help='the configuration file', required=False)
+parser.add_argument('-user', type=str, help='the username to access the database')
+parser.add_argument('-password', type=str, help='the password to access the database')
+args = parser.parse_args()
+configfile = "config.ini"
+if (args.c):
+    configfile = args.c
+
+#-- READ PARAMETERS FOR CONFIG FILE -- 
+config = configparser.ConfigParser()
+config.read(configfile)
+
+#database settings 
+dbHost = config['DATABASE']['host']
+dbPort = config['DATABASE']['port']
+dbName = config['DATABASE']['name']
+dbUser = args.user
+dbPassword = args.password
 
 #output data schema
-schema = "nb_data_test"
+schema = config['DATABASE']['data_schema']
+cabdSRID = config['DATABASE']['cabdSRID']
 
-#chyf aois that cover road network "'<uuid>,'<uuid>'"
-aois = "'d58f808d-72ca-4652-9a0a-26b1763f4a9f'"
-
-#the meters based projection for clustering
-#the cluster distance will be based on this projection so this
-#should be appropriate for the data 
-mSRID = 2953
-#cabd geometry srid 
-cabdSRID = 4617
+mSRID  = config['SETTINGS']['mSRID']
 #distance in meters (mSRID projection units) for clustering points
-clusterDistance = 15  
+clusterDistance = config['SETTINGS']['clusterDistance']
 
-#each of these tables must have an id and geometry field names with the
-#same name as the variables below
-#if one of these tables doesn't exist for your dataset, set
-#the value to None (railTable = None)
-#the geometry fields need geometry indexes
-railTable = "rail"
-roadsTable = "roads"
-resourceRoadsTable = None
-trailTable = "trails"
+#chyf stream network aois as '<aoiuuid>','<aoiuuid>'
+aois = config['SETTINGS']['aois']
+
+#data tables
+#set to None if doesn't exist for data 
+railTable = config['DATASETS']['railTable'].strip()
+roadsTable = config['DATASETS']['roadsTable'].strip()
+resourceRoadsTable = config['DATASETS']['resourceRoadsTable'].strip()
+trailTable = config['DATASETS']['trailTable'].strip()
+
+railTable = None if railTable == "None" else railTable
+roadsTable = None if roadsTable == "None" else roadsTable
+resourceRoadsTable = None if resourceRoadsTable == "None" else resourceRoadsTable
+trailTable = None if trailTable == "None" else trailTable
+
+
+railAttributes = config['DATASETS']['railAttributes'].strip()
+trailAttributes = config['DATASETS']['trailAttributes'].strip()
+roadAttributes = config['DATASETS']['roadAttributes'].strip()
+resourceRoadsAttributes = config['DATASETS']['resourceRoadsAttributes'].strip()
+
 #geometry and unique id fields from the above tables
 #id MUST be an integer 
-geometry = "geometry"
-id = "fid"
+geometry = config['DATASETS']['geometryField'].strip()
+id = config['DATASETS']['idField'].strip()
 
 #chyf stream data
-streamTable = "eflowpath"
-#use max_uplength from this table
-#to determine "largest" stream
-streamPropTable = "eflowpath_properties"
+streamTable = config['CHYF']['streamTable'].strip()
+streamPropTable = config['CHYF']['streamPropTable'].strip()
 
 
 #all source transport layers to be used for computing crossings
@@ -57,15 +75,92 @@ nonRailLayers = [roadsTable, resourceRoadsTable, trailTable];
 railLayers = [railTable];
 
 #prioritize roads layer over other layers in clusters for determining what cluster point to keep
+player = config['DATASETS']['priorityLayer']
 priorityLayer=roadsTable
+if (player == "roadsTable"):
+    priorityLayer=roadsTable
+elif (player == "railTable"):
+    priorityLayer=railTable
+elif (player == "resourceRoadsTable"):
+    priorityLayer=resourceRoadsTable    
+elif (player == "trailTable"):
+    priorityLayer=trailTable    
 
 
+layers = []
+allayers = config['DATASETS']['allLayers'].split(",")
+for l in allayers:
+    l = l.strip()
+    if (l == "roadsTable"):
+        layers.append(roadsTable)
+    elif (l == "railTable"):
+        layers.append(railTable)
+    elif (l == "resourceRoadsTable"):
+        layers.append(resourceRoadsTable)    
+    elif (l == "trailTable"):
+        layers.append(trailTable)    
+
+nonRailLayers = []
+allayers = config['DATASETS']['nonRailLayers'].split(",")
+for l in allayers:
+    l = l.strip()
+    if (l == "roadsTable"):
+        nonRailLayers.append(roadsTable)
+    elif (l == "railTable"):
+        nonRailLayers.append(railTable)
+    elif (l == "resourceRoadsTable"):
+        nonRailLayers.append(resourceRoadsTable)    
+    elif (l == "trailTable"):
+        nonRailLayers.append(trailTable)    
+
+railLayers = []
+allayers = config['DATASETS']['railLayers'].split(",")
+for l in allayers:
+    l = l.strip()
+    if (l == "roadsTable"):
+        railLayers.append(roadsTable)
+    elif (l == "railTable"):
+        railLayers.append(railTable)
+    elif (l == "resourceRoadsTable"):
+        railLayers.append(resourceRoadsTable)    
+    elif (l == "trailTable"):
+        railLayers.append(trailTable)    
+
+print ("-- Processing Parameters --")
+print (f"Database: {dbHost}:{dbPort}/{dbName}")
+print (f"Data Schema: {schema}")
+print (f"CABD SRID: {cabdSRID}")
+print (f"CHyF Data: {streamTable} {streamPropTable} {aois}")
+print (f"Meters Projection: {mSRID} ")
+print (f"Cluster Distance: {clusterDistance} ")
+
+print (f"Data Tables: {railTable} {roadsTable} {resourceRoadsTable} {trailTable} ")
+print (f"Id/Geometry Fields: {id} {geometry}")
+
+print (f"All Layers: {layers}")
+print (f"Non Rail Layers: {nonRailLayers}")
+print (f"Rail Layers: {railLayers}")
+print (f"Priority Layer: {priorityLayer}")
+
+print (f"Rail Attributes: {railAttributes}")
+print (f"Trail Attributes: {trailAttributes}")
+print (f"Road Attributes: {roadAttributes}")
+print (f"Resource Road Attributes: {resourceRoadsAttributes}")
+print ("----")
+
+#--
+#-- function to execute a query 
+#--
 def executeQuery(connection, sql):
     #print (sql)
     with connection.cursor() as cursor:
         cursor.execute(sql)
     conn.commit()
     
+#--
+#-- checks if the first column of the first row
+#-- of the query results is 0 otherwise
+# -- ends the program
 def checkEmpty(connection, sql, error):    
     with connection.cursor() as cursor:
         cursor.execute(sql)
@@ -544,7 +639,7 @@ DROP TABLE {schema}.temp2;
 executeQuery(conn, sql)
 
 for layer in railLayers:
-    print("Adding {layer} crossings to crossing points")
+    print(f"Adding {layer} crossings to crossing points")
 
     sql = f"""
     INSERT INTO {schema}.crossing_points (transport_feature_id, transport_feature_source, eflowpath_id, geometry)
@@ -564,4 +659,44 @@ DROP TABLE {schema}.cluster_by_id;
 """
 executeQuery(conn, sql);
 
-print(f"** PROCESSING COMPLETE ** results in {schema}.crossing_points table")
+
+print(f"Adding layer attributes to crossing points")
+attributeValues = [railAttributes, trailAttributes, roadAttributes, resourceRoadsAttributes]
+attributeTables = [railTable, trailTable, roadsTable, resourceRoadsTable];
+prefix = ["a", "b", "c", "d"]
+sql = f"select cp.*,";
+sqlfrom = f" {schema}.crossing_points cp "
+
+for i in range(0, len(attributeTables) - 1):
+    if (attributeTables[i] is None):
+        continue
+
+    if (attributeValues[i] is None or attributeValues[i] == ""):
+        continue
+    
+    fields = attributeValues[i].split(",")
+    for field in fields:
+        sql += f"{prefix[i]}.{field}," 
+    
+    sqlfrom += f" left join {schema}.{attributeTables[i]} {prefix[i]} on {prefix[i]}.{id} = cp.transport_feature_id and cp.transport_feature_source = '{attributeTables[i]}' "
+
+sql = sql[:-1]
+sql = f"""
+DROP TABLE IF EXISTS {schema}.crossing_points_with_attributes;
+CREATE INDEX {schema}_crossing_points_transport_feature_id_idx on {schema}.crossing_points (transport_feature_id);
+CREATE TABLE {schema}.crossing_points_with_attributes AS {sql} FROM {sqlfrom}"""
+    
+executeQuery(conn, sql);
+
+sql = f"""
+DROP TABLE {schema}.crossing_points;
+ALTER TABLE {schema}.crossing_points_with_attributes rename to crossing_points;
+CREATE INDEX {schema}_crossing_points_cluster_id_idx on {schema}.crossing_points (cluster_id);
+CREATE INDEX {schema}_crossing_points_transport_feature_id_idx on {schema}.crossing_points (transport_feature_id);
+CREATE INDEX {schema}_crossing_points_transport_feature_source_idx on {schema}.crossing_points (transport_feature_source);
+CREATE INDEX {schema}_crossing_points_{geometry}_idx on {schema}.crossing_points using gist({geometry});
+"""
+executeQuery(conn, sql);
+
+print(f"results in {schema}.crossing_points table")
+print("** PROCESSING COMPLETE **")
