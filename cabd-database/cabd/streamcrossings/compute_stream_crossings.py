@@ -36,7 +36,9 @@ mSRID  = config['SETTINGS']['mSRID']
 clusterDistance = config['SETTINGS']['clusterDistance']
 
 #chyf stream network aois as '<aoiuuid>','<aoiuuid>'
-aois = config['SETTINGS']['aois']
+aoi_raw = config['SETTINGS']['aoi_raw']
+aois = str(aoi_raw)[1:-1]
+
 
 #data tables
 #set to None if doesn't exist for data 
@@ -211,7 +213,7 @@ if copystreams:
         ANALYZE {schema}.{streamTable};
 
     """
-    print(sql)
+    #print(sql)
     executeQuery(conn, sql)
 
 
@@ -326,12 +328,12 @@ checkEmpty(conn, sql, "cluster_by_id_with_data table should not have any rows wi
 
 print("Extracting single points from cluster")
 sql = f"""
-DROP TABLE IF EXISTS {schema}.crossing_points;
+DROP TABLE IF EXISTS {schema}.modelled_crossings;
 
 --create an output table of clusters to keep
 --start with clusters of a single point
 
-CREATE TABLE {schema}.crossing_points AS  
+CREATE TABLE {schema}.modelled_crossings AS  
 SELECT cluster_id, geometry, eflowpath_id 
 FROM {schema}.cluster_by_id_with_data 
 WHERE cluster_id IN (
@@ -342,7 +344,7 @@ WHERE cluster_id IN (
 
 --remove these from processing table
 DELETE FROM {schema}.cluster_by_id_with_data 
-WHERE cluster_id IN (SELECT cluster_id FROM {schema}.crossing_points);
+WHERE cluster_id IN (SELECT cluster_id FROM {schema}.modelled_crossings);
 """
 
 executeQuery(conn, sql)
@@ -368,7 +370,7 @@ WHERE {priorityLayer}_{id} is not null;
 
 --for all these ones where there is only one 
 --use this as the cluster point 
-INSERT INTO {schema}.crossing_points 
+INSERT INTO {schema}.modelled_crossings 
 SELECT cluster_id, {geometry}, eflowpath_id 
 FROM {schema}.cluster_{priorityLayer}_id 
 WHERE cluster_id in (
@@ -376,8 +378,8 @@ WHERE cluster_id in (
 );
 
 --remove these from working data sets 
-DELETE FROM {schema}.cluster_by_id_with_data WHERE cluster_id IN (select cluster_id FROM {schema}.crossing_points);
-DELETE FROM {schema}.cluster_{priorityLayer}_id WHERE cluster_id IN (select cluster_id FROM {schema}.crossing_points);
+DELETE FROM {schema}.cluster_by_id_with_data WHERE cluster_id IN (select cluster_id FROM {schema}.modelled_crossings);
+DELETE FROM {schema}.cluster_{priorityLayer}_id WHERE cluster_id IN (select cluster_id FROM {schema}.modelled_crossings);
 
 -- for the remaining add location on line
 ALTER TABLE  {schema}.cluster_{priorityLayer}_id ADD COLUMN point_on_line double precision;
@@ -442,12 +444,12 @@ checkEmpty(conn, sql, "error when computing clusters with priority layer - error
 
 sql = f"""
 --add to main table and remove from processing
-INSERT INTO {schema}.crossing_points (cluster_id, geometry, eflowpath_id)
+INSERT INTO {schema}.modelled_crossings (cluster_id, geometry, eflowpath_id)
 SELECT cluster_id, geometry, eflowpath_id FROM {schema}.temp6;
 
 --remove these from nrbn data & cluster_by_id_with_data
-DELETE FROM {schema}.cluster_by_id_with_data WHERE cluster_id IN (SELECT cluster_id FROM {schema}.crossing_points);
-DELETE FROM {schema}.cluster_{priorityLayer}_id WHERE cluster_id IN (SELECT cluster_id FROM {schema}.crossing_points);
+DELETE FROM {schema}.cluster_by_id_with_data WHERE cluster_id IN (SELECT cluster_id FROM {schema}.modelled_crossings);
+DELETE FROM {schema}.cluster_{priorityLayer}_id WHERE cluster_id IN (SELECT cluster_id FROM {schema}.modelled_crossings);
 """
 executeQuery(conn, sql)
 
@@ -534,11 +536,11 @@ checkEmpty(conn, sql, "Not all cluster points processed - error with temp6")
 
 
 sql = f"""
-INSERT INTO {schema}.crossing_points (cluster_id, geometry, eflowpath_id)
+INSERT INTO {schema}.modelled_crossings (cluster_id, geometry, eflowpath_id)
 SELECT cluster_id, geometry, eflowpath_id FROM {schema}.temp6;
 
 --remove these from cluster_by_id_with_data
-DELETE FROM {schema}.cluster_by_id_with_data WHERE cluster_id IN (SELECT cluster_id FroM {schema}.crossing_points);
+DELETE FROM {schema}.cluster_by_id_with_data WHERE cluster_id IN (SELECT cluster_id FroM {schema}.modelled_crossings);
 """
 executeQuery(conn, sql)
 
@@ -546,7 +548,7 @@ executeQuery(conn, sql)
 sql = f"select count(*) from {schema}.cluster_by_id_with_data"
 checkEmpty(conn, sql, "error when computing clusters - not all clusters were processed")
 
-sql = f"select count(*) FROM (select cluster_id, count(*) from {schema}.crossing_points group by cluster_id having count(*) > 1) foo"
+sql = f"select count(*) FROM (select cluster_id, count(*) from {schema}.modelled_crossings group by cluster_id having count(*) > 1) foo"
 checkEmpty(conn, sql, "error when computing clusters - multiple points from cluster retained")
 
 sql = f"""
@@ -559,9 +561,9 @@ DROP TABLE {schema}.cluster_by_id_with_data ;
 executeQuery(conn, sql)
 
 sql = f"""
-alter table {schema}.crossing_points rename column {geometry} to {geometry}_m;
-alter table {schema}.crossing_points add column {geometry} geometry(point, {cabdSRID});
-update {schema}.crossing_points set {geometry} = st_Transform({geometry}_m, {cabdSRID});
+alter table {schema}.modelled_crossings rename column {geometry} to {geometry}_m;
+alter table {schema}.modelled_crossings add column {geometry} geometry(point, {cabdSRID});
+update {schema}.modelled_crossings set {geometry} = st_Transform({geometry}_m, {cabdSRID});
 """
 
 executeQuery(conn, sql)
@@ -584,7 +586,7 @@ DROP TABLE IF EXISTS {schema}.temp1;
 
 CREATE TABLE {schema}.temp1 as 
 select a.cluster_id, b.*
-from {schema}.crossing_points a, {schema}.all_crossings b 
+from {schema}.modelled_crossings a, {schema}.all_crossings b 
 where a.geometry_m = b.geometry_m;
 
 --deal with duplicates
@@ -625,14 +627,14 @@ checkEmpty(conn, f"select count(*) FROM ( select cluster_id, count(*) from {sche
 
 sql = f"""
 
-ALTER TABLE {schema}.crossing_points add column transport_feature_id integer;
-ALTER TABLE {schema}.crossing_points add column transport_feature_source varchar(64);
+ALTER TABLE {schema}.modelled_crossings add column transport_feature_id integer;
+ALTER TABLE {schema}.modelled_crossings add column transport_feature_source varchar(64);
 
-UPDATE {schema}.crossing_points SET 
+UPDATE {schema}.modelled_crossings SET 
 transport_feature_id = CASE {idcasesql} ELSE NULL END,
 transport_feature_source = CASE {typecasesql} ELSE NULL END
 FROM {schema}.temp2 
-WHERE {schema}.temp2.cluster_id = {schema}.crossing_points.cluster_id;
+WHERE {schema}.temp2.cluster_id = {schema}.modelled_crossings.cluster_id;
 
 DROP TABLE {schema}.temp1;
 DROP TABLE {schema}.temp2; 
@@ -643,13 +645,13 @@ for layer in railLayers:
     print(f"Adding {layer} crossings to crossing points")
 
     sql = f"""
-    INSERT INTO {schema}.crossing_points (transport_feature_id, transport_feature_source, eflowpath_id, geometry)
+    INSERT INTO {schema}.modelled_crossings (transport_feature_id, transport_feature_source, eflowpath_id, geometry)
     SELECT {id}, '{layer}', eflowpath_id, geometry 
     FROM {schema}.{layer}_crossings;
     """
     executeQuery(conn, sql)
 
-sql = f"select count(*) FROM {schema}.crossing_points WHERE transport_feature_id is null or transport_feature_source is null"
+sql = f"select count(*) FROM {schema}.modelled_crossings WHERE transport_feature_id is null or transport_feature_source is null"
 checkEmpty(conn, sql, "a cluster was found without any source transport layer")
 
 #clean up
@@ -666,7 +668,7 @@ attributeValues = [railAttributes, trailAttributes, roadAttributes, resourceRoad
 attributeTables = [railTable, trailTable, roadsTable, resourceRoadsTable];
 prefix = ["a", "b", "c", "d"]
 sql = f"select cp.*,";
-sqlfrom = f" {schema}.crossing_points cp "
+sqlfrom = f" {schema}.modelled_crossings cp "
 
 for i in range(0, len(attributeTables) - 1):
     if (attributeTables[i] is None):
@@ -683,21 +685,21 @@ for i in range(0, len(attributeTables) - 1):
 
 sql = sql[:-1]
 sql = f"""
-DROP TABLE IF EXISTS {schema}.crossing_points_with_attributes;
-CREATE INDEX {schema}_crossing_points_transport_feature_id_idx on {schema}.crossing_points (transport_feature_id);
-CREATE TABLE {schema}.crossing_points_with_attributes AS {sql} FROM {sqlfrom}"""
+DROP TABLE IF EXISTS {schema}.modelled_crossings_with_attributes;
+CREATE INDEX {schema}_modelled_crossings_transport_feature_id_idx on {schema}.modelled_crossings (transport_feature_id);
+CREATE TABLE {schema}.modelled_crossings_with_attributes AS {sql} FROM {sqlfrom}"""
     
 executeQuery(conn, sql);
 
 sql = f"""
-DROP TABLE {schema}.crossing_points;
-ALTER TABLE {schema}.crossing_points_with_attributes rename to crossing_points;
-CREATE INDEX {schema}_crossing_points_cluster_id_idx on {schema}.crossing_points (cluster_id);
-CREATE INDEX {schema}_crossing_points_transport_feature_id_idx on {schema}.crossing_points (transport_feature_id);
-CREATE INDEX {schema}_crossing_points_transport_feature_source_idx on {schema}.crossing_points (transport_feature_source);
-CREATE INDEX {schema}_crossing_points_{geometry}_idx on {schema}.crossing_points using gist({geometry});
+DROP TABLE {schema}.modelled_crossings;
+ALTER TABLE {schema}.modelled_crossings_with_attributes rename to modelled_crossings;
+CREATE INDEX {schema}_modelled_crossings_cluster_id_idx on {schema}.modelled_crossings (cluster_id);
+CREATE INDEX {schema}_modelled_crossings_transport_feature_id_idx on {schema}.modelled_crossings (transport_feature_id);
+CREATE INDEX {schema}_modelled_crossings_transport_feature_source_idx on {schema}.modelled_crossings (transport_feature_source);
+CREATE INDEX {schema}_modelled_crossings_{geometry}_idx on {schema}.modelled_crossings using gist({geometry});
 """
 executeQuery(conn, sql);
 
-print(f"results in {schema}.crossing_points table")
+print(f"results in {schema}.modelled_crossings table")
 print("** PROCESSING COMPLETE **")
