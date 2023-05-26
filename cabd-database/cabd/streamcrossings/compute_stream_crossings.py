@@ -6,7 +6,7 @@ import configparser
 from _ast import Continue
 
 
-#-- PARSE COMMAND LINE ARGuMENTS --  
+#-- PARSE COMMAND LINE ARGUMENTS --  
 parser = argparse.ArgumentParser(description='Processing stream crossings.')
 parser.add_argument('-c', type=str, help='the configuration file', required=False)
 parser.add_argument('-user', type=str, help='the username to access the database')
@@ -32,6 +32,7 @@ schema = config['DATABASE']['data_schema']
 cabdSRID = config['DATABASE']['cabdSRID']
 
 mSRID  = config['SETTINGS']['mSRID']
+mGeometry = config['SETTINGS']['mGeometry']
 #distance in meters (mSRID projection units) for clustering points
 clusterDistance = config['SETTINGS']['clusterDistance']
 
@@ -78,7 +79,6 @@ railLayers = [railTable]
 
 #prioritize roads layer over other layers in clusters for determining what cluster point to keep
 player = config['DATASETS']['priorityLayer']
-priorityLayer=roadsTable
 if (player == "roadsTable"):
     priorityLayer=roadsTable
 elif (player == "railTable"):
@@ -214,6 +214,7 @@ if copystreams:
 
     """
     #print(sql)
+    print("Copying streams into schema...")
     executeQuery(conn, sql)
 
 
@@ -237,12 +238,12 @@ for layer in layers:
         DROP TABLE IF EXISTS {schema}.{layer}_crossings;
     
         CREATE TABLE {schema}.crossing_temp as 
-        SELECT a.{id} as {id}, b.id as eflowpath_id, st_intersection(a.{geometry}, b.{geometry}) as {geometry}
+        SELECT a.{id} as {id}, b.id as chyf_stream_id, st_intersection(a.{geometry}, b.{geometry}) as {geometry}
         FROM {schema}.{layer} a, {schema}.{streamTable} b
         WHERE st_intersects(a.{geometry}, b.{geometry});
         
         CREATE TABLE {schema}.{layer}_crossings as
-        SELECT {id} as {id}, eflowpath_id, (st_dump({geometry})).geom as {geometry} 
+        SELECT {id} as {id}, chyf_stream_id, (st_dump({geometry})).geom as {geometry} 
         FROM {schema}.crossing_temp;
         
         DROP TABLE {schema}.crossing_temp;
@@ -256,7 +257,7 @@ for layer in layers:
 print("Combining crossings into single layer")
 
 sql = f'DROP TABLE IF EXISTS {schema}.all_crossings;'
-sql += f'CREATE TABLE {schema}.all_crossings (id serial, eflowpath_id uuid,'
+sql += f'CREATE TABLE {schema}.all_crossings (id serial, chyf_stream_id uuid,'
 for layer in nonRailLayers:
     if (layer is None):
         continue
@@ -268,7 +269,7 @@ for layer in nonRailLayers:
     if (layer is None):
         continue
     idFields = idFields + f'z.{layer}_{id},'
-    sql = sql + f'INSERT INTO {schema}.all_crossings ({layer}_{id}, eflowpath_id, {geometry}) SELECT {id}, eflowpath_id, {geometry} FROM {schema}.{layer}_crossings; '
+    sql = sql + f'INSERT INTO {schema}.all_crossings ({layer}_{id}, chyf_stream_id, {geometry}) SELECT {id}, chyf_stream_id, {geometry} FROM {schema}.{layer}_crossings; '
 
 sql += f'CREATE INDEX all_crossings_geometry on {schema}.all_crossings using gist({geometry}); ANALYZE {schema}.all_crossings'
 executeQuery(conn, sql)
@@ -288,7 +289,7 @@ UPDATE {schema}.all_crossings set {geometry}_m = st_transform({geometry}, {mSRID
 DROP TABLE IF EXISTS {schema}.cluster_1 ;
 
 CREATE TABLE {schema}.cluster_1 AS
-SELECT unnest(st_clusterwithin(geometry_m, {clusterDistance})) as {geometry} FROM {schema}.all_crossings;
+SELECT unnest(st_clusterwithin({mGeometry}, {clusterDistance})) as {geometry} FROM {schema}.all_crossings;
 
 --add a cluster id
 ALTER TABLE  {schema}.cluster_1 add column cluster_id serial;
@@ -314,7 +315,7 @@ FROM {schema}.cluster_1;
 DROP TABLE IF EXISTS {schema}.cluster_by_id_with_data;
 
 CREATE TABLE {schema}.cluster_by_id_with_data as 
-SELECT a.cluster_id, a.{geometry}, z.eflowpath_id, {idFields}
+SELECT a.cluster_id, a.{geometry}, z.chyf_stream_id, {idFields}
 FROM  {schema}.cluster_by_id a left join {schema}.all_crossings z 
 on a.{geometry} = z.{geometry}_m ;
 """
@@ -323,8 +324,8 @@ executeQuery(conn, sql)
 
 
 #QA check - this should return nothing
-sql = f"SELECT count(*) FROM {schema}.cluster_by_id_with_data WHERE eflowpath_id is null"
-checkEmpty(conn, sql, "cluster_by_id_with_data table should not have any rows with null eflowpath_id")
+sql = f"SELECT count(*) FROM {schema}.cluster_by_id_with_data WHERE chyf_stream_id is null"
+checkEmpty(conn, sql, "cluster_by_id_with_data table should not have any rows with null chyf_stream_id")
 
 print("Extracting single points from cluster")
 sql = f"""
@@ -334,7 +335,7 @@ DROP TABLE IF EXISTS {schema}.modelled_crossings;
 --start with clusters of a single point
 
 CREATE TABLE {schema}.modelled_crossings AS  
-SELECT cluster_id, geometry, eflowpath_id 
+SELECT cluster_id, geometry, chyf_stream_id 
 FROM {schema}.cluster_by_id_with_data 
 WHERE cluster_id IN (
     SELECT cluster_id 
@@ -371,7 +372,7 @@ WHERE {priorityLayer}_{id} is not null;
 --for all these ones where there is only one 
 --use this as the cluster point 
 INSERT INTO {schema}.modelled_crossings 
-SELECT cluster_id, {geometry}, eflowpath_id 
+SELECT cluster_id, {geometry}, chyf_stream_id 
 FROM {schema}.cluster_{priorityLayer}_id 
 WHERE cluster_id in (
     SELECT cluster_id FROM {schema}.cluster_{priorityLayer}_id GROUP BY cluster_id HAVING count(*) = 1
@@ -385,7 +386,7 @@ DELETE FROM {schema}.cluster_{priorityLayer}_id WHERE cluster_id IN (select clus
 ALTER TABLE  {schema}.cluster_{priorityLayer}_id ADD COLUMN point_on_line double precision;
 UPDATE {schema}.cluster_{priorityLayer}_id
  set point_on_line = st_linelocatepoint(e.{geometry}, st_transform(cluster_{priorityLayer}_id.{geometry}, {cabdSRID}))
-FROM {schema}.{streamTable} e where e.id = {schema}.cluster_{priorityLayer}_id.eflowpath_id;
+FROM {schema}.{streamTable} e where e.id = {schema}.cluster_{priorityLayer}_id.chyf_stream_id;
 
 --add upstream length
 ALTER TABLE  {schema}.cluster_{priorityLayer}_id ADD COLUMN upstream_length double precision;
@@ -393,7 +394,7 @@ ALTER TABLE  {schema}.cluster_{priorityLayer}_id ADD COLUMN upstream_length doub
 UPDATE {schema}.cluster_{priorityLayer}_id 
 SET upstream_length = CASE WHEN a.max_uplength IS NULL THEN b.length ELSE a.max_uplength + b.length END
 FROM {schema}.{streamPropTable} a JOIN {schema}.{streamTable} b on a.id = b.id 
-where {schema}.cluster_{priorityLayer}_id.eflowpath_id = a.id;
+where {schema}.cluster_{priorityLayer}_id.chyf_stream_id = a.id;
 
 --case statement above is to deal with secondaries - these have no upstream length
 --there were a few cases where these were crossed by they were all on the same edge so it 
@@ -410,7 +411,7 @@ FROM {schema}.cluster_{priorityLayer}_id group by cluster_id;
 --map the cluster to the edge
 DROP TABLE IF EXISTS {schema}.temp4;
 CREATE TABLE {schema}.temp4 AS 
-SELECT distinct a.cluster_id, a.max_length, b.eflowpath_id 
+SELECT distinct a.cluster_id, a.max_length, b.chyf_stream_id 
 FROM {schema}.cluster_{priorityLayer}_id b, {schema}.temp3 a
 WHERE a.cluster_id = b.cluster_id and b.upstream_length = a.max_length;
 
@@ -418,7 +419,7 @@ WHERE a.cluster_id = b.cluster_id and b.upstream_length = a.max_length;
 DROP TABLE IF EXISTS {schema}.temp5;
 CREATE TABLE {schema}.temp5 AS 
 SELECT a.cluster_id , max(point_on_line) as min_pol
-FROM {schema}.cluster_{priorityLayer}_id a JOIN {schema}.temp4 b on a.cluster_id = b.cluster_id and a.eflowpath_id = b.eflowpath_id
+FROM {schema}.cluster_{priorityLayer}_id a JOIN {schema}.temp4 b on a.cluster_id = b.cluster_id and a.chyf_stream_id = b.chyf_stream_id
 GROUP BY a.cluster_id;
 """
 
@@ -432,7 +433,7 @@ sql = f"""
 --merge to find downstream point
 DROP TABLE IF EXISTS {schema}.temp6;
 CREATE TABLE {schema}.temp6 AS 
-SELECT distinct a.cluster_id, a.geometry, a.eflowpath_id 
+SELECT distinct a.cluster_id, a.geometry, a.chyf_stream_id 
 FROM {schema}.cluster_{priorityLayer}_id a JOIN {schema}.temp5 b on a.cluster_id  = b.cluster_id
 and a.point_on_line = b.min_pol;
 """
@@ -444,8 +445,8 @@ checkEmpty(conn, sql, "error when computing clusters with priority layer - error
 
 sql = f"""
 --add to main table and remove from processing
-INSERT INTO {schema}.modelled_crossings (cluster_id, geometry, eflowpath_id)
-SELECT cluster_id, geometry, eflowpath_id FROM {schema}.temp6;
+INSERT INTO {schema}.modelled_crossings (cluster_id, geometry, chyf_stream_id)
+SELECT cluster_id, geometry, chyf_stream_id FROM {schema}.temp6;
 
 --remove these from nrbn data & cluster_by_id_with_data
 DELETE FROM {schema}.cluster_by_id_with_data WHERE cluster_id IN (SELECT cluster_id FROM {schema}.modelled_crossings);
@@ -479,14 +480,14 @@ ALTER TABLE  {schema}.cluster_by_id_with_data ADD COLUMN point_on_line double pr
 UPDATE {schema}.cluster_by_id_with_data 
 SET point_on_line = st_linelocatepoint(e.{geometry}, st_transform(cluster_by_id_with_data.{geometry}, {cabdSRID}))
 FROM {schema}.{streamTable} e 
-WHERE e.id = {schema}.cluster_by_id_with_data.eflowpath_id ;
+WHERE e.id = {schema}.cluster_by_id_with_data.chyf_stream_id ;
 
 ALTER TABLE {schema}.cluster_by_id_with_data ADD COLUMN upstream_length double precision;
 
 UPDATE {schema}.cluster_by_id_with_data 
 SET upstream_length = CASE WHEN a.max_uplength is null THEN b.length ELSE a.max_uplength + b.length END
 FROM {schema}.{streamPropTable} a join {schema}.{streamTable} b on a.id = b.id 
-WHERE {schema}.cluster_by_id_with_data.eflowpath_id = a.id;
+WHERE {schema}.cluster_by_id_with_data.chyf_stream_id = a.id;
 --case statement is to deal with secondaries - these have no upstream length
 --there were a few cases where these were crossed but they were all on the same edge so it 
 --doesn't matter
@@ -501,7 +502,7 @@ GROUP BY cluster_id;
 --map the cluster to the edge
 DROP TABLE IF EXISTS {schema}.temp4;
 CREATE TABLE {schema}.temp4 AS
-SELECT distinct a.cluster_id, a.max_length, b.eflowpath_id 
+SELECT distinct a.cluster_id, a.max_length, b.chyf_stream_id 
 FROM {schema}.cluster_by_id_with_data b, {schema}.temp3 a
 WHERE a.cluster_id = b.cluster_id and b.upstream_length = a.max_length;
 
@@ -510,7 +511,7 @@ WHERE a.cluster_id = b.cluster_id and b.upstream_length = a.max_length;
 DROP TABLE IF EXISTS {schema}.temp5;
 CREATE TABLE {schema}.temp5 as 
 SELECT a.cluster_id , max(point_on_line) as min_pol
-FROM {schema}.cluster_by_id_with_data a JOIN {schema}.temp4 b on a.cluster_id = b.cluster_id and a.eflowpath_id = b.eflowpath_id
+FROM {schema}.cluster_by_id_with_data a JOIN {schema}.temp4 b on a.cluster_id = b.cluster_id and a.chyf_stream_id = b.chyf_stream_id
 GROUP BY a.cluster_id;
 
 """
@@ -524,7 +525,7 @@ sql = f"""
 DROP TABLE IF EXISTS {schema}.temp6;
 
 CREATE TABLE {schema}.temp6 AS
-SELECT distinct a.cluster_id, a.geometry, a.eflowpath_id 
+SELECT distinct a.cluster_id, a.geometry, a.chyf_stream_id 
 FROM {schema}.cluster_by_id_with_data a JOIN {schema}.temp5 b on a.cluster_id  = b.cluster_id
 and a.point_on_line = b.min_pol;
 """
@@ -536,8 +537,8 @@ checkEmpty(conn, sql, "Not all cluster points processed - error with temp6")
 
 
 sql = f"""
-INSERT INTO {schema}.modelled_crossings (cluster_id, geometry, eflowpath_id)
-SELECT cluster_id, geometry, eflowpath_id FROM {schema}.temp6;
+INSERT INTO {schema}.modelled_crossings (cluster_id, geometry, chyf_stream_id)
+SELECT cluster_id, geometry, chyf_stream_id FROM {schema}.temp6;
 
 --remove these from cluster_by_id_with_data
 DELETE FROM {schema}.cluster_by_id_with_data WHERE cluster_id IN (SELECT cluster_id FroM {schema}.modelled_crossings);
@@ -587,7 +588,7 @@ DROP TABLE IF EXISTS {schema}.temp1;
 CREATE TABLE {schema}.temp1 as 
 select a.cluster_id, b.*
 from {schema}.modelled_crossings a, {schema}.all_crossings b 
-where a.geometry_m = b.geometry_m;
+where a.{mGeometry} = b.{mGeometry};
 
 --deal with duplicates
 DROP TABLE IF EXISTS {schema}.temp2;
@@ -645,8 +646,8 @@ for layer in railLayers:
     print(f"Adding {layer} crossings to crossing points")
 
     sql = f"""
-    INSERT INTO {schema}.modelled_crossings (transport_feature_id, transport_feature_source, eflowpath_id, geometry)
-    SELECT {id}, '{layer}', eflowpath_id, geometry 
+    INSERT INTO {schema}.modelled_crossings (transport_feature_id, transport_feature_source, chyf_stream_id, geometry, {mGeometry})
+    SELECT {id}, '{layer}', chyf_stream_id, geometry, st_transform({geometry}, {mSRID})
     FROM {schema}.{layer}_crossings;
     """
     executeQuery(conn, sql)
@@ -663,14 +664,15 @@ DROP TABLE {schema}.cluster_by_id;
 executeQuery(conn, sql)
 
 
-print(f"Adding layer attributes to crossing points")
+print(f"Adding layer attributes to crossing points: ")
 attributeValues = [railAttributes, trailAttributes, roadAttributes, resourceRoadsAttributes]
-attributeTables = [railTable, trailTable, roadsTable, resourceRoadsTable];
+attributeTables = [railTable, trailTable, roadsTable, resourceRoadsTable]
 prefix = ["a", "b", "c", "d"]
-sql = f"select cp.*,";
+sql = f"select cp.*,"
 sqlfrom = f" {schema}.modelled_crossings cp "
 
-for i in range(0, len(attributeTables) - 1):
+for i in range(0, len(attributeTables), 1):
+    print(attributeTables[i])
     if (attributeTables[i] is None):
         continue
 
@@ -688,8 +690,9 @@ sql = f"""
 DROP TABLE IF EXISTS {schema}.modelled_crossings_with_attributes;
 CREATE INDEX {schema}_modelled_crossings_transport_feature_id_idx on {schema}.modelled_crossings (transport_feature_id);
 CREATE TABLE {schema}.modelled_crossings_with_attributes AS {sql} FROM {sqlfrom}"""
-    
-executeQuery(conn, sql);
+
+# print(sql)
+executeQuery(conn, sql)
 
 sql = f"""
 DROP TABLE {schema}.modelled_crossings;
@@ -698,8 +701,10 @@ CREATE INDEX {schema}_modelled_crossings_cluster_id_idx on {schema}.modelled_cro
 CREATE INDEX {schema}_modelled_crossings_transport_feature_id_idx on {schema}.modelled_crossings (transport_feature_id);
 CREATE INDEX {schema}_modelled_crossings_transport_feature_source_idx on {schema}.modelled_crossings (transport_feature_source);
 CREATE INDEX {schema}_modelled_crossings_{geometry}_idx on {schema}.modelled_crossings using gist({geometry});
+ALTER TABLE {schema}.modelled_crossings ADD column id uuid;
+UPDATE {schema}.modelled_crossings SET id = gen_random_uuid();
 """
-executeQuery(conn, sql);
+executeQuery(conn, sql)
 
-print(f"results in {schema}.modelled_crossings table")
+print(f"*Results in {schema}.modelled_crossings table*")
 print("** PROCESSING COMPLETE **")
