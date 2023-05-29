@@ -163,6 +163,52 @@ checkEmpty(conn, sql, "There are still modelled crossings within 1 m of each oth
 
 print("Mapping column names to modelled crossings data structure...")
 
-# TO DO: add this logic
+sql = f"""
+ALTER TABLE {schema}.modelled_crossings ADD COLUMN transport_feature_type varchar;
+ALTER TABLE {schema}.modelled_crossings ADD COLUMN transport_feature_name varchar;
+ALTER TABLE {schema}.modelled_crossings ADD COLUMN roadway_type varchar;
+ALTER TABLE {schema}.modelled_crossings ADD COLUMN roadway_surface varchar;
+ALTER TABLE {schema}.modelled_crossings ADD COLUMN transport_feature_owner varchar;
+ALTER TABLE {schema}.modelled_crossings ADD COLUMN railway_operator varchar;
+ALTER TABLE {schema}.modelled_crossings ADD COLUMN num_railway_tracks varchar;
+ALTER TABLE {schema}.modelled_crossings ADD COLUMN transport_feature_condition varchar;
+
+UPDATE {schema}.modelled_crossings SET transport_feature_type = 
+    CASE
+    WHEN transport_feature_source = '{railTable}' THEN 'rail'
+    WHEN transport_feature_source = '{roadsTable}' THEN 'road'
+    WHEN transport_feature_source = '{resourceRoadsTable}' THEN 'resource road'
+    WHEN transport_feature_source = '{trailTable}' THEN 'trail'
+    ELSE NULL END;
+
+UPDATE {schema}.modelled_crossings SET transport_feature_name = 
+    CASE
+    WHEN transport_feature_source = '{roadsTable}' THEN official_street_name
+    WHEN transport_feature_source = '{resourceRoadsTable}' THEN road_name
+    WHEN transport_feature_source = '{trailTable}' THEN trail_name
+    ELSE NULL END;
+
+UPDATE {schema}.modelled_crossings SET roadway_type = 
+    CASE
+    WHEN transport_feature_source = '{roadsTable}' THEN road_class
+    WHEN transport_feature_source = '{resourceRoadsTable}' THEN national_road_class
+    ELSE NULL END;
+
+UPDATE {schema}.modelled_crossings SET roadway_surface = surface_type;
+
+UPDATE {schema}.modelled_crossings SET transport_feature_owner = 
+    CASE
+    WHEN transport_feature_source = '{railTable}' THEN ownerena
+    WHEN transport_feature_source = '{resourceRoadsTable}' THEN responsibility_class
+    WHEN transport_feature_source = '{trailTable}' THEN trail_association
+    ELSE NULL END;
+
+UPDATE {schema}.modelled_crossings SET railway_operator = operatoena;
+UPDATE {schema}.modelled_crossings SET num_railway_tracks = numtracks;
+UPDATE {schema}.modelled_crossings SET transport_feature_condition = status;
+
+"""
+
+executeQuery(conn, sql)
 
 print("** CLEANUP COMPLETE **")
