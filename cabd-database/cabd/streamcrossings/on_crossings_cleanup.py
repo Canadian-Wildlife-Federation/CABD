@@ -68,6 +68,10 @@ print (f"Id/Geometry Fields: {id} {geometry}")
 
 print ("----")
 
+# Ontario-specific additional datasets
+railStructureLine = 'nrwn_on_structure_ln'
+railStructurePt = 'nrwn_on_structure_pt'
+
 #--
 #-- function to execute a query 
 #--
@@ -164,14 +168,14 @@ checkEmpty(conn, sql, "There are still modelled crossings within 1 m of each oth
 print("Mapping column names to modelled crossings data structure...")
 
 sql = f"""
-ALTER TABLE {schema}.modelled_crossings ADD COLUMN transport_feature_type varchar;
-ALTER TABLE {schema}.modelled_crossings ADD COLUMN transport_feature_name varchar;
-ALTER TABLE {schema}.modelled_crossings ADD COLUMN roadway_type varchar;
-ALTER TABLE {schema}.modelled_crossings ADD COLUMN roadway_surface varchar;
-ALTER TABLE {schema}.modelled_crossings ADD COLUMN transport_feature_owner varchar;
-ALTER TABLE {schema}.modelled_crossings ADD COLUMN railway_operator varchar;
-ALTER TABLE {schema}.modelled_crossings ADD COLUMN num_railway_tracks varchar;
-ALTER TABLE {schema}.modelled_crossings ADD COLUMN transport_feature_condition varchar;
+ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS transport_feature_type varchar;
+ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS transport_feature_name varchar;
+ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS roadway_type varchar;
+ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS roadway_surface varchar;
+ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS transport_feature_owner varchar;
+ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS railway_operator varchar;
+ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS num_railway_tracks varchar;
+ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS transport_feature_condition varchar;
 
 UPDATE {schema}.modelled_crossings SET transport_feature_type = 
     CASE
@@ -209,6 +213,39 @@ UPDATE {schema}.modelled_crossings SET transport_feature_condition = status;
 
 """
 
+executeQuery(conn, sql)
+
+print("Getting additional information from",railTable,"...")
+
+sql = f"""
+--find structure points within 25 m of modelled crossings
+DROP TABLE IF EXISTS {schema}.temp_structure_points;
+
+CREATE TABLE {schema}.temp_structure_points AS (
+    SELECT DISTINCT ON (s.nid) s.nid AS structure_id, m.id AS modelled_id, m.transport_feature_source AS transport_feature_source, ST_Distance(s.geometry, m.geometry_m) AS dist, s.geometry
+    FROM {schema}.nrwn_on_structure_pt s, {schema}.modelled_crossings m
+    WHERE ST_DWithin(s.geometry, m.geometry_m, 25)
+    ORDER BY structure_id, modelled_id, ST_Distance(s.geometry, m.geometry_m)
+);
+
+--find structure lines within 1 m of modelled crossings
+DROP TABLE IF EXISTS {schema}.temp_structure_lines;
+
+CREATE TABLE {schema}.temp_structure_lines AS (
+    SELECT DISTINCT ON (s.nid) s.nid AS structure_id, m.id AS modelled_id, m.transport_feature_source AS transport_feature_source, ST_Distance(s.geometry, m.geometry_m) AS dist, s.geometry
+    FROM {schema}.nrwn_on_structure_ln s, {schema}.modelled_crossings m
+    WHERE ST_DWithin(s.geometry, m.geometry_m, 1)
+    ORDER BY structure_id, modelled_id, ST_Distance(s.geometry, m.geometry_m)
+);
+
+ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS crossing_type varchar;
+UPDATE {schema}.modelled_crossings SET crossing_type = lower(s.structype) FROM {schema}.nrwn_on_structure_pt s WHERE id IN (SELECT modelled_id FROM {schema}.temp_structure_points);
+UPDATE {schema}.modelled_crossings SET crossing_type = lower(s.structype) FROM {schema}.nrwn_on_structure_ln s WHERE id IN (SELECT modelled_id FROM {schema}.temp_structure_lines);
+
+DROP TABLE {schema}.temp_structure_points;
+DROP TABLE {schema}.temp_structure_lines;
+
+"""
 executeQuery(conn, sql)
 
 print("** CLEANUP COMPLETE **")

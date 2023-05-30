@@ -66,6 +66,14 @@ pycmd = '"' + ogr + '" -f "PostgreSQL" PG:"' + orgDb + '" -nln "' + workingSchem
 log(pycmd)
 subprocess.run(pycmd)
 
+pycmd = '"' + ogr + '" -f "PostgreSQL" PG:"' + orgDb + '" -nln "' + workingSchema + '.nrwn_on_structure_ln" -lco GEOMETRY_NAME=geometry -nlt MULTILINESTRING "' + srcfile + '" "nrwn_on_structure_ln" -t_srs EPSG:3347 -overwrite"'
+log(pycmd)
+subprocess.run(pycmd)
+
+pycmd = '"' + ogr + '" -f "PostgreSQL" PG:"' + orgDb + '" -nln "' + workingSchema + '.nrwn_on_structure_pt" -lco GEOMETRY_NAME=geometry -nlt POINT "' + srcfile + '" "nrwn_on_structure_pt" -t_srs EPSG:3347 -overwrite"'
+log(pycmd)
+subprocess.run(pycmd)
+
 log("Cleaning up layers...")
 
 #remove trails that are canoe or paddling routes
