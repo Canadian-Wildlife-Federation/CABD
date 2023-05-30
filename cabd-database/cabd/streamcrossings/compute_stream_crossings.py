@@ -656,6 +656,7 @@ for layer in railLayers:
 sql = f"""
 ALTER TABLE {schema}.modelled_crossings ADD column id uuid;
 UPDATE {schema}.modelled_crossings SET id = gen_random_uuid();
+ALTER TABLE {schema}.modelled_crossings DROP COLUMN cluster_id;
 """
 executeQuery(conn, sql)
 
@@ -805,13 +806,11 @@ DROP TABLE IF EXISTS {schema}.modelled_crossings_with_attributes;
 CREATE INDEX {schema}_modelled_crossings_transport_feature_id_idx on {schema}.modelled_crossings (transport_feature_id);
 CREATE TABLE {schema}.modelled_crossings_with_attributes AS {sql} FROM {sqlfrom}"""
 
-# print(sql)
 executeQuery(conn, sql)
 
 sql = f"""
 DROP TABLE {schema}.modelled_crossings;
 ALTER TABLE {schema}.modelled_crossings_with_attributes rename to modelled_crossings;
-CREATE INDEX {schema}_modelled_crossings_cluster_id_idx on {schema}.modelled_crossings (cluster_id);
 CREATE INDEX {schema}_modelled_crossings_transport_feature_id_idx on {schema}.modelled_crossings (transport_feature_id);
 CREATE INDEX {schema}_modelled_crossings_transport_feature_source_idx on {schema}.modelled_crossings (transport_feature_source);
 CREATE INDEX {schema}_modelled_crossings_{geometry}_idx on {schema}.modelled_crossings using gist({geometry});
