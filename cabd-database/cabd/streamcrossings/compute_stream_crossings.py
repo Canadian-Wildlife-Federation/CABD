@@ -653,8 +653,121 @@ for layer in railLayers:
     """
     executeQuery(conn, sql)
 
+sql = f"""
+ALTER TABLE {schema}.modelled_crossings ADD column id uuid;
+UPDATE {schema}.modelled_crossings SET id = gen_random_uuid();
+"""
+executeQuery(conn, sql)
+
 sql = f"select count(*) FROM {schema}.modelled_crossings WHERE transport_feature_id is null or transport_feature_source is null"
 checkEmpty(conn, sql, "a cluster was found without any source transport layer")
+
+print("De-duplicating sets of very close rail crossings...")
+
+# find sets of rail crossings and keep most downstream point only
+
+sql = f"""
+DROP TABLE IF EXISTS {schema}.close_points;
+
+CREATE TABLE {schema}.close_points AS (
+	with clusters as (
+	SELECT id, chyf_stream_id, transport_feature_source, transport_feature_id, geometry, {mGeometry},
+      ST_ClusterDBSCAN(geometry_m, eps := 6, minpoints := 2) OVER() AS cluster_id
+	FROM {schema}.modelled_crossings
+	WHERE transport_feature_source = '{railTable}')
+select * from clusters
+where cluster_id is not null
+order by cluster_id asc);
+"""
+executeQuery(conn, sql)
+
+sql = f"""
+-- add location on line
+ALTER TABLE {schema}.close_points ADD COLUMN point_on_line double precision;
+
+UPDATE {schema}.close_points 
+SET point_on_line = st_linelocatepoint(e.{geometry}, st_transform(close_points.{geometry}, {cabdSRID}))
+FROM {schema}.{streamTable} e 
+WHERE e.id = {schema}.close_points.chyf_stream_id;
+
+ALTER TABLE {schema}.close_points ADD COLUMN upstream_length double precision;
+
+UPDATE {schema}.close_points 
+SET upstream_length = CASE WHEN a.max_uplength is null THEN b.length ELSE a.max_uplength + b.length END
+FROM {schema}.{streamPropTable} a join {schema}.{streamTable} b on a.id = b.id 
+WHERE {schema}.close_points.chyf_stream_id = a.id;
+
+--for each cluster we need edge id with the maximum 
+DROP TABLE IF EXISTS {schema}.temp3;
+CREATE TABLE {schema}.temp3 AS
+SELECT cluster_id, max(upstream_length) as max_length from {schema}.close_points 
+GROUP BY cluster_id;
+
+
+--map the cluster to the edge
+DROP TABLE IF EXISTS {schema}.temp4;
+CREATE TABLE {schema}.temp4 AS
+SELECT distinct a.cluster_id, a.max_length, b.chyf_stream_id
+FROM {schema}.close_points b, {schema}.temp3 a
+WHERE a.cluster_id = b.cluster_id and b.upstream_length = a.max_length;
+
+
+--for the flowpath we want to find the most downstream point in the cluster
+DROP TABLE IF EXISTS {schema}.temp5;
+CREATE TABLE {schema}.temp5 as 
+SELECT a.cluster_id , max(point_on_line) as min_pol
+FROM {schema}.close_points a JOIN {schema}.temp4 b on a.cluster_id = b.cluster_id and a.chyf_stream_id = b.chyf_stream_id
+GROUP BY a.cluster_id;
+
+"""
+executeQuery(conn, sql)
+
+#should be empty
+sql = f"select count(*) FROM (select cluster_id from {schema}.close_points cni except select cluster_id from {schema}.temp5) foo"
+checkEmpty(conn, sql, "Not all cluster points processed - error with temp5")
+
+sql = f"""
+DROP TABLE IF EXISTS {schema}.temp6;
+
+CREATE TABLE {schema}.temp6 AS
+SELECT distinct a.cluster_id, a.id, a.geometry, a.chyf_stream_id
+FROM {schema}.close_points a JOIN {schema}.temp5 b on a.cluster_id  = b.cluster_id
+and a.point_on_line = b.min_pol;
+"""
+executeQuery(conn, sql)
+
+#should be empty
+sql = f"select count(*) FROM (SELECT cluster_id from {schema}.close_points cni except select cluster_id from {schema}.temp6) foo"
+checkEmpty(conn, sql, "Not all cluster points processed - error with temp6")
+
+
+sql = f"""
+--remove all other points in cluster from modelled crossings
+DELETE FROM {schema}.modelled_crossings WHERE id NOT IN (SELECT id FROM {schema}.temp6) AND id IN (SELECT id FROM {schema}.close_points);
+"""
+executeQuery(conn, sql)
+
+#should be empty
+sql = f"""
+	with clusters as (
+	SELECT id, transport_feature_source, transport_feature_id, {mGeometry},
+      ST_ClusterDBSCAN({mGeometry}, eps := 6, minpoints := 2) OVER() AS cid
+	FROM {schema}.modelled_crossings
+    WHERE transport_feature_source = '{railTable}')
+
+    select count(*) from clusters
+    where cid is not null;
+"""
+checkEmpty(conn, sql, "There are still rail crossings within 6 m of each other that need to be removed")
+
+sql = f"""
+DROP TABLE {schema}.temp6;
+DROP TABLE {schema}.temp5;
+DROP TABLE {schema}.temp4;
+DROP TABLE {schema}.temp3;
+DROP TABLE {schema}.close_points;
+"""
+executeQuery(conn, sql)
 
 #clean up
 sql = f"""
@@ -702,8 +815,6 @@ CREATE INDEX {schema}_modelled_crossings_cluster_id_idx on {schema}.modelled_cro
 CREATE INDEX {schema}_modelled_crossings_transport_feature_id_idx on {schema}.modelled_crossings (transport_feature_id);
 CREATE INDEX {schema}_modelled_crossings_transport_feature_source_idx on {schema}.modelled_crossings (transport_feature_source);
 CREATE INDEX {schema}_modelled_crossings_{geometry}_idx on {schema}.modelled_crossings using gist({geometry});
-ALTER TABLE {schema}.modelled_crossings ADD column id uuid;
-UPDATE {schema}.modelled_crossings SET id = gen_random_uuid();
 """
 executeQuery(conn, sql)
 
