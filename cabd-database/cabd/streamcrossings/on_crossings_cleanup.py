@@ -212,10 +212,37 @@ UPDATE {schema}.modelled_crossings SET num_railway_tracks = numtracks;
 UPDATE {schema}.modelled_crossings SET transport_feature_condition = status;
 
 """
-
 executeQuery(conn, sql)
 
-print("Getting additional information from",railTable,"...")
+sql = f"""
+ALTER TABLE {schema}.modelled_crossings ALTER COLUMN transport_feature_id TYPE varchar;
+UPDATE {schema}.modelled_crossings SET transport_feature_id = 
+    CASE
+    WHEN transport_feature_source = '{railTable}' THEN nrwn_nid::varchar
+    WHEN transport_feature_source = '{roadsTable}' THEN orn_ogf_id::varchar
+    WHEN transport_feature_source = '{resourceRoadsTable}' THEN mnrf_ogf_id::varchar
+    WHEN transport_feature_source = '{trailTable}' THEN otn_ogf_id::varchar
+    ELSE NULL END;
+"""
+executeQuery(conn, sql)
+
+attributeValues = [railAttributes, trailAttributes, roadAttributes, resourceRoadsAttributes]
+attributeTables = [railTable, trailTable, roadsTable, resourceRoadsTable]
+
+for i in range(0, len(attributeTables), 1):
+    print(attributeTables[i])
+    if (attributeTables[i] is None):
+        continue
+
+    if (attributeValues[i] is None or attributeValues[i] == ""):
+        continue
+    
+    fields = attributeValues[i].split(",")
+    for field in fields:
+        sql = f"ALTER TABLE {schema}.modelled_crossings DROP COLUMN IF EXISTS {field};"
+        executeQuery(conn, sql)
+
+print("Getting additional structure information from",railTable,"...")
 
 sql = f"""
 --find structure points within 25 m of modelled crossings
