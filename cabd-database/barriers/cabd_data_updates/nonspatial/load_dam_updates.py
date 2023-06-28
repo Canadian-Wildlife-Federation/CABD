@@ -4,7 +4,7 @@
 # 
 # IMPORTANT: You must review your CSV for encoding issues before import. The expected encoding
 # for your CSV is ANSI (for records containing French characters) or UTF-8 (for records 
-# without French characters) and the only non-unicode characters allowed are French characters.
+# without French characters) and the only unicode characters allowed are French characters.
 # You should also check for % signs in your CSV. SharePoint's CSV exporter changes # signs
 # to % signs, so you will need to find and replace these instances.
 # Avoid replacing legitimate % signs in your CSV.
@@ -13,10 +13,10 @@ import psycopg2 as pg2
 import subprocess
 import sys
 
-ogr = "C:\\OSGeo4W64\\bin\\ogr2ogr.exe"
+ogr = "C:\\Program Files\\GDAL\\ogr2ogr.exe"
 
-dbName = "cabd"
-dbHost = "cabd-postgres.postgres.database.azure.com"
+dbName = "cabd_dev"
+dbHost = "localhost"
 dbPort = "5432"
 dbUser = sys.argv[3]
 dbPassword = sys.argv[4]
@@ -87,22 +87,22 @@ ALTER TABLE {damUpdateTable} ADD CONSTRAINT record_unique UNIQUE (cabd_id, data_
 --clean CSV input
 
 ALTER TABLE {sourceTable} ADD CONSTRAINT entry_classification_check CHECK (entry_classification IN ('new feature', 'modify feature', 'delete feature'));
-ALTER TABLE {sourceTable} ADD COLUMN "status" varchar;
+ALTER TABLE {sourceTable} ADD COLUMN IF NOT EXISTS "status" varchar;
 UPDATE {sourceTable} SET "status" = 'ready' WHERE reviewer_comments IS NULL;
 UPDATE {sourceTable} SET "status" = 'needs review' WHERE reviewer_comments IS NOT NULL;
 ALTER TABLE {sourceTable} ADD COLUMN update_type varchar default 'cwf';
-UPDATE {sourceTable} SET cabd_id = gen_random_uuid() WHERE entry_classification = 'new feature';
+UPDATE {sourceTable} SET cabd_id = gen_random_uuid() WHERE entry_classification = 'new feature' AND cabd_id IS NULL;
 
 
 --trim fields that are getting a type conversion
 UPDATE {sourceTable} SET cabd_id = TRIM(cabd_id);
-UPDATE {sourceTable} SET removed_year = TRIM(removed_year);
+--UPDATE {sourceTable} SET removed_year = TRIM(removed_year);
 UPDATE {sourceTable} SET maintenance_last = TRIM(maintenance_last);
 UPDATE {sourceTable} SET maintenance_next = TRIM(maintenance_next);
-UPDATE {sourceTable} SET spillway_capacity = TRIM(spillway_capacity);
-UPDATE {sourceTable} SET hydro_peaking_system = TRIM(hydro_peaking_system);
-UPDATE {sourceTable} SET federal_flow_req = TRIM(federal_flow_req);
-UPDATE {sourceTable} SET provincial_flow_req = TRIM(provincial_flow_req);
+--UPDATE {sourceTable} SET spillway_capacity = TRIM(spillway_capacity);
+--UPDATE {sourceTable} SET hydro_peaking_system = TRIM(hydro_peaking_system);
+--UPDATE {sourceTable} SET federal_flow_req = TRIM(federal_flow_req);
+--UPDATE {sourceTable} SET provincial_flow_req = TRIM(provincial_flow_req);
 UPDATE {sourceTable} SET degree_of_regulation_pc = TRIM(degree_of_regulation_pc);
 
 --change field types
@@ -319,14 +319,14 @@ UPDATE {sourceTable} SET use_invasivespecies_code =
     ELSE use_invasivespecies_code END;
 ALTER TABLE {sourceTable} ALTER COLUMN use_invasivespecies_code TYPE int2 USING use_invasivespecies_code::int2;
 
--- UPDATE {sourceTable} SET use_conservation_code =
---     CASE
---     WHEN use_conservation_code = 'main' THEN (select code::varchar FROM dams.use_codes WHERE name_en = 'Main')
---     WHEN use_conservation_code = 'major' THEN (select code::varchar FROM dams.use_codes WHERE name_en = 'Major')
---     WHEN use_conservation_code = 'secondary' THEN (select code::varchar FROM dams.use_codes WHERE name_en = 'Secondary')
---     WHEN use_conservation_code IS NULL THEN NULL
---     ELSE use_conservation_code END;
--- ALTER TABLE {sourceTable} ALTER COLUMN use_conservation_code TYPE int2 USING use_conservation_code::int2;
+UPDATE {sourceTable} SET use_conservation_code =
+    CASE
+    WHEN use_conservation_code = 'main' THEN (select code::varchar FROM dams.use_codes WHERE name_en = 'Main')
+    WHEN use_conservation_code = 'major' THEN (select code::varchar FROM dams.use_codes WHERE name_en = 'Major')
+    WHEN use_conservation_code = 'secondary' THEN (select code::varchar FROM dams.use_codes WHERE name_en = 'Secondary')
+    WHEN use_conservation_code IS NULL THEN NULL
+    ELSE use_conservation_code END;
+ALTER TABLE {sourceTable} ALTER COLUMN use_conservation_code TYPE int2 USING use_conservation_code::int2;
 
 UPDATE {sourceTable} SET use_other_code =
     CASE
@@ -414,7 +414,9 @@ UPDATE {sourceTable} SET condition_code =
     WHEN condition_code IS NULL THEN NULL
     ELSE condition_code END;
 ALTER TABLE {sourceTable} ALTER COLUMN condition_code TYPE int2 USING condition_code::int2;
+"""
 
+moveQuery = f"""
 --move updates into staging table
 INSERT INTO {damUpdateTable} (
     cabd_id,
@@ -449,7 +451,7 @@ INSERT INTO {damUpdateTable} (
     use_fish_code,
     use_pollution_code,
     use_invasivespecies_code,
-    --use_conservation_code,
+    use_conservation_code,
     use_other_code,
     lake_control_code,
     construction_year,
@@ -520,7 +522,7 @@ SELECT
     use_fish_code,
     use_pollution_code,
     use_invasivespecies_code,
-    -- use_conservation_code,
+    use_conservation_code,
     use_other_code,
     lake_control_code,
     construction_year,
@@ -560,10 +562,14 @@ SELECT
 FROM {sourceTable};
 """
 
-print("Cleaning CSV and adding records to " + damUpdateTable)
+print("Cleaning CSV...")
 # print(loadQuery)
 with conn.cursor() as cursor:
     cursor.execute(loadQuery)
+print("Adding records to " + damUpdateTable)
+print(moveQuery)
+# with conn.cursor() as cursor:
+#     cursor.execute(moveQuery)
 conn.commit()
 conn.close()
 

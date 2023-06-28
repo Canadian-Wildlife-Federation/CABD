@@ -5,7 +5,7 @@
 # This script assumes all data sources imported are NON-SPATIAL
 # 
 # IMPORTANT: You must review your CSV for encoding issues before import. The expected encoding
-# for your CSV is UTF-8 and the only non-unicode characters allowed are French characters
+# for your CSV is UTF-8 and the only unicode characters allowed are French characters
 # This can be easily done by opening up the CSV in Visual Studio Code or another code editor.
 # You should also check for % signs in your CSV. SharePoint's CSV exporter changes # signs
 # to % signs, so you will need to find and replace these instances.
@@ -15,10 +15,10 @@ import psycopg2 as pg2
 import subprocess
 import sys
 
-ogr = "C:\\OSGeo4W64\\bin\\ogr2ogr.exe"
+ogr = "C:\\Program Files\\GDAL\\ogr2ogr.exe"
 
-dbName = "cabd"
-dbHost = "cabd-postgres.postgres.database.azure.com"
+dbName = "cabd_dev"
+dbHost = "localhost"
 dbPort = "5432"
 dbUser = sys.argv[3]
 dbPassword = sys.argv[4]
@@ -78,11 +78,15 @@ DELETE FROM {sourceTable}
 ALTER TABLE {sourceTable} ADD COLUMN source_type varchar;
 ALTER TABLE {sourceTable} ADD COLUMN id uuid;
 
+UPDATE {sourceTable} SET last_updated = TRIM(LOWER(last_updated));
 UPDATE {sourceTable} SET last_updated = NULL WHERE last_updated = 'n.d.';
 ALTER TABLE {sourceTable} ALTER COLUMN last_updated TYPE date USING last_updated::date;
 
 UPDATE {sourceTable} SET source_type = 'non-spatial'; -- NOTE THIS ASSUMES ALL DATA SOURCES ARE NON-SPATIAL
 UPDATE {sourceTable} SET id = gen_random_uuid();
+"""
+
+moveQuery = f"""
 
 --add records to data source table
 ALTER TABLE {updateTable} ADD CONSTRAINT ds_unique_name UNIQUE (name);
@@ -102,13 +106,19 @@ SELECT
 FROM {sourceTable}
 ON CONFLICT DO NOTHING;
 
-ALTER TABLE cabd.data_source DROP CONSTRAINT ds_unique_name;
+ALTER TABLE {updateTable} DROP CONSTRAINT ds_unique_name;
 """
 
-print("Cleaning CSV and adding records to " + updateTable)
+print("Cleaning CSV...")
 # print(updateQuery)
 with conn.cursor() as cursor:
     cursor.execute(updateQuery)
+
+print("Adding records to " + updateTable)
+print(moveQuery)
+# with conn.cursor() as cursor:
+#     cursor.execute(moveQuery)
+
 conn.commit()
 conn.close()
 

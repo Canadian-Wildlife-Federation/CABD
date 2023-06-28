@@ -1,6 +1,6 @@
 ##################
 
-# Expected usage: py map_dam_updates.py <dbUser> <dbPassword>
+# Expected usage: py map_dam_updates.py dams <dbUser> <dbPassword>
 # Please ensure you have run load_data_sources.py for the data sources you are mapping from
 # Otherwise any updates missing a data source id will not be made
 
@@ -13,11 +13,13 @@ import user_submit as main
 script = main.MappingScript("dam_updates")
 
 initializequery = f"""
+
 --where multiple updates exist for a feature, only update one at a time
 WITH cte AS (
   SELECT id, cabd_id,
     row_number() OVER(PARTITION BY cabd_id ORDER BY submitted_on ASC) AS rn
   FROM {script.damUpdateTable} WHERE update_status = 'ready'
+  AND entry_classification = 'modify feature'
 )
 UPDATE {script.damUpdateTable}
 SET update_status = 'wait'
@@ -25,15 +27,12 @@ SET update_status = 'wait'
 """
 
 mappingquery = f"""
+
 -- add data source ids to the table
 ALTER TABLE {script.damUpdateTable} ADD COLUMN IF NOT EXISTS data_source uuid;
 UPDATE {script.damUpdateTable} AS s SET data_source = d.id FROM cabd.data_source AS d
     WHERE d.name = s.data_source_short_name
     AND s.update_status = 'ready';
-
---------------------------------------------------------------------------
--- TO DO: add dsfid records to damAttributeTable for updates coming from BC water rights database
---------------------------------------------------------------------------
 
 -- deal with new and modified records
 WITH new_points AS (
@@ -73,6 +72,7 @@ UPDATE {script.damTable} AS foo
 -- add records to feature_source table
 INSERT INTO {script.damFeatureTable} (cabd_id, datasource_id)
 SELECT cabd_id, data_source FROM {script.damUpdateTable} WHERE update_status = 'ready'
+AND entry_classification != 'delete feature'
 ON CONFLICT DO NOTHING;
 
 --------------------------------------------------------------------------
@@ -109,7 +109,7 @@ SET
     use_fish_code_ds = CASE WHEN ({script.datasetName}.use_fish_code IS NOT NULL AND {script.datasetName}.use_fish_code IS DISTINCT FROM cabd.use_fish_code) THEN {script.datasetName}.data_source ELSE cabdsource.use_fish_code_ds END,
     use_pollution_code_ds = CASE WHEN ({script.datasetName}.use_pollution_code IS NOT NULL AND {script.datasetName}.use_pollution_code IS DISTINCT FROM cabd.use_pollution_code) THEN {script.datasetName}.data_source ELSE cabdsource.use_pollution_code_ds END,
     use_invasivespecies_code_ds = CASE WHEN ({script.datasetName}.use_invasivespecies_code IS NOT NULL AND {script.datasetName}.use_invasivespecies_code IS DISTINCT FROM cabd.use_invasivespecies_code) THEN {script.datasetName}.data_source ELSE cabdsource.use_invasivespecies_code_ds END,
-    --use_conservation_code_ds = CASE WHEN ({script.datasetName}.use_conservation_code IS NOT NULL AND {script.datasetName}.use_conservation_code IS DISTINCT FROM cabd.use_conservation_code) THEN {script.datasetName}.data_source ELSE cabdsource.use_conservation_code_ds END,
+    use_conservation_code_ds = CASE WHEN ({script.datasetName}.use_conservation_code IS NOT NULL AND {script.datasetName}.use_conservation_code IS DISTINCT FROM cabd.use_conservation_code) THEN {script.datasetName}.data_source ELSE cabdsource.use_conservation_code_ds END,
     use_other_code_ds = CASE WHEN ({script.datasetName}.use_other_code IS NOT NULL AND {script.datasetName}.use_other_code IS DISTINCT FROM cabd.use_other_code) THEN {script.datasetName}.data_source ELSE cabdsource.use_other_code_ds END,
     lake_control_code_ds = CASE WHEN ({script.datasetName}.lake_control_code IS NOT NULL AND {script.datasetName}.lake_control_code IS DISTINCT FROM cabd.lake_control_code) THEN {script.datasetName}.data_source ELSE cabdsource.lake_control_code_ds END,
     construction_year_ds = CASE WHEN ({script.datasetName}.construction_year IS NOT NULL AND {script.datasetName}.construction_year IS DISTINCT FROM cabd.construction_year) THEN {script.datasetName}.data_source ELSE cabdsource.construction_year_ds END,
@@ -180,7 +180,7 @@ SET
     use_fish_code = CASE WHEN ({script.datasetName}.use_fish_code IS NOT NULL AND {script.datasetName}.use_fish_code IS DISTINCT FROM cabd.use_fish_code) THEN {script.datasetName}.use_fish_code ELSE cabd.use_fish_code END,    
     use_pollution_code = CASE WHEN ({script.datasetName}.use_pollution_code IS NOT NULL AND {script.datasetName}.use_pollution_code IS DISTINCT FROM cabd.use_pollution_code) THEN {script.datasetName}.use_pollution_code ELSE cabd.use_pollution_code END,    
     use_invasivespecies_code = CASE WHEN ({script.datasetName}.use_invasivespecies_code IS NOT NULL AND {script.datasetName}.use_invasivespecies_code IS DISTINCT FROM cabd.use_invasivespecies_code) THEN {script.datasetName}.use_invasivespecies_code ELSE cabd.use_invasivespecies_code END,    
-    --use_conservation_code = CASE WHEN ({script.datasetName}.use_conservation_code IS NOT NULL AND {script.datasetName}.use_conservation_code IS DISTINCT FROM cabd.use_conservation_code) THEN {script.datasetName}.use_conservation_code ELSE cabd.use_conservation_code END,    
+    use_conservation_code = CASE WHEN ({script.datasetName}.use_conservation_code IS NOT NULL AND {script.datasetName}.use_conservation_code IS DISTINCT FROM cabd.use_conservation_code) THEN {script.datasetName}.use_conservation_code ELSE cabd.use_conservation_code END,    
     use_other_code = CASE WHEN ({script.datasetName}.use_other_code IS NOT NULL AND {script.datasetName}.use_other_code IS DISTINCT FROM cabd.use_other_code) THEN {script.datasetName}.use_other_code ELSE cabd.use_other_code END,    
     lake_control_code = CASE WHEN ({script.datasetName}.lake_control_code IS NOT NULL AND {script.datasetName}.lake_control_code IS DISTINCT FROM cabd.lake_control_code) THEN {script.datasetName}.lake_control_code ELSE cabd.lake_control_code END,    
     construction_year = CASE WHEN ({script.datasetName}.construction_year IS NOT NULL AND {script.datasetName}.construction_year IS DISTINCT FROM cabd.construction_year) THEN {script.datasetName}.construction_year ELSE cabd.construction_year END,    
@@ -226,6 +226,7 @@ WHERE
     AND {script.datasetName}.data_source IS NOT NULL;
 
 -- deal with records to be deleted
+UPDATE {script.fishTable} SET dam_id = NULL WHERE dam_id IN (SELECT cabd_id FROM {script.damUpdateTable} WHERE entry_classification = 'delete feature' AND update_status = 'ready');
 DELETE FROM {script.damAttributeTable} WHERE cabd_id IN (SELECT cabd_id FROM {script.damUpdateTable} WHERE entry_classification = 'delete feature' AND update_status = 'ready');
 DELETE FROM {script.damFeatureTable} WHERE cabd_id IN (SELECT cabd_id FROM {script.damUpdateTable} WHERE entry_classification = 'delete feature' AND update_status = 'ready');
 DELETE FROM {script.damTable} WHERE cabd_id IN (SELECT cabd_id FROM {script.damUpdateTable} WHERE entry_classification = 'delete feature' AND update_status = 'ready');

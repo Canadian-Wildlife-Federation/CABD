@@ -2,8 +2,8 @@ import psycopg2 as pg2
 import subprocess
 import sys
 
-dbName = "cabd"
-dbHost = "cabd-postgres.postgres.database.azure.com"
+dbName = "cabd_dev"
+dbHost = "localhost"
 dbPort = "5432"
 featureType = sys.argv[1]
 dbUser = sys.argv[2]
