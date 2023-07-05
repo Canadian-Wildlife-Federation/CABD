@@ -1,6 +1,6 @@
 --This script should be run as the last step after populating attributes.
 --This script updates DAMS only.
---RUN THIS SCRIPT AFTER FISHWAYS FINAL ATTRIBUTE UPDATE
+--RUN THIS SCRIPT AFTER FISHWAYS FINAL ATTRIBUTE UPDATE OR FISHWAY ASSOCIATIONS QUERIES
 
 --Ensures various fields are populated with most up-to-date info after mapping from multiple sources
 UPDATE
@@ -23,11 +23,55 @@ SET
         THEN TRUE
     ELSE reservoir_present END;
 
-UPDATE dams.dams AS cabd SET passability_status_code = 
-    (SELECT code FROM cabd.passability_status_codes WHERE name_en = 'Partial Barrier')
-    FROM fishways.fishways AS f WHERE f.dam_id = cabd.cabd_id;
+--------------------------------------------------------------------------------------------------------------------------
+--deal with passability status
+
+--any dam with a fishway whose upstream passage measure is NOT trap and truck gets marked as a partial barrier
+UPDATE dams.dams AS cabd 
+    SET 
+        passability_status_code = (SELECT code FROM cabd.passability_status_codes WHERE name_en = 'Partial Barrier'),
+        passability_status_note = 'Marked as a partial barrier due to upstream passage measures from associated fishway.'
+    FROM fishways.fishways AS f WHERE f.dam_id = cabd.cabd_id
+    AND f.fishpass_type_code != (SELECT code FROM cabd.upstream_passage_type_codes WHERE name_en = 'Trap and truck');
+
 UPDATE dams.dams SET passability_status_code = 
     (SELECT code FROM cabd.passability_status_codes WHERE name_en = 'Barrier') WHERE passability_status_code IS NULL;
+
+UPDATE dams.dams AS cabd 
+    SET 
+        passability_status_code = (SELECT code FROM cabd.passability_status_codes WHERE name_en = 'Barrier'),
+        passability_status_note = 'Marked as a barrier since the only upstream passage measure is a trap and truck method.'
+    WHERE
+        up_passage_type_code = (SELECT code FROM cabd.upstream_passage_type_codes WHERE name_en = 'Trap and truck');
+
+UPDATE
+    dams.dams_attribute_source AS cabdsource
+    SET    
+        passability_status_code_ds = 
+        CASE
+        WHEN (cabd.passability_status_code = (SELECT code FROM cabd.passability_status_codes WHERE name_en = 'Partial Barrier')) THEN fishsource.fishpass_type_code_ds
+        ELSE cabdsource.passability_status_code_ds END
+    FROM
+    dams.dams AS cabd,
+    fishways.fishways AS fish,
+    fishways.fishways_attribute_source AS fishsource
+    WHERE
+    cabdsource.cabd_id = fish.dam_id AND cabd.cabd_id = cabdsource.cabd_id;
+
+--all decommissioned or removed dams are set to passable
+UPDATE dams.dams
+    SET 
+        passability_status_code = (SELECT code FROM cabd.passability_status_codes WHERE name_en = 'Passable'),
+        passability_status_note = 'Marked as passable since this structure is decommissioned or removed.'
+    WHERE operating_status_code = (SELECT code FROM dams.operating_status_codes WHERE name_en = 'Decommissioned/ Removed');
+
+UPDATE dams.dams_attribute_source AS cabdsource
+    SET passability_status_code_ds = operating_status_code_ds
+    FROM dams.dams AS cabd
+    WHERE cabdsource.cabd_id = cabd.cabd_id
+    AND cabd.operating_status_code = (SELECT code FROM dams.operating_status_codes WHERE name_en = 'Decommissioned/ Removed');
+
+--------------------------------------------------------------------------------------------------------------------------
 
 --Various spatial joins/queries to populate fields
 UPDATE dams.dams AS dams SET province_territory_code = n.code FROM cabd.province_territory_codes AS n WHERE st_contains(n.geometry, dams.snapped_point);
