@@ -146,11 +146,13 @@ with keep AS (
 	where transport_feature_source = '{railTable}'
 	order by i.cid)
 delete from {schema}.modelled_crossings
-where id not in (select id from keep)
-and id in (select id from {schema}.close_points);
+where id in (select id from {schema}.close_points)
+and transport_feature_source = '{trailTable}';
 
 DROP TABLE IF EXISTS {schema}.close_points;
 """
+
+print(sql)
 
 executeQuery(conn, sql)
 
