@@ -111,19 +111,28 @@ checkEmpty(conn, sql, "modelled_crossings table should not have any rows with nu
 
 
 sql = f"""
---find points within 1 m of each other
+--find points within 5 m of each other
 
 DROP TABLE IF EXISTS {schema}.close_points;
 
 CREATE TABLE {schema}.close_points AS (
 	with clusters as (
-	SELECT id, transport_feature_source, transport_feature_id, {mGeometry},
+	SELECT id, transport_feature_source, transport_feature_id, trail_name, trail_association, {mGeometry},
       ST_ClusterDBSCAN({mGeometry}, eps := 5, minpoints := 2) OVER() AS cid
 	FROM {schema}.modelled_crossings
     where transport_feature_source in ('{railTable}', '{trailTable}'))
 select * from clusters
 where cid is not null
 order by cid asc);
+
+--add the trail attributes to rail crossings so we don't lose name and owner
+UPDATE {schema}.close_points a
+set trail_name = b.trail_name,
+	trail_association = b.trail_association
+from {schema}.close_points b
+where b.cid = a.cid
+and a.transport_feature_source = '{railTable}'
+and b.transport_feature_source = '{trailTable}';
 
 --get points to keep and remove the others
 alter table {schema}.modelled_crossings add column if not exists "comments" varchar(256);
@@ -137,9 +146,15 @@ clusters AS (
 	select distinct cid from {schema}.close_points
 	where transport_feature_source = '{trailTable}'
 	)
-update {schema}.modelled_crossings
-set "comments" = 'rail line converted to a trail'
-where id in (select id from keep where cid in (select cid from clusters));
+update {schema}.modelled_crossings a
+set
+    "comments" = 'rail line converted to a trail',
+    trail_name = b.trail_name,
+    trail_association = b.trail_association
+from {schema}.close_points b
+where a.id in (select id from keep where cid in (select cid from clusters))
+and a.id = b.id
+and a.transport_feature_source = '{railTable}';
 
 with keep AS (
 	select distinct on (i.cid) i.*
@@ -153,7 +168,7 @@ and transport_feature_source = '{trailTable}';
 DROP TABLE IF EXISTS {schema}.close_points;
 """
 
-print(sql)
+# print(sql)
 
 executeQuery(conn, sql)
 
@@ -193,7 +208,7 @@ UPDATE {schema}.modelled_crossings SET transport_feature_name =
     CASE
     WHEN transport_feature_source = '{roadsTable}' THEN official_street_name
     WHEN transport_feature_source = '{resourceRoadsTable}' THEN road_name
-    WHEN transport_feature_source = '{trailTable}' THEN trail_name
+    WHEN (transport_feature_source = '{trailTable}' OR trail_name IS NOT NULL) THEN trail_name
     ELSE NULL END;
 
 UPDATE {schema}.modelled_crossings SET roadway_type = 
@@ -206,9 +221,9 @@ UPDATE {schema}.modelled_crossings SET roadway_surface = surface_type;
 
 UPDATE {schema}.modelled_crossings SET transport_feature_owner = 
     CASE
-    WHEN transport_feature_source = '{railTable}' THEN ownerena
+    WHEN (transport_feature_source = '{railTable}' AND  trail_association IS NULL) THEN ownerena
     WHEN transport_feature_source = '{resourceRoadsTable}' THEN responsibility_class
-    WHEN transport_feature_source = '{trailTable}' THEN trail_association
+    WHEN (transport_feature_source = '{trailTable}' OR trail_association IS NOT NULL) THEN trail_association
     ELSE NULL END;
 
 UPDATE {schema}.modelled_crossings SET railway_operator = operatoena;
