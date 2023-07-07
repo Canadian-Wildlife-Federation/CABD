@@ -118,8 +118,9 @@ DROP TABLE IF EXISTS {schema}.close_points;
 CREATE TABLE {schema}.close_points AS (
 	with clusters as (
 	SELECT id, transport_feature_source, transport_feature_id, {mGeometry},
-      ST_ClusterDBSCAN({mGeometry}, eps := 1, minpoints := 2) OVER() AS cid
-	FROM {schema}.modelled_crossings)
+      ST_ClusterDBSCAN({mGeometry}, eps := 5, minpoints := 2) OVER() AS cid
+	FROM {schema}.modelled_crossings
+    where transport_feature_source in ('{railTable}', '{trailTable}'))
 select * from clusters
 where cid is not null
 order by cid asc);
@@ -159,13 +160,14 @@ executeQuery(conn, sql)
 sql = f"""
 	with clusters as (
 	SELECT id, transport_feature_source, transport_feature_id, {mGeometry},
-      ST_ClusterDBSCAN({mGeometry}, eps := 1, minpoints := 2) OVER() AS cid
-	FROM {schema}.modelled_crossings)
+      ST_ClusterDBSCAN({mGeometry}, eps := 5, minpoints := 2) OVER() AS cid
+	FROM {schema}.modelled_crossings
+    where transport_feature_source in ('{railTable}', '{trailTable}'))
 
     select count(*) from clusters
     where cid is not null;
 """
-checkEmpty(conn, sql, "There are still modelled crossings within 1 m of each other that need to be removed")
+checkEmpty(conn, sql, "There are still rail and trail crossings within 5 m of each other that need to be removed")
 
 print("Mapping column names to modelled crossings data structure...")
 
