@@ -693,7 +693,7 @@ def matchArchive(conn):
             FROM {schema}.modelled_crossings_archive b
             ORDER BY a.{mGeometry} <-> b.{mGeometry}
             LIMIT 1) as nn
-            WHERE nn.dist < {clusterDistance}
+            WHERE nn.dist < 1
         )
 
         UPDATE {schema}.modelled_crossings a

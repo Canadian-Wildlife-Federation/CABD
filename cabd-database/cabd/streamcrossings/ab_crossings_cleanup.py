@@ -66,10 +66,6 @@ print (f"Id/Geometry Fields: {id} {geometry}")
 
 print ("----")
 
-# Saskatchewan-specific additional datasets
-railStructureLine = 'nrwn_sk_structure_ln'
-railStructurePt = 'nrwn_sk_structure_pt'
-
 #--
 #-- function to execute a query 
 #--
@@ -112,10 +108,6 @@ ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS transport_featu
 ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS transport_feature_name varchar;
 ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS roadway_type varchar;
 ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS roadway_surface varchar;
-ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS transport_feature_owner varchar;
-ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS railway_operator varchar;
-ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS num_railway_tracks varchar;
-ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS transport_feature_condition varchar;
 
 UPDATE {schema}.modelled_crossings SET transport_feature_type = 
     CASE
@@ -123,36 +115,10 @@ UPDATE {schema}.modelled_crossings SET transport_feature_type =
     WHEN transport_feature_source = '{roadsTable}' THEN 'road'
     ELSE NULL END;
 
-UPDATE {schema}.modelled_crossings SET transport_feature_name =
-    CASE
-    WHEN transport_feature_source = '{roadsTable}'
-        AND r_stname_c IS NOT NULL AND r_stname_c != 'None'
-        THEN r_stname_c
-    WHEN transport_feature_source = '{roadsTable}'
-        AND (r_stname_c IS NULL OR r_stname_c = 'None')
-        AND rtename1en IS NOT NULL AND rtename1en != 'None'
-        THEN rtename1en
-    ELSE NULL END;
+UPDATE {schema}.modelled_crossings SET "name" = substring("name", '\S(?:.*\S)*');
+UPDATE {schema}.modelled_crossings SET transport_feature_name = "name" WHERE "name" IS NOT NULL;
 
-UPDATE {schema}.modelled_crossings SET roadway_type = 
-    CASE
-    WHEN transport_feature_source = '{roadsTable}' THEN roadclass
-    ELSE NULL END;
-
-UPDATE {schema}.modelled_crossings SET roadway_surface =
-    CASE
-    WHEN pavstatus = 'Paved' THEN pavstatus
-    WHEN unpavsurf IN ('Dirt', 'Gravel') THEN unpavsurf
-    ELSE NULL END;
-
-UPDATE {schema}.modelled_crossings SET transport_feature_owner = 
-    CASE
-    WHEN transport_feature_source = '{railTable}' THEN ownerena
-    ELSE NULL END;
-
-UPDATE {schema}.modelled_crossings SET railway_operator = operatoena;
-UPDATE {schema}.modelled_crossings SET num_railway_tracks = numtracks;
-UPDATE {schema}.modelled_crossings SET transport_feature_condition = status;
+--TO DO: ADD roadway_type and surface mapping once additional info received from AEP
 
 """
 executeQuery(conn, sql)
@@ -161,8 +127,8 @@ sql = f"""
 ALTER TABLE {schema}.modelled_crossings ALTER COLUMN transport_feature_id TYPE varchar;
 UPDATE {schema}.modelled_crossings SET transport_feature_id = 
     CASE
-    WHEN transport_feature_source = '{railTable}' THEN nrwn_nid::varchar
-    WHEN transport_feature_source = '{roadsTable}' THEN nrn_nid::varchar
+    WHEN transport_feature_source = '{railTable}' THEN afr_rail_objectid::varchar
+    WHEN transport_feature_source = '{roadsTable}' THEN afr_road_objectid::varchar
     ELSE NULL END;
 """
 executeQuery(conn, sql)
@@ -183,36 +149,8 @@ for i in range(0, len(attributeTables), 1):
         sql = f"ALTER TABLE {schema}.modelled_crossings DROP COLUMN IF EXISTS {field};"
         executeQuery(conn, sql)
 
-print("Getting additional structure information from",railTable,"...")
-
 sql = f"""
---find structure points within 25 m of modelled crossings
-DROP TABLE IF EXISTS {schema}.temp_structure_points;
-
-CREATE TABLE {schema}.temp_structure_points AS (
-    SELECT DISTINCT ON (s.nid) s.nid AS structure_id, m.id AS modelled_id, m.transport_feature_source AS transport_feature_source, ST_Distance(s.geometry, m.geometry_m) AS dist, s.geometry
-    FROM {schema}.nrwn_sk_structure_pt s, {schema}.modelled_crossings m
-    WHERE ST_DWithin(s.geometry, m.geometry_m, 25)
-    ORDER BY structure_id, modelled_id, ST_Distance(s.geometry, m.geometry_m)
-);
-
---find structure lines within 1 m of modelled crossings
-DROP TABLE IF EXISTS {schema}.temp_structure_lines;
-
-CREATE TABLE {schema}.temp_structure_lines AS (
-    SELECT DISTINCT ON (s.nid) s.nid AS structure_id, m.id AS modelled_id, m.transport_feature_source AS transport_feature_source, ST_Distance(s.geometry, m.geometry_m) AS dist, s.geometry
-    FROM {schema}.nrwn_sk_structure_ln s, {schema}.modelled_crossings m
-    WHERE ST_DWithin(s.geometry, m.geometry_m, 1)
-    ORDER BY structure_id, modelled_id, ST_Distance(s.geometry, m.geometry_m)
-);
-
 ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS crossing_type varchar;
-UPDATE {schema}.modelled_crossings SET crossing_type = lower(s.structype) FROM {schema}.nrwn_sk_structure_pt s WHERE id IN (SELECT modelled_id FROM {schema}.temp_structure_points);
-UPDATE {schema}.modelled_crossings SET crossing_type = lower(s.structype) FROM {schema}.nrwn_sk_structure_ln s WHERE id IN (SELECT modelled_id FROM {schema}.temp_structure_lines);
-
-DROP TABLE {schema}.temp_structure_points;
-DROP TABLE {schema}.temp_structure_lines;
-
 UPDATE {schema}.modelled_crossings SET crossing_type = 'bridge' WHERE strahler_order >= 6 AND crossing_type IS NULL;
 
 """
