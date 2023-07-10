@@ -63,31 +63,30 @@ orgDb="dbname='" + dbName + "' host='"+ dbHost+"' port='"+dbPort+"' user='"+dbUs
 my_env = os.environ.copy()
 #my_env["PGCLIENTENCODING"] = "LATIN1"
 
-pycmd = '"' + ogr + '" -f "PostgreSQL" PG:"' + orgDb + '" -nln "' + schema + '.nrwn_sk_track" -lco GEOMETRY_NAME=geometry -nlt MULTILINESTRING "' + srcFile + '" "nrwn_sk_track" -t_srs EPSG:' + cabdSRID + ' -overwrite"'
+pycmd = '"' + ogr + '" -f "PostgreSQL" PG:"' + orgDb + '" -nln "' + schema + '.afr_rail" -lco GEOMETRY_NAME=geometry -nlt MULTILINESTRING "' + srcFile + '" "afr_rail" -t_srs EPSG:' + cabdSRID + ' -overwrite"' 
 log(pycmd)
 subprocess.run(pycmd)
 
-pycmd = '"' + ogr + '" -f "PostgreSQL" PG:"' + orgDb + '" -nln "' + schema + '.nrn_sk_roadseg" -lco GEOMETRY_NAME=geometry -nlt MULTILINESTRING "' + srcFile + '" "nrn_sk_roadseg" -t_srs EPSG:' + cabdSRID + ' -overwrite"'
+pycmd = '"' + ogr + '" -f "PostgreSQL" PG:"' + orgDb + '" -nln "' + schema + '.afr_road" -lco GEOMETRY_NAME=geometry -nlt MULTILINESTRING "' + srcFile + '" "afr_road" -t_srs EPSG:' + cabdSRID + ' -overwrite"' 
 log(pycmd)
 subprocess.run(pycmd)
 
-pycmd = '"' + ogr + '" -f "PostgreSQL" PG:"' + orgDb + '" -nln "' + schema + '.nrwn_sk_structure_ln" -lco GEOMETRY_NAME=geometry -nlt MULTILINESTRING "' + srcFile + '" "nrwn_sk_structure_ln" -t_srs EPSG:' + mSRID + ' -overwrite"' 
-log(pycmd)
-subprocess.run(pycmd)
-
-pycmd = '"' + ogr + '" -f "PostgreSQL" PG:"' + orgDb + '" -nln "' + schema + '.nrwn_sk_structure_pt" -lco GEOMETRY_NAME=geometry -nlt POINT "' + srcFile + '" "nrwn_sk_structure_pt" -t_srs EPSG:' + mSRID + ' -overwrite"' 
-log(pycmd)
-subprocess.run(pycmd)
 
 log("Cleaning up layers...")
 
 #rename ids to be unique for insert into modelled crossing table
 query = f"""
-ALTER TABLE {schema}.nrwn_sk_track
-RENAME COLUMN nid TO nrwn_nid;
+ALTER TABLE {schema}.afr_rail
+RENAME COLUMN objectid TO afr_rail_objectid;
 
-ALTER TABLE {schema}.nrn_sk_roadseg
-RENAME COLUMN nid TO nrn_nid;
+ALTER TABLE {schema}.afr_rail
+RENAME COLUMN feature_type TO afr_rail_feature_type;
+
+ALTER TABLE {schema}.afr_road
+RENAME COLUMN objectid TO afr_road_objectid;
+
+ALTER TABLE {schema}.afr_road
+RENAME COLUMN feature_type TO afr_road_feature_type;
 """
 with conn.cursor() as cursor:
     cursor.execute(query)
