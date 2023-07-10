@@ -1,15 +1,16 @@
 import psycopg2 as pg2
 import sys
-import subprocess
 import argparse
 import configparser
-from _ast import Continue
 
 #-- PARSE COMMAND LINE ARGUMENTS --  
 parser = argparse.ArgumentParser(description='Processing stream crossings.')
 parser.add_argument('-c', type=str, help='the configuration file', required=False)
 parser.add_argument('-user', type=str, help='the username to access the database')
 parser.add_argument('-password', type=str, help='the password to access the database')
+parser.add_argument('--copystreams', action='store_true', help='stream data needs to be copied')
+parser.add_argument('--ignorestreams', dest='streams', action='store_false', help='stream data is already present')
+parser.set_defaults(streams=True)
 args = parser.parse_args()
 configfile = "config.ini"
 if (args.c):
@@ -34,6 +35,7 @@ mSRID  = config['SETTINGS']['mSRID']
 mGeometry = config['SETTINGS']['mGeometry']
 #distance in meters (mSRID projection units) for clustering points
 clusterDistance = config['SETTINGS']['clusterDistance']
+railClusterDistance = config['SETTINGS']['railClusterDistance']
 
 #chyf stream network aois as '<aoiuuid>','<aoiuuid>'
 aoi_raw = config['SETTINGS']['aoi_raw']
@@ -76,18 +78,6 @@ layers = [railTable, roadsTable, resourceRoadsTable, trailTable]
 #these should be in order of priority for assigning ids to point
 nonRailLayers = [roadsTable, resourceRoadsTable, trailTable]
 railLayers = [railTable]
-
-#prioritize roads layer over other layers in clusters for determining what cluster point to keep
-player = config['DATASETS']['priorityLayer']
-if (player == "roadsTable"):
-    priorityLayer=roadsTable
-elif (player == "railTable"):
-    priorityLayer=railTable
-elif (player == "resourceRoadsTable"):
-    priorityLayer=resourceRoadsTable    
-elif (player == "trailTable"):
-    priorityLayer=trailTable    
-
 
 layers = []
 allayers = config['DATASETS']['allLayers'].split(",")
@@ -142,7 +132,6 @@ print (f"Id/Geometry Fields: {id} {geometry}")
 print (f"All Layers: {layers}")
 print (f"Non Rail Layers: {nonRailLayers}")
 print (f"Rail Layers: {railLayers}")
-print (f"Priority Layer: {priorityLayer}")
 
 print (f"Rail Attributes: {railAttributes}")
 print (f"Trail Attributes: {trailAttributes}")
@@ -200,7 +189,7 @@ def getStreamData(conn):
         DROP TABLE IF EXISTS {schema}.{streamTable};
         DROP TABLE IF EXISTS {schema}.{streamPropTable};
         
-        CREATE TABLE {schema}.{streamTable} as SELECT * FROM chyf_flowpath WHERE aoi_id IN ({aois});
+        CREATE TABLE {schema}.{streamTable} as SELECT * FROM chyf_flowpath WHERE aoi_id IN ({aois}) AND ef_type != 2;
         CREATE TABLE {schema}.{streamPropTable} as SELECT * FROM chyf_flowpath_properties WHERE aoi_id IN ({aois});
         
         CREATE INDEX {schema}_{streamTable}_{geometry} on {schema}.{streamTable} using gist({geometry}); 
@@ -363,6 +352,9 @@ def processClusters(conn):
 
     for layer in nonRailLayers:
 
+        if (layer is None):
+            continue
+
         print(f"""Computing point to keep for cluster with {layer} crossings""")
 
         sql = f"""
@@ -448,7 +440,7 @@ def processClusters(conn):
 
         #should be empty
         sql = f" SELECT count(*) FROM (SELECT cluster_id FROM {schema}.cluster_{layer}_id except SELECT cluster_id FROM {schema}.temp6) foo"
-        checkEmpty(conn, sql, "error when computing clusters with priority layer - error with temporary table 6")
+        checkEmpty(conn, sql, "error when computing clusters with priority layer - error with temporary table {railClusterDistance}")
 
         sql = f"""
         --add to main table and remove from processing
@@ -579,7 +571,7 @@ def processRail(conn):
         CREATE TABLE {schema}.close_points AS (
             with clusters as (
             SELECT id, chyf_stream_id, transport_feature_source, transport_feature_id, geometry, {mGeometry},
-            ST_ClusterDBSCAN(geometry_m, eps := 6, minpoints := 2) OVER() AS cluster_id
+            ST_ClusterDBSCAN(geometry_m, eps := {railClusterDistance}, minpoints := 2) OVER() AS cluster_id
             FROM {schema}.modelled_crossings
             WHERE transport_feature_source = '{railTable}')
         select * from clusters
@@ -658,14 +650,14 @@ def processRail(conn):
         sql = f"""
             with clusters as (
             SELECT id, transport_feature_source, transport_feature_id, {mGeometry},
-            ST_ClusterDBSCAN({mGeometry}, eps := 6, minpoints := 2) OVER() AS cid
+            ST_ClusterDBSCAN({mGeometry}, eps := {railClusterDistance}, minpoints := 2) OVER() AS cid
             FROM {schema}.modelled_crossings
             WHERE transport_feature_source = '{railTable}')
 
             select count(*) from clusters
             where cid is not null;
         """
-        checkEmpty(conn, sql, "There are still rail crossings within 6 m of each other that need to be removed")
+        checkEmpty(conn, sql, "There are still rail crossings within {railClusterDistance} m of each other that need to be removed")
 
         sql = f"""
         DROP TABLE {schema}.temp6;
@@ -711,7 +703,7 @@ def matchArchive(conn):
             FROM matched m
             WHERE m.modelled_id = a.id;
 
-        --DROP TABLE {schema}.modelled_crossings_archive;
+        DROP TABLE {schema}.modelled_crossings_archive;
 
     """
     with conn.cursor() as cursor:
@@ -786,8 +778,12 @@ def main():
                     password=dbPassword, 
                     port=dbPort)
     
-    print("Copying streams into schema...")
-    getStreamData(conn)
+    if args.streams:
+        print("Copying streams into schema")
+        getStreamData(conn)
+
+    else:
+        print("Skipping copy of stream data")
 
     crossingsExist = checkTableExists(conn, 'modelled_crossings')
 
