@@ -5,14 +5,12 @@ import argparse
 import configparser
 
 parser = argparse.ArgumentParser(description='Processing stream crossings.')
-parser.add_argument('-c', type=str, help='the configuration file', required=False)
+parser.add_argument('-c', type=str, help='the configuration file', required=True)
 parser.add_argument('-user', type=str, help='the username to access the database')
 parser.add_argument('-password', type=str, help='the password to access the database')
 parser.add_argument('-file', type=str, help='the file containing data to load')
 args = parser.parse_args()
-configfile = "config.ini"
-if (args.c):
-    configfile = args.c
+configfile = args.c
 
 #-- READ PARAMETERS FOR CONFIG FILE -- 
 config = configparser.ConfigParser()

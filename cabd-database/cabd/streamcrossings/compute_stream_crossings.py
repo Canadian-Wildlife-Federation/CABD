@@ -5,16 +5,14 @@ import configparser
 
 #-- PARSE COMMAND LINE ARGUMENTS --  
 parser = argparse.ArgumentParser(description='Processing stream crossings.')
-parser.add_argument('-c', type=str, help='the configuration file', required=False)
+parser.add_argument('-c', type=str, help='the configuration file', required=True)
 parser.add_argument('-user', type=str, help='the username to access the database')
 parser.add_argument('-password', type=str, help='the password to access the database')
 parser.add_argument('--copystreams', action='store_true', help='stream data needs to be copied')
 parser.add_argument('--ignorestreams', dest='streams', action='store_false', help='stream data is already present')
 parser.set_defaults(streams=True)
 args = parser.parse_args()
-configfile = "config.ini"
-if (args.c):
-    configfile = args.c
+configfile = args.c
 
 #-- READ PARAMETERS FOR CONFIG FILE -- 
 config = configparser.ConfigParser()
@@ -761,6 +759,8 @@ def finalizeCrossings(conn):
     UPDATE {schema}.modelled_crossings SET stream_name_2 = n.name_en FROM public.{streamNameTable} n WHERE rivernameid2 = n.name_id;
     UPDATE {schema}.modelled_crossings SET strahler_order = p.strahler_order FROM {schema}.{streamPropTable} p WHERE chyf_stream_id = p.id;
 
+    GRANT USAGE ON SCHEMA {schema} TO cabd;
+    GRANT SELECT ON ALL TABLES IN SCHEMA {schema} TO cabd;
     """
     executeQuery(conn, sql)
 
