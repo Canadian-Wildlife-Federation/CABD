@@ -68,9 +68,9 @@ print (f"Id/Geometry Fields: {id} {geometry}")
 
 print ("----")
 
-# Ontario-specific additional datasets
-railStructureLine = 'nrwn_on_structure_ln'
-railStructurePt = 'nrwn_on_structure_pt'
+# Saskatchewan-specific additional datasets
+railStructureLine = 'nrwn_sk_structure_ln'
+railStructurePt = 'nrwn_sk_structure_pt'
 
 #--
 #-- function to execute a query 
@@ -104,85 +104,8 @@ conn = pg2.connect(database=dbName,
                    password=dbPassword, 
                    port=dbPort)
 
-print("Cleaning up points on rail lines converted to trails...")
-
 sql = f"SELECT count(*) FROM {schema}.modelled_crossings WHERE {mGeometry} is null;"
 checkEmpty(conn, sql, "modelled_crossings table should not have any rows with null values in {mGeometry}")
-
-
-sql = f"""
---find points within 5 m of each other
-
-DROP TABLE IF EXISTS {schema}.close_points;
-
-CREATE TABLE {schema}.close_points AS (
-	with clusters as (
-	SELECT id, transport_feature_source, transport_feature_id, trail_name, trail_association, {mGeometry},
-      ST_ClusterDBSCAN({mGeometry}, eps := 5, minpoints := 2) OVER() AS cid
-	FROM {schema}.modelled_crossings
-    where transport_feature_source in ('{railTable}', '{trailTable}'))
-select * from clusters
-where cid is not null
-order by cid asc);
-
---add the trail attributes to rail crossings so we don't lose name and owner
-UPDATE {schema}.close_points a
-set trail_name = b.trail_name,
-	trail_association = b.trail_association
-from {schema}.close_points b
-where b.cid = a.cid
-and a.transport_feature_source = '{railTable}'
-and b.transport_feature_source = '{trailTable}';
-
---get points to keep and remove the others
-alter table {schema}.modelled_crossings add column if not exists "comments" varchar(256);
-
-with keep AS (
-	select distinct on (i.cid) i.*
-	FROM {schema}.close_points i
-	where transport_feature_source = '{railTable}'
-	order by i.cid),
-clusters AS (
-	select distinct cid from {schema}.close_points
-	where transport_feature_source = '{trailTable}'
-	)
-update {schema}.modelled_crossings a
-set
-    "comments" = 'rail line converted to a trail',
-    trail_name = b.trail_name,
-    trail_association = b.trail_association
-from {schema}.close_points b
-where a.id in (select id from keep where cid in (select cid from clusters))
-and a.id = b.id
-and a.transport_feature_source = '{railTable}';
-
-with keep AS (
-	select distinct on (i.cid) i.*
-	FROM {schema}.close_points i
-	where transport_feature_source = '{railTable}'
-	order by i.cid)
-delete from {schema}.modelled_crossings
-where id in (select id from {schema}.close_points)
-and transport_feature_source = '{trailTable}';
-
-DROP TABLE IF EXISTS {schema}.close_points;
-"""
-
-# print(sql)
-
-executeQuery(conn, sql)
-
-sql = f"""
-	with clusters as (
-	SELECT id, transport_feature_source, transport_feature_id, {mGeometry},
-      ST_ClusterDBSCAN({mGeometry}, eps := 5, minpoints := 2) OVER() AS cid
-	FROM {schema}.modelled_crossings
-    where transport_feature_source in ('{railTable}', '{trailTable}'))
-
-    select count(*) from clusters
-    where cid is not null;
-"""
-checkEmpty(conn, sql, "There are still rail and trail crossings within 5 m of each other that need to be removed")
 
 print("Mapping column names to modelled crossings data structure...")
 
@@ -200,30 +123,33 @@ UPDATE {schema}.modelled_crossings SET transport_feature_type =
     CASE
     WHEN transport_feature_source = '{railTable}' THEN 'rail'
     WHEN transport_feature_source = '{roadsTable}' THEN 'road'
-    WHEN transport_feature_source = '{resourceRoadsTable}' THEN 'resource road'
-    WHEN transport_feature_source = '{trailTable}' THEN 'trail'
     ELSE NULL END;
 
-UPDATE {schema}.modelled_crossings SET transport_feature_name = 
+UPDATE {schema}.modelled_crossings SET transport_feature_name =
     CASE
-    WHEN transport_feature_source = '{roadsTable}' THEN official_street_name
-    WHEN transport_feature_source = '{resourceRoadsTable}' THEN road_name
-    WHEN (transport_feature_source = '{trailTable}' OR trail_name IS NOT NULL) THEN trail_name
+    WHEN transport_feature_source = '{roadsTable}'
+        AND r_stname_c IS NOT NULL AND r_stname_c != 'None'
+        THEN r_stname_c
+    WHEN transport_feature_source = '{roadsTable}'
+        AND (r_stname_c IS NULL OR r_stname_c = 'None')
+        AND rtename1en IS NOT NULL AND rtename1en != 'None'
+        THEN rtename1en
     ELSE NULL END;
 
 UPDATE {schema}.modelled_crossings SET roadway_type = 
     CASE
-    WHEN transport_feature_source = '{roadsTable}' THEN road_class
-    WHEN transport_feature_source = '{resourceRoadsTable}' THEN national_road_class
+    WHEN transport_feature_source = '{roadsTable}' THEN roadclass
     ELSE NULL END;
 
-UPDATE {schema}.modelled_crossings SET roadway_surface = surface_type;
+UPDATE {schema}.modelled_crossings SET roadway_surface =
+    CASE
+    WHEN pavstatus = 'Paved' THEN pavstatus
+    WHEN unpavsurf IN ('Dirt', 'Gravel') THEN unpavsurf
+    ELSE NULL END;
 
 UPDATE {schema}.modelled_crossings SET transport_feature_owner = 
     CASE
-    WHEN (transport_feature_source = '{railTable}' AND  trail_association IS NULL) THEN ownerena
-    WHEN transport_feature_source = '{resourceRoadsTable}' THEN responsibility_class
-    WHEN (transport_feature_source = '{trailTable}' OR trail_association IS NOT NULL) THEN trail_association
+    WHEN transport_feature_source = '{railTable}' THEN ownerena
     ELSE NULL END;
 
 UPDATE {schema}.modelled_crossings SET railway_operator = operatoena;
@@ -238,15 +164,13 @@ ALTER TABLE {schema}.modelled_crossings ALTER COLUMN transport_feature_id TYPE v
 UPDATE {schema}.modelled_crossings SET transport_feature_id = 
     CASE
     WHEN transport_feature_source = '{railTable}' THEN nrwn_nid::varchar
-    WHEN transport_feature_source = '{roadsTable}' THEN orn_ogf_id::varchar
-    WHEN transport_feature_source = '{resourceRoadsTable}' THEN mnrf_ogf_id::varchar
-    WHEN transport_feature_source = '{trailTable}' THEN otn_ogf_id::varchar
+    WHEN transport_feature_source = '{roadsTable}' THEN nrn_nid::varchar
     ELSE NULL END;
 """
 executeQuery(conn, sql)
 
-attributeValues = [railAttributes, trailAttributes, roadAttributes, resourceRoadsAttributes]
-attributeTables = [railTable, trailTable, roadsTable, resourceRoadsTable]
+attributeValues = [railAttributes, roadAttributes]
+attributeTables = [railTable, roadsTable]
 
 for i in range(0, len(attributeTables), 1):
     print(attributeTables[i])
@@ -261,7 +185,7 @@ for i in range(0, len(attributeTables), 1):
         sql = f"ALTER TABLE {schema}.modelled_crossings DROP COLUMN IF EXISTS {field};"
         executeQuery(conn, sql)
 
-print(f"""Getting additional structure information from {railTable}""")
+print("Getting additional structure information from",railTable,"...")
 
 sql = f"""
 --find structure points within 25 m of modelled crossings
@@ -269,7 +193,7 @@ DROP TABLE IF EXISTS {schema}.temp_structure_points;
 
 CREATE TABLE {schema}.temp_structure_points AS (
     SELECT DISTINCT ON (s.nid) s.nid AS structure_id, m.id AS modelled_id, m.transport_feature_source AS transport_feature_source, ST_Distance(s.geometry, m.geometry_m) AS dist, s.geometry
-    FROM {schema}.nrwn_on_structure_pt s, {schema}.modelled_crossings m
+    FROM {schema}.nrwn_sk_structure_pt s, {schema}.modelled_crossings m
     WHERE ST_DWithin(s.geometry, m.geometry_m, 25)
     ORDER BY structure_id, modelled_id, ST_Distance(s.geometry, m.geometry_m)
 );
@@ -279,14 +203,14 @@ DROP TABLE IF EXISTS {schema}.temp_structure_lines;
 
 CREATE TABLE {schema}.temp_structure_lines AS (
     SELECT DISTINCT ON (s.nid) s.nid AS structure_id, m.id AS modelled_id, m.transport_feature_source AS transport_feature_source, ST_Distance(s.geometry, m.geometry_m) AS dist, s.geometry
-    FROM {schema}.nrwn_on_structure_ln s, {schema}.modelled_crossings m
+    FROM {schema}.nrwn_sk_structure_ln s, {schema}.modelled_crossings m
     WHERE ST_DWithin(s.geometry, m.geometry_m, 1)
     ORDER BY structure_id, modelled_id, ST_Distance(s.geometry, m.geometry_m)
 );
 
 ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS crossing_type varchar;
-UPDATE {schema}.modelled_crossings SET crossing_type = lower(s.structype) FROM {schema}.nrwn_on_structure_pt s WHERE id IN (SELECT modelled_id FROM {schema}.temp_structure_points);
-UPDATE {schema}.modelled_crossings SET crossing_type = lower(s.structype) FROM {schema}.nrwn_on_structure_ln s WHERE id IN (SELECT modelled_id FROM {schema}.temp_structure_lines);
+UPDATE {schema}.modelled_crossings SET crossing_type = lower(s.structype) FROM {schema}.nrwn_sk_structure_pt s WHERE id IN (SELECT modelled_id FROM {schema}.temp_structure_points);
+UPDATE {schema}.modelled_crossings SET crossing_type = lower(s.structype) FROM {schema}.nrwn_sk_structure_ln s WHERE id IN (SELECT modelled_id FROM {schema}.temp_structure_lines);
 
 DROP TABLE {schema}.temp_structure_points;
 DROP TABLE {schema}.temp_structure_lines;
