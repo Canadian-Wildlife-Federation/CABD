@@ -185,7 +185,7 @@ for i in range(0, len(attributeTables), 1):
         sql = f"ALTER TABLE {schema}.modelled_crossings DROP COLUMN IF EXISTS {field};"
         executeQuery(conn, sql)
 
-print("Getting additional structure information from",railTable,"...")
+print(f"""Getting additional structure information from {railTable} and culvert datasets""")
 
 sql = f"""
 --find structure points within 25 m of modelled crossings
@@ -208,15 +208,36 @@ CREATE TABLE {schema}.temp_structure_lines AS (
     ORDER BY structure_id, modelled_id, ST_Distance(s.geometry, m.geometry_m)
 );
 
---TO DO: ADD STRUCTURAL AND DRAINAGE CULVERTS - pick appropriate distances
---may need to combine these tables and pick closest instead of evaluating separately
+--find structural culverts within 25 m of modelled crossings
+DROP TABLE IF EXISTS {schema}.temp_struc_culverts;
+
+CREATE TABLE {schema}.temp_struc_culverts AS (
+    SELECT DISTINCT ON (s.struc_culvert_id) s.struc_culvert_id AS structure_id, m.id AS modelled_id, m.transport_feature_source AS transport_feature_source, ST_Distance(s.geometry, m.geometry_m) AS dist, s.geometry
+    FROM {schema}.yt_struc_culvert s, {schema}.modelled_crossings m
+    WHERE ST_DWithin(s.geometry, m.geometry_m, 25)
+    ORDER BY structure_id, modelled_id, ST_Distance(s.geometry, m.geometry_m)
+);
+
+--find drainage culverts within 25 m of modelled crossings
+DROP TABLE IF EXISTS {schema}.temp_drain_culverts;
+
+CREATE TABLE {schema}.temp_drain_culverts AS (
+    SELECT DISTINCT ON (s.drain_culvert_id) s.drain_culvert_id AS structure_id, m.id AS modelled_id, m.transport_feature_source AS transport_feature_source, ST_Distance(s.geometry, m.geometry_m) AS dist, s.geometry
+    FROM {schema}.yt_drain_culvert s, {schema}.modelled_crossings m
+    WHERE ST_DWithin(s.geometry, m.geometry_m, 25)
+    ORDER BY structure_id, modelled_id, ST_Distance(s.geometry, m.geometry_m)
+);
 
 ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS crossing_type varchar;
 UPDATE {schema}.modelled_crossings SET crossing_type = lower(s.structype) FROM {schema}.nrwn_yt_structure_pt s WHERE id IN (SELECT modelled_id FROM {schema}.temp_structure_points);
 UPDATE {schema}.modelled_crossings SET crossing_type = lower(s.structype) FROM {schema}.nrwn_yt_structure_ln s WHERE id IN (SELECT modelled_id FROM {schema}.temp_structure_lines);
+UPDATE {schema}.modelled_crossings SET crossing_type = 'culvert' WHERE id IN (SELECT modelled_id FROM {schema}.temp_struc_culverts);
+UPDATE {schema}.modelled_crossings SET crossing_type = 'culvert' WHERE id IN (SELECT modelled_id FROM {schema}.temp_drain_culverts);
 
 DROP TABLE {schema}.temp_structure_points;
 DROP TABLE {schema}.temp_structure_lines;
+DROP TABLE {schema}.temp_struc_culverts;
+DROP TABLE {schema}.temp_drain_culverts;
 
 UPDATE {schema}.modelled_crossings SET crossing_type = 'bridge' WHERE strahler_order >= 6 AND crossing_type IS NULL;
 
