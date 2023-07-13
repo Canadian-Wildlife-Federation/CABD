@@ -182,6 +182,17 @@ sql = f"""
 """
 checkEmpty(conn, sql, "There are still rail and trail crossings within 5 m of each other that need to be removed")
 
+print("Removing crossings on winter roads and other invalid road types...")
+
+sql = f"""
+DELETE FROM {schema}.modelled_crossings WHERE transport_feature_source = '{resourceRoadsTable}' AND water_crossing_removed_ind = 'Yes';
+DELETE FROM {schema}.modelled_crossings WHERE transport_feature_source = '{resourceRoadsTable}' AND national_road_class = 'Winter';
+
+DELETE FROM {schema}.modelled_crossings WHERE transport_feature_source = '{roadsTable}' AND road_class = 'Winter';
+DELETE FROM {schema}.modelled_crossings WHERE transport_feature_source = '{roadsTable}' AND road_element_type IN ('FERRY CONNECTION', 'VIRTUAL ROAD');
+"""
+executeQuery(conn, sql)
+
 print("Mapping column names to modelled crossings data structure...")
 
 sql = f"""
