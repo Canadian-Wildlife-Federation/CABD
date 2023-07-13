@@ -69,6 +69,14 @@ pycmd = '"' + ogr + '" -f "PostgreSQL" PG:"' + orgDb + '" -nln "' + schema + '.a
 log(pycmd)
 subprocess.run(pycmd)
 
+pycmd = '"' + ogr + '" -f "PostgreSQL" PG:"' + orgDb + '" -nln "' + schema + '.afr_road_pt" -lco GEOMETRY_NAME=geometry -nlt POINT "' + srcFile + '" "afr_road_pt" -t_srs EPSG:' + mSRID + ' -overwrite"' 
+log(pycmd)
+subprocess.run(pycmd)
+
+pycmd = '"' + ogr + '" -f "PostgreSQL" PG:"' + orgDb + '" -nln "' + schema + '.afr_rail_pt" -lco GEOMETRY_NAME=geometry -nlt POINT "' + srcFile + '" "afr_rail_pt" -t_srs EPSG:' + mSRID + ' -overwrite"' 
+log(pycmd)
+subprocess.run(pycmd)
+
 
 log("Cleaning up layers...")
 

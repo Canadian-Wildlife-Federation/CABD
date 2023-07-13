@@ -66,6 +66,10 @@ print (f"Id/Geometry Fields: {id} {geometry}")
 
 print ("----")
 
+# Alberta-specific additional datasets
+railPt = 'afr_rail_pt'
+roadPt = 'afr_road_pt'
+
 #--
 #-- function to execute a query 
 #--
@@ -101,11 +105,20 @@ conn = pg2.connect(database=dbName,
 sql = f"SELECT count(*) FROM {schema}.modelled_crossings WHERE {mGeometry} is null;"
 checkEmpty(conn, sql, "modelled_crossings table should not have any rows with null values in {mGeometry}")
 
+print("Removing crossings on winter roads and other invalid road types...")
+
+sql = f"""
+--remove winter roads and ferry crossings
+DELETE FROM {schema}.modelled_crossings WHERE transport_feature_source = '{roadsTable}' AND afr_road_feature_type IN (1, 12);
+"""
+executeQuery(conn, sql)
+
 print("Mapping column names to modelled crossings data structure...")
 
 sql = f"""
 ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS transport_feature_type varchar;
 ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS transport_feature_name varchar;
+ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS transport_feature_condition varchar;
 ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS roadway_type varchar;
 ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS roadway_surface varchar;
 
@@ -117,8 +130,27 @@ UPDATE {schema}.modelled_crossings SET transport_feature_type =
 
 UPDATE {schema}.modelled_crossings SET "name" = substring("name", '\S(?:.*\S)*');
 UPDATE {schema}.modelled_crossings SET transport_feature_name = "name" WHERE "name" IS NOT NULL;
+UPDATE {schema}.modelled_crossings SET transport_feature_condition = 'Abandoned' WHERE transport_feature_source = '{railTable}' AND afr_rail_feature_type = 1;
 
---TO DO: ADD roadway_type and surface mapping once additional info received from AEP
+UPDATE {schema}.modelled_crossings SET roadway_type = 
+    CASE
+    WHEN afr_road_feature_type = 2 THEN 'Ford/Winter Crossing'
+    WHEN afr_road_feature_type = 3 THEN 'Interchange Ramp'
+    WHEN afr_road_feature_type = 4 THEN 'One Lane Gravel Road'
+    WHEN afr_road_feature_type = 5 THEN 'Two Lane Gravel Road'
+    WHEN afr_road_feature_type = 6 THEN 'Divided Paved Road'
+    WHEN afr_road_feature_type = 7 THEN 'One Lane Undivided Paved Road'
+    WHEN afr_road_feature_type = 8 THEN 'Two Lane Undivided Paved Road'
+    WHEN afr_road_feature_type = 9 THEN 'Four Lane Undivided Paved Road'
+    WHEN afr_road_feature_type = 10 THEN 'Driveway'
+    WHEN afr_road_feature_type = 14 THEN 'Dry-Weather Road'
+    ELSE NULL END;
+
+UPDATE {schema}.modelled_crossings SET roadway_surface = 
+    CASE
+    WHEN roadway_type ILIKE '%Paved%' THEN 'Paved'
+    WHEN roadway_type ILIKE '%Gravel%' THEN 'Gravel'
+    ELSE NULL END;
 
 """
 executeQuery(conn, sql)
@@ -149,8 +181,42 @@ for i in range(0, len(attributeTables), 1):
         sql = f"ALTER TABLE {schema}.modelled_crossings DROP COLUMN IF EXISTS {field};"
         executeQuery(conn, sql)
 
+print("Getting additional structure information...")
+
 sql = f"""
+--find rail points within 1 m of modelled crossings
+DROP TABLE IF EXISTS {schema}.temp_rail_points;
+
+CREATE TABLE {schema}.temp_rail_points AS (
+    SELECT DISTINCT ON (s.objectid) s.objectid AS structure_id, s.feature_type AS feature_type, m.id AS modelled_id, m.transport_feature_source AS transport_feature_source, ST_Distance(s.geometry, m.geometry_m) AS dist, s.geometry
+    FROM {schema}.{railPt} s, {schema}.modelled_crossings m
+    WHERE ST_DWithin(s.geometry, m.geometry_m, 1)
+    ORDER BY structure_id, modelled_id, ST_Distance(s.geometry, m.geometry_m)
+);
+
+--find road points within 1 m of modelled crossings
+DROP TABLE IF EXISTS {schema}.temp_road_points;
+
+CREATE TABLE {schema}.temp_road_points AS (
+    SELECT DISTINCT ON (s.objectid) s.objectid AS structure_id, s.feature_type AS feature_type, m.id AS modelled_id, m.transport_feature_source AS transport_feature_source, ST_Distance(s.geometry, m.geometry_m) AS dist, s.geometry
+    FROM {schema}.{roadPt} s, {schema}.modelled_crossings m
+    WHERE ST_DWithin(s.geometry, m.geometry_m, 1)
+    ORDER BY structure_id, modelled_id, ST_Distance(s.geometry, m.geometry_m)
+);
+
 ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS crossing_type varchar;
+UPDATE {schema}.modelled_crossings SET crossing_type = 'bridge'
+    FROM {schema}.{railPt} s WHERE id IN (SELECT modelled_id FROM {schema}.temp_rail_points)
+    AND s.feature_type IN (2,3);
+
+ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS crossing_type varchar;
+UPDATE {schema}.modelled_crossings SET crossing_type = 'bridge'
+    FROM {schema}.{roadPt} s WHERE id IN (SELECT modelled_id FROM {schema}.temp_road_points)
+    AND s.feature_type = 4;
+
+DROP TABLE {schema}.temp_rail_points;
+DROP TABLE {schema}.temp_road_points;
+
 UPDATE {schema}.modelled_crossings SET crossing_type = 'bridge' WHERE strahler_order >= 6 AND crossing_type IS NULL;
 
 """
