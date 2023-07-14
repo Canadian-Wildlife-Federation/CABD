@@ -107,6 +107,13 @@ conn = pg2.connect(database=dbName,
 sql = f"SELECT count(*) FROM {schema}.modelled_crossings WHERE {mGeometry} is null;"
 checkEmpty(conn, sql, "modelled_crossings table should not have any rows with null values in {mGeometry}")
 
+print("Removing crossings on ice roads...")
+
+sql = f"""
+DELETE FROM {schema}.modelled_crossings WHERE "closing" = 'Summer' OR "roadclass" = 'Winter';
+"""
+executeQuery(conn,sql)
+
 print("Mapping column names to modelled crossings data structure...")
 
 sql = f"""
@@ -118,6 +125,7 @@ ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS transport_featu
 ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS railway_operator varchar;
 ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS num_railway_tracks varchar;
 ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS transport_feature_condition varchar;
+ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS crossing_type varchar;
 
 UPDATE {schema}.modelled_crossings SET transport_feature_type = 
     CASE
@@ -155,6 +163,8 @@ UPDATE {schema}.modelled_crossings SET transport_feature_owner =
 UPDATE {schema}.modelled_crossings SET railway_operator = operatoena;
 UPDATE {schema}.modelled_crossings SET num_railway_tracks = numtracks;
 UPDATE {schema}.modelled_crossings SET transport_feature_condition = status;
+
+UPDATE {schema}.modelled_crossings SET crossing_type = 'bridge' WHERE structtype = 'Bridge';
 
 """
 executeQuery(conn, sql)
@@ -228,7 +238,6 @@ CREATE TABLE {schema}.temp_drain_culverts AS (
     ORDER BY structure_id, modelled_id, ST_Distance(s.geometry, m.geometry_m)
 );
 
-ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS crossing_type varchar;
 UPDATE {schema}.modelled_crossings SET crossing_type = lower(s.structype) FROM {schema}.nrwn_yt_structure_pt s WHERE id IN (SELECT modelled_id FROM {schema}.temp_structure_points);
 UPDATE {schema}.modelled_crossings SET crossing_type = lower(s.structype) FROM {schema}.nrwn_yt_structure_ln s WHERE id IN (SELECT modelled_id FROM {schema}.temp_structure_lines);
 UPDATE {schema}.modelled_crossings SET crossing_type = 'culvert' WHERE id IN (SELECT modelled_id FROM {schema}.temp_struc_culverts);
