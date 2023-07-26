@@ -10,7 +10,7 @@ parser.add_argument('-user', type=str, help='the username to access the database
 parser.add_argument('-password', type=str, help='the password to access the database')
 parser.add_argument('--copystreams', action='store_true', help='stream data needs to be copied')
 parser.add_argument('--ignorestreams', dest='streams', action='store_false', help='stream data is already present')
-parser.set_defaults(streams=True)
+parser.set_defaults(streams=False)
 args = parser.parse_args()
 configfile = args.c
 
@@ -112,7 +112,7 @@ for l in allayers:
     elif (l == "railTable"):
         railLayers.append(railTable)
     elif (l == "resourceRoadsTable"):
-        railLayers.append(resourceRoadsTable)    
+        railLayers.append(resourceRoadsTable)
     elif (l == "trailTable"):
         railLayers.append(trailTable)    
 
@@ -754,13 +754,61 @@ def finalizeCrossings(conn):
     ALTER TABLE {schema}.modelled_crossings ADD COLUMN stream_name_1 varchar;
     ALTER TABLE {schema}.modelled_crossings ADD COLUMN stream_name_2 varchar;
     ALTER TABLE {schema}.modelled_crossings ADD COLUMN strahler_order integer;
+    ALTER TABLE {schema}.modelled_crossings ADD COLUMN new_crossing_type varchar;
+    ALTER TABLE {schema}.modelled_crossings ADD COLUMN reviewer_status varchar;
+    ALTER TABLE {schema}.modelled_crossings ADD COLUMN reviewer_comments varchar;
+    ALTER TABLE {schema}.modelled_crossings ADD COLUMN last_modified TIMESTAMPTZ default now();
+    ALTER TABLE {schema}.modelled_crossings ADD COLUMN last_modified_by varchar default user;
 
     UPDATE {schema}.modelled_crossings SET stream_name_1 = n.name_en FROM public.{streamNameTable} n WHERE rivernameid1 = n.name_id;
     UPDATE {schema}.modelled_crossings SET stream_name_2 = n.name_en FROM public.{streamNameTable} n WHERE rivernameid2 = n.name_id;
     UPDATE {schema}.modelled_crossings SET strahler_order = p.strahler_order FROM {schema}.{streamPropTable} p WHERE chyf_stream_id = p.id;
 
-    GRANT USAGE ON SCHEMA {schema} TO cabd;
-    GRANT SELECT ON ALL TABLES IN SCHEMA {schema} TO cabd;
+    ALTER TABLE {schema}.modelled_crossings
+        ADD CONSTRAINT {schema}_crossing_type_fkey FOREIGN KEY (new_crossing_type)
+        REFERENCES stream_crossings.crossing_type_codes (name_en) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION;
+
+    GRANT USAGE ON SCHEMA {schema} TO gistech;
+    GRANT SELECT ON ALL TABLES IN SCHEMA {schema} TO gistech;
+    GRANT UPDATE(new_crossing_type) ON {schema}.modelled_crossings TO gistech;
+    GRANT UPDATE(reviewer_status) ON {schema}.modelled_crossings TO gistech;
+    GRANT UPDATE(reviewer_comments) ON {schema}.modelled_crossings TO gistech;
+    """
+    executeQuery(conn, sql)
+
+    sql = f"""
+    --create function trigger to change a timestamp value upon an update
+    CREATE OR REPLACE FUNCTION trigger_set_timestamp()
+    RETURNS TRIGGER AS $$
+    BEGIN
+    NEW.last_modified = NOW();
+    RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql;
+
+    --create a trigger to execute the function
+    CREATE TRIGGER set_timestamp
+    BEFORE UPDATE ON {schema}.modelled_crossings
+    FOR EACH ROW
+    EXECUTE PROCEDURE trigger_set_timestamp();
+
+    --create function trigger to change a username value upon an update
+    CREATE OR REPLACE FUNCTION trigger_set_usertimestamp()
+    RETURNS TRIGGER AS $$
+    BEGIN
+    NEW.last_modified_by = user;
+    RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql;
+
+    --create a trigger to execute the function
+    CREATE TRIGGER set_usertimestamp
+    BEFORE UPDATE ON {schema}.modelled_crossings
+    FOR EACH ROW
+    EXECUTE PROCEDURE trigger_set_usertimestamp();
+
     """
     executeQuery(conn, sql)
 
