@@ -250,6 +250,8 @@ DROP TABLE {schema}.temp_drain_culverts;
 
 UPDATE {schema}.modelled_crossings SET crossing_type = 'bridge' WHERE strahler_order >= 6 AND crossing_type IS NULL;
 
+ALTER TABLE {schema}.modelled_crossings ADD CONSTRAINT {schema}_modelled_crossings PRIMARY KEY (id);
+
 """
 executeQuery(conn, sql)
 
