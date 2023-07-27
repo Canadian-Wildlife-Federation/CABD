@@ -775,6 +775,10 @@ def finalizeCrossings(conn):
     GRANT UPDATE(new_crossing_type) ON {schema}.modelled_crossings TO gistech;
     GRANT UPDATE(reviewer_status) ON {schema}.modelled_crossings TO gistech;
     GRANT UPDATE(reviewer_comments) ON {schema}.modelled_crossings TO gistech;
+
+    ALTER TABLE {schema}.modelled_crossings ADD COLUMN nhn_watershed_id varchar;
+    UPDATE {schema}.modelled_crossings AS c SET nhn_watershed_id = n.id FROM cabd.nhn_workunit AS n WHERE st_contains(n.polygon, c.geometry);
+
     """
     executeQuery(conn, sql)
 
@@ -808,7 +812,6 @@ def finalizeCrossings(conn):
     BEFORE UPDATE ON {schema}.modelled_crossings
     FOR EACH ROW
     EXECUTE PROCEDURE trigger_set_usertimestamp();
-
     """
     executeQuery(conn, sql)
 
