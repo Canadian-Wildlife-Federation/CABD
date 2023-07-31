@@ -51,16 +51,18 @@ WHERE
 --Change null values to "unknown" for user benefit
 UPDATE fishways.fishways SET fishpass_type_code = (SELECT code FROM cabd.upstream_passage_type_codes WHERE name_en = 'Unknown') WHERE fishpass_type_code IS NULL;
 
---Give dams a passability_status_code
+--Set NULL passability status to barrier
+
+UPDATE dams.dams SET passability_status_code = 
+    (SELECT code FROM cabd.passability_status_codes WHERE name_en = 'Barrier') WHERE passability_status_code IS NULL;
+
+--Set passability status based on fishways / upstream passage type code
 UPDATE dams.dams AS cabd 
     SET 
         passability_status_code = (SELECT code FROM cabd.passability_status_codes WHERE name_en = 'Partial Barrier'),
         passability_status_note = 'Marked as a partial barrier due to upstream passage measures from associated fishway.'
     FROM fishways.fishways AS f WHERE f.dam_id = cabd.cabd_id
     AND f.fishpass_type_code != (SELECT code FROM cabd.upstream_passage_type_codes WHERE name_en = 'Trap and truck');
-
-UPDATE dams.dams SET passability_status_code = 
-    (SELECT code FROM cabd.passability_status_codes WHERE name_en = 'Barrier') WHERE passability_status_code IS NULL;
 
 UPDATE dams.dams AS cabd 
     SET 
@@ -82,6 +84,13 @@ UPDATE
     fishways.fishways_attribute_source AS fishsource
     WHERE
     cabdsource.cabd_id = fish.dam_id AND cabd.cabd_id = cabdsource.cabd_id;
+
+UPDATE dams.dams
+    SET 
+        passability_status_note = 'Marked as a partial barrier due to upstream passage measures from associated fishway.'
+    WHERE up_passage_type_code IS NOT NULL
+	AND up_passage_type_code != (SELECT code FROM cabd.upstream_passage_type_codes WHERE name_en = 'Trap and truck')
+	AND up_passage_type_code != (SELECT code FROM cabd.upstream_passage_type_codes WHERE name_en = 'No structure');
 
 --Update completeness level for dams
 UPDATE dams.dams SET complete_level_code = 

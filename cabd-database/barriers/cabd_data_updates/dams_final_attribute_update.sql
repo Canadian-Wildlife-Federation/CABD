@@ -59,11 +59,6 @@ UPDATE
     cabdsource.cabd_id = fish.dam_id AND cabd.cabd_id = cabdsource.cabd_id;
 
 --all decommissioned or removed dams are set to passable
-UPDATE dams.dams
-    SET 
-        passability_status_code = (SELECT code FROM cabd.passability_status_codes WHERE name_en = 'Passable'),
-        passability_status_note = 'Marked as passable since this structure is decommissioned or removed.'
-    WHERE operating_status_code = (SELECT code FROM dams.operating_status_codes WHERE name_en = 'Decommissioned/ Removed');
 
 UPDATE dams.dams_attribute_source AS cabdsource
     SET passability_status_code_ds = operating_status_code_ds
@@ -71,13 +66,43 @@ UPDATE dams.dams_attribute_source AS cabdsource
     WHERE cabdsource.cabd_id = cabd.cabd_id
     AND cabd.operating_status_code = (SELECT code FROM dams.operating_status_codes WHERE name_en = 'Decommissioned/ Removed');
 
+UPDATE dams.dams
+    SET 
+        passability_status_code = (SELECT code FROM cabd.passability_status_codes WHERE name_en = 'Passable'),
+        passability_status_note = 'Marked as passable since this structure is decommissioned or removed.'
+    WHERE operating_status_code = (SELECT code FROM dams.operating_status_codes WHERE name_en = 'Decommissioned/ Removed');
+
+--dams with a comment that indicates a fishway are set to partial barriers
+
+UPDATE dams.dams_attribute_source AS cabdsource
+    SET passability_status_code_ds = comments_ds
+    FROM dams.dams AS cabd
+    WHERE cabdsource.cabd_id = cabd.cabd_id
+    AND cabd.comments IN ('Dam with Fishway', 'Causeway with Fishway', 'Fishway')
+    AND cabd.passability_status_code != (SELECT code FROM cabd.passability_status_codes WHERE name_en = 'Partial Barrier');
+
+UPDATE dams.dams
+    SET 
+        passability_status_code = (SELECT code FROM cabd.passability_status_codes WHERE name_en = 'Partial Barrier'),
+        passability_status_note = 'Marked as a partial barrier due to upstream passage measures from associated fishway.'
+    WHERE comments IN ('Dam with Fishway', 'Causeway with Fishway', 'Fishway')
+    AND passability_status_code != (SELECT code FROM cabd.passability_status_codes WHERE name_en = 'Partial Barrier');
+
+--any dams with an upstream passage type get a note
+UPDATE dams.dams
+    SET 
+        passability_status_note = 'Marked as a partial barrier due to upstream passage measures from associated fishway.'
+    WHERE up_passage_type_code IS NOT NULL
+	AND up_passage_type_code != (SELECT code FROM cabd.upstream_passage_type_codes WHERE name_en = 'Trap and truck')
+	AND up_passage_type_code != (SELECT code FROM cabd.upstream_passage_type_codes WHERE name_en = 'No structure');
+
 --------------------------------------------------------------------------------------------------------------------------
 
 --Various spatial joins/queries to populate fields
-UPDATE dams.dams AS dams SET province_territory_code = n.code FROM cabd.province_territory_codes AS n WHERE st_contains(n.geometry, dams.snapped_point);
+UPDATE dams.dams AS dams SET province_territory_code = n.code FROM cabd.province_territory_codes AS n WHERE st_contains(n.geometry, dams.snapped_point) AND province_territory_code IS NULL;
 UPDATE dams.dams SET province_territory_code = 'us' WHERE province_territory_code IS NULL;
-UPDATE dams.dams AS dams SET nhn_watershed_id = n.id FROM cabd.nhn_workunit AS n WHERE st_contains(n.polygon, dams.snapped_point);
-UPDATE dams.dams AS dams SET municipality = n.csdname FROM cabd.census_subdivisions AS n WHERE st_contains(n.geometry, dams.snapped_point);
+UPDATE dams.dams AS dams SET nhn_watershed_id = n.id FROM cabd.nhn_workunit AS n WHERE st_contains(n.polygon, dams.snapped_point) AND nhn_watershed_id IS NULL;
+UPDATE dams.dams AS dams SET municipality = n.csdname FROM cabd.census_subdivisions AS n WHERE st_contains(n.geometry, dams.snapped_point) AND municipality IS NULL;
 
 --TO DO: Add foreign table to reference ecatchment and eflowpath tables, make sure code below works
 --Should waterbody name simply be overwritten here as long as we have a value from the chyf networks?
