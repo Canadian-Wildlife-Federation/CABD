@@ -569,9 +569,9 @@ print("Cleaning CSV...")
 with conn.cursor() as cursor:
     cursor.execute(loadQuery)
 print("Adding records to " + damUpdateTable)
-print(moveQuery)
-# with conn.cursor() as cursor:
-#     cursor.execute(moveQuery)
+# print(moveQuery)
+with conn.cursor() as cursor:
+    cursor.execute(moveQuery)
 conn.commit()
 conn.close()
 

@@ -79,6 +79,7 @@ ALTER TABLE {sourceTable} ADD COLUMN source_type varchar;
 ALTER TABLE {sourceTable} ADD COLUMN id uuid;
 
 UPDATE {sourceTable} SET last_updated = TRIM(LOWER(last_updated));
+UPDATE {sourceTable} SET data_source_short_name = TRIM(data_source_short_name);
 UPDATE {sourceTable} SET last_updated = NULL WHERE last_updated = 'n.d.';
 ALTER TABLE {sourceTable} ALTER COLUMN last_updated TYPE date USING last_updated::date;
 
@@ -115,9 +116,9 @@ with conn.cursor() as cursor:
     cursor.execute(updateQuery)
 
 print("Adding records to " + updateTable)
-print(moveQuery)
-# with conn.cursor() as cursor:
-#     cursor.execute(moveQuery)
+# print(moveQuery)
+with conn.cursor() as cursor:
+    cursor.execute(moveQuery)
 
 conn.commit()
 conn.close()
