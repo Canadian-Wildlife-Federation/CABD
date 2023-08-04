@@ -337,7 +337,7 @@ public class DocumentationController {
 						documentNameValuePair(sb, "Organization:", ds.getOrganizationName());
 						documentNameValuePair(sb, "Licence:", transformLinks(ds.getLicense()));
 						documentNameValuePair(sb, "Geographic coverage:", ds.getGeographicCoverage());
-//						buildAttribute(sb, "Source ID field:", ds.get());
+						documentNameValuePair(sb, "Source ID Field:", ds.getSourceFieldId());
 						documentNameValuePair(sb, "Short Name:", ds.getName());
 						documentNameValuePair(sb, "Data Type:", ds.getType());
 						documentNameValuePair(sb, "Source Type:", ds.getCategory());
@@ -371,7 +371,7 @@ public class DocumentationController {
 		
 		sb.append("<dl class=\"simple\">");
 		sb.append("<dt>");
-		sb.append("Definintion");
+		sb.append("Definition");
 		sb.append("</dt>");
 		sb.append("<dd>");
 		sb.append("<p><em>");
