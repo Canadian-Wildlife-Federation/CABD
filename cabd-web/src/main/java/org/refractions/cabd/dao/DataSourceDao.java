@@ -15,18 +15,14 @@
  */
 package org.refractions.cabd.dao;
 
-import java.sql.Date;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
-import java.util.UUID;
 
 import org.refractions.cabd.model.DataSource;
-import org.refractions.cabd.model.FeatureType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
-import org.springframework.jdbc.core.SqlTypeValue;
 import org.springframework.stereotype.Component;
 
 /**
@@ -50,7 +46,7 @@ public class DataSourceDao {
 		
 		StringBuilder sb = new StringBuilder();
 		sb.append("SELECT name, source_type, version_date, version_number, ");
-		sb.append("data_source_category, organization_name, geographic_coverage, source_id_field, license, full_name, source");
+		sb.append("data_source_category, organization_name, geographic_coverage, source_id_field, licence, full_name, source");
 		sb.append(" FROM ");
 		sb.append(" cabd.data_source");
 		
@@ -61,7 +57,7 @@ public class DataSourceDao {
 				return new DataSource(null,  rs.getString("name"),  rs.getString("source_type"), 
 						rs.getDate("version_date"), rs.getString("version_number"),
 						rs.getString("organization_name"), rs.getString("data_source_category"), 
-						rs.getString("geographic_coverage"), rs.getString("license"), rs.getString("full_name"),
+						rs.getString("geographic_coverage"), rs.getString("licence"), rs.getString("full_name"),
 						rs.getString("source"), rs.getString("source_id_field"));
 			}});
 		
