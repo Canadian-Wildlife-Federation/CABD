@@ -27,26 +27,57 @@ import java.util.UUID;
 public class DataSource {
 
 	private UUID id;
-	private String name;
+	private String shortName;
 	private Date versionDate;
 	private String version;
 	private String featureId;
 	private String type;
+	private String source;
 	
-	public DataSource(UUID id, String name, String type, Date versionDate, String version, String featureId) {
+	private String organization;
+	private String category;
+	private String geoCoverage;
+	private String license;
+	private String fullname;
+	
+	private String sourceIdField;
+	
+	
+	public DataSource(UUID id, String shortName, String type, Date versionDate, String version, String featureId) {
 		this.id = id;
-		this.name = name;
+		this.shortName = shortName;
 		this.versionDate = versionDate;
 		this.version = version;
 		this.featureId = featureId;
 		this.type = type;
 	}
 	
+	public DataSource(UUID id, String shortName, String type, Date versionDate, String version,
+			String organization, String category, String geoCoverage, String licence, String fullname, 
+			String source, String sourceIdField) {
+		this(id, shortName, type, versionDate, version, null);
+		
+		this.organization = organization;
+		this.category = category;
+		this.geoCoverage = geoCoverage;
+		this.license = licence;
+		this.fullname = fullname;
+		this.source = source;
+		this.sourceIdField = sourceIdField;
+	}
+	
 	public UUID getId() {
 		return id;
 	}
+	public String getFullName() {
+		return this.fullname;
+	}
+	/**
+	 * 
+	 * @return the short name of the data source
+	 */
 	public String getName() {
-		return name;
+		return shortName;
 	}
 	public Date getVersionDate() {
 		return versionDate;
@@ -59,5 +90,23 @@ public class DataSource {
 	}
 	public String getType() {
 		return this.type;
+	}
+	public String getCategory() {
+		return this.category;
+	}
+	public String getOrganizationName() {
+		return this.organization;
+	}
+	public String getGeographicCoverage() {
+		return this.geoCoverage;
+	}
+	public String getLicense() {
+		return this.license;
+	}
+	public String getSource() {
+		return this.source;
+	}
+	public String getSourceFieldId() {
+		return this.sourceIdField;
 	}
 }
