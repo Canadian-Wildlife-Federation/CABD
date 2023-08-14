@@ -176,6 +176,8 @@ public class DocumentationController {
 		createHeader(sb, "Attributes Common to All Feature Types", null, 3);
 		
 		Set<String> processed = new HashSet<>();
+		shared.sort((a, b)->a.getName().compareTo(b.getName()));
+		
 		for (FeatureViewMetadataField attribute : shared) {
 			processed.add(attribute.getFieldName());			
 			documentAttribute(sb, attribute, "shared", null);		
