@@ -80,6 +80,10 @@ ALTER TABLE {sourceTable} ADD COLUMN id uuid;
 
 UPDATE {sourceTable} SET last_updated = TRIM(LOWER(last_updated));
 UPDATE {sourceTable} SET data_source_short_name = TRIM(data_source_short_name);
+UPDATE {sourceTable} SET full_name = TRIM(full_name);
+UPDATE {sourceTable} SET organization_name = TRIM(organization_name);
+UPDATE {sourceTable} SET data_source_type = TRIM(data_source_type);
+UPDATE {sourceTable} SET reference = TRIM(reference);
 UPDATE {sourceTable} SET last_updated = NULL WHERE last_updated = 'n.d.';
 ALTER TABLE {sourceTable} ALTER COLUMN last_updated TYPE date USING last_updated::date;
 
@@ -97,13 +101,19 @@ INSERT INTO {updateTable}
     name,
     version_date,
     source,
-    source_type)
+    source_type,
+    full_name,
+    organization_name,
+    data_source_category)
 SELECT
     id,
     data_source_short_name,
     last_updated,
     reference,
-    source_type
+    source_type,
+    full_name,
+    organization_name,
+    initcap(data_source_type)
 FROM {sourceTable}
 ON CONFLICT DO NOTHING;
 
