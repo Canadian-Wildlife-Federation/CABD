@@ -173,6 +173,7 @@ public class DocumentationController {
 		}
 		
 		//add attributes
+		createSection(sb, "ftatt_common");
 		createHeader(sb, "Attributes Common to All Feature Types", null, 3);
 		
 		Set<String> processed = new HashSet<>();
@@ -182,8 +183,10 @@ public class DocumentationController {
 			processed.add(attribute.getFieldName());			
 			documentAttribute(sb, attribute, "shared", null);		
 		}
+		endSection(sb);
 		
 		for (FeatureType ft: sortedTypes) {
+			createSection(sb, "ftatt_" + ft.getType());
 			createHeader(sb, ft.getName() + " Attributes", null, 3);
 			
 			List<FeatureViewMetadataField> sorted = new ArrayList<>(allAttributes.get(ft).values());
@@ -194,13 +197,13 @@ public class DocumentationController {
 				documentAttribute(sb, attribute, null, ft);
 				
 			}
-			
+			endSection(sb);
 		}
 	}
 	
 	private void documentAttribute(StringBuilder sb, FeatureViewMetadataField attribute, String idPrefix, FeatureType ft) {
 		sb.append("<div class=\"section\" id=\"" + (ft == null? idPrefix : ft.getType()) + "_" + attribute.getFieldName() + "\">");
-		
+				
 		createHeader(sb, attribute.getName(), null, 4);
 		
 		sb.append("<blockquote>");
@@ -294,6 +297,9 @@ public class DocumentationController {
 			if (key1.equals("spatial")) sname = "Spatial Data Sources";
 			if (key1.equals("non-spatial")) sname = "Non-Spatial Data Sources";
 			
+			
+			createSection(sb, "dsid_" + createKey(key1) );
+			
 			createHeader(sb, sname, null, 2);
 			sb.append("<hr/>");
 			
@@ -304,6 +310,8 @@ public class DocumentationController {
 			}
 			
 			for (String key2: categories) {
+				
+				createSection(sb, "dsid_" + createKey(key1) + "_" + createKey(key2));
 				createHeader(sb, key2, null, 3);
 				
 				List<String> organizations = new ArrayList<>(sections.get(key1).get(key2).keySet());
@@ -350,11 +358,15 @@ public class DocumentationController {
 						sb.append("</blockquote>");
 					}
 				}
-//				
+				endSection(sb);
 			}
+			endSection(sb);
 		}
 	}
 	
+	private String createKey(String key) {
+		return key.toLowerCase().replaceAll("[^a-zA-Z0-9]", "");
+	}
 	
 	private void documentNameValuePair(StringBuilder sb, String name, String value) {
 		if (value == null) return ;
@@ -369,7 +381,8 @@ public class DocumentationController {
 	
 	private void documentFeatureType(StringBuilder sb, FeatureType ft, Set<String> sharedAttributes) {
 		
-		createHeader(sb,ft.getName(), "ft_" + ft.getType(), 3);
+		createSection(sb, "ft_" + ft.getType());
+		createHeader(sb,ft.getName(), null, 3);
 		
 		sb.append("<dl class=\"simple\">");
 		sb.append("<dt>");
@@ -404,7 +417,7 @@ public class DocumentationController {
 		sb.append("</p>");
 		sb.append("</dd>");
 		sb.append("</dl>");
-		
+		endSection(sb);	
 	}
 
 	private boolean refTableHasCode(FeatureViewMetadataField ref) {
@@ -422,6 +435,12 @@ public class DocumentationController {
 		sb.append(">");
 	}
 		
+	private void createSection(StringBuilder sb, String id) {
+		sb.append("<section id=\"" + id + "\">");
+	}
+	private void endSection(StringBuilder sb) {
+		sb.append("</section>");
+	}
 	private void createTable(StringBuilder sb, String id, String inner) {
 		sb.append("<table class=\"table\"");
 		if (id != null) sb.append(" id=\"" + id + "\"");
