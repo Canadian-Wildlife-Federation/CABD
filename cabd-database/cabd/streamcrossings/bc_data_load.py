@@ -4,12 +4,15 @@ import os
 import argparse
 import configparser
 import getpass
+from compute_stream_crossings import getStreamData
 
 parser = argparse.ArgumentParser(description='Processing stream crossings.')
 parser.add_argument('-c', type=str, help='the configuration file', required=True)
 parser.add_argument('-user', type=str, help='the username to access the database')
 parser.add_argument('-password', type=str, help='the password to access the database')
-parser.add_argument('-file', type=str, help='the file containing data to load')
+parser.add_argument('--copystreams', action='store_true', help='stream data needs to be copied')
+parser.add_argument('--ignorestreams', dest='streams', action='store_false', help='stream data is already present')
+# parser.set_defaults(streams=False)
 args = parser.parse_args()
 configfile = args.c
 
@@ -23,7 +26,6 @@ dbPort = config['DATABASE']['port']
 dbName = config['DATABASE']['name']
 dbUser = args.user
 dbPassword = args.password
-srcFile = args.file
 
 #database settings - bc
 bcDbHost = '159.203.55.129'
@@ -51,6 +53,8 @@ conn = pg2.connect(database=dbName,
                    password=dbPassword, 
                    port=dbPort)
 
+print("Loading data from bcfishpass_server")
+
 query = f"""
     DO
     $$BEGIN
@@ -72,7 +76,9 @@ with conn.cursor() as cursor:
     cursor.execute(query)
 
 query = f"""
-    CREATE FOREIGN TABLE IF NOT EXISTS public.bc_crossings (
+    DROP FOREIGN TABLE IF EXISTS public.bc_crossings;
+
+    CREATE FOREIGN TABLE public.bc_crossings (
         aggregated_crossings_id text NOT NULL,
         stream_crossing_id integer,
         dam_id uuid,
@@ -120,7 +126,9 @@ query = f"""
     OPTIONS (schema_name 'bcfishpass', table_name 'crossings');
 
     
-    CREATE FOREIGN TABLE IF NOT EXISTS public.bc_modelled_stream_crossings (
+    DROP FOREIGN TABLE IF EXISTS public.bc_modelled_stream_crossings;
+
+    CREATE FOREIGN TABLE public.bc_modelled_stream_crossings (
         modelled_crossing_id integer NOT NULL,
         modelled_crossing_type character varying(5),
         modelled_crossing_type_source text[],
@@ -139,7 +147,9 @@ query = f"""
     OPTIONS (schema_name 'bcfishpass', table_name 'modelled_stream_crossings');
 
     
-    CREATE FOREIGN TABLE IF NOT EXISTS public.bc_gba_railway_tracks_sp (
+    DROP FOREIGN TABLE IF EXISTS public.bc_gba_railway_tracks_sp;
+    
+    CREATE FOREIGN TABLE public.bc_gba_railway_tracks_sp (
         railway_track_id integer NOT NULL,
         track_name character varying(100),
         number_of_tracks numeric,
@@ -152,7 +162,9 @@ query = f"""
     OPTIONS (schema_name 'whse_basemapping', table_name 'gba_railway_tracks_sp');
 
     
-    CREATE FOREIGN TABLE IF NOT EXISTS public.bc_transport_line (
+    DROP FOREIGN TABLE IF EXISTS public.bc_transport_line;
+
+    CREATE FOREIGN TABLE public.bc_transport_line (
         transport_line_id integer NOT NULL,
         transport_line_type_code character varying(3),
         transport_line_surface_code character varying(1),
@@ -163,8 +175,11 @@ query = f"""
     OPTIONS (schema_name 'whse_basemapping', table_name 'transport_line');
 
     
-    CREATE FOREIGN TABLE IF NOT EXISTS public.bc_ften_road_section_lines_svw (
+    DROP FOREIGN TABLE IF EXISTS public.bc_ften_road_section_lines_svw;
+
+    CREATE FOREIGN TABLE public.bc_ften_road_section_lines_svw (
         objectid numeric,
+        forest_file_id character varying(10),
         road_section_name character varying(100),
         client_name character varying(91),
         life_cycle_status_code character varying(10),
@@ -174,7 +189,9 @@ query = f"""
     OPTIONS (schema_name 'whse_forest_tenure', table_name 'ften_road_section_lines_svw');
 
     
-    CREATE FOREIGN TABLE IF NOT EXISTS public.bc_og_petrlm_dev_rds_pre06_pub_sp (
+    DROP FOREIGN TABLE IF EXISTS public.bc_og_petrlm_dev_rds_pre06_pub_sp;
+
+    CREATE FOREIGN TABLE public.bc_og_petrlm_dev_rds_pre06_pub_sp (
         og_petrlm_dev_rd_pre06_pub_id integer,
         petrlm_development_road_name character varying(50),
         proponent character varying(60),
@@ -184,7 +201,9 @@ query = f"""
     OPTIONS (schema_name 'whse_mineral_tenure', table_name 'og_petrlm_dev_rds_pre06_pub_sp');
 
     
-    CREATE FOREIGN TABLE IF NOT EXISTS public.bc_og_road_segment_permit_spp (
+    DROP FOREIGN TABLE IF EXISTS public.bc_og_road_segment_permit_spp;
+
+    CREATE FOREIGN TABLE public.bc_og_road_segment_permit_spp (
         og_road_segment_permit_id integer,
         proponent character varying(120),
         geom geometry(MultiLineString,3005)
@@ -192,7 +211,6 @@ query = f"""
 	SERVER bcfishpass_server
     OPTIONS (schema_name 'whse_mineral_tenure', table_name 'og_road_segment_permit_sp');
 
-    
     GRANT SELECT ON TABLE public.bc_crossings TO PUBLIC;
     GRANT SELECT ON TABLE public.bc_modelled_stream_crossings TO PUBLIC;
     GRANT SELECT ON TABLE public.bc_gba_railway_tracks_sp TO PUBLIC;
@@ -204,6 +222,13 @@ query = f"""
 
 with conn.cursor() as cursor:
     cursor.execute(query)
+
+if args.streams:
+    print("Copying streams into schema")
+    getStreamData(conn)
+
+else:
+    print("Skipping copy of stream data")
 
 conn.commit()
       
