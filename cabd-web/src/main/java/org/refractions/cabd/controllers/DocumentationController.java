@@ -17,14 +17,11 @@ package org.refractions.cabd.controllers;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -111,45 +108,6 @@ public class DocumentationController {
 		//sort by name
 		sortedTypes.sort((a,b)->a.getName().compareTo(b.getName()));
 		
-		//find shared attributes
-		Map<FeatureType, Map<String, FeatureViewMetadataField>> allAttributes = new HashMap<>();
-		Set<String> allAttributeKeys = new HashSet<>();
-		List<FeatureViewMetadataField> shared = new ArrayList<>();
-		
-		for (FeatureType ft: sortedTypes) {
-			Map<String, FeatureViewMetadataField> attributes = new HashMap<>();
-			for (FeatureViewMetadataField field : ft.getViewMetadata().getFields()) {
-				allAttributeKeys.add(field.getFieldName());
-				attributes.put(field.getFieldName(), field);
-			}
-			allAttributes.put(ft, attributes);
-		}
-		
-		for(String key : allAttributeKeys) {
-			FeatureViewMetadataField field = null;
-			
-			boolean isshared = true;
-			for (FeatureType ft: sortedTypes) {
-				if (allAttributes.get(ft).containsKey(key)) {
-					if (field == null) {
-						field = allAttributes.get(ft).get(key);
-					}else {
-						FeatureViewMetadataField temp = allAttributes.get(ft).get(key);
-						if (!areEquals(temp.getFieldName(), field.getFieldName()) ||
-								!areEquals(temp.getDescription(), field.getDescription())) {
-							isshared = false;
-							break;
-						}
-					}
-				}else {
-					isshared = false;
-					break;
-				}
-			}
-			if (!isshared) continue;
-			shared.add(field);
-		}
-		Set<String> sharedFieldNames = shared.stream().map(e->e.getFieldName()).collect(Collectors.toSet());
 		
 		//create summary table
 //		createHeader(sb,"Feature Types", null, 1);
@@ -169,33 +127,19 @@ public class DocumentationController {
 		
 		//create section for each feature type
 		for (FeatureType ft: sortedTypes) {
-			documentFeatureType(sb, ft, sharedFieldNames);
+			documentFeatureType(sb, ft);
 		}
 		
 		//add attributes
-		createSection(sb, "ftatt_common");
-		createHeader(sb, "Attributes Common to All Feature Types", null, 3);
-		
-		Set<String> processed = new HashSet<>();
-		shared.sort((a, b)->a.getName().compareTo(b.getName()));
-		
-		for (FeatureViewMetadataField attribute : shared) {
-			processed.add(attribute.getFieldName());			
-			documentAttribute(sb, attribute, "shared", null);		
-		}
-		endSection(sb);
-		
 		for (FeatureType ft: sortedTypes) {
 			createSection(sb, "ftatt_" + ft.getType());
 			createHeader(sb, ft.getName() + " Attributes", null, 3);
 			
-			List<FeatureViewMetadataField> sorted = new ArrayList<>(allAttributes.get(ft).values());
+			List<FeatureViewMetadataField> sorted = new ArrayList<>(ft.getViewMetadata().getFields());
 			sorted.sort((a,b)->a.getName().compareTo(b.getName()));
 			
 			for (FeatureViewMetadataField attribute : sorted) {
-				if (processed.contains(attribute.getFieldName())) continue;
-				documentAttribute(sb, attribute, null, ft);
-				
+				documentAttribute(sb, attribute, null, ft);				
 			}
 			endSection(sb);
 		}
@@ -231,13 +175,6 @@ public class DocumentationController {
 		
 		sb.append("</div>");
 		
-	}
-
-	private boolean areEquals(Object a, Object b) {
-		if (a == b) return true;
-		if (a == null && b == null) return true;
-		if (a != null && b != null) return a.equals(b);
-		return false;
 	}
 	
 	private void documentDataSources(StringBuilder sb) {
@@ -379,7 +316,7 @@ public class DocumentationController {
 	}
 
 	
-	private void documentFeatureType(StringBuilder sb, FeatureType ft, Set<String> sharedAttributes) {
+	private void documentFeatureType(StringBuilder sb, FeatureType ft) {
 		
 		createSection(sb, "ft_" + ft.getType());
 		createHeader(sb,ft.getName(), null, 3);
@@ -404,11 +341,7 @@ public class DocumentationController {
 		List<FeatureViewMetadataField> fields = new ArrayList<>(ft.getViewMetadata().getFields());
 		fields.sort((a,b)->a.getName().compareTo(b.getName()));
 		for (FeatureViewMetadataField field : fields) {
-			String id = ft.getType();
-			if (sharedAttributes.contains(field.getFieldName())) {
-				id ="shared";
-			}
-			String ref = "<a href=\"#" + id + "_" + field.getFieldName() + "\">" + field.getName() + "</a>";
+			String ref = "<a href=\"#" + ft.getType() + "_" + field.getFieldName() + "\">" + field.getName() + "</a>";
 			sb.append(ref);
 			sb.append(", ");
 		}
