@@ -15,7 +15,7 @@ create table {schema}.parallel_crossings as (
 			, row_number() over (partition by chyf_stream_id, transport_feature_id order by id desc) as rn
 			, count(*) over (partition by chyf_stream_id, transport_feature_id) cn 
 		from {schema}.modelled_crossings
-	) t where cn > 1 and rn = 1
+	) t where cn > 1
 	order by cn desc
 );
 
