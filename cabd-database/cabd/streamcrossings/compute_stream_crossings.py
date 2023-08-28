@@ -2,6 +2,11 @@ import psycopg2 as pg2
 import sys
 import argparse
 import configparser
+import ast
+from datetime import datetime
+
+startTime = datetime.now()
+print("Start time:", startTime)
 
 #-- PARSE COMMAND LINE ARGUMENTS --  
 parser = argparse.ArgumentParser(description='Processing stream crossings.')
@@ -10,7 +15,6 @@ parser.add_argument('-user', type=str, help='the username to access the database
 parser.add_argument('-password', type=str, help='the password to access the database')
 parser.add_argument('--copystreams', action='store_true', help='stream data needs to be copied')
 parser.add_argument('--ignorestreams', dest='streams', action='store_false', help='stream data is already present')
-parser.set_defaults(streams=False)
 args = parser.parse_args()
 configfile = args.c
 
@@ -39,24 +43,24 @@ railClusterDistance = config['SETTINGS']['railClusterDistance']
 aoi_raw = config['SETTINGS']['aoi_raw']
 aois = str(aoi_raw)[1:-1]
 
-
 #data tables
-#set to None if doesn't exist for data 
-railTable = config['DATASETS']['railTable'].strip()
-roadsTable = config['DATASETS']['roadsTable'].strip()
-resourceRoadsTable = config['DATASETS']['resourceRoadsTable'].strip()
-trailTable = config['DATASETS']['trailTable'].strip()
+#set to an empty dict if doesn't exist for data
+rail = ast.literal_eval(config['DATASETS']['railTable'])
+roads = ast.literal_eval(config['DATASETS']['roadsTable'])
+resourceRoads = ast.literal_eval(config['DATASETS']['resourceRoadsTable'])
+trail = ast.literal_eval(config['DATASETS']['trailTable'])
 
-railTable = None if railTable == "None" else railTable
-roadsTable = None if roadsTable == "None" else roadsTable
-resourceRoadsTable = None if resourceRoadsTable == "None" else resourceRoadsTable
-trailTable = None if trailTable == "None" else trailTable
+all_datasets = rail | roads | resourceRoads | trail
 
+railTable = [k for k in rail]
+roadsTable = [k for k in roads]
+resourceRoadsTable = [k for k in resourceRoads]
+trailTable = [k for k in trail]
 
-railAttributes = config['DATASETS']['railAttributes'].strip()
-trailAttributes = config['DATASETS']['trailAttributes'].strip()
-roadAttributes = config['DATASETS']['roadAttributes'].strip()
-resourceRoadsAttributes = config['DATASETS']['resourceRoadsAttributes'].strip()
+railTable = None if not railTable else railTable
+roadsTable = None if not roadsTable else roadsTable
+resourceRoadsTable = None if not resourceRoadsTable else resourceRoadsTable
+trailTable = None if not trailTable else trailTable
 
 #geometry and unique id fields from the above tables
 #id MUST be an integer 
@@ -68,53 +72,15 @@ streamTable = config['CHYF']['streamTable'].strip()
 streamPropTable = config['CHYF']['streamPropTable'].strip()
 streamNameTable = config['CHYF']['streamNameTable'].strip()
 
-
 #all source transport layers to be used for computing crossings
-layers = [railTable, roadsTable, resourceRoadsTable, trailTable]
+layers = [k for k in all_datasets]
 
 #non-rail layers - these are included in the clustering
 #these should be in order of priority for assigning ids to point
-nonRailLayers = [roadsTable, resourceRoadsTable, trailTable]
-railLayers = [railTable]
+nonRailLayers = ast.literal_eval(config['DATASETS']['nonRailLayers'])
 
-layers = []
-allayers = config['DATASETS']['allLayers'].split(",")
-for l in allayers:
-    l = l.strip()
-    if (l == "roadsTable"):
-        layers.append(roadsTable)
-    elif (l == "railTable"):
-        layers.append(railTable)
-    elif (l == "resourceRoadsTable"):
-        layers.append(resourceRoadsTable)    
-    elif (l == "trailTable"):
-        layers.append(trailTable)    
-
-nonRailLayers = []
-allayers = config['DATASETS']['nonRailLayers'].split(",")
-for l in allayers:
-    l = l.strip()
-    if (l == "roadsTable"):
-        nonRailLayers.append(roadsTable)
-    elif (l == "railTable"):
-        nonRailLayers.append(railTable)
-    elif (l == "resourceRoadsTable"):
-        nonRailLayers.append(resourceRoadsTable)    
-    elif (l == "trailTable"):
-        nonRailLayers.append(trailTable)    
-
-railLayers = []
-allayers = config['DATASETS']['railLayers'].split(",")
-for l in allayers:
-    l = l.strip()
-    if (l == "roadsTable"):
-        railLayers.append(roadsTable)
-    elif (l == "railTable"):
-        railLayers.append(railTable)
-    elif (l == "resourceRoadsTable"):
-        railLayers.append(resourceRoadsTable)
-    elif (l == "trailTable"):
-        railLayers.append(trailTable)    
+#rail layers - these are clustered separately from other features
+railLayers = ast.literal_eval(config['DATASETS']['railLayers'])
 
 print ("-- Processing Parameters --")
 print (f"Database: {dbHost}:{dbPort}/{dbName}")
@@ -131,10 +97,6 @@ print (f"All Layers: {layers}")
 print (f"Non Rail Layers: {nonRailLayers}")
 print (f"Rail Layers: {railLayers}")
 
-print (f"Rail Attributes: {railAttributes}")
-print (f"Trail Attributes: {trailAttributes}")
-print (f"Road Attributes: {roadAttributes}")
-print (f"Resource Road Attributes: {resourceRoadsAttributes}")
 print ("----")
 
 #--
@@ -243,15 +205,11 @@ def combineCrossings(conn):
     sql = f'DROP TABLE IF EXISTS {schema}.all_crossings;'
     sql += f'CREATE TABLE {schema}.all_crossings (id serial, chyf_stream_id uuid, rivernameid1 uuid, rivernameid2 uuid,'
     for layer in nonRailLayers:
-        if (layer is None):
-            continue
         sql = sql + f'{layer}_{id} integer, '
     sql = sql + f'{geometry} geometry(POINT, {cabdSRID})); '
 
     idFields = ""
     for layer in nonRailLayers:
-        if (layer is None):
-            continue
         idFields = idFields + f'z.{layer}_{id},'
         sql = sql + f'INSERT INTO {schema}.all_crossings ({layer}_{id}, chyf_stream_id, rivernameid1, rivernameid2, {geometry}) SELECT {id}, chyf_stream_id, rivernameid1, rivernameid2, {geometry} FROM {schema}.{layer}_crossings; '
 
@@ -571,7 +529,7 @@ def processRail(conn):
             SELECT id, chyf_stream_id, transport_feature_source, transport_feature_id, geometry, {mGeometry},
             ST_ClusterDBSCAN(geometry_m, eps := {railClusterDistance}, minpoints := 2) OVER() AS cluster_id
             FROM {schema}.modelled_crossings
-            WHERE transport_feature_source = '{railTable}')
+            WHERE transport_feature_source = '{layer}')
         select * from clusters
         where cluster_id is not null
         order by cluster_id asc);
@@ -650,7 +608,7 @@ def processRail(conn):
             SELECT id, transport_feature_source, transport_feature_id, {mGeometry},
             ST_ClusterDBSCAN({mGeometry}, eps := {railClusterDistance}, minpoints := 2) OVER() AS cid
             FROM {schema}.modelled_crossings
-            WHERE transport_feature_source = '{railTable}')
+            WHERE transport_feature_source = '{layer}')
 
             select count(*) from clusters
             where cid is not null;
@@ -680,29 +638,48 @@ def matchArchive(conn):
     print("Matching ids to archived crossings")
     
     query = f"""
-        WITH matched AS (
+        ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS new_crossing_type varchar;
+        ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS reviewer_status varchar;
+        ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS reviewer_comments varchar;
+
+        with match as (
             SELECT
             a.id AS modelled_id,
-            nn.id as archive_id,
+            nn.id AS archive_id,
+            nn.new_crossing_type AS new_crossing_type,
+            nn.reviewer_status AS reviewer_status,
+            nn.reviewer_comments AS reviewer_comments,
             nn.dist
             FROM {schema}.modelled_crossings a
-            CROSS JOIN LATERAL
-            (SELECT
-            id,
-            ST_Distance(a.{mGeometry}, b.{mGeometry}) as dist
-            FROM {schema}.modelled_crossings_archive b
-            ORDER BY a.{mGeometry} <-> b.{mGeometry}
-            LIMIT 1) as nn
+            CROSS JOIN LATERAL (
+                SELECT
+                id,
+                new_crossing_type,
+                reviewer_status,
+                reviewer_comments,
+                ST_Distance(a.{mGeometry}, b.{mGeometry}) as dist
+                FROM {schema}.modelled_crossings_archive b
+                ORDER BY a.{mGeometry} <-> b.{mGeometry}
+                LIMIT 1
+            ) as nn
             WHERE nn.dist < 1
+        ),
+
+        match_distinct AS (
+            select distinct on(archive_id) archive_id, dist, modelled_id, new_crossing_type, reviewer_status, reviewer_comments
+            from match
+            order by archive_id, dist asc
         )
 
         UPDATE {schema}.modelled_crossings a
-            SET id = m.archive_id
-            FROM matched m
-            WHERE m.modelled_id = a.id;
+        SET 
+            id = m.archive_id,
+            new_crossing_type = m.new_crossing_type,
+            reviewer_status = m.reviewer_status,
+            reviewer_comments = m.reviewer_comments
+        FROM match_distinct m WHERE m.modelled_id = a.id;
 
         DROP TABLE {schema}.modelled_crossings_archive;
-
     """
     with conn.cursor() as cursor:
         cursor.execute(query)
@@ -710,33 +687,43 @@ def matchArchive(conn):
 def finalizeCrossings(conn):
     
     print(f"Adding layer attributes to crossing points: ")
-    attributeValues = [railAttributes, trailAttributes, roadAttributes, resourceRoadsAttributes]
-    attributeTables = [railTable, trailTable, roadsTable, resourceRoadsTable]
-    prefix = ["a", "b", "c", "d"]
+
+    # generate list of aliases to refer to each table
+    prefix = []
+    alpha = 'a'
+    for i in range(0, len(all_datasets), 1):
+        prefix.append(alpha)
+        alpha = chr(ord(alpha) + 1)
+
     sql = f"select cp.*,"
     sqlfrom = f" {schema}.modelled_crossings cp "
 
-    for i in range(0, len(attributeTables), 1):
-        print(attributeTables[i])
-        if (attributeTables[i] is None):
+    idx = 0
+
+    # iterate through datasets and get attribute values from dict
+    # then add to sql query
+    for k in all_datasets:
+        print(k)
+        if k:
+            attributeValues = all_datasets[k]
+        else:
             continue
 
-        if (attributeValues[i] is None or attributeValues[i] == ""):
-            continue
+        print("Attribute Values:", attributeValues)
+
+        for val in attributeValues:
+            sql += f"{prefix[idx]}.{val},"
         
-        fields = attributeValues[i].split(",")
-        for field in fields:
-            sql += f"{prefix[i]}.{field}," 
-        
-        sqlfrom += f" left join {schema}.{attributeTables[i]} {prefix[i]} on {prefix[i]}.{id} = cp.transport_feature_id and cp.transport_feature_source = '{attributeTables[i]}' "
+        sqlfrom += f" left join {schema}.{k} {prefix[idx]} on {prefix[idx]}.{id} = cp.transport_feature_id and cp.transport_feature_source = '{k}' "
+
+        idx = idx + 1
 
     sql = sql[:-1]
     sql = f"""
     DROP TABLE IF EXISTS {schema}.modelled_crossings_with_attributes;
     CREATE INDEX {schema}_modelled_crossings_transport_feature_id_idx on {schema}.modelled_crossings (transport_feature_id);
-    CREATE TABLE {schema}.modelled_crossings_with_attributes AS {sql} FROM {sqlfrom}"""
-
-    # print(sql)
+    CREATE TABLE {schema}.modelled_crossings_with_attributes AS {sql} FROM {sqlfrom}
+    """
     executeQuery(conn, sql)
 
     sql = f"""
@@ -754,9 +741,9 @@ def finalizeCrossings(conn):
     ALTER TABLE {schema}.modelled_crossings ADD COLUMN stream_name_1 varchar;
     ALTER TABLE {schema}.modelled_crossings ADD COLUMN stream_name_2 varchar;
     ALTER TABLE {schema}.modelled_crossings ADD COLUMN strahler_order integer;
-    ALTER TABLE {schema}.modelled_crossings ADD COLUMN new_crossing_type varchar;
-    ALTER TABLE {schema}.modelled_crossings ADD COLUMN reviewer_status varchar;
-    ALTER TABLE {schema}.modelled_crossings ADD COLUMN reviewer_comments varchar;
+    ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS new_crossing_type varchar;
+    ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS reviewer_status varchar;
+    ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS reviewer_comments varchar;
     ALTER TABLE {schema}.modelled_crossings ADD COLUMN last_modified TIMESTAMPTZ default now();
     ALTER TABLE {schema}.modelled_crossings ADD COLUMN last_modified_by varchar default user;
 
@@ -864,6 +851,9 @@ def main():
         finalizeCrossings(conn)
 
     print("Done!")
+    endTime = datetime.now()
+    print("End time:", endTime)
+    print("Total runtime: " + str((datetime.now() - startTime)))
 
 if __name__ == "__main__":
     main()
