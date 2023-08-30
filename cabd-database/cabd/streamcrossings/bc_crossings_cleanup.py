@@ -168,7 +168,8 @@ def addColumns(conn):
         CASE
         WHEN barrier_status = 'PASSABLE' THEN 'passable'
         WHEN barrier_status = 'BARRIER' THEN 'barrier'
-        WHEN barrier_status = 'POTENTIAL' THEN 'partial barrier'
+        WHEN barrier_status = 'POTENTIAL' AND crossing_source= 'MODELLED CROSSINGS' THEN 'unknown'
+        WHEN barrier_status = 'POTENTIAL' AND crossing_source= 'PSCIS' THEN 'partial barrier'
         WHEN barrier_status = 'UNKNOWN' THEN 'unknown'
         ELSE NULL END;
 
