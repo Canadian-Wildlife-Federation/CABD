@@ -153,6 +153,8 @@ def addColumns(conn):
     ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS railway_operator varchar;
     ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS num_railway_tracks varchar;
     ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS transport_feature_condition varchar;
+    ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS passability_status varchar;
+    ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS crossing_type varchar;
 
     UPDATE {schema}.modelled_crossings SET transport_feature_type = 
         CASE
@@ -161,6 +163,21 @@ def addColumns(conn):
         WHEN crossing_feature_type = 'ROAD, RESOURCE/OTHER' THEN 'resource road'
         WHEN crossing_feature_type = 'TRAIL' THEN 'trail'
         ELSE NULL END;
+
+    UPDATE {schema}.modelled_crossings SET passability_status = 
+        CASE
+        WHEN barrier_status = 'PASSABLE' THEN 'passable'
+        WHEN barrier_status = 'BARRIER' THEN 'barrier'
+        WHEN barrier_status = 'POTENTIAL' THEN 'partial barrier'
+        WHEN barrier_status = 'UNKNOWN' THEN 'unknown'
+        ELSE NULL END;
+
+    UPDATE {schema}.modelled_crossings SET crossing_type = 
+        CASE
+        WHEN crossing_subtype_code = 'BRIDGE' then 'bridge'
+        WHEN crossing_subtype_code = 'FORD' then 'ford'
+        ELSE NULL END;
+
     """
     executeQuery(conn, sql)
 
@@ -236,6 +253,9 @@ def updateAttributes(conn):
 
     UPDATE {schema}.modelled_crossings SET railway_operator = rail_operator_english_name WHERE rail_operator_english_name IS NOT NULL;
     UPDATE {schema}.modelled_crossings SET transport_feature_condition = LOWER(ften_life_cycle_status_code) WHERE ften_life_cycle_status_code IS NOT NULL;
+
+    ALTER TABLE {schema}.modelled_crossings ADD COLUMN id uuid;
+    UPDATE {schema}.modelled_crossings SET id = gen_random_uuid();
     """
 
     executeQuery(conn,sql)
@@ -328,10 +348,10 @@ def matchStreams(conn):
 
     sql = f"""
     ALTER TABLE {schema}.modelled_crossings ADD COLUMN chyf_stream_id uuid;
-    ALTER TABLE {schema}.modelled_crossings ADD COLUMN strahler_order_chyf integer;
+    ALTER TABLE {schema}.modelled_crossings ADD COLUMN strahler_order integer;
     UPDATE {schema}.modelled_crossings SET {mGeometry} = ST_Transform(snapped_point, {mSRID});
     UPDATE {schema}.modelled_crossings AS t1 SET chyf_stream_id = t2.id FROM {schema}.{streamTable} AS t2 WHERE ST_DWithin(t1.{mGeometry}, t2.{mGeometry}, 0.01);
-    UPDATE {schema}.modelled_crossings SET strahler_order_chyf = p.strahler_order FROM {schema}.{streamPropTable} p WHERE chyf_stream_id = p.id;
+    UPDATE {schema}.modelled_crossings SET strahler_order = p.strahler_order FROM {schema}.{streamPropTable} p WHERE chyf_stream_id = p.id;
     """
 
     print("Joining stream information to points")
