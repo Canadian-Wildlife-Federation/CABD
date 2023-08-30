@@ -126,6 +126,10 @@ def finalizeAttributes(conn, table):
     UPDATE {dbSchema}.{targetTable} SET passability_status = 'unknown' WHERE passability_status IS NULL;
 
     UPDATE {dbSchema}.{targetTable} SET crossing_type = 'unknown' WHERE crossing_type IS NULL;
+
+    CREATE INDEX IF NOT EXISTS {targetTable}_geometry_idx ON {dbSchema}.{targetTable} USING gist(geometry);
+
+    UPDATE {dbSchema}.{targetTable} AS a SET nhn_watershed_id = n.id FROM cabd.nhn_workunit AS n WHERE st_contains(n.polygon, a.geometry) AND nhn_watershed_id IS NULL;
     """
     with conn.cursor() as cursor:
         cursor.execute(sql)
