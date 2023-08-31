@@ -77,7 +77,7 @@ def loadData(conn, file):
     query = f"""
     ALTER TABLE {schema}.{targetTable} ADD COLUMN unique_id uuid;
     UPDATE {schema}.{targetTable} SET unique_id = gen_random_uuid();
-    ALTER TABLE {schema}.{targetTable} OWNER TO cabd;
+    ALTER TABLE {schema}.{targetTable} OWNER TO developer;
 
     ALTER TABLE {schema}.{targetTable} ADD COLUMN geometry_midpoint geometry(Point, {mSRID});
     UPDATE {schema}.{targetTable} SET geometry_midpoint = ST_LineInterpolatePoint(geometry, 0.5);

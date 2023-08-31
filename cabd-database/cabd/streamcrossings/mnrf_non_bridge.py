@@ -77,7 +77,7 @@ def loadData(conn, file):
     query = f"""
     ALTER TABLE {schema}.{targetTable} ADD COLUMN unique_id uuid;
     UPDATE {schema}.{targetTable} SET unique_id = gen_random_uuid();
-    ALTER TABLE {schema}.{targetTable} OWNER TO cabd;
+    ALTER TABLE {schema}.{targetTable} OWNER TO developer;
     """
     with conn.cursor() as cursor:
         cursor.execute(query)
