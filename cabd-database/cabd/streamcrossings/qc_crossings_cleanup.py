@@ -30,13 +30,6 @@ cabdSRID = config['DATABASE']['cabdSRID']
 
 mSRID  = config['SETTINGS']['mSRID']
 mGeometry = config['SETTINGS']['mGeometry']
-#distance in meters (mSRID projection units) for clustering points
-clusterDistance = config['SETTINGS']['clusterDistance']
-railClusterDistance = config['SETTINGS']['railClusterDistance']
-
-#chyf stream network aois as '<aoiuuid>','<aoiuuid>'
-aoi_raw = config['SETTINGS']['aoi_raw']
-aois = str(aoi_raw)[1:-1]
 
 #data tables
 #set to an empty dict if doesn't exist for data
@@ -62,11 +55,6 @@ trailTable = None if not trailTable else trailTable
 geometry = config['DATASETS']['geometryField'].strip()
 id = config['DATASETS']['idField'].strip()
 
-#chyf stream data
-streamTable = config['CHYF']['streamTable'].strip()
-streamPropTable = config['CHYF']['streamPropTable'].strip()
-streamNameTable = config['CHYF']['streamNameTable'].strip()
-
 #all source transport layers to be used for computing crossings
 layers = [k for k in all_datasets]
 
@@ -81,17 +69,12 @@ print ("-- Processing Parameters --")
 print (f"Database: {dbHost}:{dbPort}/{dbName}")
 print (f"Data Schema: {schema}")
 print (f"CABD SRID: {cabdSRID}")
-print (f"CHyF Data: {streamTable} {streamPropTable} {streamNameTable} {aois}")
 print (f"Meters Projection: {mSRID} ")
-print (f"Cluster Distance: {clusterDistance} ")
 
 print (f"Data Tables: {railTable} {roadsTable} {resourceRoadsTable} {trailTable} ")
 print (f"Id/Geometry Fields: {id} {geometry}")
 
-print (f"All Layers: {layers}")
-print (f"Non Rail Layers: {nonRailLayers}")
-print (f"Rail Layers: {railLayers}")
-
+print ("----")
 
 #--
 #-- function to execute a query 
