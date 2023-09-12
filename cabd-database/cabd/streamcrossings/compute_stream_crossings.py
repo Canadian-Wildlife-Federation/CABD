@@ -4,6 +4,7 @@ import argparse
 import configparser
 import ast
 from datetime import datetime
+from psycopg2.extras import RealDictCursor
 
 startTime = datetime.now()
 print("Start time:", startTime)
@@ -40,8 +41,7 @@ clusterDistance = config['SETTINGS']['clusterDistance']
 railClusterDistance = config['SETTINGS']['railClusterDistance']
 
 #chyf stream network aois as '<aoiuuid>','<aoiuuid>'
-aoi_raw = config['SETTINGS']['aoi_raw']
-aois = str(aoi_raw)[1:-1]
+prCode = config['SETTINGS']['prCode']
 
 #data tables
 #set to an empty dict if doesn't exist for data
@@ -86,7 +86,7 @@ print ("-- Processing Parameters --")
 print (f"Database: {dbHost}:{dbPort}/{dbName}")
 print (f"Data Schema: {schema}")
 print (f"CABD SRID: {cabdSRID}")
-print (f"CHyF Data: {streamTable} {streamPropTable} {streamNameTable} {aois}")
+print (f"CHyF Data: {streamTable} {streamPropTable} {streamNameTable}")
 print (f"Meters Projection: {mSRID} ")
 print (f"Cluster Distance: {clusterDistance} ")
 
@@ -144,14 +144,135 @@ def checkTableExists(conn, tableName):
 
 
 def getStreamData(conn):
+
+    def getChyfData(aoi_list):
+
+        aois = tuple(aoi_list)
+
+        print("Getting CHyF data")
+
+        sql = f"""
+        INSERT INTO {schema}.{streamTable} 
+            (id,
+            source_id,
+            aoi_id,
+            ef_type,
+            ef_subtype,
+            rank,
+            length,
+            rivernameid1,
+            rivernameid2,
+            geometry)
+        SELECT
+            id,
+            id,
+            aoi_id,
+            ef_type,
+            ef_subtype,
+            rank,
+            length,
+            rivernameid1,
+            rivernameid2,
+            geometry
+        FROM chyf_flowpath
+        WHERE aoi_id in {aois} AND ef_type != 2;
+
+        CREATE TABLE {schema}.{streamPropTable} as SELECT * FROM chyf_flowpath_properties WHERE aoi_id IN {aois};
+        """
+        executeQuery(conn, sql)
+        
+    def getNhnData(aoi_list):
+
+        aois = tuple(aoi_list)
+
+        print("Getting NHN data")
+
+        sql = f"""
+        INSERT INTO {schema}.{streamTable} 
+            (id,
+            source_id,
+            short_name,
+            rivernameid1,
+            rivernameid2,
+            name_1,
+            name_2,
+            geometry)
+        SELECT
+            gen_random_uuid(),
+            nid,
+            dataset_name,
+            nameid_1,
+            nameid_2,
+            name_1,
+            name_2,
+            ST_LineMerge(ST_CurveToLine(geometry))
+        FROM nhn_raw.flowpaths
+        WHERE dataset_name in {aois};
+        """
+        executeQuery(conn, sql)
+
+    aoiQuery = f"""
+        SELECT a.id FROM cabd.nhn_workunit a, cabd.province_territory_codes b
+        WHERE st_intersects(a.polygon, b.geometry)
+        AND b.code = '{prCode}'
+    """
+    with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+        cursor.execute(aoiQuery)
+        rows = cursor.fetchall()
+
+    aoiTuple = tuple([row['id'] for row in rows])
+    aoiNhn = list(aoiTuple)
+
+    aoiQuery = f"""
+        SELECT id, short_name from chyf_aoi
+        where short_name in {aoiTuple};
+    """
+    with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+        cursor.execute(aoiQuery)
+        rows = cursor.fetchall()
+
+    aoiChyf = []
     
+    for row in rows:
+        id = row['id']
+        name = row['short_name']
+        aoiChyf.append(id)
+        aoiNhn.remove(name)
+
+    if (len(aoiChyf) + len(aoiNhn)) != len(aoiTuple):
+        print("Error: Not all AOIs have been queued for download")
+    else:
+        pass
+
     sql = f"""
         DROP TABLE IF EXISTS {schema}.{streamTable};
         DROP TABLE IF EXISTS {schema}.{streamPropTable};
-        
-        CREATE TABLE {schema}.{streamTable} as SELECT * FROM chyf_flowpath WHERE aoi_id IN ({aois}) AND ef_type != 2;
-        CREATE TABLE {schema}.{streamPropTable} as SELECT * FROM chyf_flowpath_properties WHERE aoi_id IN ({aois});
-        
+
+        CREATE TABLE {schema}.{streamTable} (
+            id uuid not null,
+            source_id varchar,
+            aoi_id uuid,
+            short_name varchar,
+            ef_type integer,
+            ef_subtype integer,
+            rank integer,
+            length double precision,
+            rivernameid1 varchar,
+            rivernameid2 varchar,
+            name_1 varchar(100),
+            name_2 varchar(100),
+            geometry geometry(LineString,4617)
+        );
+    """
+    executeQuery(conn, sql)
+
+    if aoiChyf:
+        getChyfData(aoiChyf)
+
+    if aoiNhn:
+        getNhnData(aoiNhn)
+    
+    sql = f"""
         CREATE INDEX {schema}_{streamTable}_{geometry} on {schema}.{streamTable} using gist({geometry}); 
         CREATE INDEX {schema}_{streamTable}_id on {schema}.{streamTable} (id);
         CREATE INDEX {schema}_{streamPropTable}_id on {schema}.{streamPropTable} (id);
@@ -159,7 +280,12 @@ def getStreamData(conn):
         ANALYZE {schema}.{streamPropTable};
         ANALYZE {schema}.{streamTable};
     """
-    
+    executeQuery(conn, sql)
+
+    # calculate length as this is missing in NHN data, and is required for clustering operations
+    sql = f"""
+    UPDATE {schema}.{streamTable} SET length = ST_Length(geometry::geography) WHERE length IS NULL;
+    """
     executeQuery(conn, sql)
 
     # warn user if stream data has not been fetched
@@ -203,7 +329,7 @@ def combineCrossings(conn):
     print("Combining crossings into single layer")
 
     sql = f'DROP TABLE IF EXISTS {schema}.all_crossings;'
-    sql += f'CREATE TABLE {schema}.all_crossings (id serial, chyf_stream_id uuid, rivernameid1 uuid, rivernameid2 uuid,'
+    sql += f'CREATE TABLE {schema}.all_crossings (id serial, chyf_stream_id uuid, rivernameid1 varchar, rivernameid2 varchar,'
     for layer in nonRailLayers:
         sql = sql + f'{layer}_{id} integer, '
     sql = sql + f'{geometry} geometry(POINT, {cabdSRID})); '
@@ -211,7 +337,7 @@ def combineCrossings(conn):
     idFields = ""
     for layer in nonRailLayers:
         idFields = idFields + f'z.{layer}_{id},'
-        sql = sql + f'INSERT INTO {schema}.all_crossings ({layer}_{id}, chyf_stream_id, rivernameid1, rivernameid2, {geometry}) SELECT {id}, chyf_stream_id, rivernameid1, rivernameid2, {geometry} FROM {schema}.{layer}_crossings; '
+        sql = sql + f"""INSERT INTO {schema}.all_crossings ({layer}_{id}, chyf_stream_id, rivernameid1, rivernameid2, {geometry}) SELECT {id}, chyf_stream_id, rivernameid1, rivernameid2, {geometry} FROM {schema}.{layer}_crossings WHERE ST_GeometryType({geometry}) = 'ST_Point';"""
 
     sql += f'CREATE INDEX all_crossings_geometry on {schema}.all_crossings using gist({geometry}); ANALYZE {schema}.all_crossings'
     executeQuery(conn, sql)
@@ -231,7 +357,7 @@ def clusterPoints(conn):
 
     print("Clustering Points")
     sql = f"""
-    -- convert geometry to equal area projecion so we can cluster by distances
+    -- convert geometry to equal area projection so we can cluster by distances
 
     ALTER TABLE {schema}.all_crossings ADD COLUMN {mGeometry} geometry(point, {mSRID});
     UPDATE {schema}.all_crossings set {mGeometry} = st_transform({geometry}, {mSRID}) ;
@@ -269,7 +395,6 @@ def clusterPoints(conn):
     FROM  {schema}.cluster_by_id a left join {schema}.all_crossings z 
     on a.{geometry} = z.{geometry}_m ;
     """
-
     executeQuery(conn, sql)
 
 
@@ -301,12 +426,13 @@ def clusterPoints(conn):
     UPDATE {schema}.modelled_crossings SET {mGeometry} = st_transform({geometry}, {mSRID});
 
     """
-
     executeQuery(conn, sql)
 
 def processClusters(conn):
 
     for layer in nonRailLayers:
+
+        print(layer)
 
         if (layer is None):
             continue
@@ -321,10 +447,10 @@ def processClusters(conn):
 
         CREATE TABLE {schema}.cluster_{layer}_id as 
         SELECT * FROM {schema}.cluster_by_id_with_data 
-        WHERE {layer}_{id} is not null; 
+        WHERE {layer}_{id} is not null;
 
         --for all these ones where there is only one 
-        --use this as the cluster point 
+        --use this as the cluster point
         INSERT INTO {schema}.modelled_crossings (cluster_id, geometry, chyf_stream_id, rivernameid1, rivernameid2, {mGeometry})
         SELECT 
             cluster_id, {geometry}, chyf_stream_id, rivernameid1, rivernameid2, st_transform({geometry}, {mSRID})
@@ -356,6 +482,12 @@ def processClusters(conn):
         --doesn't matter
         --we are using this up length to determine which edge to pick when there is more than
         --one stream edge being crossed
+        
+        --new addition to deal with flowpaths that are from unprocessed NHN (no chyf_properties table)
+        UPDATE {schema}.cluster_{layer}_id 
+        SET upstream_length = b.length
+        FROM {schema}.{streamTable} b
+        WHERE {schema}.cluster_{layer}_id.chyf_stream_id = b.id AND upstream_length IS NULL;
 
         --for each cluster we need edge id with the maximum 
         DROP TABLE IF EXISTS {schema}.temp3;
@@ -377,12 +509,11 @@ def processClusters(conn):
         FROM {schema}.cluster_{layer}_id a JOIN {schema}.temp4 b on a.cluster_id = b.cluster_id and a.chyf_stream_id = b.chyf_stream_id
         GROUP BY a.cluster_id;
         """
-        # print(sql)
         executeQuery(conn, sql)
 
         #should be empty
         sql = f"SELECT COUNT(*) FROM (select cluster_id from {schema}.cluster_{layer}_id except select cluster_id from {schema}.temp5) foo"
-        checkEmpty(conn, sql, "error when computing clusters with priority layer - error with temporary table 5")
+        checkEmpty(conn, sql, f"error when computing clusters with {layer} - error with temporary table 5")
 
         sql = f"""
         --merge to find downstream point
@@ -396,14 +527,14 @@ def processClusters(conn):
 
         #should be empty
         sql = f" SELECT count(*) FROM (SELECT cluster_id FROM {schema}.cluster_{layer}_id except SELECT cluster_id FROM {schema}.temp6) foo"
-        checkEmpty(conn, sql, "error when computing clusters with priority layer - error with temporary table {railClusterDistance}")
+        checkEmpty(conn, sql, f"error when computing clusters with {layer} - error with temporary table 6")
 
         sql = f"""
         --add to main table and remove from processing
         INSERT INTO {schema}.modelled_crossings (cluster_id, geometry, chyf_stream_id, rivernameid1, rivernameid2, {mGeometry})
         SELECT cluster_id, geometry, chyf_stream_id, rivernameid1, rivernameid2, st_transform({geometry}, {mSRID}) FROM {schema}.temp6;
 
-        --remove these from nrbn data & cluster_by_id_with_data
+        --remove these from layer data & cluster_by_id_with_data
         DELETE FROM {schema}.cluster_by_id_with_data WHERE cluster_id IN (SELECT cluster_id FROM {schema}.modelled_crossings);
         DELETE FROM {schema}.cluster_{layer}_id WHERE cluster_id IN (SELECT cluster_id FROM {schema}.modelled_crossings);
         """
@@ -411,14 +542,14 @@ def processClusters(conn):
 
         #should be empty
         sql = f"select count(*) from {schema}.cluster_{layer}_id;"
-        checkEmpty(conn, sql, "error when computing clusters with priority layer - not all clusters with point from the priority layer were processed")
+        checkEmpty(conn, sql, f"error when computing clusters with {layer} - not all clusters with point from the layer were processed")
 
         sql = f"""
         DROP TABLE {schema}.temp6;
         DROP TABLE {schema}.temp5;
         DROP TABLE {schema}.temp4;
         DROP TABLE {schema}.temp3;
-        DROP TABLE {schema}.cluster_{layer}_id;
+        --DROP TABLE {schema}.cluster_{layer}_id;
         """
         executeQuery(conn, sql)
 
@@ -552,6 +683,12 @@ def processRail(conn):
         FROM {schema}.{streamPropTable} a join {schema}.{streamTable} b on a.id = b.id 
         WHERE {schema}.close_points.chyf_stream_id = a.id;
 
+        --new addition to deal with flowpaths that are from unprocessed NHN (no chyf_properties table)
+        UPDATE {schema}.close_points
+        SET upstream_length = b.length
+        FROM {schema}.{streamTable} b
+        WHERE {schema}.close_points.chyf_stream_id = b.id AND upstream_length IS NULL;
+
         --for each cluster we need edge id with the maximum 
         DROP TABLE IF EXISTS {schema}.temp3;
         CREATE TABLE {schema}.temp3 AS
@@ -679,7 +816,7 @@ def matchArchive(conn):
             reviewer_comments = m.reviewer_comments
         FROM match_distinct m WHERE m.modelled_id = a.id;
 
-        DROP TABLE {schema}.modelled_crossings_archive;
+        --DROP TABLE {schema}.modelled_crossings_archive;
     """
     with conn.cursor() as cursor:
         cursor.execute(query)
@@ -747,8 +884,8 @@ def finalizeCrossings(conn):
     ALTER TABLE {schema}.modelled_crossings ADD COLUMN last_modified TIMESTAMPTZ default now();
     ALTER TABLE {schema}.modelled_crossings ADD COLUMN last_modified_by varchar default user;
 
-    UPDATE {schema}.modelled_crossings SET stream_name_1 = n.name_en FROM public.{streamNameTable} n WHERE rivernameid1 = n.name_id;
-    UPDATE {schema}.modelled_crossings SET stream_name_2 = n.name_en FROM public.{streamNameTable} n WHERE rivernameid2 = n.name_id;
+    UPDATE {schema}.modelled_crossings SET stream_name_1 = n.name_en FROM public.{streamNameTable} n WHERE rivernameid1 = n.name_id::varchar;
+    UPDATE {schema}.modelled_crossings SET stream_name_2 = n.name_en FROM public.{streamNameTable} n WHERE rivernameid2 = n.name_id::varchar;
     UPDATE {schema}.modelled_crossings SET strahler_order = p.strahler_order FROM {schema}.{streamPropTable} p WHERE chyf_stream_id = p.id;
 
     ALTER TABLE {schema}.modelled_crossings
@@ -762,10 +899,13 @@ def finalizeCrossings(conn):
     GRANT UPDATE(new_crossing_type) ON {schema}.modelled_crossings TO gistech;
     GRANT UPDATE(reviewer_status) ON {schema}.modelled_crossings TO gistech;
     GRANT UPDATE(reviewer_comments) ON {schema}.modelled_crossings TO gistech;
+    """
+    executeQuery(conn, sql)
 
+    print("Getting NHN workunit names")
+    sql = f"""
     ALTER TABLE {schema}.modelled_crossings ADD COLUMN nhn_watershed_id varchar;
     UPDATE {schema}.modelled_crossings AS c SET nhn_watershed_id = n.id FROM cabd.nhn_workunit AS n WHERE st_contains(n.polygon, c.geometry);
-
     """
     executeQuery(conn, sql)
 
@@ -826,11 +966,12 @@ def main():
     crossingsExist = checkTableExists(conn, 'modelled_crossings')
 
     if crossingsExist:
-        
+        print("Creating an archive table from previous crossings")
         # create an archive table to match later
         query = f"""
             DROP TABLE IF EXISTS {schema}.modelled_crossings_archive;
             CREATE TABLE {schema}.modelled_crossings_archive AS SELECT * FROM {schema}.modelled_crossings;
+            CREATE INDEX {schema}_modelled_crossings_archive_{mGeometry}_idx on {schema}.modelled_crossings_archive using gist({mGeometry});
         """
         executeQuery(conn, query)
 
