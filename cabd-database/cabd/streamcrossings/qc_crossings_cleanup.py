@@ -248,4 +248,21 @@ ALTER TABLE {schema}.modelled_crossings ADD CONSTRAINT {schema}_modelled_crossin
 """
 executeQuery(conn, sql)
 
+sql = f"""
+drop table if exists {schema}.parallel_crossings;
+
+create table {schema}.parallel_crossings as (
+	select * from (
+		select id, chyf_stream_id, transport_feature_id, geometry
+			, row_number() over (partition by chyf_stream_id, transport_feature_id order by id desc) as rn
+			, count(*) over (partition by chyf_stream_id, transport_feature_id) cn 
+		from {schema}.modelled_crossings
+	) t where cn > 1
+	order by cn desc
+);
+
+grant select on {schema}.parallel_crossings to gistech;
+"""
+executeQuery(conn, sql)
+
 print("** CLEANUP COMPLETE **")
