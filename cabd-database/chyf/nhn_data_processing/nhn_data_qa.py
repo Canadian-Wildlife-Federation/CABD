@@ -17,7 +17,7 @@ def run_qa(conn, workunit):
           geometry geometry(POINT)
         );
 
-        alter table {workingSchema}.qaerrors owner to chyf;
+        alter table {workingSchema}.qaerrors owner to chyf_processor;
         
         truncate {workingSchema}.qaerrors;
     """
