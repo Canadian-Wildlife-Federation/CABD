@@ -41,7 +41,7 @@ conn = pg2.connect(database=dbName,
 
 
 with conn.cursor() as cursor:
-    cursor.execute("DROP SCHEMA IF EXISTS " + workingSchema + " CASCADE");
+    cursor.execute("DROP SCHEMA IF EXISTS " + workingSchema + " CASCADE")
     cursor.execute("CREATE SCHEMA " + workingSchema)
 conn.commit()
 
@@ -276,15 +276,13 @@ where e.geometry && b.geometry and
 UPDATE {workingSchema}.terminal_node set aoi_id = (SELECT id from {workingSchema}.aoi);
 UPDATE {workingSchema}.terminal_node set geometry = st_snaptogrid(geometry, {snaptogrid});
 
-ALTER SCHEMA {workingSchema} OWNER TO chyf;
-ALTER TABLE {workingSchema}.aoi OWNER TO chyf;
-ALTER TABLE {workingSchema}.delimiter OWNER TO chyf;
-ALTER TABLE {workingSchema}.ecatchment OWNER TO chyf;
-ALTER TABLE {workingSchema}.eflowpath OWNER TO chyf;
-ALTER TABLE {workingSchema}.shoreline OWNER TO chyf;
-ALTER TABLE {workingSchema}.terminal_node OWNER TO chyf;
-
-
+ALTER SCHEMA {workingSchema} OWNER TO chyf_processor;
+ALTER TABLE {workingSchema}.aoi OWNER TO chyf_processor;
+ALTER TABLE {workingSchema}.delimiter OWNER TO chyf_processor;
+ALTER TABLE {workingSchema}.ecatchment OWNER TO chyf_processor;
+ALTER TABLE {workingSchema}.eflowpath OWNER TO chyf_processor;
+ALTER TABLE {workingSchema}.shoreline OWNER TO chyf_processor;
+ALTER TABLE {workingSchema}.terminal_node OWNER TO chyf_processor;
 
 """
 log(query)
