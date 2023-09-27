@@ -2,6 +2,7 @@ import psycopg2 as pg2
 import sys
 import argparse
 import configparser
+import ast
 
 
 #-- PARSE COMMAND LINE ARGUMENTS --  
@@ -29,31 +30,40 @@ cabdSRID = config['DATABASE']['cabdSRID']
 
 mSRID = config['SETTINGS']['mSRID']
 mGeometry = config['SETTINGS']['mGeometry']
-#distance in meters (mSRID projection units) for clustering points
-clusterDistance = config['SETTINGS']['clusterDistance']
 
 #data tables
-#set to None if doesn't exist for data 
-railTable = config['DATASETS']['railTable'].strip()
-roadsTable = config['DATASETS']['roadsTable'].strip()
-resourceRoadsTable = config['DATASETS']['resourceRoadsTable'].strip()
-trailTable = config['DATASETS']['trailTable'].strip()
+#set to an empty dict if doesn't exist for data
+rail = ast.literal_eval(config['DATASETS']['railTable'])
+roads = ast.literal_eval(config['DATASETS']['roadsTable'])
+resourceRoads = ast.literal_eval(config['DATASETS']['resourceRoadsTable'])
+trail = ast.literal_eval(config['DATASETS']['trailTable'])
 
-railTable = None if railTable == "None" else railTable
-roadsTable = None if roadsTable == "None" else roadsTable
-resourceRoadsTable = None if resourceRoadsTable == "None" else resourceRoadsTable
-trailTable = None if trailTable == "None" else trailTable
+all_datasets = rail | roads | resourceRoads | trail
 
-railAttributes = config['DATASETS']['railAttributes'].strip()
-trailAttributes = config['DATASETS']['trailAttributes'].strip()
-roadAttributes = config['DATASETS']['roadAttributes'].strip()
-resourceRoadsAttributes = config['DATASETS']['resourceRoadsAttributes'].strip()
+railTable = [k for k in rail]
+roadsTable = [k for k in roads]
+resourceRoadsTable = [k for k in resourceRoads]
+trailTable = [k for k in trail]
+
+railTable = None if not railTable else railTable
+roadsTable = None if not roadsTable else roadsTable
+resourceRoadsTable = None if not resourceRoadsTable else resourceRoadsTable
+trailTable = None if not trailTable else trailTable
 
 #geometry and unique id fields from the above tables
 #id MUST be an integer 
 geometry = config['DATASETS']['geometryField'].strip()
 id = config['DATASETS']['idField'].strip()
-   
+
+#all source transport layers to be used for computing crossings
+layers = [k for k in all_datasets]
+
+#non-rail layers - these are included in the clustering
+#these should be in order of priority for assigning ids to point
+nonRailLayers = ast.literal_eval(config['DATASETS']['nonRailLayers'])
+
+#rail layers - these are clustered separately from other features
+railLayers = ast.literal_eval(config['DATASETS']['railLayers'])
 
 print ("-- Processing Parameters --")
 print (f"Database: {dbHost}:{dbPort}/{dbName}")
@@ -109,7 +119,7 @@ print("Removing crossings on winter roads and other invalid road types...")
 
 sql = f"""
 --remove winter roads and ferry crossings
-DELETE FROM {schema}.modelled_crossings WHERE transport_feature_source = '{roadsTable}' AND afr_road_feature_type IN (1, 12);
+DELETE FROM {schema}.modelled_crossings WHERE afr_road_feature_type IN (1, 12);
 """
 executeQuery(conn, sql)
 
@@ -121,16 +131,33 @@ ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS transport_featu
 ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS transport_feature_condition varchar;
 ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS roadway_type varchar;
 ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS roadway_surface varchar;
+"""
+executeQuery(conn, sql)
 
-UPDATE {schema}.modelled_crossings SET transport_feature_type = 
-    CASE
-    WHEN transport_feature_source = '{railTable}' THEN 'rail'
-    WHEN transport_feature_source = '{roadsTable}' THEN 'road'
-    ELSE NULL END;
+if railTable:
+    for table in railTable:
+        sql = f"""UPDATE {schema}.modelled_crossings SET transport_feature_type = 'rail' WHERE transport_feature_source = '{table}';"""
+        executeQuery(conn, sql)
 
+if roadsTable:
+    for table in roadsTable:
+        sql = f"""UPDATE {schema}.modelled_crossings SET transport_feature_type = 'road' WHERE transport_feature_source = '{table}';"""
+        executeQuery(conn, sql)
+
+if resourceRoadsTable:
+    for table in resourceRoadsTable:
+        sql = f"""UPDATE {schema}.modelled_crossings SET transport_feature_type = 'resource_road' WHERE transport_feature_source = '{table}';"""
+        executeQuery(conn, sql)
+
+if trailTable:
+    for table in trailTable:
+        sql = f"""UPDATE {schema}.modelled_crossings SET transport_feature_type = 'trail' WHERE transport_feature_source = '{table}';"""
+        executeQuery(conn, sql)
+
+sql = f"""
 UPDATE {schema}.modelled_crossings SET "name" = substring("name", '\S(?:.*\S)*');
 UPDATE {schema}.modelled_crossings SET transport_feature_name = "name" WHERE "name" IS NOT NULL;
-UPDATE {schema}.modelled_crossings SET transport_feature_condition = 'Abandoned' WHERE transport_feature_source = '{railTable}' AND afr_rail_feature_type = 1;
+UPDATE {schema}.modelled_crossings SET transport_feature_condition = 'Abandoned' WHERE afr_rail_feature_type = 1;
 
 UPDATE {schema}.modelled_crossings SET roadway_type = 
     CASE
@@ -159,26 +186,23 @@ sql = f"""
 ALTER TABLE {schema}.modelled_crossings ALTER COLUMN transport_feature_id TYPE varchar;
 UPDATE {schema}.modelled_crossings SET transport_feature_id = 
     CASE
-    WHEN transport_feature_source = '{railTable}' THEN afr_rail_objectid::varchar
-    WHEN transport_feature_source = '{roadsTable}' THEN afr_road_objectid::varchar
+    WHEN afr_rail_objectid IS NOT NULL THEN afr_rail_objectid::varchar
+    WHEN afr_road_objectid IS NOT NULL THEN afr_road_objectid::varchar
     ELSE NULL END;
 """
 executeQuery(conn, sql)
 
-attributeValues = [railAttributes, roadAttributes]
-attributeTables = [railTable, roadsTable]
-
-for i in range(0, len(attributeTables), 1):
-    print(attributeTables[i])
-    if (attributeTables[i] is None):
+for k in all_datasets:
+    print(k)
+    if k:
+        attributeValues = all_datasets[k]
+    else:
         continue
 
-    if (attributeValues[i] is None or attributeValues[i] == ""):
-        continue
-    
-    fields = attributeValues[i].split(",")
-    for field in fields:
-        sql = f"ALTER TABLE {schema}.modelled_crossings DROP COLUMN IF EXISTS {field};"
+    print("Attribute Values:", attributeValues)
+
+    for val in attributeValues:
+        sql = f"ALTER TABLE {schema}.modelled_crossings DROP COLUMN IF EXISTS {val};"
         executeQuery(conn, sql)
 
 print("Getting additional structure information...")
