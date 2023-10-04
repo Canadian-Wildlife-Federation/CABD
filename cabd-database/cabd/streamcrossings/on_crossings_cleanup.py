@@ -285,7 +285,7 @@ DROP TABLE IF EXISTS {schema}.temp_structure_points;
 
 CREATE TABLE {schema}.temp_structure_points AS (
     SELECT DISTINCT ON (s.nid) s.nid AS structure_id, m.id AS modelled_id, m.transport_feature_source AS transport_feature_source, ST_Distance(s.geometry, m.geometry_m) AS dist, s.geometry
-    FROM {schema}.nrwn_on_structure_pt s, {schema}.modelled_crossings m
+    FROM {schema}.{railStructurePt} s, {schema}.modelled_crossings m
     WHERE ST_DWithin(s.geometry, m.geometry_m, 25)
     ORDER BY structure_id, modelled_id, ST_Distance(s.geometry, m.geometry_m)
 );
@@ -295,14 +295,14 @@ DROP TABLE IF EXISTS {schema}.temp_structure_lines;
 
 CREATE TABLE {schema}.temp_structure_lines AS (
     SELECT DISTINCT ON (s.nid) s.nid AS structure_id, m.id AS modelled_id, m.transport_feature_source AS transport_feature_source, ST_Distance(s.geometry, m.geometry_m) AS dist, s.geometry
-    FROM {schema}.nrwn_on_structure_ln s, {schema}.modelled_crossings m
+    FROM {schema}.{railStructureLine} s, {schema}.modelled_crossings m
     WHERE ST_DWithin(s.geometry, m.geometry_m, 1)
     ORDER BY structure_id, modelled_id, ST_Distance(s.geometry, m.geometry_m)
 );
 
 ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS crossing_type varchar;
-UPDATE {schema}.modelled_crossings SET crossing_type = 'culvert' FROM {schema}.nrwn_on_structure_pt s WHERE id IN (SELECT modelled_id FROM {schema}.temp_structure_points) AND s.structype ILIKE '%culvert%';
-UPDATE {schema}.modelled_crossings SET crossing_type = 'bridge' FROM {schema}.nrwn_on_structure_ln s WHERE id IN (SELECT modelled_id FROM {schema}.temp_structure_lines) AND s.structype ILIKE '%bridge%';
+UPDATE {schema}.modelled_crossings SET crossing_type = 'culvert' FROM {schema}.{railStructurePt} s WHERE id IN (SELECT modelled_id FROM {schema}.temp_structure_points) AND s.structype ILIKE '%culvert%';
+UPDATE {schema}.modelled_crossings SET crossing_type = 'bridge' FROM {schema}.{railStructureLine} s WHERE id IN (SELECT modelled_id FROM {schema}.temp_structure_lines) AND s.structype ILIKE '%bridge%';
 
 DROP TABLE {schema}.temp_structure_points;
 DROP TABLE {schema}.temp_structure_lines;
