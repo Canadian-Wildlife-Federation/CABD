@@ -14,7 +14,7 @@ parser = argparse.ArgumentParser(description='Processing stream crossings.')
 parser.add_argument('-c', type=str, help='the configuration file', required=True)
 parser.add_argument('-user', type=str, help='the username to access the database')
 parser.add_argument('-password', type=str, help='the password to access the database')
-parser.add_argument('--copystreams', action='store_true', help='stream data needs to be copied')
+parser.add_argument('--copystreams', dest='streams', action='store_true', help='stream data needs to be copied')
 parser.add_argument('--ignorestreams', dest='streams', action='store_false', help='stream data is already present')
 args = parser.parse_args()
 configfile = args.c
@@ -223,24 +223,53 @@ def getStreamData(conn):
     aoiTuple = tuple([row['id'] for row in rows])
     aoiNhn = list(aoiTuple)
 
-    aoiQuery = f"""
-        SELECT id, short_name from chyf_aoi
-        where short_name in {aoiTuple};
-    """
-    with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-        cursor.execute(aoiQuery)
-        rows = cursor.fetchall()
+    if prCode == 'nt': # special handling for NWT where 3 aois were combined
+        indiv = ['10MC001', '10LC000', '1001000']
+        combined = "MACK001"
+        aoiNhn = list(x for x in aoiNhn if x not in indiv)
 
-    aoiChyf = []
-    
-    for row in rows:
-        id = row['id']
-        name = row['short_name']
-        aoiChyf.append(id)
-        aoiNhn.remove(name)
+        aoiQuery = f"""
+            SELECT id, short_name from chyf_aoi
+            where short_name in {aoiTuple} OR short_name = '{combined}';
+        """
+        with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(aoiQuery)
+            rows = cursor.fetchall()
+
+        aoiChyf = []
+        
+        for row in rows:
+            id = row['id']
+            name = row['short_name']
+            aoiChyf.append(id)
+            
+            if name in aoiNhn:
+                aoiNhn.remove(name)
+            else:
+                continue
+            
+    else:
+        aoiQuery = f"""
+            SELECT id, short_name from chyf_aoi
+            where short_name in {aoiTuple};
+        """
+        with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(aoiQuery)
+            rows = cursor.fetchall()
+
+        aoiChyf = []
+        
+        for row in rows:
+            id = row['id']
+            name = row['short_name']
+            aoiChyf.append(id)
+            aoiNhn.remove(name)
 
     if (len(aoiChyf) + len(aoiNhn)) != len(aoiTuple):
-        print("Error: Not all AOIs have been queued for download")
+        if prCode == 'nt': # allow this in NT because of combined AOIs
+            pass
+        else:
+            print("Error: Not all AOIs have been queued for download")
     else:
         pass
 
