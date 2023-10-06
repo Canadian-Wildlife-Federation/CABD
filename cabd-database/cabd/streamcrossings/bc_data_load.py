@@ -10,7 +10,7 @@ parser = argparse.ArgumentParser(description='Processing stream crossings.')
 parser.add_argument('-c', type=str, help='the configuration file', required=True)
 parser.add_argument('-user', type=str, help='the username to access the database')
 parser.add_argument('-password', type=str, help='the password to access the database')
-parser.add_argument('--copystreams', action='store_true', help='stream data needs to be copied')
+parser.add_argument('--copystreams', dest='streams', action='store_true', help='stream data needs to be copied')
 parser.add_argument('--ignorestreams', dest='streams', action='store_false', help='stream data is already present')
 # parser.set_defaults(streams=False)
 args = parser.parse_args()
@@ -76,6 +76,8 @@ with conn.cursor() as cursor:
     cursor.execute(query)
 
 query = f"""
+    CREATE SCHEMA IF NOT EXISTS {schema};
+    
     DROP FOREIGN TABLE IF EXISTS public.bc_crossings;
 
     CREATE FOREIGN TABLE public.bc_crossings (

@@ -2,6 +2,7 @@ import psycopg2 as pg2
 import sys
 import argparse
 import configparser
+import ast
 
 #-- PARSE COMMAND LINE ARGUMENTS --  
 parser = argparse.ArgumentParser(description='Processing stream crossings.')
@@ -28,26 +29,6 @@ cabdSRID = config['DATABASE']['cabdSRID']
 
 mSRID = config['SETTINGS']['mSRID']
 mGeometry = config['SETTINGS']['mGeometry']
-#distance in meters (mSRID projection units) for clustering points
-clusterDistance = config['SETTINGS']['clusterDistance']
-
-#chyf stream network aois as '<aoiuuid>','<aoiuuid>'
-aoi_raw = config['SETTINGS']['aoi_raw']
-aois = str(aoi_raw)[1:-1]
-
-#data tables
-#set to None if doesn't exist for data 
-railTable = config['DATASETS']['railTable'].strip()
-roadsTable = config['DATASETS']['roadsTable'].strip()
-resourceRoadsTable = config['DATASETS']['resourceRoadsTable'].strip()
-trailTable = config['DATASETS']['trailTable'].strip()
-
-railTable = None if railTable == "None" else railTable
-roadsTable = None if roadsTable == "None" else roadsTable
-resourceRoadsTable = None if resourceRoadsTable == "None" else resourceRoadsTable
-trailTable = None if trailTable == "None" else trailTable
-
-crossingAttributes = config['DATASETS']['crossingAttributes'].strip()
 
 #geometry and unique id fields from the above tables
 #id MUST be an integer 
@@ -57,15 +38,13 @@ id = config['DATASETS']['idField'].strip()
 #chyf stream data
 streamTable = config['CHYF']['streamTable'].strip()
 streamPropTable = config['CHYF']['streamPropTable'].strip()
-streamNameTable = config['CHYF']['streamNameTable'].strip()
-   
+
 print ("-- Processing Parameters --")
 print (f"Database: {dbHost}:{dbPort}/{dbName}")
 print (f"Data Schema: {schema}")
 print (f"CABD SRID: {cabdSRID}")
 print (f"Meters Projection: {mSRID} ")
 
-print (f"Data Tables: {railTable} {roadsTable} {resourceRoadsTable} {trailTable} ")
 print (f"Id/Geometry Fields: {id} {geometry}")
 
 print ("----")
@@ -267,12 +246,12 @@ def checkCrossingLocations(conn):
 
     checkQuery = f"""
     with test as (
-        SELECT a.aggregated_crossings_id AS crossing_id, b.id AS stream_id FROM {schema}.modelled_crossings a, {schema}.eflowpath b WHERE st_intersects(a.snapped_point, b.geometry)
+        SELECT a.aggregated_crossings_id AS crossing_id, a.geometry AS geom, b.id AS stream_id FROM {schema}.modelled_crossings a, {schema}.eflowpath b WHERE st_intersects(a.snapped_point, b.geometry)
         ORDER BY a.aggregated_crossings_id ASC)
 
-    SELECT crossing_id, COUNT(*)
+    SELECT crossing_id, geom, COUNT(*)
     FROM test
-    GROUP BY crossing_id
+    GROUP BY crossing_id, geom
     HAVING COUNT(*) > 1;
     """
 
@@ -324,7 +303,7 @@ def matchStreams(conn):
             --RAISE NOTICE '%s: %s', pnt_rec.aggregated_crossings_id, pnt_rec.rawg;
             FOR fp_rec IN EXECUTE format ('SELECT fp.geometry as geometry, st_distance(%L::geometry::geography, fp.geometry::geography) AS distance FROM {schema}.{streamTable} fp WHERE st_expand(%L::geometry, 0.01) && fp.geometry and st_distance(%L::geometry::geography, fp.geometry::geography) < %s ORDER BY distance ', pnt_rec.rawg, pnt_rec.rawg, pnt_rec.rawg, max_distance_m)
             LOOP
-                EXECUTE format('UPDATE %I.%I SET %I = ST_LineInterpolatePoint(%L::geometry, ST_LineLocatePoint(%L::geometry, %L::geometry) ) WHERE aggregated_crossings_id = %L', src_schema, src_table, snapped_geom,fp_rec.geometry, fp_rec.geometry, pnt_rec.rawg, pnt_rec.aggregated_crossings_id);
+                EXECUTE format('UPDATE %I.%I SET %I = ST_LineInterpolatePoint(%L::geometry, ST_LineLocatePoint(%L::geometry, %L::geometry)) WHERE aggregated_crossings_id = %L', src_schema, src_table, snapped_geom,fp_rec.geometry, fp_rec.geometry, pnt_rec.rawg, pnt_rec.aggregated_crossings_id);
                 --RAISE NOTICE '%s', fp_rec.distance;	
                 EXIT;
             
@@ -342,6 +321,8 @@ def matchStreams(conn):
     ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS snapped_point geometry(Point, {cabdSRID});
     SELECT {schema}.snap_to_streams('{schema}', 'modelled_crossings', '{geometry}', 'snapped_point', 50);
     UPDATE {schema}.modelled_crossings SET snapped_point = {geometry} WHERE snapped_point IS NULL;
+
+    CREATE INDEX {schema}_modelled_crossings_snapped_point_idx on {schema}.modelled_crossings using gist(snapped_point);
     """
     executeQuery(conn, sql)
 
@@ -351,6 +332,12 @@ def matchStreams(conn):
     ALTER TABLE {schema}.modelled_crossings ADD COLUMN chyf_stream_id uuid;
     ALTER TABLE {schema}.modelled_crossings ADD COLUMN strahler_order integer;
     UPDATE {schema}.modelled_crossings SET {mGeometry} = ST_Transform(snapped_point, {mSRID});
+    CREATE INDEX {schema}_modelled_crossings_{mGeometry}_idx on {schema}.modelled_crossings using gist({mGeometry});
+
+    ALTER TABLE {schema}.{streamTable} ADD COLUMN {mGeometry} geometry(LineString, {mSRID});
+    UPDATE {schema}.{streamTable} SET {mGeometry} = ST_Transform({geometry}, {mSRID});
+    CREATE INDEX {schema}_{streamTable}_{mGeometry}_idx on {schema}.{streamTable} using gist({mGeometry});
+
     UPDATE {schema}.modelled_crossings AS t1 SET chyf_stream_id = t2.id FROM {schema}.{streamTable} AS t2 WHERE ST_DWithin(t1.{mGeometry}, t2.{mGeometry}, 0.01);
     UPDATE {schema}.modelled_crossings SET strahler_order = p.strahler_order FROM {schema}.{streamPropTable} p WHERE chyf_stream_id = p.id;
     """
@@ -369,7 +356,7 @@ def main():
                    port=dbPort)
     
     getCrossings(conn)
-    clipToWatershed(conn)
+    # clipToWatershed(conn)
     addColumns(conn)
     addNames(conn)
     updateAttributes(conn)
