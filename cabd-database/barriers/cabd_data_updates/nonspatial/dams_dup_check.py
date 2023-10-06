@@ -3,6 +3,7 @@
 
 # usage: dams_dup_check.py <filepath>
 
+
 import pandas as pd
 import sys
 
@@ -21,8 +22,9 @@ df = data[data['status'] != 'complete']
 # list of columns that will usually have conflicting info
 colskip = ['submitted_on', 'email', 'latitude', 'longitude', 'province_territory_code', 'entry_classification', 'data_source_short_name', 'use_analysis', 'Name', 'Organization', 'status', 'release_version']
 
-# empty list for iteration
-cabd = []
+# this dataframe holds the list of changes with conflicting info
+cabd = pd.DataFrame(columns=['cabd_id', 'email', 'colname', 'conflict'])
+
 
 # filter down to only cabd_ids with duplicates, where cabd_ids are not null, and reset index
 duplicates = df[df.duplicated('cabd_id', keep=False)]
@@ -33,34 +35,34 @@ duplicates = duplicates.drop(columns=['index'])
 
 duplicates.to_csv('duplicates.csv')
 
+df2 = duplicates.groupby('cabd_id')
+
 # find non unique entries for specified column for the same cabd_id
 # TO DO: ignore nan values in columns - these should not be included as "duplicates"
 for (colname, colval) in duplicates.items():
 
+    # ignore columns in colskip list
     if colname in colskip:
         continue
-    
+
     else:
-        df2 = duplicates[duplicates.groupby('cabd_id')[colname].transform('nunique').gt(1)] # TO DO: figure out why this is not properly grouping by cabd_id
+        # Find all rows with conflicting information in colname
+        df2 = duplicates[duplicates.groupby('cabd_id')[colname].transform('nunique').gt(1)] 
 
-        cabd.append(
-            {
-                'cabd_id': df2['cabd_id'].values.tolist(),
-                'email': df2['email'].values.tolist(),
-                'colname': colname,
-                'colvalues': df2[colname].values.tolist()
-            }
-        )
+        # Skip if no conflicts in this column
+        if df2.empty:
+            continue
 
-df3 = pd.DataFrame(cabd)
+        # Group duplicates by cabd_id, create a column listing conflicting change and a column for email of who last updated
+        df2 = df2.groupby('cabd_id').agg(email = ('email', lambda x: list(x.unique())), 
+                                        conflict = (colname, lambda x: list(x.unique())))
+        df2 = df2.reset_index()
 
-#list of cabd_ids with conflicts and column values
-df_filtered = df3[df3['cabd_id'].apply(len) > 0] # ignore any updates where length of cabd_id column is 0
-df_filtered = df_filtered.reset_index()
-df_filtered = df_filtered.drop(columns=['index'])
+        # Add a column for which attribute has the conflicting info
+        df2['colname'] = pd.Series(colname for x in range(len(df2.index)))
 
-print(df_filtered)
+        cabd = pd.concat([cabd, df2], ignore_index=True)         # append this dataframe to cabd (list of all conflicts)
 
-df_filtered.to_csv('out.csv')
+cabd.to_csv('out.csv')
 
 print("\nDone!")
