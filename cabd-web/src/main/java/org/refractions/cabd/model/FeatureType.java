@@ -31,6 +31,8 @@ public class FeatureType extends NamedItem{
 	private String dataView;
 	private String dataVersion;
 	
+	private String description;
+	
 	private String attributeSourceTable;
 	private String featureSourceTable;
 	private String defaultNameField;
@@ -41,7 +43,7 @@ public class FeatureType extends NamedItem{
 	private FeatureViewMetadata metadata;
 	
 	public FeatureType(String type, String dataView, String dataVersion, String name_en, String name_fr, String attributeSourceTable, 
-			String featureSourceTable, String defaultNameField) {
+			String featureSourceTable, String defaultNameField, String description) {
 		super(name_en, name_fr);
 		this.type = type;
 		this.dataVersion = dataVersion;
@@ -49,8 +51,12 @@ public class FeatureType extends NamedItem{
 		this.attributeSourceTable = attributeSourceTable;
 		this.featureSourceTable = featureSourceTable;
 		this.defaultNameField = defaultNameField;
+		this.description = description;
 	}
 
+	public String getDescription() {
+		return this.description;
+	}
 	public String getDataVersion() {
 		return this.dataVersion;
 	}
