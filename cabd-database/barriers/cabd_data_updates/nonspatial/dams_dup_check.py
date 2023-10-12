@@ -23,7 +23,7 @@ df = data[data['status'] != 'complete']
 colskip = ['submitted_on', 'email', 'latitude', 'longitude', 'province_territory_code', 'entry_classification', 'data_source_short_name', 'use_analysis', 'Name', 'Organization', 'status', 'release_version']
 
 # this dataframe holds the list of changes with conflicting info
-cabd = pd.DataFrame(columns=['cabd_id', 'email', 'colname', 'conflict'])
+cabd = pd.DataFrame(columns=['cabd_id', 'email', 'colname', 'conflict', 'entry_classification'])
 
 
 # filter down to only cabd_ids with duplicates, where cabd_ids are not null, and reset index
@@ -55,7 +55,8 @@ for (colname, colval) in duplicates.items():
 
         # Group duplicates by cabd_id, create a column listing conflicting change and a column for email of who last updated
         df2 = df2.groupby('cabd_id').agg(email = ('email', lambda x: list(x.unique())), 
-                                        conflict = (colname, lambda x: list(x.unique())))
+                                        conflict = (colname, lambda x: list(x.unique())),
+                                        entry_classification = ('entry_classification', lambda x: list(x.unique())))
         df2 = df2.reset_index()
 
         # Add a column for which attribute has the conflicting info
