@@ -33,10 +33,6 @@ duplicates = duplicates.sort_values(by='cabd_id', ascending=True)
 duplicates = duplicates.reset_index()
 duplicates = duplicates.drop(columns=['index'])
 
-duplicates.to_csv('duplicates.csv')
-
-df2 = duplicates.groupby('cabd_id')
-
 # find non unique entries for specified column for the same cabd_id
 # TO DO: ignore nan values in columns - these should not be included as "duplicates"
 for (colname, colval) in duplicates.items():
@@ -63,6 +59,10 @@ for (colname, colval) in duplicates.items():
         df2['colname'] = pd.Series(colname for x in range(len(df2.index)))
 
         cabd = pd.concat([cabd, df2], ignore_index=True)         # append this dataframe to cabd (list of all conflicts)
+
+cabd = cabd.sort_values(by='cabd_id', ascending=True)
+cabd = cabd.reset_index()
+cabd = cabd.drop(columns=['index'])
 
 cabd.to_csv('out.csv')
 
