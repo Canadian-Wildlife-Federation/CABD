@@ -1351,6 +1351,23 @@ update chyf2.nhn_workunit set major_drainage_area_fr = 'Aire de drainage du fleu
 update chyf2.nhn_workunit set major_drainage_area_fr = 'Aire de drainage du fleuve Mississippi', sub_drainage_area_fr = 'Missouri', sub_sub_drainage_area_fr = 'Big Muddy' WHERE id ='11AFA00';
 update chyf2.nhn_workunit set major_drainage_area_fr = 'Aire de drainage du fleuve Mississippi', sub_drainage_area_fr = 'Missouri', sub_sub_drainage_area_fr = 'Big Muddy' WHERE id ='11AFB00';
 
+alter table chyf2.nhn_workunit add column name_en varchar(500);
+alter table chyf2.nhn_workunit add column name_fr varchar(500);
+
+update chyf2.nhn_workunit set sub_sub_drainage_area_fr = null where sub_sub_drainage_area_fr = '';
+update chyf2.nhn_workunit set sub_drainage_area_fr = null where sub_drainage_area_fr = '';
+
+update chyf2.nhn_workunit set name_en = 
+case 
+ when sub_sub_drainage_area_en is not null then sub_sub_drainage_area_en 
+ when sub_drainage_area_en is not null then sub_drainage_area_en 
+ else  major_drainage_area_en
+ end,
+ name_fr = case when sub_sub_drainage_area_fr is not null then sub_sub_drainage_area_fr 
+ when sub_drainage_area_fr is not null then sub_drainage_area_fr 
+ else major_drainage_area_fr 
+ end;
+ 
 
 --to run after everything is updated:
 --truncate chyf2.vector_tile_cache;
