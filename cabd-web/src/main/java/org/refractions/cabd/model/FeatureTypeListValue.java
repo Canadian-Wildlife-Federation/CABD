@@ -21,7 +21,7 @@ package org.refractions.cabd.model;
  * @author Emily
  *
  */
-public class FeatureTypeListValue extends NamedDescriptionItem{
+public class FeatureTypeListValue extends NamedDescriptionItem implements Comparable<FeatureTypeListValue>{
 
 	private Object value;
 	
@@ -36,6 +36,12 @@ public class FeatureTypeListValue extends NamedDescriptionItem{
 	public Object getValue() {
 		if (this.value == null) return getName();
 		return this.value;
+	}
+
+	@Override
+	public int compareTo(FeatureTypeListValue o) {
+		if (value instanceof Comparable ) return ((Comparable) value).compareTo(o.getValue());
+		return 0;
 	}
 	
 }

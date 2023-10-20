@@ -126,9 +126,12 @@ public class FeatureListUtil {
 		for (FeatureViewMetadataField field : metadata.getFields()) {
 			String fieldName = field.getFieldName();
 			if (forshape) {
-				String old = fieldName;
-				fieldName = computeFieldName(fieldName, names);
-				nameMapping.put(old, fieldName);
+				if (field.getShapefileFieldName() != null) {
+					fieldName = field.getShapefileFieldName();
+				}else {
+					fieldName = computeFieldName(fieldName, names);
+				}
+				nameMapping.put(field.getFieldName(), fieldName);
 				names.add(fieldName);
 			}
 			if (field.isGeometry()) {
