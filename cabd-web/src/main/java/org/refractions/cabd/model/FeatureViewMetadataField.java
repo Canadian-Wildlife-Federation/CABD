@@ -43,12 +43,14 @@ public class FeatureViewMetadataField extends NamedDescriptionItem {
 	private Integer srid = null;
 	private boolean isNameSearch = false;
 	
+	private String shapeFieldName;
+	
 	private List<FeatureTypeListValue> valueOptions;
 	
 	public FeatureViewMetadataField(String fieldName, String name_en, String description_en,
 			String name_fr, String description_fr,
 			boolean isLink, String datatype, Integer simpleOrder, Integer allOrder,
-			boolean includeVectorTile, String validValues, boolean isNameSearch) {
+			boolean includeVectorTile, String validValues, boolean isNameSearch, String shapeFieldName) {
 		super(name_en, name_fr, description_en, description_fr);
 		this.fieldName = fieldName;
 		this.isLink = isLink;
@@ -59,6 +61,7 @@ public class FeatureViewMetadataField extends NamedDescriptionItem {
 		this.valueOptionsRef = validValues;
 		this.valueOptions = null;
 		this.isNameSearch = isNameSearch;
+		this.shapeFieldName = shapeFieldName;
 	}
 	
 	public boolean isNameSearch() {
@@ -121,4 +124,7 @@ public class FeatureViewMetadataField extends NamedDescriptionItem {
 		return this.srid;
 	}
 	
+	public String getShapefileFieldName() {
+		return this.shapeFieldName;
+	}
 }

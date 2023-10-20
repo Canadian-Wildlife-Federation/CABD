@@ -16,6 +16,7 @@
 package org.refractions.cabd.controllers;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -156,13 +157,16 @@ public class DocumentationController {
 		documentNameValuePair(sb, "Feature Type:", ft == null ? "All Feature Types" : ft.getName());
 		documentNameValuePair(sb, "Definition:", attribute.getDescription());
 		documentNameValuePair(sb, "Field Name:", attribute.getFieldName());
+		if (attribute.getShapefileFieldName() != null)  documentNameValuePair(sb, "Shapefile Field Name:", attribute.getShapefileFieldName());
 		documentNameValuePair(sb, "Data Type:", attribute.getDataType());
 		if (attribute.getValidValuesReference() != null && refTableHasCode(attribute)) {
 			createTable(sb, "datatable_attribute_" + attribute.getFieldName() + (ft == null ? "" : "_"+ft.getType()), "style=\"background-color: white\"");
 			createTableHeader(sb, "Code", "Name", "Description");
 			
 			boolean isodd = true;
-			for (FeatureTypeListValue v : attribute.getValueOptions()) {
+			List<FeatureTypeListValue> sorted = new ArrayList<>(attribute.getValueOptions());
+			Collections.sort(sorted);
+			for (FeatureTypeListValue v : sorted) {
 				createTableRow(sb, isodd, v.getValue().toString(), v.getName(), v.getDescription());
 				isodd = !isodd;
 			}
