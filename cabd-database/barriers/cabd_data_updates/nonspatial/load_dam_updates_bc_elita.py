@@ -16,7 +16,7 @@ import psycopg2 as pg2
 
 ogr = "C:\\Program Files\\GDAL\\ogr2ogr.exe"
 
-dbName = "cabd"
+dbName = "cabd_dev_2023"
 dbHost = "localhost"
 dbPort = "5433"
 dbUser = input(f"""Enter username to access {dbName}:\n""")
