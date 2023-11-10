@@ -9,17 +9,18 @@
 # to % signs, so you will need to find and replace these instances.
 # Avoid replacing legitimate % signs in your CSV.
 
-import psycopg2 as pg2
 import subprocess
 import sys
+import getpass
+import psycopg2 as pg2
 
-ogr = "C:\\OSGeo4W64\\bin\\ogr2ogr.exe"
+ogr = "C:\\Program Files\\GDAL\\ogr2ogr.exe"
 
 dbName = "cabd"
-dbHost = "cabd-postgres.postgres.database.azure.com"
-dbPort = "5432"
-dbUser = sys.argv[3]
-dbPassword = sys.argv[4]
+dbHost = "localhost"
+dbPort = "5433"
+dbUser = input(f"""Enter username to access {dbName}:\n""")
+dbPassword = getpass.getpass(f"""Enter password to access {dbName}:\n""")
 
 dataFile = ""
 dataFile = sys.argv[1]
@@ -34,14 +35,14 @@ damUpdateTable = updateSchema + '.dam_updates'
 damSchema = "dams"
 damTable = damSchema + ".dams"
 
-if len(sys.argv) != 5:
-    print("Invalid usage: py load_dam_updates.py <dataFile> <tableName> <dbUser> <dbPassword>")
+if len(sys.argv) != 3:
+    print("Invalid usage: py load_dam_updates.py <dataFile> <tableName>")
     sys.exit()
 
-conn = pg2.connect(database=dbName, 
-                   user=dbUser, 
-                   host=dbHost, 
-                   password=dbPassword, 
+conn = pg2.connect(database=dbName,
+                   user=dbUser,
+                   host=dbHost,
+                   password=dbPassword,
                    port=dbPort)
 
 #clear any data from previous tries
@@ -85,29 +86,28 @@ ALTER TABLE {damUpdateTable} ADD CONSTRAINT record_unique UNIQUE (cabd_id, data_
 --ALTER TABLE IF EXISTS {sourceTable} OWNER to cabd;
 
 --clean CSV input
-
+DELETE FROM {sourceTable} WHERE "status" IN ('complete', 'do not process', 'on hold');
+ALTER TABLE {sourceTable} DROP COLUMN "status";
+ALTER TABLE {sourceTable} DROP COLUMN "item type";
+ALTER TABLE {sourceTable} DROP COLUMN "path";
 ALTER TABLE {sourceTable} ADD CONSTRAINT entry_classification_check CHECK (entry_classification IN ('new feature', 'modify feature', 'delete feature'));
-ALTER TABLE {sourceTable} ADD COLUMN "status" varchar;
+ALTER TABLE {sourceTable} ADD COLUMN IF NOT EXISTS "status" varchar;
 UPDATE {sourceTable} SET "status" = 'ready' WHERE reviewer_comments IS NULL;
 UPDATE {sourceTable} SET "status" = 'needs review' WHERE reviewer_comments IS NOT NULL;
 ALTER TABLE {sourceTable} ADD COLUMN update_type varchar default 'cwf';
-UPDATE {sourceTable} SET cabd_id = gen_random_uuid() WHERE entry_classification = 'new feature';
+UPDATE {sourceTable} SET cabd_id = gen_random_uuid() WHERE entry_classification = 'new feature' AND cabd_id IS NULL;
 
 
 --trim fields that are getting a type conversion
 UPDATE {sourceTable} SET cabd_id = TRIM(cabd_id);
-UPDATE {sourceTable} SET removed_year = TRIM(removed_year);
 UPDATE {sourceTable} SET maintenance_last = TRIM(maintenance_last);
 UPDATE {sourceTable} SET maintenance_next = TRIM(maintenance_next);
-UPDATE {sourceTable} SET spillway_capacity = TRIM(spillway_capacity);
-UPDATE {sourceTable} SET hydro_peaking_system = TRIM(hydro_peaking_system);
-UPDATE {sourceTable} SET federal_flow_req = TRIM(federal_flow_req);
-UPDATE {sourceTable} SET provincial_flow_req = TRIM(provincial_flow_req);
 UPDATE {sourceTable} SET degree_of_regulation_pc = TRIM(degree_of_regulation_pc);
 
 --change field types
 ALTER TABLE {sourceTable} ALTER COLUMN cabd_id TYPE uuid USING cabd_id::uuid;
-ALTER TABLE {sourceTable} ALTER COLUMN removed_year TYPE numeric USING removed_year::numeric;
+ALTER TABLE {sourceTable} ALTER COLUMN province_territory_code TYPE varchar USING province_territory_code::varchar;
+ALTER TABLE {sourceTable} ALTER COLUMN removed_year TYPE integer USING removed_year::integer;
 ALTER TABLE {sourceTable} ALTER COLUMN maintenance_last TYPE date USING maintenance_last::date;
 ALTER TABLE {sourceTable} ALTER COLUMN maintenance_next TYPE date USING maintenance_next::date;
 ALTER TABLE {sourceTable} ALTER COLUMN spillway_capacity TYPE double precision USING spillway_capacity::double precision;
@@ -118,6 +118,8 @@ ALTER TABLE {sourceTable} ALTER COLUMN federal_flow_req TYPE double precision US
 ALTER TABLE {sourceTable} ALTER COLUMN provincial_flow_req TYPE double precision USING provincial_flow_req::double precision;
 ALTER TABLE {sourceTable} ALTER COLUMN degree_of_regulation_pc TYPE real USING degree_of_regulation_pc::real;
 ALTER TABLE {sourceTable} ALTER COLUMN reservoir_depth_m TYPE real USING reservoir_depth_m::real;
+ALTER TABLE {sourceTable} ALTER COLUMN height_m TYPE real USING height_m::real;
+ALTER TABLE {sourceTable} ALTER COLUMN length_m TYPE real USING length_m::real;
 ALTER TABLE {sourceTable} ALTER COLUMN turbine_number TYPE smallint USING turbine_number::smallint;
 
 --trim varchars and categorical fields that are not coded values
@@ -319,14 +321,14 @@ UPDATE {sourceTable} SET use_invasivespecies_code =
     ELSE use_invasivespecies_code END;
 ALTER TABLE {sourceTable} ALTER COLUMN use_invasivespecies_code TYPE int2 USING use_invasivespecies_code::int2;
 
--- UPDATE {sourceTable} SET use_conservation_code =
---     CASE
---     WHEN use_conservation_code = 'main' THEN (select code::varchar FROM dams.use_codes WHERE name_en = 'Main')
---     WHEN use_conservation_code = 'major' THEN (select code::varchar FROM dams.use_codes WHERE name_en = 'Major')
---     WHEN use_conservation_code = 'secondary' THEN (select code::varchar FROM dams.use_codes WHERE name_en = 'Secondary')
---     WHEN use_conservation_code IS NULL THEN NULL
---     ELSE use_conservation_code END;
--- ALTER TABLE {sourceTable} ALTER COLUMN use_conservation_code TYPE int2 USING use_conservation_code::int2;
+UPDATE {sourceTable} SET use_conservation_code =
+    CASE
+    WHEN use_conservation_code = 'main' THEN (select code::varchar FROM dams.use_codes WHERE name_en = 'Main')
+    WHEN use_conservation_code = 'major' THEN (select code::varchar FROM dams.use_codes WHERE name_en = 'Major')
+    WHEN use_conservation_code = 'secondary' THEN (select code::varchar FROM dams.use_codes WHERE name_en = 'Secondary')
+    WHEN use_conservation_code IS NULL THEN NULL
+    ELSE use_conservation_code END;
+ALTER TABLE {sourceTable} ALTER COLUMN use_conservation_code TYPE int2 USING use_conservation_code::int2;
 
 UPDATE {sourceTable} SET use_other_code =
     CASE
@@ -414,7 +416,9 @@ UPDATE {sourceTable} SET condition_code =
     WHEN condition_code IS NULL THEN NULL
     ELSE condition_code END;
 ALTER TABLE {sourceTable} ALTER COLUMN condition_code TYPE int2 USING condition_code::int2;
+"""
 
+moveQuery = f"""
 --move updates into staging table
 INSERT INTO {damUpdateTable} (
     cabd_id,
@@ -449,7 +453,7 @@ INSERT INTO {damUpdateTable} (
     use_fish_code,
     use_pollution_code,
     use_invasivespecies_code,
-    --use_conservation_code,
+    use_conservation_code,
     use_other_code,
     lake_control_code,
     construction_year,
@@ -520,7 +524,7 @@ SELECT
     use_fish_code,
     use_pollution_code,
     use_invasivespecies_code,
-    -- use_conservation_code,
+    use_conservation_code,
     use_other_code,
     lake_control_code,
     construction_year,
@@ -560,10 +564,11 @@ SELECT
 FROM {sourceTable};
 """
 
-print("Cleaning CSV and adding records to " + damUpdateTable)
-# print(loadQuery)
+print("Cleaning CSV")
 with conn.cursor() as cursor:
     cursor.execute(loadQuery)
+    print("Adding records to " + damUpdateTable)
+    cursor.execute(moveQuery)
 conn.commit()
 conn.close()
 

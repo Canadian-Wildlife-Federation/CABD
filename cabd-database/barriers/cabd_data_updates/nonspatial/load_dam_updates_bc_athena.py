@@ -9,17 +9,18 @@
 # to % signs, so you will need to find and replace these instances.
 # Avoid replacing legitimate % signs in your CSV.
 
-import psycopg2 as pg2
 import subprocess
 import sys
+import getpass
+import psycopg2 as pg2
 
 ogr = "C:\\Program Files\\GDAL\\ogr2ogr.exe"
 
-dbName = "cabd_dev_2023"
+dbName = "cabd"
 dbHost = "localhost"
 dbPort = "5433"
-dbUser = sys.argv[3]
-dbPassword = sys.argv[4]
+dbUser = input(f"""Enter username to access {dbName}:\n""")
+dbPassword = getpass.getpass(f"""Enter password to access {dbName}:\n""")
 
 dataFile = ""
 dataFile = sys.argv[1]
@@ -34,14 +35,14 @@ damUpdateTable = updateSchema + '.dam_updates'
 damSchema = "dams"
 damTable = damSchema + ".dams"
 
-if len(sys.argv) != 5:
-    print("Invalid usage: py load_dam_updates.py <dataFile> <tableName> <dbUser> <dbPassword>")
+if len(sys.argv) != 3:
+    print("Invalid usage: py load_dam_updates.py <dataFile> <tableName>")
     sys.exit()
 
-conn = pg2.connect(database=dbName, 
-                   user=dbUser, 
-                   host=dbHost, 
-                   password=dbPassword, 
+conn = pg2.connect(database=dbName,
+                   user=dbUser,
+                   host=dbHost,
+                   password=dbPassword,
                    port=dbPort)
 
 #clear any data from previous tries
