@@ -13,8 +13,8 @@ ALTER TABLE {script.sourceTable} ALTER COLUMN data_source TYPE uuid USING data_s
 ALTER TABLE {script.sourceTable} ADD CONSTRAINT data_source_fkey FOREIGN KEY (data_source) REFERENCES cabd.data_source (id);
 ALTER TABLE {script.sourceTable} DROP CONSTRAINT {script.datasetname}_pkey;
 ALTER TABLE {script.sourceTable} ADD PRIMARY KEY (data_source_id);
-ALTER TABLE {script.sourceTable} DROP COLUMN fid;
-ALTER TABLE {script.sourceTable} DROP COLUMN geometry;
+ALTER TABLE {script.sourceTable} DROP COLUMN IF EXISTS fid;
+--ALTER TABLE {script.sourceTable} DROP COLUMN geometry;
 
 
 --split into dams, add new columns, and map attributes
@@ -25,7 +25,8 @@ CREATE TABLE {script.damWorkingTable} AS
         dam_ownership,
         general_comments,
         data_source,
-        data_source_id
+        data_source_id,
+        geometry
     FROM {script.sourceTable};
 
 ALTER TABLE {script.damWorkingTable} ALTER COLUMN data_source_id SET NOT NULL;

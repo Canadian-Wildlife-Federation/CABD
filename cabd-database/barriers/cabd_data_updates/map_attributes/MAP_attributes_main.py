@@ -1,23 +1,24 @@
 import psycopg2 as pg2
-import subprocess
 import sys
 
-dbHost = "cabd-postgres-dev.postgres.database.azure.com"
-dbPort = "5432"
-dbName = "cabd"
+dbHost = "localhost"
+dbPort = "5433"
+dbName = "cabd_dev_2023"
 dbUser = sys.argv[2]
 dbPassword = sys.argv[3]
 
 class MappingScript:
 
     workingSchema = "featurecopy"
+    damSchema = "dams"
     
     workingTable = ""
     
     datasetname = ""
 
-    damTable = workingSchema + ".dams"
-    damAttributeTable = workingSchema + ".dams_attribute_source"
+    damTable = damSchema + ".dams"
+    damAttributeTable = damSchema + ".dams_attribute_source"
+    damSourceTable = damSchema + ".dams_feature_source"
 
     waterfallTable = workingSchema + ".waterfalls"
     waterfallAttributeTable = workingSchema + ".waterfalls_attribute_source"
