@@ -69,7 +69,6 @@ DELETE FROM {sourceTable} WHERE data_source_short_name IN (SELECT name FROM {upd
 ALTER TABLE {sourceTable} ALTER COLUMN submitted_on TYPE timestamptz USING submitted_on::timestamptz;
 ALTER TABLE {sourceTable} ADD COLUMN IF NOT EXISTS "status" varchar;
 
---TO DO: DEAL WITH ANY CASES WHERE THE FIRST INSTANCE IS MISSING INFO
 --remove duplicate data sources, keeping first submitted
 --first instance of a data source should always have the full info
 WITH cte AS (

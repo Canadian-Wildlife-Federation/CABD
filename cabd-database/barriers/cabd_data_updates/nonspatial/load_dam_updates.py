@@ -92,6 +92,8 @@ ALTER TABLE {sourceTable} DROP COLUMN "item type";
 ALTER TABLE {sourceTable} DROP COLUMN "path";
 ALTER TABLE {sourceTable} ADD CONSTRAINT entry_classification_check CHECK (entry_classification IN ('new feature', 'modify feature', 'delete feature'));
 ALTER TABLE {sourceTable} ADD COLUMN IF NOT EXISTS "status" varchar;
+UPDATE {sourceTable} SET reviewer_comments = TRIM(reviewer_comments);
+UPDATE {sourceTable} SET reviewer_comments = NULL WHERE reviewer_comments = '';
 UPDATE {sourceTable} SET "status" = 'ready' WHERE reviewer_comments IS NULL;
 UPDATE {sourceTable} SET "status" = 'needs review' WHERE reviewer_comments IS NOT NULL;
 ALTER TABLE {sourceTable} ADD COLUMN update_type varchar default 'cwf';
