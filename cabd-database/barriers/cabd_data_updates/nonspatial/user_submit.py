@@ -1,13 +1,14 @@
 import psycopg2 as pg2
 import subprocess
 import sys
+import getpass
 
-dbName = "cabd"
-dbHost = "cabd-postgres.postgres.database.azure.com"
-dbPort = "5432"
+dbName = "cabd_dev_2023"
+dbHost = "localhost"
+dbPort = "5433"
 featureType = sys.argv[1]
-dbUser = sys.argv[2]
-dbPassword = sys.argv[3]
+dbUser = input(f"""Enter username to access {dbName}:\n""")
+dbPassword = getpass.getpass(f"""Enter password to access {dbName}:\n""")
 
 class MappingScript:
 
@@ -37,14 +38,10 @@ class MappingScript:
     def __init__(self, datasetName):
 
         self.datasetName = datasetName
-
-        if len(sys.argv) != 4:
-            print("Invalid usage: py map_<featureType>_updates.py <featureType> <dbUser> <dbPassword>")
-            sys.exit()
         
         if sys.argv[1] not in ["dams", "fishways", "waterfalls"]:
             print("Error: featureType must be either dams, fishways, or waterfalls")
-            print("Correct usage is: py map_<featureType>_updates.py <featureType> <dbUser> <dbPassword>")
+            print("Correct usage is: py map_<featureType>_updates.py <featureType>")
             sys.exit()
         
         if featureType == "dams":
@@ -56,7 +53,7 @@ class MappingScript:
         else:
             print("Error: featureType must be either dams, fishways, or waterfalls")
 
-    def do_work(self, initializequery, mappingquery):
+    def do_work(self, query, initializequery, mappingquery):
         print("Checking list of updates for", featureType)
 
         self.conn = pg2.connect(database=dbName, 
@@ -64,6 +61,10 @@ class MappingScript:
                    host=dbHost, 
                    password=dbPassword, 
                    port=dbPort)
+        
+        with self.conn.cursor() as cursor:
+            cursor.execute(query)
+            self.conn.commit()
 
         # where multiple updates exist for a feature, only update one at a time
         waitcount = 0

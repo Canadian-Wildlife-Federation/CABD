@@ -64,6 +64,7 @@ print("Data loaded to table: " + sourceTable)
 
 updateQuery = f"""
 --remove existing data sources
+UPDATE {sourceTable} SET data_source_short_name = TRIM(data_source_short_name);
 DELETE FROM {sourceTable} WHERE data_source_short_name IN (SELECT name FROM {updateTable});
 
 ALTER TABLE {sourceTable} ALTER COLUMN submitted_on TYPE timestamptz USING submitted_on::timestamptz;
@@ -126,7 +127,7 @@ SELECT
     source_type,
     full_name,
     organization_name,
-    data_source_category
+    data_source_type
 FROM {sourceTable}
 ON CONFLICT DO NOTHING;
 """

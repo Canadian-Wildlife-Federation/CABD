@@ -1,6 +1,6 @@
 ##################
 
-# Expected usage: py map_dam_updates.py <dbUser> <dbPassword>
+# Expected usage: py map_dam_updates.py <featureType>
 # Please ensure you have run load_data_sources.py for the data sources you are mapping from
 # Otherwise any updates missing a data source id will not be made
 
@@ -11,6 +11,16 @@
 import user_submit as main
 
 script = main.MappingScript("dam_updates")
+
+query = f"""
+-- add data source ids to the table
+ALTER TABLE {script.damUpdateTable} ADD COLUMN IF NOT EXISTS data_source uuid;
+UPDATE {script.damUpdateTable} AS s SET data_source = d.id FROM cabd.data_source AS d
+    WHERE d.name = s.data_source_short_name
+    AND s.update_status = 'ready';
+
+ALTER TABLE cabd.dam_updates ALTER COLUMN submitted_on TYPE timestamptz USING submitted_on::timestamptz;
+"""
 
 initializequery = f"""
 --where multiple updates exist for a feature, only update one at a time
@@ -25,12 +35,6 @@ SET update_status = 'wait'
 """
 
 mappingquery = f"""
--- add data source ids to the table
-ALTER TABLE {script.damUpdateTable} ADD COLUMN IF NOT EXISTS data_source uuid;
-UPDATE {script.damUpdateTable} AS s SET data_source = d.id FROM cabd.data_source AS d
-    WHERE d.name = s.data_source_short_name
-    AND s.update_status = 'ready';
-
 --------------------------------------------------------------------------
 -- TO DO: add dsfid records to damAttributeTable for updates coming from BC water rights database
 --------------------------------------------------------------------------
@@ -250,4 +254,4 @@ UPDATE {script.damUpdateTable} SET update_status = 'ready' WHERE update_status =
 
 """
 
-script.do_work(initializequery, mappingquery)
+script.do_work(query, initializequery, mappingquery)
