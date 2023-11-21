@@ -4,6 +4,35 @@ script = main.MappingScript("mndmnrf_odi")
 
 mappingquery = f"""
 
+UPDATE cabd.data_source
+SET
+    version_date = '2023-11-13',
+    source = 'Ontario Ministry of Natural Resources and Forestry, 2014. Ontario Dam Inventory. Ontario GeoHub. Accessed November 13, 2023, from https://geohub.lio.gov.on.ca/datasets/mnrf::ontario-dam-inventory/about',
+    comments = 'Accessed November 13, 2023',
+    licence = 'https://www.ontario.ca/page/open-government-licence-ontario'
+WHERE name = 'mndmnrf_odi';
+
+--special handling for odi
+--we have some additional matches that were not recorded in the feature_source table
+--comment out once no longer needed
+INSERT INTO {script.damSourceTable} (
+    cabd_id,
+    datasource_id,
+    datasource_feature_id
+)
+SELECT
+    cabd_id::uuid,
+    (SELECT id FROM cabd.data_source WHERE name = '{script.datasetname}'),
+    ogf_id
+FROM
+    source_data.odi_matches
+WHERE cabd_id IS NOT NULL
+ON CONFLICT (cabd_id, datasource_id) DO UPDATE
+SET datasource_feature_id = EXCLUDED.datasource_feature_id;
+
+--fix an incorrect odi feature
+UPDATE {script.damSourceTable} SET datasource_feature_id = '108413024' WHERE cabd_id = '5455f5fd-07d0-4b94-9968-f351048d97be';
+
 --find CABD IDs
 UPDATE {script.workingTable} SET cabd_id = NULL;
 
@@ -17,8 +46,39 @@ WHERE
     a.datasource_id = (SELECT id FROM cabd.data_source WHERE name = '{script.datasetname}')
     AND a.datasource_feature_id = data_source_id;
 
+UPDATE {script.workingTable} SET cabd_id = gen_random_uuid() WHERE data_source_id IN (SELECT ogf_id::varchar FROM source_data.odi_matches WHERE comments = 'new feature');
 
---update existing features
+--insert new features
+INSERT INTO {script.damTable} (
+    cabd_id,
+    original_point,
+    province_territory_code
+    )
+SELECT
+    cabd_id::uuid,
+    ST_GeometryN(ST_Transform(geometry,4617),1),
+    'on'
+FROM {script.workingTable}
+WHERE data_source_id IN (SELECT ogf_id::varchar FROM source_data.odi_matches WHERE comments = 'new feature');
+
+INSERT INTO {script.damSourceTable} (
+    cabd_id,
+    datasource_id,
+    datasource_feature_id
+)
+SELECT
+    cabd_id::uuid,
+    (SELECT id FROM cabd.data_source WHERE name = '{script.datasetname}'),
+    data_source_id
+FROM
+    {script.workingTable}
+WHERE
+    data_source_id IN (SELECT ogf_id::varchar FROM source_data.odi_matches WHERE comments = 'new feature');
+
+INSERT INTO {script.damAttributeTable} (cabd_id) SELECT cabd_id FROM {script.workingTable} WHERE data_source_id IN (SELECT ogf_id::varchar FROM source_data.odi_matches WHERE comments = 'new feature');
+
+
+--update features
 UPDATE
     {script.damAttributeTable} AS cabdsource
 SET    
@@ -43,7 +103,6 @@ FROM
     {script.workingTable} AS {script.datasetname}
 WHERE
     cabd.cabd_id = {script.datasetname}.cabd_id;
-
 """
 
 script.do_work(mappingquery)

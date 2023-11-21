@@ -56,7 +56,7 @@ class LoadingScript:
         self.load_data(self.datafile)
         print("Splitting by feature type and mapping attributes to data model...")
         self.run_load_query(loadquery)
-        
+      
         self.conn.commit()
         self.conn.close()
         
