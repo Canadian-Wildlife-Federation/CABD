@@ -88,8 +88,8 @@ ALTER TABLE {damUpdateTable} ADD CONSTRAINT record_unique UNIQUE (cabd_id, data_
 --clean CSV input
 DELETE FROM {sourceTable} WHERE "status" IN ('complete', 'do not process', 'on hold');
 ALTER TABLE {sourceTable} DROP COLUMN "status";
-ALTER TABLE {sourceTable} DROP COLUMN "item type";
-ALTER TABLE {sourceTable} DROP COLUMN "path";
+ALTER TABLE {sourceTable} DROP COLUMN IF EXISTS "item type";
+ALTER TABLE {sourceTable} DROP COLUMN IF EXISTS "path";
 ALTER TABLE {sourceTable} ADD CONSTRAINT entry_classification_check CHECK (entry_classification IN ('new feature', 'modify feature', 'delete feature'));
 ALTER TABLE {sourceTable} ADD COLUMN IF NOT EXISTS "status" varchar;
 UPDATE {sourceTable} SET reviewer_comments = TRIM(reviewer_comments);
@@ -102,13 +102,13 @@ UPDATE {sourceTable} SET cabd_id = gen_random_uuid() WHERE entry_classification 
 
 --trim fields that are getting a type conversion
 UPDATE {sourceTable} SET cabd_id = TRIM(cabd_id);
-UPDATE {sourceTable} SET maintenance_last = TRIM(maintenance_last);
-UPDATE {sourceTable} SET maintenance_next = TRIM(maintenance_next);
-UPDATE {sourceTable} SET degree_of_regulation_pc = TRIM(degree_of_regulation_pc);
+UPDATE {sourceTable} SET reservoir_present = LOWER(reservoir_present);
 
 --change field types
 ALTER TABLE {sourceTable} ALTER COLUMN cabd_id TYPE uuid USING cabd_id::uuid;
 ALTER TABLE {sourceTable} ALTER COLUMN province_territory_code TYPE varchar USING province_territory_code::varchar;
+ALTER TABLE {sourceTable} ALTER COLUMN reservoir_present TYPE boolean USING reservoir_present::boolean;
+ALTER TABLE {sourceTable} ALTER COLUMN use_analysis TYPE boolean USING use_analysis::boolean;
 ALTER TABLE {sourceTable} ALTER COLUMN removed_year TYPE integer USING removed_year::integer;
 ALTER TABLE {sourceTable} ALTER COLUMN maintenance_last TYPE date USING maintenance_last::date;
 ALTER TABLE {sourceTable} ALTER COLUMN maintenance_next TYPE date USING maintenance_next::date;

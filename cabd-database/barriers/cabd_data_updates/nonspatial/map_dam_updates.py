@@ -1,7 +1,7 @@
 ##################
 
 # Expected usage: py map_dam_updates.py <featureType>
-# Please ensure you have run load_data_sources.py for the data sources you are mapping from
+# Please ensure you have run insert_data_sources.py for the data sources you are mapping from
 # Otherwise any updates missing a data source id will not be made
 
 # This script will process all updates with an update_status of 'ready'
