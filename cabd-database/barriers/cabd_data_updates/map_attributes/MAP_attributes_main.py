@@ -56,7 +56,7 @@ class MappingScript:
         self.conn.close()
         
         print("Script complete")
-        print("Attributes mapped to " + self.workingSchema + "." + self.featureType + " from " + self.datasetname)
+        print("Attributes mapped to " + self.featureType + " from " + self.datasetname)
 
     def run_mapping_query(self, mappingquery):
         with self.conn.cursor() as cursor:
