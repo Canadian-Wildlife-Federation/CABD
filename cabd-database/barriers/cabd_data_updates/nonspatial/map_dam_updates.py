@@ -13,6 +13,8 @@ import user_submit as main
 script = main.MappingScript("dam_updates")
 
 query = f"""
+UPDATE {script.damUpdateTable} SET update_status = NULL WHERE data_source_short_name NOT IN (SELECT name FROM cabd.data_source);
+
 -- add data source ids to the table
 ALTER TABLE {script.damUpdateTable} ADD COLUMN IF NOT EXISTS data_source uuid;
 UPDATE {script.damUpdateTable} AS s SET data_source = d.id FROM cabd.data_source AS d
