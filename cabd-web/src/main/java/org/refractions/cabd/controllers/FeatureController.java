@@ -75,21 +75,13 @@ public class FeatureController {
 	FeatureTypeManager typeManager;
 		
 	/**
-	 * Gets an individual feature by identifier
+	 * Gets an individual feature by identifier. Search the all_features
+	 * view for the feature type.
 	 * 
 	 * @param id
 	 * @return
 	 */
-	@Operation(summary = "Adds a feature update record the Find an individual feature.")
-	@ApiResponses(value = { 
-			@ApiResponse(responseCode = "200",
-						description = "The feature as a GeoJson feature. Feature attributes will vary by feature type.",
-						content = {
-						@Content(mediaType = "application/geo+json")}),
-			 @ApiResponse(responseCode = "404",
-					 	description = "feature not found", 
-			 			content = {
-						@Content(mediaType = "application/json", schema = @Schema(implementation = ApiError.class))})})
+	@Operation(summary = "Gets a feature by id.")
 	@GetMapping(value = "/{id:[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}}",
 			produces = {MediaType.APPLICATION_JSON_VALUE, "application/geo+json",
 					CabdApplication.CSV_MEDIA_TYPE_STR,
@@ -104,7 +96,40 @@ public class FeatureController {
 		return ResponseEntity.ok(f);
 	}
 	
+	/**
+	 * Gets an individual feature by type and identifier
+	 * 
+	 * @param id
+	 * @return
+	 */
+	@Operation(summary = "Gets a feature by type and id.")
+	@GetMapping(value = "/{type:[a-zA-Z0-9_]+}/{id:[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}}",
+			produces = {MediaType.APPLICATION_JSON_VALUE, "application/geo+json",
+					CabdApplication.CSV_MEDIA_TYPE_STR,
+					CabdApplication.GEOPKG_MEDIA_TYPE_STR})
+	public ResponseEntity<Feature> getFeatureByTypeAndId(
+			@Parameter(description = "unique feature identifier") 
+			@PathVariable("type") String type,
+			@PathVariable("id") UUID id,
+			HttpServletRequest request) {
+		
+		Feature f = featureDao.getFeature(type, id);
+		if (f == null) throw new NotFoundException(MessageFormat.format("No feature with id ''{0}'' found.", id));
+		return ResponseEntity.ok(f);
+	}
+	
 	//requires content-type = application/json in request
+	@Operation(summary = "Adds a feature update record the Find an individual feature.")
+	@ApiResponses(value = { 
+			@ApiResponse(responseCode = "200",
+						description = "The feature as a GeoJson feature. Feature attributes will vary by feature type.",
+						content = {
+						@Content(mediaType = "application/geo+json")}),
+			 @ApiResponse(responseCode = "404",
+					 	description = "feature not found", 
+			 			content = {
+						@Content(mediaType = "application/json", schema = @Schema(implementation = ApiError.class))})})
+
 	@PutMapping(value = "/{id:[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}}")
 	public ResponseEntity<Object> putFeature(
 			@Parameter(description = "unique feature identifier") 

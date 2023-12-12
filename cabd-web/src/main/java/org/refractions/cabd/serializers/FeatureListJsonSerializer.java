@@ -21,10 +21,12 @@ import java.util.Set;
 
 import org.refractions.cabd.CabdApplication;
 import org.refractions.cabd.controllers.GeoJsonUtils;
+import org.refractions.cabd.dao.FeatureDao;
 import org.refractions.cabd.dao.FeatureTypeManager;
 import org.refractions.cabd.model.Feature;
 import org.refractions.cabd.model.FeatureList;
 import org.refractions.cabd.model.FeatureType;
+import org.refractions.cabd.model.FeatureViewMetadataField;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpOutputMessage;
 import org.springframework.http.MediaType;
@@ -62,16 +64,23 @@ public class FeatureListJsonSerializer extends AbstractFeatureListSerializer{
 		sb.append(formatString(FeatureListUtil.DATA_LICENSE_KEY) + ": "+ formatString(CabdApplication.DATA_LICENCE_URL) + ",");
 		
 		Set<String> ftypes = FeatureListUtil.getFeatureTypes(features);
+		int srid = FeatureDao.DATABASE_SRID;
+		
 		if (!ftypes.isEmpty()) {
 			sb.append(formatString(FeatureListUtil.DATA_VERSION_KEY) + ": {");
 			for (String ftype : ftypes) {
 				FeatureType type = typeManager.getFeatureType(ftype) ;
 				sb.append(formatString(type.getType())  + ": " + formatString(type.getDataVersion()) + ",");
+				
+				for (FeatureViewMetadataField field : type.getViewMetadata().getFields()) {
+					if (field.isGeometry()) srid = field.getSRID();
+				}
 			}
 			sb.deleteCharAt(sb.length() - 1);
 			sb.append("},");
 		}
-		sb.deleteCharAt(sb.length() - 1);
+		
+		sb.append(formatString(FeatureListUtil.DATA_SRID) + ": "+ srid );
 		sb.append("}, ");
 		sb.append(formatString("features") + ":");
 		sb.append("[");
