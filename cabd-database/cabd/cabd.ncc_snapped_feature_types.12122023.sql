@@ -379,4 +379,14 @@ select 'cabd.waterfalls_ncc_view', field_name, name_en, description_en, is_link,
 from cabd.feature_type_metadata
 where view_name = 'cabd.waterfalls_view';
 
-     
+
+alter view cabd.waterfalls_ncc_view_en owner to cabd;     
+alter view cabd.waterfalls_ncc_view_fr owner to cabd;   
+alter view cabd.dams_ncc_view_en owner to cabd;     
+alter view cabd.dams_ncc_view_fr owner to cabd;   
+
+
+grant select on cabd.waterfalls_ncc_view_en to cwf_user;     
+grant select on cabd.waterfalls_ncc_view_fr to cwf_user;   
+grant select on cabd.dams_ncc_view_en owner to cwf_user;     
+grant select on cabd.dams_ncc_view_fr owner to cwf_user;   
