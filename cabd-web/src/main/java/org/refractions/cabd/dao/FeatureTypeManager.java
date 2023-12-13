@@ -143,10 +143,10 @@ public class FeatureTypeManager {
 		for (FeatureViewMetadataField field : metadata.getFields()) {
 			if (field.getFieldName().equalsIgnoreCase(FeatureDao.ID_FIELD)) hasid = true;
 			if (field.isGeometry()) {
-				hasgeom = true;
-				if (field.getSRID() != FeatureDao.DATABASE_SRID){
-					throw new InvalidDatabaseConfigException(MessageFormat.format("The view ''{0}'' should only contain one geometry column with the projection {1}", metadata.getFeatureView(), FeatureDao.DATABASE_SRID));
+				if (hasgeom) {
+					throw new InvalidDatabaseConfigException(MessageFormat.format("The view ''{0}'' should only contain one geometry column", metadata.getFeatureView()));
 				}
+				hasgeom = true;
 			}
 		}
 		

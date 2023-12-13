@@ -104,6 +104,18 @@ public class FeatureDao {
 			return null;
 		}
 		
+		return getFeature(type, uuid);		
+	}
+	
+	/**
+	 * Finds the feature with the given uuid.  Will return null
+	 * if no feature is found.
+	 * 
+	 * @param uuid
+	 * @return
+	 */
+	public Feature getFeature(String type, UUID uuid) {
+		
 		FeatureType btype = typeManager.getFeatureType(type);
 		if (btype == null) {
 			logger.error(MessageFormat.format("Database Error: No entry for feature type ''{0}'' in the feature_types database table.",type));
@@ -133,6 +145,7 @@ public class FeatureDao {
 			return null;
 		}
 	}
+	
 	
 	/**
 	 * Get all features of the given types within based on the request parameters.
@@ -181,7 +194,7 @@ public class FeatureDao {
 			List<FeatureType> types,
 			Envelope env, ParsedRequestParameters requestparams){
 		
-		String geomField = null;
+		FeatureViewMetadataField geomField = null;
 		
 		StringBuilder selectcountSql = new StringBuilder();
 		selectcountSql.append("SELECT count(*) ");
@@ -199,7 +212,7 @@ public class FeatureDao {
 					if (field.getFieldName().equals(FEATURE_TYPE_FIELD)) hasftype = true;
 				}
 			}else {
-				geomField = field.getFieldName();
+				geomField = field;
 				selectallSql.append(", st_asbinary(" + field.getFieldName() + ") as " + field.getFieldName() );
 			}
 		}
@@ -238,8 +251,14 @@ public class FeatureDao {
 			and = " AND ";
 			
 			fromWhereSql.append(" st_intersects(");
-			fromWhereSql.append( geomField);
-			fromWhereSql.append(", ST_MakeEnvelope(");
+			
+			fromWhereSql.append( geomField.getFieldName() );
+			fromWhereSql.append(", "); 
+			
+			if (geomField.getSRID() != DATABASE_SRID) {
+				fromWhereSql.append("st_transform(");
+			}
+			fromWhereSql.append(" ST_MakeEnvelope(");
 			fromWhereSql.append(env.getMinX());
 			fromWhereSql.append(",");
 			fromWhereSql.append(env.getMinY());
@@ -249,7 +268,13 @@ public class FeatureDao {
 			fromWhereSql.append(env.getMaxY());
 			fromWhereSql.append(", ");
 			fromWhereSql.append(DATABASE_SRID);
-			fromWhereSql.append(" ) )" );
+			fromWhereSql.append(" ) " );
+			if (geomField.getSRID() != DATABASE_SRID) {
+				fromWhereSql.append(", ");
+				fromWhereSql.append(geomField.getSRID());
+				fromWhereSql.append(")");
+			}
+			fromWhereSql.append(" )" );
 		}
 		if (requestparams.getFilter() != null) {
 			if (where != null) fromWhereSql.append(" WHERE ");
@@ -333,7 +358,7 @@ public class FeatureDao {
 			List<FeatureType> types,
 			Coordinate c, ParsedRequestParameters requestparams){
 		
-		String geomField = null;
+		FeatureViewMetadataField geomField = null;
 		
 		StringBuilder selectcountSql = new StringBuilder();
 		selectcountSql.append("SELECT count(*) ");
@@ -353,7 +378,7 @@ public class FeatureDao {
 					if (field.getFieldName().equals(FEATURE_TYPE_FIELD)) hasftype = true;
 				}
 			}else {
-				geomField = field.getFieldName();
+				geomField = field;
 				selectallSql.append(", st_asbinary(" + field.getFieldName() + ") as " + field.getFieldName() );
 			}
 		}
@@ -411,22 +436,23 @@ public class FeatureDao {
 		
 		StringBuilder orderbylimitSql = new StringBuilder();
 		orderbylimitSql.append(" ORDER BY ");
-		orderbylimitSql.append(geomField);
+		orderbylimitSql.append(geomField.getFieldName());
 		orderbylimitSql.append(" <-> ");
-		orderbylimitSql.append(" st_setsrid(st_makepoint(" + c.x + "," + c.y + "),");
+		if (geomField.getSRID() != DATABASE_SRID) {
+			orderbylimitSql.append(" st_transform(");	
+		}
+		orderbylimitSql.append(" st_setsrid(st_makepoint(" + c.x + "," + c.y + "),");		
 		orderbylimitSql.append(DATABASE_SRID);
 		orderbylimitSql.append(")");
+		if (geomField.getSRID() != DATABASE_SRID) {
+			orderbylimitSql.append(",");
+			orderbylimitSql.append(geomField.getSRID());
+			orderbylimitSql.append(")");
+		}
+		
 		orderbylimitSql.append(" LIMIT " );
 		orderbylimitSql.append(getMaxResults(requestparams.getMaxResults()));
-		
-//		List<Feature> features = 
-//				jdbcTemplate.query(sb.toString(), 
-//						new FeatureRowMapper(vmetadata, attributes), params.toArray());
-//		if (features.size() > properties.getMaxresults()) {
-//			throw new TooManyFeaturesException();
-//		}
-//		return new FeatureList(features);
-		
+
 		
 		StringBuilder getCount = new StringBuilder();
 		getCount.append(selectcountSql);
