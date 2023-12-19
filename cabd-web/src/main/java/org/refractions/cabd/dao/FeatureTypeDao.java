@@ -80,6 +80,11 @@ public class FeatureTypeDao {
 		new FeatureTypeListValue(rs.getObject("value"), rs.getString("name_en"),
 				rs.getString("name_fr"),rs.getString("description_en"), rs.getString("description_fr"));
 		
+	private RowMapper<FeatureTypeListValue> validBboxValueMapper = (rs, rownum) ->
+		new FeatureTypeListValue(rs.getObject("value"), rs.getString("name_en"),
+				rs.getString("name_fr"),rs.getString("description_en"), rs.getString("description_fr"),
+				rs.getDouble("minx"), rs.getDouble("miny"), rs.getDouble("maxx"), rs.getDouble("maxy"));
+		
 	public FeatureTypeDao() {
 	}
 	
@@ -156,6 +161,8 @@ public class FeatureTypeDao {
 			if (namefield.isBlank()) namefield = null;
 			String descfield = null;
 			if (bits.length > 3 && !bits[3].trim().isBlank()) descfield = bits[3].trim();
+			String geomfield = null;
+			if (bits.length > 4 && !bits[4].trim().isBlank()) geomfield = bits[4].trim();
 			
 			sb = new StringBuilder();
 			sb.append("SELECT ");
@@ -167,17 +174,33 @@ public class FeatureTypeDao {
 			sb.append(namefield + "_en as name_en, ");
 			sb.append(namefield + "_fr as name_fr, ");
 			if (descfield != null) {
-				sb.append(descfield + "_en as description_en,");
-				sb.append(descfield + "_fr as description_fr");
+				sb.append(descfield + "_en as description_en, ");
+				sb.append(descfield + "_fr as description_fr, ");
 			}else {
 				sb.append("null as description_en, ");
-				sb.append("null as description_fr ");
+				sb.append("null as description_fr, ");
+			}
+			if (geomfield != null) {
+				sb.append("st_xmin(box2d(st_transform(" + geomfield + ", 4617))) as minx, ");
+				sb.append("st_ymin(box2d(st_transform(" + geomfield + ", 4617))) as miny, ");
+				sb.append("st_xmax(box2d(st_transform(" + geomfield + ", 4617))) as maxx, ");
+				sb.append("st_ymax(box2d(st_transform(" + geomfield + ", 4617))) as maxy ");
+			}else {
+				sb.append("null as minx, ");
+				sb.append("null as miny, ");
+				sb.append("null as maxx, ");
+				sb.append("null as maxy ");
+				
 			}
 			sb.append(" FROM ");
 			sb.append(listtable);
 			
+			RowMapper<FeatureTypeListValue> mapper = validValueMapper;
+			if (geomfield != null) {
+				mapper = validBboxValueMapper;
+			}
 			List<FeatureTypeListValue> validValues = 
-					jdbcTemplate.query(sb.toString(), validValueMapper);
+					jdbcTemplate.query(sb.toString(), mapper);
 			
 			f.setValueOptions(validValues);
 		}
