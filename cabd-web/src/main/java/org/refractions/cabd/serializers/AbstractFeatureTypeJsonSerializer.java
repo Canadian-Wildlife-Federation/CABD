@@ -72,6 +72,20 @@ public abstract class AbstractFeatureTypeJsonSerializer<T> extends JsonSerialize
 					if(listitem.getDescription() != null) {
 						gen.writeStringField("description", listitem.getDescription());
 					}
+					if (listitem.getBbox() != null) {
+						gen.writeFieldName("bbox");
+						gen.writeStartArray();
+						gen.writeStartArray();
+						gen.writeNumber(listitem.getBbox()[0]);
+						gen.writeNumber(listitem.getBbox()[1]);
+						gen.writeEndArray();
+						gen.writeStartArray();
+						gen.writeNumber(listitem.getBbox()[2]);
+						gen.writeNumber(listitem.getBbox()[3]);
+						gen.writeEndArray();
+						gen.writeEndArray();
+						
+					}
 					gen.writeEndObject();
 				}
 				

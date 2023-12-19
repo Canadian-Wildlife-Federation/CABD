@@ -25,12 +25,25 @@ public class FeatureTypeListValue extends NamedDescriptionItem implements Compar
 
 	private Object value;
 	
+	private double[] bbox;
 	
 	public FeatureTypeListValue(Object value, String name_en, 
 			String name_fr, String description_en, String description_fr) {
 		super(name_en, name_fr, description_en, description_fr);
-		
+		this.bbox = null;
 		this.value = value;
+	}
+	
+	public FeatureTypeListValue(Object value, String name_en, 
+			String name_fr, String description_en, String description_fr,
+			Double minx, Double miny, Double maxx, Double maxy) {
+		super(name_en, name_fr, description_en, description_fr);
+		this.bbox = new double[]{minx, miny, maxx, maxy};
+		this.value = value;
+	}
+	
+	public double[] getBbox() {
+		return bbox;
 	}
 	
 	public Object getValue() {
