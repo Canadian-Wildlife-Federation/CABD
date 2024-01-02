@@ -50,6 +50,95 @@ VALUES (
     NULL
 );
 
+-- ADD PROVINCE/TERRITORY, NHN WATERSHED ID, MUNICIPALITY --
+
+ALTER TABLE stream_crossings.nontidal_sites ADD COLUMN province_territory_code character varying(2);
+ALTER TABLE stream_crossings.nontidal_sites ADD COLUMN nhn_watershed_id character varying(7);
+ALTER TABLE stream_crossings.nontidal_sites RENAME COLUMN town_county TO municipality;
+
+ALTER TABLE stream_crossings.tidal_sites ADD COLUMN province_territory_code character varying(2);
+ALTER TABLE stream_crossings.tidal_sites ADD COLUMN nhn_watershed_id character varying(7);
+ALTER TABLE stream_crossings.tidal_sites RENAME COLUMN town_county TO municipality;
+
+UPDATE cabd.feature_type_metadata SET field_name = 'municipality' WHERE field_name = 'town_county';
+
+UPDATE stream_crossings.nontidal_sites AS s SET province_territory_code = n.code FROM cabd.province_territory_codes AS n WHERE st_contains(n.geometry, s.snapped_point);
+UPDATE stream_crossings.nontidal_sites SET province_territory_code = 'us' WHERE province_territory_code IS NULL;
+UPDATE stream_crossings.nontidal_sites AS s SET nhn_watershed_id = n.id FROM cabd.nhn_workunit AS n WHERE st_contains(n.polygon, s.snapped_point);
+UPDATE stream_crossings.nontidal_sites AS s SET municipality = n.csdname FROM cabd.census_subdivisions AS n WHERE st_contains(n.geometry, s.snapped_point);
+
+UPDATE stream_crossings.tidal_sites AS s SET province_territory_code = n.code FROM cabd.province_territory_codes AS n WHERE st_contains(n.geometry, s.snapped_point);
+UPDATE stream_crossings.tidal_sites SET province_territory_code = 'us' WHERE province_territory_code IS NULL;
+UPDATE stream_crossings.tidal_sites AS s SET nhn_watershed_id = n.id FROM cabd.nhn_workunit AS n WHERE st_contains(n.polygon, s.snapped_point);
+UPDATE stream_crossings.tidal_sites AS s SET municipality = n.csdname FROM cabd.census_subdivisions AS n WHERE st_contains(n.geometry, s.snapped_point);
+
+INSERT INTO cabd.feature_type_metadata (
+    view_name,
+    field_name,
+    name_en,
+    description_en,
+    is_link,
+    data_type,
+    include_vector_tile,
+    value_options_reference,
+    name_fr,
+    description_fr,
+    is_name_search
+)
+SELECT
+    'cabd.stream_crossings_view',
+    field_name,
+    name_en,
+    description_en,
+    is_link,
+    data_type,
+    include_vector_tile,
+    value_options_reference,
+    name_fr,
+    description_fr,
+    is_name_search
+FROM cabd.feature_type_metadata
+WHERE view_name = 'cabd.dams_view'
+AND field_name IN ('nhn_watershed_id', 'nhn_watershed_name', 'province_territory', 'province_territory_code');
+
+INSERT INTO cabd.feature_type_metadata (
+    view_name,
+    field_name,
+    name_en,
+    description_en,
+    is_link,
+    data_type,
+    include_vector_tile,
+    value_options_reference,
+    name_fr,
+    description_fr,
+    is_name_search
+)
+SELECT
+    'cabd.stream_crossings_ncc_view',
+    field_name,
+    name_en,
+    description_en,
+    is_link,
+    data_type,
+    include_vector_tile,
+    value_options_reference,
+    name_fr,
+    description_fr,
+    is_name_search
+FROM cabd.feature_type_metadata
+WHERE view_name = 'cabd.dams_view'
+AND field_name IN ('nhn_watershed_id', 'nhn_watershed_name', 'province_territory', 'province_territory_code');
+
+UPDATE cabd.feature_type_metadata SET vw_simple_order = vw_simple_order + 4, vw_all_order = vw_all_order + 4
+    WHERE view_name IN ('cabd.stream_crossings_view', 'cabd.stream_crossings_ncc_view')
+    AND vw_simple_order >= 7;
+
+UPDATE cabd.feature_type_metadata SET vw_simple_order = 7, vw_all_order = 7 WHERE view_name IN ('cabd.stream_crossings_view', 'cabd.stream_crossings_ncc_view') AND field_name = 'province_territory';
+UPDATE cabd.feature_type_metadata SET vw_simple_order = 8, vw_all_order = 8 WHERE view_name IN ('cabd.stream_crossings_view', 'cabd.stream_crossings_ncc_view') AND field_name = 'municipality';
+UPDATE cabd.feature_type_metadata SET vw_simple_order = 9, vw_all_order = 9 WHERE view_name IN ('cabd.stream_crossings_view', 'cabd.stream_crossings_ncc_view') AND field_name = 'nhn_watershed_id';
+UPDATE cabd.feature_type_metadata SET vw_simple_order = 10, vw_all_order = 10 WHERE view_name IN ('cabd.stream_crossings_view', 'cabd.stream_crossings_ncc_view') AND field_name = 'nhn_watershed_name';
+
 -- STREAM CROSSINGS VIEW - ENGLISH --
 
 DROP VIEW IF EXISTS cabd.stream_crossings_view_en;
@@ -63,6 +152,10 @@ SELECT
     ds.full_name AS assessment_source,
     st_y(s.snapped_point) AS latitude,
     st_x(s.snapped_point) AS longitude,
+    s.nhn_watershed_id,
+    nhn.name_en AS nhn_watershed_name,
+    s.province_territory_code,
+    pt.name_en AS province_territory,
     CASE
         WHEN nts.passability_status_code IS NULL THEN (SELECT code FROM cabd.passability_status_codes WHERE name_en = 'Unknown')
         ELSE nts.passability_status_code
@@ -73,7 +166,7 @@ SELECT
         END AS passability_status,
     s.date_observed,
     s.lead_observer,
-    s.town_county,
+    s.municipality,
     s.stream_name,
     s.strahler_order,
     s.road_name,
@@ -137,6 +230,8 @@ SELECT
     s.snapped_point AS geometry
 FROM
 	stream_crossings.nontidal_sites AS s
+    LEFT JOIN cabd.province_territory_codes pt ON pt.code::text = s.province_territory_code::text
+    LEFT JOIN cabd.nhn_workunit nhn ON nhn.id::text = s.nhn_watershed_id::text
 	LEFT JOIN cabd.data_source ds ON ds.id = s.data_source_id
     LEFT JOIN stream_crossings.road_type_codes rt ON rt.code = s.road_type_code
     LEFT JOIN stream_crossings.crossing_type_codes ct ON ct.code = s.crossing_type_code
@@ -160,6 +255,10 @@ SELECT
     ds.full_name AS assessment_source,
     st_y(s.snapped_point) AS latitude,
     st_x(s.snapped_point) AS longitude,
+    s.nhn_watershed_id,
+    nhn.name_en AS nhn_watershed_name,
+    s.province_territory_code,
+    pt.name_en AS province_territory,
     CASE
         WHEN nts.passability_status_code IS NULL THEN (SELECT code FROM cabd.passability_status_codes WHERE name_en = 'Unknown')
         ELSE nts.passability_status_code
@@ -170,7 +269,7 @@ SELECT
         END AS passability_status,
     s.date_observed,
     s.lead_observer,
-    s.town_county,
+    s.municipality,
     s.stream_name,
     s.strahler_order,
     s.road_name,
@@ -234,6 +333,8 @@ SELECT
     s.snapped_point AS geometry
 FROM
 	stream_crossings.tidal_sites AS s
+    LEFT JOIN cabd.province_territory_codes pt ON pt.code::text = s.province_territory_code::text
+    LEFT JOIN cabd.nhn_workunit nhn ON nhn.id::text = s.nhn_watershed_id::text
 	LEFT JOIN cabd.data_source ds ON ds.id = s.data_source_id
     LEFT JOIN stream_crossings.road_type_codes rt ON rt.code = s.road_type_code
     LEFT JOIN stream_crossings.crossing_type_codes ct ON ct.code = s.crossing_type_code
@@ -270,6 +371,10 @@ SELECT
     ds.full_name AS assessment_source,
     st_y(s.snapped_point) AS latitude,
     st_x(s.snapped_point) AS longitude,
+    s.nhn_watershed_id,
+    nhn.name_en AS nhn_watershed_name,
+    s.province_territory_code,
+    pt.name_en AS province_territory,
     CASE
         WHEN nts.passability_status_code IS NULL THEN (SELECT code FROM cabd.passability_status_codes WHERE name_fr = 'Inconnu')
         ELSE nts.passability_status_code
@@ -280,7 +385,7 @@ SELECT
         END AS passability_status,
     s.date_observed,
     s.lead_observer,
-    s.town_county,
+    s.municipality,
     s.stream_name,
     s.strahler_order,
     s.road_name,
@@ -344,6 +449,8 @@ SELECT
     s.snapped_point AS geometry
 FROM
 	stream_crossings.nontidal_sites AS s
+    LEFT JOIN cabd.province_territory_codes pt ON pt.code::text = s.province_territory_code::text
+    LEFT JOIN cabd.nhn_workunit nhn ON nhn.id::text = s.nhn_watershed_id::text
 	LEFT JOIN cabd.data_source ds ON ds.id = s.data_source_id
     LEFT JOIN stream_crossings.road_type_codes rt ON rt.code = s.road_type_code
     LEFT JOIN stream_crossings.crossing_type_codes ct ON ct.code = s.crossing_type_code
@@ -367,6 +474,10 @@ SELECT
     ds.full_name AS assessment_source,
     st_y(s.snapped_point) AS latitude,
     st_x(s.snapped_point) AS longitude,
+    s.nhn_watershed_id,
+    nhn.name_en AS nhn_watershed_name,
+    s.province_territory_code,
+    pt.name_en AS province_territory,
     CASE
         WHEN nts.passability_status_code IS NULL THEN (SELECT code FROM cabd.passability_status_codes WHERE name_fr = 'Inconnu')
         ELSE nts.passability_status_code
@@ -377,7 +488,7 @@ SELECT
         END AS passability_status,
     s.date_observed,
     s.lead_observer,
-    s.town_county,
+    s.municipality,
     s.stream_name,
     s.strahler_order,
     s.road_name,
@@ -441,7 +552,9 @@ SELECT
     s.snapped_point AS geometry
 FROM
 	stream_crossings.tidal_sites AS s
-	LEFT JOIN cabd.data_source ds ON ds.id = s.data_source_id
+    LEFT JOIN cabd.province_territory_codes pt ON pt.code::text = s.province_territory_code::text
+    LEFT JOIN cabd.nhn_workunit nhn ON nhn.id::text = s.nhn_watershed_id::text
+    LEFT JOIN cabd.data_source ds ON ds.id = s.data_source_id
     LEFT JOIN stream_crossings.road_type_codes rt ON rt.code = s.road_type_code
     LEFT JOIN stream_crossings.crossing_type_codes ct ON ct.code = s.crossing_type_code
     LEFT JOIN stream_crossings.flow_condition_codes fc ON fc.code = s.flow_condition_code
@@ -542,9 +655,9 @@ CREATE OR REPLACE VIEW cabd.all_features_view_en
             'stream_crossings'::text AS barrier_type,
             NULL::character varying (512) AS "varchar",
             NULL::character varying (512) AS "varchar",
-            NULL::character varying (2) AS "varchar",
-            NULL::character varying (7) AS "varchar",
-            nontidal.town_county::character varying(512),
+            nontidal.province_territory_code,
+            nontidal.nhn_watershed_id,
+            nontidal.municipality::character varying(512),
             nontidal.stream_name::character varying(512),
             NULL::character varying (512) AS "varchar",
             NULL::character varying (512) AS "varchar",
@@ -562,9 +675,9 @@ CREATE OR REPLACE VIEW cabd.all_features_view_en
             'stream_crossings'::text AS barrier_type,
             NULL::character varying (512) AS "varchar",
             NULL::character varying (512) AS "varchar",
-            NULL::character varying (2) AS "varchar",
-            NULL::character varying (7) AS "varchar",
-            tidal.town_county::character varying(512),
+            tidal.province_territory_code,
+            tidal.nhn_watershed_id,
+            tidal.municipality::character varying(512),
             tidal.stream_name::character varying(512),
             NULL::character varying (512) AS "varchar",
             NULL::character varying (512) AS "varchar",
@@ -671,9 +784,9 @@ CREATE OR REPLACE VIEW cabd.all_features_view_fr
             'stream_crossings'::text AS barrier_type,
             NULL::character varying (512) AS "varchar",
             NULL::character varying (512) AS "varchar",
-            NULL::character varying (2) AS "varchar",
-            NULL::character varying (7) AS "varchar",
-            nontidal.town_county::character varying(512),
+            nontidal.province_territory_code,
+            nontidal.nhn_watershed_id,
+            nontidal.municipality::character varying(512),
             nontidal.stream_name::character varying(512),
             NULL::character varying (512) AS "varchar",
             NULL::character varying (512) AS "varchar",
@@ -691,9 +804,9 @@ CREATE OR REPLACE VIEW cabd.all_features_view_fr
             'stream_crossings'::text AS barrier_type,
             NULL::character varying (512) AS "varchar",
             NULL::character varying (512) AS "varchar",
-            NULL::character varying (2) AS "varchar",
-            NULL::character varying (7) AS "varchar",
-            tidal.town_county::character varying(512),
+            tidal.province_territory_code,
+            tidal.nhn_watershed_id,
+            tidal.municipality::character varying(512),
             tidal.stream_name::character varying(512),
             NULL::character varying (512) AS "varchar",
             NULL::character varying (512) AS "varchar",
@@ -784,9 +897,9 @@ CREATE OR REPLACE VIEW cabd.barriers_view_en
             'stream_crossings'::text AS feature_type,
             NULL::character varying AS "varchar",
             NULL::character varying AS "varchar",
-            NULL::character varying AS "varchar",
-            NULL::character varying AS "varchar",
-            nontidal.town_county,
+            nontidal.province_territory_code,
+            nontidal.nhn_watershed_id,
+            nontidal.municipality,
             nontidal.stream_name,
             NULL::character varying AS "varchar",
             NULL::character varying AS "varchar",
@@ -804,9 +917,9 @@ CREATE OR REPLACE VIEW cabd.barriers_view_en
             'stream_crossings'::text AS feature_type,
             NULL::character varying AS "varchar",
             NULL::character varying AS "varchar",
-            NULL::character varying AS "varchar",
-            NULL::character varying AS "varchar",
-            tidal.town_county,
+            tidal.province_territory_code,
+            tidal.nhn_watershed_id,
+            tidal.municipality,
             tidal.stream_name,
             NULL::character varying AS "varchar",
             NULL::character varying AS "varchar",
@@ -896,9 +1009,9 @@ CREATE OR REPLACE VIEW cabd.barriers_view_fr
             'stream_crossings'::text AS feature_type,
             NULL::character varying AS "varchar",
             NULL::character varying AS "varchar",
-            NULL::character varying AS "varchar",
-            NULL::character varying AS "varchar",
-            nontidal.town_county,
+            nontidal.province_territory_code,
+            nontidal.nhn_watershed_id,
+            nontidal.municipality,
             nontidal.stream_name,
             NULL::character varying AS "varchar",
             NULL::character varying AS "varchar",
@@ -916,9 +1029,9 @@ CREATE OR REPLACE VIEW cabd.barriers_view_fr
             'stream_crossings'::text AS feature_type,
             NULL::character varying AS "varchar",
             NULL::character varying AS "varchar",
-            NULL::character varying AS "varchar",
-            NULL::character varying AS "varchar",
-            tidal.town_county,
+            tidal.province_territory_code,
+            tidal.nhn_watershed_id,
+            tidal.municipality,
             tidal.stream_name,
             NULL::character varying AS "varchar",
             NULL::character varying AS "varchar",
@@ -948,13 +1061,13 @@ GRANT SELECT ON TABLE cabd.barriers_view_fr TO egouge;
 
 -- NCC VIEWS --
 
-insert into cabd.feature_types(type, data_view, name_en, attribute_source_table, default_featurename_field, feature_source_table, name_fr, data_version, description, data_table)
-values('stream_crossings_ncc', 'cabd.stream_crossings_ncc_view', 'Stream crossings - Snapped to NCC Network', NULL, NULL, NULL, 'Stream crossings - Snapped to NCC Network', '1.0', 'Same as the Stream Crossings feature type, except the stream crossing locations have been snapped to the NCC hydro network.', 'stream_crossings.non_tidal_sites;stream_crossings.tidal_sites');
+-- insert into cabd.feature_types(type, data_view, name_en, attribute_source_table, default_featurename_field, feature_source_table, name_fr, data_version, description, data_table)
+-- values('stream_crossings_ncc', 'cabd.stream_crossings_ncc_view', 'Stream crossings - Snapped to NCC Network', NULL, NULL, NULL, 'Stream crossings - Snapped to NCC Network', '1.0', 'Same as the Stream Crossings feature type, except the stream crossing locations have been snapped to the NCC hydro network.', 'stream_crossings.non_tidal_sites;stream_crossings.tidal_sites');
 
-insert into cabd.feature_type_metadata(view_name, field_name, name_en, description_en, is_link, data_type, vw_simple_order, vw_all_order, include_vector_tile, value_options_reference, name_fr, description_fr, is_name_search, shape_field_name)
-select 'cabd.stream_crossings_ncc_view', field_name, name_en, description_en, is_link, data_type, vw_simple_order, vw_all_order, include_vector_tile, value_options_reference, name_fr, description_fr, is_name_search, shape_field_name 
-from cabd.feature_type_metadata
-where view_name = 'cabd.stream_crossings_view';
+-- insert into cabd.feature_type_metadata(view_name, field_name, name_en, description_en, is_link, data_type, vw_simple_order, vw_all_order, include_vector_tile, value_options_reference, name_fr, description_fr, is_name_search, shape_field_name)
+-- select 'cabd.stream_crossings_ncc_view', field_name, name_en, description_en, is_link, data_type, vw_simple_order, vw_all_order, include_vector_tile, value_options_reference, name_fr, description_fr, is_name_search, shape_field_name 
+-- from cabd.feature_type_metadata
+-- where view_name = 'cabd.stream_crossings_view';
 
 DROP VIEW IF EXISTS cabd.stream_crossings_ncc_view_en;
 DROP VIEW IF EXISTS cabd.stream_crossings_ncc_view_fr;
@@ -968,6 +1081,10 @@ SELECT
     ds.full_name AS assessment_source,
     st_y(s.snapped_ncc) AS latitude,
     st_x(s.snapped_ncc) AS longitude,
+    s.nhn_watershed_id,
+    nhn.name_en AS nhn_watershed_name,
+    s.province_territory_code,
+    pt.name_en AS province_territory,
     CASE
         WHEN nts.passability_status_code IS NULL THEN (SELECT code FROM cabd.passability_status_codes WHERE name_en = 'Unknown')
         ELSE nts.passability_status_code
@@ -978,7 +1095,7 @@ SELECT
         END AS passability_status,
     s.date_observed,
     s.lead_observer,
-    s.town_county,
+    s.municipality,
     s.stream_name,
     s.strahler_order,
     s.road_name,
@@ -1042,6 +1159,8 @@ SELECT
     s.snapped_ncc AS geometry
 FROM
 	stream_crossings.nontidal_sites AS s
+    LEFT JOIN cabd.province_territory_codes pt ON pt.code::text = s.province_territory_code::text
+    LEFT JOIN cabd.nhn_workunit nhn ON nhn.id::text = s.nhn_watershed_id::text
 	LEFT JOIN cabd.data_source ds ON ds.id = s.data_source_id
     LEFT JOIN stream_crossings.road_type_codes rt ON rt.code = s.road_type_code
     LEFT JOIN stream_crossings.crossing_type_codes ct ON ct.code = s.crossing_type_code
@@ -1065,6 +1184,10 @@ SELECT
     ds.full_name AS assessment_source,
     st_y(s.snapped_ncc) AS latitude,
     st_x(s.snapped_ncc) AS longitude,
+    s.nhn_watershed_id,
+    nhn.name_en AS nhn_watershed_name,
+    s.province_territory_code,
+    pt.name_en AS province_territory,
     CASE
         WHEN nts.passability_status_code IS NULL THEN (SELECT code FROM cabd.passability_status_codes WHERE name_en = 'Unknown')
         ELSE nts.passability_status_code
@@ -1075,7 +1198,7 @@ SELECT
         END AS passability_status,
     s.date_observed,
     s.lead_observer,
-    s.town_county,
+    s.municipality,
     s.stream_name,
     s.strahler_order,
     s.road_name,
@@ -1139,6 +1262,8 @@ SELECT
     s.snapped_ncc AS geometry
 FROM
 	stream_crossings.tidal_sites AS s
+    LEFT JOIN cabd.province_territory_codes pt ON pt.code::text = s.province_territory_code::text
+    LEFT JOIN cabd.nhn_workunit nhn ON nhn.id::text = s.nhn_watershed_id::text
 	LEFT JOIN cabd.data_source ds ON ds.id = s.data_source_id
     LEFT JOIN stream_crossings.road_type_codes rt ON rt.code = s.road_type_code
     LEFT JOIN stream_crossings.crossing_type_codes ct ON ct.code = s.crossing_type_code
@@ -1171,6 +1296,10 @@ SELECT
     ds.full_name AS assessment_source,
     st_y(s.snapped_ncc) AS latitude,
     st_x(s.snapped_ncc) AS longitude,
+    s.nhn_watershed_id,
+    nhn.name_en AS nhn_watershed_name,
+    s.province_territory_code,
+    pt.name_en AS province_territory,
     CASE
         WHEN nts.passability_status_code IS NULL THEN (SELECT code FROM cabd.passability_status_codes WHERE name_fr = 'Inconnu')
         ELSE nts.passability_status_code
@@ -1181,7 +1310,7 @@ SELECT
         END AS passability_status,
     s.date_observed,
     s.lead_observer,
-    s.town_county,
+    s.municipality,
     s.stream_name,
     s.strahler_order,
     s.road_name,
@@ -1245,6 +1374,8 @@ SELECT
     s.snapped_ncc AS geometry
 FROM
 	stream_crossings.nontidal_sites AS s
+    LEFT JOIN cabd.province_territory_codes pt ON pt.code::text = s.province_territory_code::text
+    LEFT JOIN cabd.nhn_workunit nhn ON nhn.id::text = s.nhn_watershed_id::text
 	LEFT JOIN cabd.data_source ds ON ds.id = s.data_source_id
     LEFT JOIN stream_crossings.road_type_codes rt ON rt.code = s.road_type_code
     LEFT JOIN stream_crossings.crossing_type_codes ct ON ct.code = s.crossing_type_code
@@ -1268,6 +1399,10 @@ SELECT
     ds.full_name AS assessment_source,
     st_y(s.snapped_ncc) AS latitude,
     st_x(s.snapped_ncc) AS longitude,
+    s.nhn_watershed_id,
+    nhn.name_en AS nhn_watershed_name,
+    s.province_territory_code,
+    pt.name_en AS province_territory,
     CASE
         WHEN nts.passability_status_code IS NULL THEN (SELECT code FROM cabd.passability_status_codes WHERE name_fr = 'Inconnu')
         ELSE nts.passability_status_code
@@ -1278,7 +1413,7 @@ SELECT
         END AS passability_status,
     s.date_observed,
     s.lead_observer,
-    s.town_county,
+    s.municipality,
     s.stream_name,
     s.strahler_order,
     s.road_name,
@@ -1342,6 +1477,8 @@ SELECT
     s.snapped_ncc AS geometry
 FROM
 	stream_crossings.tidal_sites AS s
+    LEFT JOIN cabd.province_territory_codes pt ON pt.code::text = s.province_territory_code::text
+    LEFT JOIN cabd.nhn_workunit nhn ON nhn.id::text = s.nhn_watershed_id::text
 	LEFT JOIN cabd.data_source ds ON ds.id = s.data_source_id
     LEFT JOIN stream_crossings.road_type_codes rt ON rt.code = s.road_type_code
     LEFT JOIN stream_crossings.crossing_type_codes ct ON ct.code = s.crossing_type_code
