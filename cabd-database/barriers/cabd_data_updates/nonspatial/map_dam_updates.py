@@ -1,7 +1,7 @@
 ##################
 
-# Expected usage: py map_dam_updates.py <dbUser> <dbPassword>
-# Please ensure you have run load_data_sources.py for the data sources you are mapping from
+# Expected usage: py map_dam_updates.py <featureType>
+# Please ensure you have run insert_data_sources.py for the data sources you are mapping from
 # Otherwise any updates missing a data source id will not be made
 
 # This script will process all updates with an update_status of 'ready'
@@ -11,6 +11,18 @@
 import user_submit as main
 
 script = main.MappingScript("dam_updates")
+
+query = f"""
+UPDATE {script.damUpdateTable} SET update_status = NULL WHERE data_source_short_name NOT IN (SELECT name FROM cabd.data_source);
+
+-- add data source ids to the table
+ALTER TABLE {script.damUpdateTable} ADD COLUMN IF NOT EXISTS data_source uuid;
+UPDATE {script.damUpdateTable} AS s SET data_source = d.id FROM cabd.data_source AS d
+    WHERE d.name = s.data_source_short_name
+    AND s.update_status = 'ready';
+
+ALTER TABLE cabd.dam_updates ALTER COLUMN submitted_on TYPE timestamptz USING submitted_on::timestamptz;
+"""
 
 initializequery = f"""
 --where multiple updates exist for a feature, only update one at a time
@@ -25,12 +37,6 @@ SET update_status = 'wait'
 """
 
 mappingquery = f"""
--- add data source ids to the table
-ALTER TABLE {script.damUpdateTable} ADD COLUMN IF NOT EXISTS data_source uuid;
-UPDATE {script.damUpdateTable} AS s SET data_source = d.id FROM cabd.data_source AS d
-    WHERE d.name = s.data_source_short_name
-    AND s.update_status = 'ready';
-
 --------------------------------------------------------------------------
 -- TO DO: add dsfid records to damAttributeTable for updates coming from BC water rights database
 --------------------------------------------------------------------------
@@ -75,14 +81,6 @@ INSERT INTO {script.damFeatureTable} (cabd_id, datasource_id)
 SELECT cabd_id, data_source FROM {script.damUpdateTable} WHERE update_status = 'ready'
 ON CONFLICT DO NOTHING;
 
---------------------------------------------------------------------------
--- CHECK FOR ACCURACY
--- this should return 456 (pilot region features only) as of Jan 2023
--- if rows have been added for pilot region features since then, this should return 0
--- SELECT COUNT(*) FROM dams.dams
--- WHERE cabd_id NOT IN (SELECT cabd_id FROM dams.dams_feature_source);
---------------------------------------------------------------------------
-
 -- update attribute_source table for live data
 UPDATE
     {script.damAttributeTable} AS cabdsource
@@ -109,7 +107,7 @@ SET
     use_fish_code_ds = CASE WHEN ({script.datasetName}.use_fish_code IS NOT NULL AND {script.datasetName}.use_fish_code IS DISTINCT FROM cabd.use_fish_code) THEN {script.datasetName}.data_source ELSE cabdsource.use_fish_code_ds END,
     use_pollution_code_ds = CASE WHEN ({script.datasetName}.use_pollution_code IS NOT NULL AND {script.datasetName}.use_pollution_code IS DISTINCT FROM cabd.use_pollution_code) THEN {script.datasetName}.data_source ELSE cabdsource.use_pollution_code_ds END,
     use_invasivespecies_code_ds = CASE WHEN ({script.datasetName}.use_invasivespecies_code IS NOT NULL AND {script.datasetName}.use_invasivespecies_code IS DISTINCT FROM cabd.use_invasivespecies_code) THEN {script.datasetName}.data_source ELSE cabdsource.use_invasivespecies_code_ds END,
-    --use_conservation_code_ds = CASE WHEN ({script.datasetName}.use_conservation_code IS NOT NULL AND {script.datasetName}.use_conservation_code IS DISTINCT FROM cabd.use_conservation_code) THEN {script.datasetName}.data_source ELSE cabdsource.use_conservation_code_ds END,
+    use_conservation_code_ds = CASE WHEN ({script.datasetName}.use_conservation_code IS NOT NULL AND {script.datasetName}.use_conservation_code IS DISTINCT FROM cabd.use_conservation_code) THEN {script.datasetName}.data_source ELSE cabdsource.use_conservation_code_ds END,
     use_other_code_ds = CASE WHEN ({script.datasetName}.use_other_code IS NOT NULL AND {script.datasetName}.use_other_code IS DISTINCT FROM cabd.use_other_code) THEN {script.datasetName}.data_source ELSE cabdsource.use_other_code_ds END,
     lake_control_code_ds = CASE WHEN ({script.datasetName}.lake_control_code IS NOT NULL AND {script.datasetName}.lake_control_code IS DISTINCT FROM cabd.lake_control_code) THEN {script.datasetName}.data_source ELSE cabdsource.lake_control_code_ds END,
     construction_year_ds = CASE WHEN ({script.datasetName}.construction_year IS NOT NULL AND {script.datasetName}.construction_year IS DISTINCT FROM cabd.construction_year) THEN {script.datasetName}.data_source ELSE cabdsource.construction_year_ds END,
@@ -180,7 +178,7 @@ SET
     use_fish_code = CASE WHEN ({script.datasetName}.use_fish_code IS NOT NULL AND {script.datasetName}.use_fish_code IS DISTINCT FROM cabd.use_fish_code) THEN {script.datasetName}.use_fish_code ELSE cabd.use_fish_code END,    
     use_pollution_code = CASE WHEN ({script.datasetName}.use_pollution_code IS NOT NULL AND {script.datasetName}.use_pollution_code IS DISTINCT FROM cabd.use_pollution_code) THEN {script.datasetName}.use_pollution_code ELSE cabd.use_pollution_code END,    
     use_invasivespecies_code = CASE WHEN ({script.datasetName}.use_invasivespecies_code IS NOT NULL AND {script.datasetName}.use_invasivespecies_code IS DISTINCT FROM cabd.use_invasivespecies_code) THEN {script.datasetName}.use_invasivespecies_code ELSE cabd.use_invasivespecies_code END,    
-    --use_conservation_code = CASE WHEN ({script.datasetName}.use_conservation_code IS NOT NULL AND {script.datasetName}.use_conservation_code IS DISTINCT FROM cabd.use_conservation_code) THEN {script.datasetName}.use_conservation_code ELSE cabd.use_conservation_code END,    
+    use_conservation_code = CASE WHEN ({script.datasetName}.use_conservation_code IS NOT NULL AND {script.datasetName}.use_conservation_code IS DISTINCT FROM cabd.use_conservation_code) THEN {script.datasetName}.use_conservation_code ELSE cabd.use_conservation_code END,    
     use_other_code = CASE WHEN ({script.datasetName}.use_other_code IS NOT NULL AND {script.datasetName}.use_other_code IS DISTINCT FROM cabd.use_other_code) THEN {script.datasetName}.use_other_code ELSE cabd.use_other_code END,    
     lake_control_code = CASE WHEN ({script.datasetName}.lake_control_code IS NOT NULL AND {script.datasetName}.lake_control_code IS DISTINCT FROM cabd.lake_control_code) THEN {script.datasetName}.lake_control_code ELSE cabd.lake_control_code END,    
     construction_year = CASE WHEN ({script.datasetName}.construction_year IS NOT NULL AND {script.datasetName}.construction_year IS DISTINCT FROM cabd.construction_year) THEN {script.datasetName}.construction_year ELSE cabd.construction_year END,    
@@ -230,19 +228,6 @@ DELETE FROM {script.damAttributeTable} WHERE cabd_id IN (SELECT cabd_id FROM {sc
 DELETE FROM {script.damFeatureTable} WHERE cabd_id IN (SELECT cabd_id FROM {script.damUpdateTable} WHERE entry_classification = 'delete feature' AND update_status = 'ready');
 DELETE FROM {script.damTable} WHERE cabd_id IN (SELECT cabd_id FROM {script.damUpdateTable} WHERE entry_classification = 'delete feature' AND update_status = 'ready');
 
---------------------------------------------------------------------------
--- CHECK FOR ACCURACY
--- use counts from entry_classification field to check your work
--- e.g., for update_status of 'ready' and entry_classification of 'new feature'
--- two counts below should match
---
--- SELECT COUNT(DISTINCT cabd_id) FROM cabd.audit_log
--- WHERE action = 'INSERT' AND datetime::date = current_date AND tablename = 'dams';
---
--- SELECT COUNT(DISTINCT cabd_id) FROM cabd.audit_log
--- WHERE action = 'INSERT' AND datetime::date = current_date AND tablename = 'dams_attribute_source';
---------------------------------------------------------------------------
-
 -- set records to 'done' and delete from update table
 UPDATE {script.damUpdateTable} SET update_status = 'done' WHERE update_status = 'ready';
 UPDATE {script.damUpdateTable} SET update_status = 'ready' WHERE update_status = 'wait';
@@ -250,4 +235,4 @@ UPDATE {script.damUpdateTable} SET update_status = 'ready' WHERE update_status =
 
 """
 
-script.do_work(initializequery, mappingquery)
+script.do_work(query, initializequery, mappingquery)

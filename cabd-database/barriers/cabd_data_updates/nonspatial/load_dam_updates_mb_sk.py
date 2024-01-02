@@ -82,34 +82,30 @@ ALTER TABLE {damUpdateTable} ADD CONSTRAINT update_type_check CHECK (update_type
 ALTER TABLE {damUpdateTable} DROP CONSTRAINT IF EXISTS record_unique;
 ALTER TABLE {damUpdateTable} ADD CONSTRAINT record_unique UNIQUE (cabd_id, data_source_short_name);
 
---ALTER TABLE IF EXISTS {damUpdateTable} OWNER to cabd;
---ALTER TABLE IF EXISTS {sourceTable} OWNER to cabd;
-
 --clean CSV input
-DELETE FROM {sourceTable} WHERE "status" IN ('complete', 'do not process', 'on hold');
-ALTER TABLE {sourceTable} DROP COLUMN "status";
-ALTER TABLE {sourceTable} DROP COLUMN IF EXISTS "item type";
-ALTER TABLE {sourceTable} DROP COLUMN IF EXISTS "path";
 ALTER TABLE {sourceTable} ADD CONSTRAINT entry_classification_check CHECK (entry_classification IN ('new feature', 'modify feature', 'delete feature'));
 ALTER TABLE {sourceTable} ADD COLUMN IF NOT EXISTS "status" varchar;
-UPDATE {sourceTable} SET reviewer_comments = TRIM(reviewer_comments);
-UPDATE {sourceTable} SET reviewer_comments = NULL WHERE reviewer_comments = '';
-UPDATE {sourceTable} SET "status" = 'ready' WHERE reviewer_comments IS NULL;
-UPDATE {sourceTable} SET "status" = 'needs review' WHERE reviewer_comments IS NOT NULL;
+UPDATE {sourceTable} SET "status" = 'ready';
 ALTER TABLE {sourceTable} ADD COLUMN update_type varchar default 'cwf';
 UPDATE {sourceTable} SET cabd_id = gen_random_uuid() WHERE entry_classification = 'new feature' AND cabd_id IS NULL;
 
+ALTER TABLE {sourceTable} ADD COLUMN IF NOT EXISTS name character varying;
+ALTER TABLE {sourceTable} ADD COLUMN IF NOT EXISTS organization character varying;
+ALTER TABLE {sourceTable} ADD COLUMN IF NOT EXISTS release_version double precision;
+ALTER TABLE {sourceTable} ADD COLUMN IF NOT EXISTS reviewer_comments character varying;
+ALTER TABLE {sourceTable} ADD COLUMN IF NOT EXISTS status character varying;
+ALTER TABLE {sourceTable} ADD COLUMN IF NOT EXISTS update_type character varying;
 
 --trim fields that are getting a type conversion
 UPDATE {sourceTable} SET cabd_id = TRIM(cabd_id);
-UPDATE {sourceTable} SET reservoir_present = LOWER(reservoir_present);
+UPDATE {sourceTable} SET maintenance_last = TRIM(maintenance_last);
+UPDATE {sourceTable} SET maintenance_next = TRIM(maintenance_next);
+UPDATE {sourceTable} SET degree_of_regulation_pc = TRIM(degree_of_regulation_pc);
 
 --change field types
 ALTER TABLE {sourceTable} ALTER COLUMN cabd_id TYPE uuid USING cabd_id::uuid;
 ALTER TABLE {sourceTable} ALTER COLUMN province_territory_code TYPE varchar USING province_territory_code::varchar;
-ALTER TABLE {sourceTable} ALTER COLUMN reservoir_present TYPE boolean USING reservoir_present::boolean;
-ALTER TABLE {sourceTable} ALTER COLUMN use_analysis TYPE boolean USING use_analysis::boolean;
-ALTER TABLE {sourceTable} ALTER COLUMN removed_year TYPE integer USING removed_year::integer;
+ALTER TABLE {sourceTable} ALTER COLUMN removed_year TYPE numeric USING removed_year::numeric;
 ALTER TABLE {sourceTable} ALTER COLUMN maintenance_last TYPE date USING maintenance_last::date;
 ALTER TABLE {sourceTable} ALTER COLUMN maintenance_next TYPE date USING maintenance_next::date;
 ALTER TABLE {sourceTable} ALTER COLUMN spillway_capacity TYPE double precision USING spillway_capacity::double precision;
@@ -418,6 +414,11 @@ UPDATE {sourceTable} SET condition_code =
     WHEN condition_code IS NULL THEN NULL
     ELSE condition_code END;
 ALTER TABLE {sourceTable} ALTER COLUMN condition_code TYPE int2 USING condition_code::int2;
+
+UPDATE {sourceTable} a SET province_territory_code = b.province_territory_code
+FROM dams.dams b
+WHERE b.cabd_id = a.cabd_id
+AND a.province_territory_code IS NULL;
 """
 
 moveQuery = f"""
