@@ -1,9 +1,9 @@
 import psycopg2 as pg2
 import sys
 
-dbHost = "localhost"
-dbPort = "5433"
-dbName = "cabd_dev_2023"
+dbHost = "cabd-postgres-dev.postgres.database.azure.com"
+dbPort = "5432"
+dbName = "cabd"
 dbUser = sys.argv[2]
 dbPassword = sys.argv[3]
 

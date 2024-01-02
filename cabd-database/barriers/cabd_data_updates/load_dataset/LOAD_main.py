@@ -4,9 +4,9 @@ import sys
 
 ogr = "C:\\Program Files\\GDAL\\ogr2ogr.exe"
 
-dbHost = "localhost"
-dbPort = "5433"
-dbName = "cabd_dev_2023"
+dbHost = "cabd-postgres-dev.postgres.database.azure.com"
+dbPort = "5432"
+dbName = "cabd"
 dbUser = sys.argv[2]
 dbPassword = sys.argv[3]
 
