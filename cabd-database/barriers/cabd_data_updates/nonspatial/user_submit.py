@@ -3,7 +3,7 @@ import subprocess
 import sys
 import getpass
 
-dbHost = "cabd-postgres-dev.postgres.database.azure.com"
+dbHost = "cabd-postgres.postgres.database.azure.com"
 dbPort = "5432"
 dbName = "cabd"
 featureType = sys.argv[1]

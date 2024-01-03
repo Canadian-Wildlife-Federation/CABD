@@ -7,7 +7,7 @@ import psycopg2 as pg2
 
 ogr = "C:\\Program Files\\GDAL\\ogr2ogr.exe"
 
-dbHost = "cabd-postgres-dev.postgres.database.azure.com"
+dbHost = "cabd-postgres.postgres.database.azure.com"
 dbPort = "5432"
 dbName = "cabd"
 dbUser = input(f"""Enter username to access {dbName}:\n""")
