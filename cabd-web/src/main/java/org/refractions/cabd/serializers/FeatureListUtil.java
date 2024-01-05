@@ -33,7 +33,6 @@ import org.locationtech.jts.geom.Envelope;
 import org.locationtech.jts.geom.Point;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
-import org.refractions.cabd.dao.FeatureDao;
 import org.refractions.cabd.dao.FeatureTypeManager;
 import org.refractions.cabd.model.Feature;
 import org.refractions.cabd.model.FeatureList;
@@ -56,6 +55,7 @@ public class FeatureListUtil {
 	public static final String METADATA_KEY = "metadata";
 	public static final String DATA_LICENSE_KEY = "data_licence";
 	public static final String DATA_VERSION_KEY = "data_version";
+	public static final String DATA_SRID = "data_srid";
 	public static final String DOWNLOAD_DATETIME_KEY = "download_datetime";
 	
 	/**
@@ -126,13 +126,16 @@ public class FeatureListUtil {
 		for (FeatureViewMetadataField field : metadata.getFields()) {
 			String fieldName = field.getFieldName();
 			if (forshape) {
-				String old = fieldName;
-				fieldName = computeFieldName(fieldName, names);
-				nameMapping.put(old, fieldName);
+				if (field.getShapefileFieldName() != null) {
+					fieldName = field.getShapefileFieldName();
+				}else {
+					fieldName = computeFieldName(fieldName, names);
+				}
+				nameMapping.put(field.getFieldName(), fieldName);
 				names.add(fieldName);
 			}
 			if (field.isGeometry()) {
-				builder.add(fieldName, Point.class, FeatureDao.DATABASE_SRID);
+				builder.add(fieldName, Point.class, field.getSRID());
 				builder.setDefaultGeometry(fieldName);
 			}else {
 				builder.add(fieldName, field.getDataTypeAsClass());

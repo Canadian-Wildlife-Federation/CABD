@@ -61,7 +61,7 @@ public class FeatureTypeDao {
 				rs.getString("name_en"), rs.getString("name_fr"), 
 				rs.getString("attribute_source_table"),
 				rs.getString("feature_source_table"),
-				rs.getString("default_featurename_field"));
+				rs.getString("default_featurename_field"), rs.getString("description"));
 		
 	/**
 	 * Mapper for metadata field row to FeatureViewMetadataField object
@@ -73,12 +73,17 @@ public class FeatureTypeDao {
 				rs.getString("description_fr"), rs.getBoolean("is_link"),
 				rs.getString("data_type"), (Integer)rs.getObject("vw_simple_order"),
 				(Integer)rs.getObject("vw_all_order"), rs.getBoolean("include_vector_tile"), 
-				rs.getString("value_options_reference"), rs.getBoolean("is_name_search"));
+				rs.getString("value_options_reference"), rs.getBoolean("is_name_search"), rs.getString("shape_field_name"));
 
 	
 	private RowMapper<FeatureTypeListValue> validValueMapper = (rs, rownum) ->
 		new FeatureTypeListValue(rs.getObject("value"), rs.getString("name_en"),
 				rs.getString("name_fr"),rs.getString("description_en"), rs.getString("description_fr"));
+		
+	private RowMapper<FeatureTypeListValue> validBboxValueMapper = (rs, rownum) ->
+		new FeatureTypeListValue(rs.getObject("value"), rs.getString("name_en"),
+				rs.getString("name_fr"),rs.getString("description_en"), rs.getString("description_fr"),
+				rs.getDouble("minx"), rs.getDouble("miny"), rs.getDouble("maxx"), rs.getDouble("maxy"));
 		
 	public FeatureTypeDao() {
 	}
@@ -90,7 +95,7 @@ public class FeatureTypeDao {
 	 * @return
 	 */
 	public List<FeatureType> getFeatureTypes(){
-		String query = "SELECT type, data_view, data_version, name_en, name_fr, attribute_source_table, feature_source_table, default_featurename_field FROM " + FEATURE_TYPE_TABLE;
+		String query = "SELECT type, data_view, data_version, name_en, name_fr, attribute_source_table, feature_source_table, default_featurename_field, description FROM " + FEATURE_TYPE_TABLE;
 		return jdbcTemplate.query(query, typeMapper);		
 	}
 	
@@ -106,7 +111,7 @@ public class FeatureTypeDao {
 		sb.append("name_en, description_en, name_fr, description_fr,");
 		sb.append("is_link, data_type, ");
 		sb.append("vw_simple_order, vw_all_order, include_vector_tile, value_options_reference, ");
-		sb.append("is_name_search");
+		sb.append("is_name_search, shape_field_name");
 		sb.append(" FROM ");
 		sb.append(FEATURE_METADATA_TABLE);
 		sb.append(" WHERE view_name = ?");
@@ -156,6 +161,8 @@ public class FeatureTypeDao {
 			if (namefield.isBlank()) namefield = null;
 			String descfield = null;
 			if (bits.length > 3 && !bits[3].trim().isBlank()) descfield = bits[3].trim();
+			String geomfield = null;
+			if (bits.length > 4 && !bits[4].trim().isBlank()) geomfield = bits[4].trim();
 			
 			sb = new StringBuilder();
 			sb.append("SELECT ");
@@ -167,17 +174,33 @@ public class FeatureTypeDao {
 			sb.append(namefield + "_en as name_en, ");
 			sb.append(namefield + "_fr as name_fr, ");
 			if (descfield != null) {
-				sb.append(descfield + "_en as description_en,");
-				sb.append(descfield + "_fr as description_fr");
+				sb.append(descfield + "_en as description_en, ");
+				sb.append(descfield + "_fr as description_fr, ");
 			}else {
 				sb.append("null as description_en, ");
-				sb.append("null as description_fr ");
+				sb.append("null as description_fr, ");
+			}
+			if (geomfield != null) {
+				sb.append("st_xmin(box2d(st_transform(" + geomfield + ", 4617))) as minx, ");
+				sb.append("st_ymin(box2d(st_transform(" + geomfield + ", 4617))) as miny, ");
+				sb.append("st_xmax(box2d(st_transform(" + geomfield + ", 4617))) as maxx, ");
+				sb.append("st_ymax(box2d(st_transform(" + geomfield + ", 4617))) as maxy ");
+			}else {
+				sb.append("null as minx, ");
+				sb.append("null as miny, ");
+				sb.append("null as maxx, ");
+				sb.append("null as maxy ");
+				
 			}
 			sb.append(" FROM ");
 			sb.append(listtable);
 			
+			RowMapper<FeatureTypeListValue> mapper = validValueMapper;
+			if (geomfield != null) {
+				mapper = validBboxValueMapper;
+			}
 			List<FeatureTypeListValue> validValues = 
-					jdbcTemplate.query(sb.toString(), validValueMapper);
+					jdbcTemplate.query(sb.toString(), mapper);
 			
 			f.setValueOptions(validValues);
 		}

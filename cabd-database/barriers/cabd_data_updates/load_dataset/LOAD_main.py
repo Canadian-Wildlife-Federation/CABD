@@ -2,9 +2,9 @@ import psycopg2 as pg2
 import subprocess
 import sys
 
-ogr = "C:\\OSGeo4W64\\bin\\ogr2ogr.exe"
+ogr = "C:\\Program Files\\GDAL\\ogr2ogr.exe"
 
-dbHost = "cabd-postgres-dev.postgres.database.azure.com"
+dbHost = "cabd-postgres.postgres.database.azure.com"
 dbPort = "5432"
 dbName = "cabd"
 dbUser = sys.argv[2]
@@ -56,7 +56,7 @@ class LoadingScript:
         self.load_data(self.datafile)
         print("Splitting by feature type and mapping attributes to data model...")
         self.run_load_query(loadquery)
-        
+      
         self.conn.commit()
         self.conn.close()
         

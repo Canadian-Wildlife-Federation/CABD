@@ -21,21 +21,40 @@ package org.refractions.cabd.model;
  * @author Emily
  *
  */
-public class FeatureTypeListValue extends NamedDescriptionItem{
+public class FeatureTypeListValue extends NamedDescriptionItem implements Comparable<FeatureTypeListValue>{
 
 	private Object value;
 	
+	private double[] bbox;
 	
 	public FeatureTypeListValue(Object value, String name_en, 
 			String name_fr, String description_en, String description_fr) {
 		super(name_en, name_fr, description_en, description_fr);
-		
+		this.bbox = null;
 		this.value = value;
+	}
+	
+	public FeatureTypeListValue(Object value, String name_en, 
+			String name_fr, String description_en, String description_fr,
+			Double minx, Double miny, Double maxx, Double maxy) {
+		super(name_en, name_fr, description_en, description_fr);
+		this.bbox = new double[]{minx, miny, maxx, maxy};
+		this.value = value;
+	}
+	
+	public double[] getBbox() {
+		return bbox;
 	}
 	
 	public Object getValue() {
 		if (this.value == null) return getName();
 		return this.value;
+	}
+
+	@Override
+	public int compareTo(FeatureTypeListValue o) {
+		if (value instanceof Comparable ) return ((Comparable) value).compareTo(o.getValue());
+		return 0;
 	}
 	
 }

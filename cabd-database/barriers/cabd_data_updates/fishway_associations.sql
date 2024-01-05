@@ -50,6 +50,7 @@ WHERE
 
 --Change null values to "unknown" for user benefit
 UPDATE fishways.fishways SET fishpass_type_code = (SELECT code FROM cabd.upstream_passage_type_codes WHERE name_en = 'Unknown') WHERE fishpass_type_code IS NULL;
+UPDATE fishways.fishways SET fishpass_type_code = (SELECT code FROM cabd.upstream_passage_type_codes WHERE name_en = 'Unknown') WHERE fishpass_type_code IS NULL;
 
 --Set NULL passability status to barrier
 
@@ -102,18 +103,32 @@ UPDATE dams.dams SET complete_level_code =
         AND use_code <> (SELECT code FROM dams.dam_use_codes WHERE name_en = 'Unknown')
         AND function_code <> (SELECT code FROM dams.function_codes WHERE name_en = 'Unknown')
         AND structure_type_code <> (SELECT code FROM dams.structure_type_codes WHERE name_en = 'Unknown') 
+        AND operating_status_code <> (SELECT code FROM dams.operating_status_codes WHERE name_en = 'Unknown')
+        AND use_code <> (SELECT code FROM dams.dam_use_codes WHERE name_en = 'Unknown')
+        AND function_code <> (SELECT code FROM dams.function_codes WHERE name_en = 'Unknown')
+        AND structure_type_code <> (SELECT code FROM dams.structure_type_codes WHERE name_en = 'Unknown') 
         AND construction_year IS NOT NULL 
         AND height_m IS NOT NULL
         AND ("owner" IS NOT NULL OR ownership_type_code <> ((SELECT code FROM cabd.barrier_ownership_type_codes WHERE name_en = 'Unknown')))
+        AND ("owner" IS NOT NULL OR ownership_type_code <> ((SELECT code FROM cabd.barrier_ownership_type_codes WHERE name_en = 'Unknown')))
         AND condition_code IS NOT NULL 
         AND reservoir_present IS NOT NULL 
+        AND expected_end_of_life IS NOT NULL
+        AND up_passage_type_code <> (SELECT code FROM cabd.upstream_passage_type_codes WHERE name_en = 'Unknown') 
         AND expected_end_of_life IS NOT NULL
         AND up_passage_type_code <> (SELECT code FROM cabd.upstream_passage_type_codes WHERE name_en = 'Unknown') 
         AND down_passage_route_code IS NOT NULL
         AND length_m IS NOT NULL)
         THEN (SELECT code FROM dams.dam_complete_level_codes WHERE name_en = 'Complete')
 
+        THEN (SELECT code FROM dams.dam_complete_level_codes WHERE name_en = 'Complete')
+
     WHEN
+        (((dam_name_en IS NOT NULL OR dam_name_fr IS NOT NULL)
+        AND (waterbody_name_en IS NOT NULL OR waterbody_name_fr IS NOT NULL))
+        AND operating_status_code <> (SELECT code FROM dams.operating_status_codes WHERE name_en = 'Unknown')
+        AND use_code <> (SELECT code FROM dams.dam_use_codes WHERE name_en = 'Unknown')
+        AND function_code <> (SELECT code FROM dams.function_codes WHERE name_en = 'Unknown')
         (((dam_name_en IS NOT NULL OR dam_name_fr IS NOT NULL)
         AND (waterbody_name_en IS NOT NULL OR waterbody_name_fr IS NOT NULL))
         AND operating_status_code <> (SELECT code FROM dams.operating_status_codes WHERE name_en = 'Unknown')
@@ -124,15 +139,26 @@ UPDATE dams.dams SET complete_level_code =
         AND ("owner" IS NOT NULL OR ownership_type_code <> (SELECT code FROM cabd.barrier_ownership_type_codes WHERE name_en = 'Unknown')))
         THEN (SELECT code FROM dams.dam_complete_level_codes WHERE name_en = 'Moderate')
 
+        AND ("owner" IS NOT NULL OR ownership_type_code <> (SELECT code FROM cabd.barrier_ownership_type_codes WHERE name_en = 'Unknown')))
+        THEN (SELECT code FROM dams.dam_complete_level_codes WHERE name_en = 'Moderate')
+
     WHEN
         (((dam_name_en IS NULL AND dam_name_fr IS NULL)
         OR (waterbody_name_en IS NULL AND waterbody_name_fr IS NULL)
+        OR operating_status_code = (SELECT code FROM dams.operating_status_codes WHERE name_en = 'Unknown')
         OR operating_status_code = (SELECT code FROM dams.operating_status_codes WHERE name_en = 'Unknown')
         OR height_m IS NULL 
         OR use_code = (SELECT code FROM dams.dam_use_codes WHERE name_en = 'Unknown')) 
         AND (function_code <> (SELECT code FROM dams.function_codes WHERE name_en = 'Unknown')
         OR structure_type_code <> (SELECT code FROM dams.structure_type_codes WHERE name_en = 'Unknown') 
+        OR use_code = (SELECT code FROM dams.dam_use_codes WHERE name_en = 'Unknown')) 
+        AND (function_code <> (SELECT code FROM dams.function_codes WHERE name_en = 'Unknown')
+        OR structure_type_code <> (SELECT code FROM dams.structure_type_codes WHERE name_en = 'Unknown') 
         OR construction_year IS NOT NULL 
+        OR ("owner" IS NOT NULL OR ownership_type_code <> (SELECT code FROM cabd.barrier_ownership_type_codes WHERE name_en = 'Unknown'))))
+        THEN (SELECT code FROM dams.dam_complete_level_codes WHERE name_en = 'Minimal')
+
+    ELSE (SELECT code FROM dams.dam_complete_level_codes WHERE name_en = 'Unverified') END;
         OR ("owner" IS NOT NULL OR ownership_type_code <> (SELECT code FROM cabd.barrier_ownership_type_codes WHERE name_en = 'Unknown'))))
         THEN (SELECT code FROM dams.dam_complete_level_codes WHERE name_en = 'Minimal')
 

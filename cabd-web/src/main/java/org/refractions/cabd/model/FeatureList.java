@@ -38,7 +38,7 @@ public class FeatureList extends ItemList<Feature>{
 		
 		//add url attribute to link to individual feature
 		String rooturl = ServletUriComponentsBuilder.fromCurrentContextPath().path("/").path(FeatureController.PATH).build().toUriString();		
-		features.forEach(f->f.addAttribute(FeatureViewMetadata.URL_ATTRIBUTE, rooturl + "/" + f.getId().toString()));
+		features.forEach(f->f.addAttribute(FeatureViewMetadata.URL_ATTRIBUTE, rooturl + "/" + f.getFeatureType() + "/" + f.getId().toString()));
 		
 		this.totalResults = features.size();
 	}

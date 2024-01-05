@@ -4,22 +4,23 @@
 # 
 # IMPORTANT: You must review your CSV for encoding issues before import. The expected encoding
 # for your CSV is ANSI (for records containing French characters) or UTF-8 (for records 
-# without French characters) and the only unicode characters allowed are French characters.
+# without French characters) and the only non-unicode characters allowed are French characters.
 # You should also check for % signs in your CSV. SharePoint's CSV exporter changes # signs
 # to % signs, so you will need to find and replace these instances.
 # Avoid replacing legitimate % signs in your CSV.
 
-import psycopg2 as pg2
 import subprocess
 import sys
+import getpass
+import psycopg2 as pg2
 
 ogr = "C:\\Program Files\\GDAL\\ogr2ogr.exe"
 
-dbName = "cabd_dev"
-dbHost = "localhost"
+dbHost = "cabd-postgres.postgres.database.azure.com"
 dbPort = "5432"
-dbUser = sys.argv[3]
-dbPassword = sys.argv[4]
+dbName = "cabd"
+dbUser = input(f"""Enter username to access {dbName}:\n""")
+dbPassword = getpass.getpass(f"""Enter password to access {dbName}:\n""")
 
 dataFile = ""
 dataFile = sys.argv[1]
@@ -34,14 +35,14 @@ damUpdateTable = updateSchema + '.dam_updates'
 damSchema = "dams"
 damTable = damSchema + ".dams"
 
-if len(sys.argv) != 5:
-    print("Invalid usage: py load_dam_updates.py <dataFile> <tableName> <dbUser> <dbPassword>")
+if len(sys.argv) != 3:
+    print("Invalid usage: py load_dam_updates.py <dataFile> <tableName>")
     sys.exit()
 
-conn = pg2.connect(database=dbName, 
-                   user=dbUser, 
-                   host=dbHost, 
-                   password=dbPassword, 
+conn = pg2.connect(database=dbName,
+                   user=dbUser,
+                   host=dbHost,
+                   password=dbPassword,
                    port=dbPort)
 
 #clear any data from previous tries
@@ -81,33 +82,29 @@ ALTER TABLE {damUpdateTable} ADD CONSTRAINT update_type_check CHECK (update_type
 ALTER TABLE {damUpdateTable} DROP CONSTRAINT IF EXISTS record_unique;
 ALTER TABLE {damUpdateTable} ADD CONSTRAINT record_unique UNIQUE (cabd_id, data_source_short_name);
 
---ALTER TABLE IF EXISTS {damUpdateTable} OWNER to cabd;
---ALTER TABLE IF EXISTS {sourceTable} OWNER to cabd;
-
 --clean CSV input
-
 ALTER TABLE {sourceTable} ADD CONSTRAINT entry_classification_check CHECK (entry_classification IN ('new feature', 'modify feature', 'delete feature'));
 ALTER TABLE {sourceTable} ADD COLUMN IF NOT EXISTS "status" varchar;
 UPDATE {sourceTable} SET "status" = 'ready';
---UPDATE {sourceTable} SET "status" = 'ready' WHERE reviewer_comments IS NULL;
---UPDATE {sourceTable} SET "status" = 'needs review' WHERE reviewer_comments IS NOT NULL;
 ALTER TABLE {sourceTable} ADD COLUMN update_type varchar default 'cwf';
 UPDATE {sourceTable} SET cabd_id = gen_random_uuid() WHERE entry_classification = 'new feature' AND cabd_id IS NULL;
 
+ALTER TABLE {sourceTable} ADD COLUMN IF NOT EXISTS name character varying;
+ALTER TABLE {sourceTable} ADD COLUMN IF NOT EXISTS organization character varying;
+ALTER TABLE {sourceTable} ADD COLUMN IF NOT EXISTS release_version double precision;
+ALTER TABLE {sourceTable} ADD COLUMN IF NOT EXISTS reviewer_comments character varying;
+ALTER TABLE {sourceTable} ADD COLUMN IF NOT EXISTS status character varying;
+ALTER TABLE {sourceTable} ADD COLUMN IF NOT EXISTS update_type character varying;
 
 --trim fields that are getting a type conversion
 UPDATE {sourceTable} SET cabd_id = TRIM(cabd_id);
-UPDATE {sourceTable} SET removed_year = TRIM(removed_year);
 UPDATE {sourceTable} SET maintenance_last = TRIM(maintenance_last);
---UPDATE {sourceTable} SET maintenance_next = TRIM(maintenance_next);
---UPDATE {sourceTable} SET spillway_capacity = TRIM(spillway_capacity);
-UPDATE {sourceTable} SET hydro_peaking_system = TRIM(hydro_peaking_system);
-UPDATE {sourceTable} SET federal_flow_req = TRIM(federal_flow_req);
-UPDATE {sourceTable} SET provincial_flow_req = TRIM(provincial_flow_req);
+UPDATE {sourceTable} SET maintenance_next = TRIM(maintenance_next);
 UPDATE {sourceTable} SET degree_of_regulation_pc = TRIM(degree_of_regulation_pc);
 
 --change field types
 ALTER TABLE {sourceTable} ALTER COLUMN cabd_id TYPE uuid USING cabd_id::uuid;
+ALTER TABLE {sourceTable} ALTER COLUMN province_territory_code TYPE varchar USING province_territory_code::varchar;
 ALTER TABLE {sourceTable} ALTER COLUMN removed_year TYPE numeric USING removed_year::numeric;
 ALTER TABLE {sourceTable} ALTER COLUMN maintenance_last TYPE date USING maintenance_last::date;
 ALTER TABLE {sourceTable} ALTER COLUMN maintenance_next TYPE date USING maintenance_next::date;
@@ -119,6 +116,8 @@ ALTER TABLE {sourceTable} ALTER COLUMN federal_flow_req TYPE double precision US
 ALTER TABLE {sourceTable} ALTER COLUMN provincial_flow_req TYPE double precision USING provincial_flow_req::double precision;
 ALTER TABLE {sourceTable} ALTER COLUMN degree_of_regulation_pc TYPE real USING degree_of_regulation_pc::real;
 ALTER TABLE {sourceTable} ALTER COLUMN reservoir_depth_m TYPE real USING reservoir_depth_m::real;
+ALTER TABLE {sourceTable} ALTER COLUMN height_m TYPE real USING height_m::real;
+ALTER TABLE {sourceTable} ALTER COLUMN length_m TYPE real USING length_m::real;
 ALTER TABLE {sourceTable} ALTER COLUMN turbine_number TYPE smallint USING turbine_number::smallint;
 
 --trim varchars and categorical fields that are not coded values
@@ -141,7 +140,6 @@ UPDATE {sourceTable} SET provincial_compliance_status = TRIM(provincial_complian
 UPDATE {sourceTable} SET "comments" = TRIM("comments");
 
 --deal with coded value fields
-UPDATE {sourceTable} a SET province_territory_code = b.province_territory_code FROM dams.dams b WHERE b.cabd_id = a.cabd_id AND a.entry_classification != 'new feature' AND a.province_territory_code IS NULL;
 UPDATE {sourceTable} SET province_territory_code = LOWER(province_territory_code);
 
 UPDATE {sourceTable} SET ownership_type_code =
@@ -172,34 +170,34 @@ ALTER TABLE {sourceTable} ALTER COLUMN operating_status_code TYPE int2 USING ope
 
 UPDATE {sourceTable} SET structure_type_code =
     CASE
-    WHEN structure_type_code ILIKE 'dam - arch' THEN (select code::varchar FROM dams.structure_type_codes WHERE name_en = 'Dam - Arch')
-    WHEN structure_type_code ILIKE 'dam - buttress' THEN (select code::varchar FROM dams.structure_type_codes WHERE name_en = 'Dam - Buttress')
-    WHEN structure_type_code ILIKE 'dam - embankment' THEN (select code::varchar FROM dams.structure_type_codes WHERE name_en = 'Dam - Embankment')
-    WHEN structure_type_code ILIKE 'dam - gravity' THEN (select code::varchar FROM dams.structure_type_codes WHERE name_en = 'Dam - Gravity')
-    WHEN structure_type_code ILIKE 'dam - multiple arch' THEN (select code::varchar FROM dams.structure_type_codes WHERE name_en = 'Dam - Multiple Arch')
-    WHEN structure_type_code ILIKE 'dam - other' THEN (select code::varchar FROM dams.structure_type_codes WHERE name_en = 'Dam - Other')
-    WHEN structure_type_code ILIKE 'weir' THEN (select code::varchar FROM dams.structure_type_codes WHERE name_en = 'Weir')
-    WHEN structure_type_code ILIKE 'spillway' THEN (select code::varchar FROM dams.structure_type_codes WHERE name_en = 'Spillway')
-    WHEN structure_type_code ILIKE 'powerhouse' THEN (select code::varchar FROM dams.structure_type_codes WHERE name_en = 'Powerhouse')
-    WHEN structure_type_code ILIKE 'lateral barrier' THEN (select code::varchar FROM dams.structure_type_codes WHERE name_en = 'Lateral Barrier')
-    WHEN structure_type_code ILIKE 'lock' THEN (select code::varchar FROM dams.structure_type_codes WHERE name_en = 'Lock')
-    WHEN structure_type_code ILIKE 'aboiteau/tide gate' THEN (select code::varchar FROM dams.structure_type_codes WHERE name_en = 'Aboiteau/ Tide Gate')
-    WHEN structure_type_code ILIKE 'other' THEN (select code::varchar FROM dams.structure_type_codes WHERE name_en = 'Other')
-    WHEN structure_type_code ILIKE 'unknown' THEN (select code::varchar FROM dams.structure_type_codes WHERE name_en = 'Unknown')
+    WHEN structure_type_code = 'dam - arch' THEN (select code::varchar FROM dams.structure_type_codes WHERE name_en = 'Dam - Arch')
+    WHEN structure_type_code = 'dam - buttress' THEN (select code::varchar FROM dams.structure_type_codes WHERE name_en = 'Dam - Buttress')
+    WHEN structure_type_code = 'dam - embankment' THEN (select code::varchar FROM dams.structure_type_codes WHERE name_en = 'Dam - Embankment')
+    WHEN structure_type_code = 'dam - gravity' THEN (select code::varchar FROM dams.structure_type_codes WHERE name_en = 'Dam - Gravity')
+    WHEN structure_type_code = 'dam - multiple arch' THEN (select code::varchar FROM dams.structure_type_codes WHERE name_en = 'Dam - Multiple Arch')
+    WHEN structure_type_code = 'dam - other' THEN (select code::varchar FROM dams.structure_type_codes WHERE name_en = 'Dam - Other')
+    WHEN structure_type_code = 'weir' THEN (select code::varchar FROM dams.structure_type_codes WHERE name_en = 'Weir')
+    WHEN structure_type_code = 'spillway' THEN (select code::varchar FROM dams.structure_type_codes WHERE name_en = 'Spillway')
+    WHEN structure_type_code = 'powerhouse' THEN (select code::varchar FROM dams.structure_type_codes WHERE name_en = 'Powerhouse')
+    WHEN structure_type_code = 'lateral barrier' THEN (select code::varchar FROM dams.structure_type_codes WHERE name_en = 'Lateral Barrier')
+    WHEN structure_type_code = 'lock' THEN (select code::varchar FROM dams.structure_type_codes WHERE name_en = 'Lock')
+    WHEN structure_type_code = 'aboiteau/tide gate' THEN (select code::varchar FROM dams.structure_type_codes WHERE name_en = 'Aboiteau/ Tide Gate')
+    WHEN structure_type_code = 'other' THEN (select code::varchar FROM dams.structure_type_codes WHERE name_en = 'Other')
+    WHEN structure_type_code = 'unknown' THEN (select code::varchar FROM dams.structure_type_codes WHERE name_en = 'Unknown')
     WHEN structure_type_code IS NULL THEN NULL
     ELSE structure_type_code END;
 ALTER TABLE {sourceTable} ALTER COLUMN structure_type_code TYPE int2 USING structure_type_code::int2;
 
 UPDATE {sourceTable} SET construction_material_code =
     CASE
-    WHEN construction_material_code ILIKE 'concrete' THEN (select code::varchar FROM dams.construction_material_codes WHERE name_en = 'Concrete')
-    WHEN construction_material_code ILIKE 'masonry' THEN (select code::varchar FROM dams.construction_material_codes WHERE name_en = 'Masonry')
-    WHEN construction_material_code ILIKE 'earth' THEN (select code::varchar FROM dams.construction_material_codes WHERE name_en = 'Earth')
-    WHEN construction_material_code ILIKE 'rock' THEN (select code::varchar FROM dams.construction_material_codes WHERE name_en = 'Rock')
-    WHEN construction_material_code ILIKE 'timber' THEN (select code::varchar FROM dams.construction_material_codes WHERE name_en = 'Timber')
-    WHEN construction_material_code ILIKE 'steel' THEN (select code::varchar FROM dams.construction_material_codes WHERE name_en = 'Steel')
-    WHEN construction_material_code ILIKE 'other' THEN (select code::varchar FROM dams.construction_material_codes WHERE name_en = 'Other')
-    WHEN construction_material_code ILIKE 'unknown' THEN (select code::varchar FROM dams.construction_material_codes WHERE name_en = 'Unknown')
+    WHEN construction_material_code = 'concrete' THEN (select code::varchar FROM dams.construction_material_codes WHERE name_en = 'Concrete')
+    WHEN construction_material_code = 'masonry' THEN (select code::varchar FROM dams.construction_material_codes WHERE name_en = 'Masonry')
+    WHEN construction_material_code = 'earth' THEN (select code::varchar FROM dams.construction_material_codes WHERE name_en = 'Earth')
+    WHEN construction_material_code = 'rock' THEN (select code::varchar FROM dams.construction_material_codes WHERE name_en = 'Rock')
+    WHEN construction_material_code = 'timber' THEN (select code::varchar FROM dams.construction_material_codes WHERE name_en = 'Timber')
+    WHEN construction_material_code = 'steel' THEN (select code::varchar FROM dams.construction_material_codes WHERE name_en = 'Steel')
+    WHEN construction_material_code = 'other' THEN (select code::varchar FROM dams.construction_material_codes WHERE name_en = 'Other')
+    WHEN construction_material_code = 'unknown' THEN (select code::varchar FROM dams.construction_material_codes WHERE name_en = 'Unknown')
     WHEN construction_material_code IS NULL THEN NULL
     ELSE construction_material_code END;
 ALTER TABLE {sourceTable} ALTER COLUMN construction_material_code TYPE int2 USING construction_material_code::int2;
@@ -416,6 +414,11 @@ UPDATE {sourceTable} SET condition_code =
     WHEN condition_code IS NULL THEN NULL
     ELSE condition_code END;
 ALTER TABLE {sourceTable} ALTER COLUMN condition_code TYPE int2 USING condition_code::int2;
+
+UPDATE {sourceTable} a SET province_territory_code = b.province_territory_code
+FROM dams.dams b
+WHERE b.cabd_id = a.cabd_id
+AND a.province_territory_code IS NULL;
 """
 
 moveQuery = f"""
@@ -427,6 +430,7 @@ INSERT INTO {damUpdateTable} (
     entry_classification,
     data_source_short_name,
     update_status,
+    reviewer_comments,
     update_type,
     submitted_on,
     dam_name_en,
@@ -497,6 +501,7 @@ SELECT
     entry_classification,
     data_source_short_name,
     "status",
+    reviewer_comments,
     update_type,
     submitted_on,
     dam_name_en,
@@ -562,13 +567,10 @@ SELECT
 FROM {sourceTable};
 """
 
-print("Cleaning CSV...")
-# print(loadQuery)
+print("Cleaning CSV")
 with conn.cursor() as cursor:
     cursor.execute(loadQuery)
-print("Adding records to " + damUpdateTable)
-# print(moveQuery)
-with conn.cursor() as cursor:
+    print("Adding records to " + damUpdateTable)
     cursor.execute(moveQuery)
 conn.commit()
 conn.close()

@@ -9,17 +9,18 @@
 # to % signs, so you will need to find and replace these instances.
 # Avoid replacing legitimate % signs in your CSV.
 
-import psycopg2 as pg2
 import subprocess
 import sys
+import getpass
+import psycopg2 as pg2
 
 ogr = "C:\\Program Files\\GDAL\\ogr2ogr.exe"
 
-dbName = "cabd_dev"
-dbHost = "localhost"
+dbHost = "cabd-postgres.postgres.database.azure.com"
 dbPort = "5432"
-dbUser = sys.argv[3]
-dbPassword = sys.argv[4]
+dbName = "cabd"
+dbUser = input(f"""Enter username to access {dbName}:\n""")
+dbPassword = getpass.getpass(f"""Enter password to access {dbName}:\n""")
 
 dataFile = ""
 dataFile = sys.argv[1]
@@ -34,14 +35,14 @@ damUpdateTable = updateSchema + '.dam_updates'
 damSchema = "dams"
 damTable = damSchema + ".dams"
 
-if len(sys.argv) != 5:
-    print("Invalid usage: py load_dam_updates.py <dataFile> <tableName> <dbUser> <dbPassword>")
+if len(sys.argv) != 3:
+    print("Invalid usage: py load_dam_updates.py <dataFile> <tableName>")
     sys.exit()
 
-conn = pg2.connect(database=dbName, 
-                   user=dbUser, 
-                   host=dbHost, 
-                   password=dbPassword, 
+conn = pg2.connect(database=dbName,
+                   user=dbUser,
+                   host=dbHost,
+                   password=dbPassword,
                    port=dbPort)
 
 #clear any data from previous tries
@@ -85,9 +86,14 @@ ALTER TABLE {damUpdateTable} ADD CONSTRAINT record_unique UNIQUE (cabd_id, data_
 --ALTER TABLE IF EXISTS {sourceTable} OWNER to cabd;
 
 --clean CSV input
-
+DELETE FROM {sourceTable} WHERE "status" IN ('complete', 'do not process', 'on hold');
+ALTER TABLE {sourceTable} DROP COLUMN "status";
+ALTER TABLE {sourceTable} DROP COLUMN IF EXISTS "item type";
+ALTER TABLE {sourceTable} DROP COLUMN IF EXISTS "path";
 ALTER TABLE {sourceTable} ADD CONSTRAINT entry_classification_check CHECK (entry_classification IN ('new feature', 'modify feature', 'delete feature'));
 ALTER TABLE {sourceTable} ADD COLUMN IF NOT EXISTS "status" varchar;
+UPDATE {sourceTable} SET reviewer_comments = TRIM(reviewer_comments);
+UPDATE {sourceTable} SET reviewer_comments = NULL WHERE reviewer_comments = '';
 UPDATE {sourceTable} SET "status" = 'ready' WHERE reviewer_comments IS NULL;
 UPDATE {sourceTable} SET "status" = 'needs review' WHERE reviewer_comments IS NOT NULL;
 ALTER TABLE {sourceTable} ADD COLUMN update_type varchar default 'cwf';
@@ -96,18 +102,14 @@ UPDATE {sourceTable} SET cabd_id = gen_random_uuid() WHERE entry_classification 
 
 --trim fields that are getting a type conversion
 UPDATE {sourceTable} SET cabd_id = TRIM(cabd_id);
---UPDATE {sourceTable} SET removed_year = TRIM(removed_year);
-UPDATE {sourceTable} SET maintenance_last = TRIM(maintenance_last);
-UPDATE {sourceTable} SET maintenance_next = TRIM(maintenance_next);
---UPDATE {sourceTable} SET spillway_capacity = TRIM(spillway_capacity);
---UPDATE {sourceTable} SET hydro_peaking_system = TRIM(hydro_peaking_system);
---UPDATE {sourceTable} SET federal_flow_req = TRIM(federal_flow_req);
---UPDATE {sourceTable} SET provincial_flow_req = TRIM(provincial_flow_req);
-UPDATE {sourceTable} SET degree_of_regulation_pc = TRIM(degree_of_regulation_pc);
+UPDATE {sourceTable} SET reservoir_present = LOWER(reservoir_present);
 
 --change field types
 ALTER TABLE {sourceTable} ALTER COLUMN cabd_id TYPE uuid USING cabd_id::uuid;
-ALTER TABLE {sourceTable} ALTER COLUMN removed_year TYPE numeric USING removed_year::numeric;
+ALTER TABLE {sourceTable} ALTER COLUMN province_territory_code TYPE varchar USING province_territory_code::varchar;
+ALTER TABLE {sourceTable} ALTER COLUMN reservoir_present TYPE boolean USING reservoir_present::boolean;
+ALTER TABLE {sourceTable} ALTER COLUMN use_analysis TYPE boolean USING use_analysis::boolean;
+ALTER TABLE {sourceTable} ALTER COLUMN removed_year TYPE integer USING removed_year::integer;
 ALTER TABLE {sourceTable} ALTER COLUMN maintenance_last TYPE date USING maintenance_last::date;
 ALTER TABLE {sourceTable} ALTER COLUMN maintenance_next TYPE date USING maintenance_next::date;
 ALTER TABLE {sourceTable} ALTER COLUMN spillway_capacity TYPE double precision USING spillway_capacity::double precision;
@@ -118,6 +120,8 @@ ALTER TABLE {sourceTable} ALTER COLUMN federal_flow_req TYPE double precision US
 ALTER TABLE {sourceTable} ALTER COLUMN provincial_flow_req TYPE double precision USING provincial_flow_req::double precision;
 ALTER TABLE {sourceTable} ALTER COLUMN degree_of_regulation_pc TYPE real USING degree_of_regulation_pc::real;
 ALTER TABLE {sourceTable} ALTER COLUMN reservoir_depth_m TYPE real USING reservoir_depth_m::real;
+ALTER TABLE {sourceTable} ALTER COLUMN height_m TYPE real USING height_m::real;
+ALTER TABLE {sourceTable} ALTER COLUMN length_m TYPE real USING length_m::real;
 ALTER TABLE {sourceTable} ALTER COLUMN turbine_number TYPE smallint USING turbine_number::smallint;
 
 --trim varchars and categorical fields that are not coded values
@@ -562,13 +566,10 @@ SELECT
 FROM {sourceTable};
 """
 
-print("Cleaning CSV...")
-# print(loadQuery)
+print("Cleaning CSV")
 with conn.cursor() as cursor:
     cursor.execute(loadQuery)
-print("Adding records to " + damUpdateTable)
-# print(moveQuery)
-with conn.cursor() as cursor:
+    print("Adding records to " + damUpdateTable)
     cursor.execute(moveQuery)
 conn.commit()
 conn.close()

@@ -1,8 +1,7 @@
 import psycopg2 as pg2
-import subprocess
 import sys
 
-dbHost = "cabd-postgres-dev.postgres.database.azure.com"
+dbHost = "cabd-postgres.postgres.database.azure.com"
 dbPort = "5432"
 dbName = "cabd"
 dbUser = sys.argv[2]
@@ -11,13 +10,15 @@ dbPassword = sys.argv[3]
 class MappingScript:
 
     workingSchema = "featurecopy"
+    damSchema = "dams"
     
     workingTable = ""
     
     datasetname = ""
 
-    damTable = workingSchema + ".dams"
-    damAttributeTable = workingSchema + ".dams_attribute_source"
+    damTable = damSchema + ".dams"
+    damAttributeTable = damSchema + ".dams_attribute_source"
+    damSourceTable = damSchema + ".dams_feature_source"
 
     waterfallTable = workingSchema + ".waterfalls"
     waterfallAttributeTable = workingSchema + ".waterfalls_attribute_source"
@@ -55,7 +56,7 @@ class MappingScript:
         self.conn.close()
         
         print("Script complete")
-        print("Attributes mapped to " + self.workingSchema + "." + self.featureType + " from " + self.datasetname)
+        print("Attributes mapped to " + self.featureType + " from " + self.datasetname)
 
     def run_mapping_query(self, mappingquery):
         with self.conn.cursor() as cursor:
