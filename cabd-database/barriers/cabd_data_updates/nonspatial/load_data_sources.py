@@ -4,7 +4,7 @@
 # This script assumes all data sources imported are NON-SPATIAL
 #
 # IMPORTANT: You must review your CSV for encoding issues before import. The expected encoding
-# for your CSV is UTF-8 and the only non-unicode characters allowed are French characters
+# for your CSV is UTF-8 and the only unicode characters allowed are French characters
 # This can be easily done by opening up the CSV in Visual Studio Code or another code editor.
 # You should also check for % signs in your CSV. SharePoint's CSV exporter changes # signs
 # to % signs, so you will need to find and replace these instances.
