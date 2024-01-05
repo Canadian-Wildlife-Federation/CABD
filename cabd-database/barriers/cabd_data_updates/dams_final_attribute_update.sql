@@ -32,7 +32,8 @@ UPDATE dams.dams AS cabd
         passability_status_code = (SELECT code FROM cabd.passability_status_codes WHERE name_en = 'Partial Barrier'),
         passability_status_note = 'Marked as a partial barrier due to upstream passage measures from associated fishway.'
     FROM fishways.fishways AS f WHERE f.dam_id = cabd.cabd_id
-    AND f.fishpass_type_code != (SELECT code FROM cabd.upstream_passage_type_codes WHERE name_en = 'Trap and truck');
+    AND f.fishpass_type_code != (SELECT code FROM cabd.upstream_passage_type_codes WHERE name_en = 'Trap and truck')
+    AND cabd.operating_status_code NOT IN (SELECT code FROM dams.operating_status_codes WHERE name_en IN ('Decommissioned/ Removed', 'Remediated'));
 
 UPDATE dams.dams SET passability_status_code = 
     (SELECT code FROM cabd.passability_status_codes WHERE name_en = 'Barrier') WHERE passability_status_code IS NULL;
@@ -94,7 +95,8 @@ UPDATE dams.dams
         passability_status_note = 'Marked as a partial barrier due to upstream passage measures from associated fishway.'
     WHERE up_passage_type_code IS NOT NULL
 	AND up_passage_type_code != (SELECT code FROM cabd.upstream_passage_type_codes WHERE name_en = 'Trap and truck')
-	AND up_passage_type_code != (SELECT code FROM cabd.upstream_passage_type_codes WHERE name_en = 'No structure');
+	AND up_passage_type_code != (SELECT code FROM cabd.upstream_passage_type_codes WHERE name_en = 'No structure')
+    AND operating_status_code NOT IN (SELECT code FROM dams.operating_status_codes WHERE name_en IN ('Decommissioned/ Removed', 'Remediated'));
 
 --------------------------------------------------------------------------------------------------------------------------
 
