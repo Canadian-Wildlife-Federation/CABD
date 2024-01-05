@@ -4,7 +4,7 @@
 # 
 # IMPORTANT: You must review your CSV for encoding issues before import. The expected encoding
 # for your CSV is ANSI (for records containing French characters) or UTF-8 (for records 
-# without French characters) and the only non-unicode characters allowed are French characters.
+# without French characters) and the only unicode characters allowed are French characters.
 # You should also check for % signs in your CSV. SharePoint's CSV exporter changes # signs
 # to % signs, so you will need to find and replace these instances.
 # Avoid replacing legitimate % signs in your CSV.

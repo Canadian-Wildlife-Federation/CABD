@@ -25,11 +25,13 @@ ALTER TABLE cabd.dam_updates ALTER COLUMN submitted_on TYPE timestamptz USING su
 """
 
 initializequery = f"""
+
 --where multiple updates exist for a feature, only update one at a time
 WITH cte AS (
   SELECT id, cabd_id,
     row_number() OVER(PARTITION BY cabd_id ORDER BY submitted_on ASC) AS rn
   FROM {script.damUpdateTable} WHERE update_status = 'ready'
+  AND entry_classification = 'modify feature'
 )
 UPDATE {script.damUpdateTable}
 SET update_status = 'wait'
@@ -79,6 +81,7 @@ UPDATE {script.damTable} AS foo
 -- add records to feature_source table
 INSERT INTO {script.damFeatureTable} (cabd_id, datasource_id)
 SELECT cabd_id, data_source FROM {script.damUpdateTable} WHERE update_status = 'ready'
+AND entry_classification != 'delete feature'
 ON CONFLICT DO NOTHING;
 
 -- update attribute_source table for live data
@@ -224,6 +227,7 @@ WHERE
     AND {script.datasetName}.data_source IS NOT NULL;
 
 -- deal with records to be deleted
+UPDATE {script.fishTable} SET dam_id = NULL WHERE dam_id IN (SELECT cabd_id FROM {script.damUpdateTable} WHERE entry_classification = 'delete feature' AND update_status = 'ready');
 DELETE FROM {script.damAttributeTable} WHERE cabd_id IN (SELECT cabd_id FROM {script.damUpdateTable} WHERE entry_classification = 'delete feature' AND update_status = 'ready');
 DELETE FROM {script.damFeatureTable} WHERE cabd_id IN (SELECT cabd_id FROM {script.damUpdateTable} WHERE entry_classification = 'delete feature' AND update_status = 'ready');
 DELETE FROM {script.damTable} WHERE cabd_id IN (SELECT cabd_id FROM {script.damUpdateTable} WHERE entry_classification = 'delete feature' AND update_status = 'ready');
