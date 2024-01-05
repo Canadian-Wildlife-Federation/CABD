@@ -72,7 +72,8 @@ script.do_work(query)
 print("Loading additional ODI matches and new features")
 
 tableName = "source_data.odi_matches"
-file = r"C:\Users\kohearn\Canadian Wildlife Federation\Conservation Science General - Documents\Freshwater\Fish Passage\National Aquatic Barrier Database\GIS work folder\database_updates\nov_2023_updates\odi_missing_dams.gpkg"
+file = input("Filepath of additional ODI features:")
+# file = r"C:\Users\kohearn\Canadian Wildlife Federation\Conservation Science General - Documents\Freshwater\Fish Passage\National Aquatic Barrier Database\GIS work folder\database_updates\nov_2023_updates\odi_missing_dams.gpkg"
 
 orgDb="dbname='" + main.dbName + "' host='"+ main.dbHost+"' port='"+main.dbPort+"' user='"+main.dbUser+"' password='"+ main.dbPassword+"'"
 pycmd = '"' + main.ogr + '" -f "PostgreSQL" PG:"' + orgDb + '" -nln "' + tableName + '" -overwrite -lco GEOMETRY_NAME=geometry -nlt PROMOTE_TO_MULTI ' + '"' + file + '"'

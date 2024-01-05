@@ -1,4 +1,4 @@
-# This script loads a CSV into the database containing updated data sources for dams
+# This script loads a CSV into the database containing updated data sources for waterfalls
 
 import subprocess
 import sys
