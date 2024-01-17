@@ -1,9 +1,10 @@
-import psycopg2 as pg2
 import sys
 import argparse
 import configparser
 import ast
 from datetime import datetime
+import getpass
+import psycopg2 as pg2
 from psycopg2.extras import RealDictCursor
 
 startTime = datetime.now()
@@ -12,14 +13,12 @@ print("Start time:", startTime)
 #-- PARSE COMMAND LINE ARGUMENTS --  
 parser = argparse.ArgumentParser(description='Processing stream crossings.')
 parser.add_argument('-c', type=str, help='the configuration file', required=True)
-parser.add_argument('-user', type=str, help='the username to access the database')
-parser.add_argument('-password', type=str, help='the password to access the database')
 parser.add_argument('--copystreams', dest='streams', action='store_true', help='stream data needs to be copied')
 parser.add_argument('--ignorestreams', dest='streams', action='store_false', help='stream data is already present')
 args = parser.parse_args()
 configfile = args.c
 
-#-- READ PARAMETERS FOR CONFIG FILE -- 
+#-- READ PARAMETERS FOR CONFIG FILE --
 config = configparser.ConfigParser()
 config.read(configfile)
 
@@ -27,8 +26,8 @@ config.read(configfile)
 dbHost = config['DATABASE']['host']
 dbPort = config['DATABASE']['port']
 dbName = config['DATABASE']['name']
-dbUser = args.user
-dbPassword = args.password
+dbUser = input(f"""Enter username to access {dbName}:\n""")
+dbPassword = getpass.getpass(f"""Enter password to access {dbName}:\n""")
 
 #output data schema
 schema = config['DATABASE']['data_schema']
@@ -100,25 +99,25 @@ print (f"Rail Layers: {railLayers}")
 print ("----")
 
 #--
-#-- function to execute a query 
+#-- function to execute a query
 #--
 def executeQuery(conn, sql):
     #print (sql)
     with conn.cursor() as cursor:
         cursor.execute(sql)
     conn.commit()
-    
-    
+
+
 #--
 #-- checks if the first column of the first row
 #-- of the query results is 0 otherwise
 # -- ends the program
 #--
-def checkEmpty(conn, sql, error):    
+def checkEmpty(conn, sql, error):
     with conn.cursor() as cursor:
         cursor.execute(sql)
         count = cursor.fetchone()
-        if (count[0] != 0):
+        if count[0] != 0:
             print ("ERROR: " + error)
             sys.exit(-1)
 
@@ -147,7 +146,11 @@ def getStreamData(conn):
 
     def getChyfData(aoi_list):
 
-        aois = tuple(aoi_list)
+        if len(aoi_list) > 1:
+            aois = tuple(aoi_list)
+        else:
+            aois = str(tuple(aoi_list))
+            aois = aois.replace(",", "")
 
         print("Getting CHyF data")
 
@@ -180,7 +183,7 @@ def getStreamData(conn):
         CREATE TABLE {schema}.{streamPropTable} as SELECT * FROM chyf_flowpath_properties WHERE aoi_id IN {aois};
         """
         executeQuery(conn, sql)
-        
+
     def getNhnData(aoi_list):
 
         aois = tuple(aoi_list)
@@ -237,17 +240,17 @@ def getStreamData(conn):
             rows = cursor.fetchall()
 
         aoiChyf = []
-        
+
         for row in rows:
             id = row['id']
             name = row['short_name']
             aoiChyf.append(id)
-            
+
             if name in aoiNhn:
                 aoiNhn.remove(name)
             else:
                 continue
-            
+
     else:
         aoiQuery = f"""
             SELECT id, short_name from chyf_aoi
@@ -258,7 +261,7 @@ def getStreamData(conn):
             rows = cursor.fetchall()
 
         aoiChyf = []
-        
+
         for row in rows:
             id = row['id']
             name = row['short_name']
@@ -384,7 +387,7 @@ def clusterPoints(conn):
 
     idFields = ""
     for layer in nonRailLayers:
-        if (layer is None):
+        if layer is None:
             continue
         idFields = idFields + f'z.{layer}_{id},'
     idFields = idFields[:-1]
@@ -602,7 +605,7 @@ def processClusters(conn):
     fieldswithtype = ""
     fields = ""
     for layer in nonRailLayers:
-        if (layer is None):
+        if layer is None:
             continue
         fieldswithtype += f'{layer}_{id} integer,'
         fields += f'{layer}_{id},'
@@ -635,11 +638,11 @@ def processClusters(conn):
     idcasesql = ""
     typecasesql = ""
     for layer in nonRailLayers:
-        if (layer is None):
+        if layer is None:
             continue
         idcasesql += f'WHEN {layer}_{id} IS NOT NULL THEN {layer}_{id} '
         typecasesql += f"WHEN {layer}_{id} IS NOT NULL THEN '{layer}' "
-        
+
         sql = f"""
             INSERT INTO {schema}.temp2(cluster_id, {layer}_{id})
             SELECT cluster_id, max({layer}_{id}) as {layer}_{id} 
@@ -671,7 +674,7 @@ def processClusters(conn):
 
 
 def processRail(conn):
-    
+
     for layer in railLayers:
         print(f"Adding {layer} crossings to crossing points")
 
@@ -683,7 +686,7 @@ def processRail(conn):
         executeQuery(conn, sql)
 
         sql = f"""
-        ALTER TABLE {schema}.modelled_crossings ADD column id uuid;
+        ALTER TABLE {schema}.modelled_crossings ADD column IF NOT EXISTS id uuid;
         UPDATE {schema}.modelled_crossings SET id = gen_random_uuid();
         ALTER TABLE {schema}.modelled_crossings DROP COLUMN cluster_id;
         """
@@ -820,11 +823,17 @@ def processRail(conn):
         """
         executeQuery(conn, sql)
 
+    sql = f"""
+    ALTER TABLE {schema}.modelled_crossings ADD column IF NOT EXISTS id uuid;
+    UPDATE {schema}.modelled_crossings SET id = gen_random_uuid();
+    """
+    executeQuery(conn, sql)
+
 
 def matchArchive(conn):
 
     print("Matching ids to archived crossings")
-    
+
     query = f"""
         ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS new_crossing_type varchar;
         ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS reviewer_status varchar;
@@ -873,8 +882,8 @@ def matchArchive(conn):
         cursor.execute(query)
 
 def finalizeCrossings(conn):
-    
-    print(f"Adding layer attributes to crossing points: ")
+
+    print("Adding layer attributes to crossing points: ")
 
     # generate list of aliases to refer to each table
     prefix = []
@@ -883,7 +892,7 @@ def finalizeCrossings(conn):
         prefix.append(alpha)
         alpha = chr(ord(alpha) + 1)
 
-    sql = f"select cp.*,"
+    sql = "select cp.*,"
     sqlfrom = f" {schema}.modelled_crossings cp "
 
     idx = 0
@@ -901,7 +910,7 @@ def finalizeCrossings(conn):
 
         for val in attributeValues:
             sql += f"{prefix[idx]}.{val},"
-        
+
         sqlfrom += f" left join {schema}.{k} {prefix[idx]} on {prefix[idx]}.{id} = cp.transport_feature_id and cp.transport_feature_source = '{k}' "
 
         idx = idx + 1
@@ -1019,7 +1028,7 @@ def main():
                     host=dbHost, 
                     password=dbPassword, 
                     port=dbPort)
-    
+
     if args.streams:
         print("Copying streams into schema")
         getStreamData(conn)
