@@ -298,15 +298,18 @@ def getStreamData(conn):
     if aoiChyf:
         getChyfData(aoiChyf)
 
+        sql = f"""
+        CREATE INDEX {schema}_{streamPropTable}_id on {schema}.{streamPropTable} (id);
+        ANALYZE {schema}.{streamPropTable};
+        """
+        executeQuery(conn, sql)
+
     if aoiNhn:
         getNhnData(aoiNhn)
-    
+
     sql = f"""
         CREATE INDEX {schema}_{streamTable}_{geometry} on {schema}.{streamTable} using gist({geometry}); 
         CREATE INDEX {schema}_{streamTable}_id on {schema}.{streamTable} (id);
-        CREATE INDEX {schema}_{streamPropTable}_id on {schema}.{streamPropTable} (id);
-        
-        ANALYZE {schema}.{streamPropTable};
         ANALYZE {schema}.{streamTable};
     """
     executeQuery(conn, sql)
@@ -317,23 +320,25 @@ def getStreamData(conn):
     """
     executeQuery(conn, sql)
 
-    # warn user if stream data has not been fetched
-    sql = f"SELECT case when count(*) = 0 then 1 else 0 end FROM {schema}.{streamTable}"
-    checkEmpty(conn, sql, "stream table is empty")
+    if aoiChyf:
+        sql = f"SELECT case when count(*) = 0 then 1 else 0 end FROM {schema}.{streamPropTable}"
+        checkEmpty(conn, sql, "stream property table is empty")
 
-    sql = f"SELECT case when count(*) = 0 then 1 else 0 end FROM {schema}.{streamPropTable}"
-    checkEmpty(conn, sql, "stream property table is empty")
+    else:
+        # warn user if stream data has not been fetched
+        sql = f"SELECT case when count(*) = 0 then 1 else 0 end FROM {schema}.{streamTable}"
+        checkEmpty(conn, sql, "stream table is empty")
 
 # ----
 # -- compute modelled crossings for each layer
 # ----
 def computeCrossings(conn):
     for layer in layers:
-        if (layer is None):
+        if layer is None:
             continue
-        
+
         print("Computing crossings for " + layer)
-        
+
         computeCrossing = f"""
             DROP TABLE IF EXISTS {schema}.{layer}_crossings;
         
@@ -463,7 +468,7 @@ def processClusters(conn):
 
         print(layer)
 
-        if (layer is None):
+        if layer is None:
             continue
 
         print(f"""Computing point to keep for cluster with {layer} crossings""")
@@ -500,18 +505,28 @@ def processClusters(conn):
 
         --add upstream length
         ALTER TABLE  {schema}.cluster_{layer}_id ADD COLUMN upstream_length double precision;
+        """
+        executeQuery(conn,sql)
 
-        UPDATE {schema}.cluster_{layer}_id 
-        SET upstream_length = CASE WHEN a.max_uplength IS NULL THEN b.length ELSE a.max_uplength + b.length END
-        FROM {schema}.{streamPropTable} a JOIN {schema}.{streamTable} b on a.id = b.id 
-        where {schema}.cluster_{layer}_id.chyf_stream_id = a.id;
+        propTableExist = checkTableExists(conn, streamPropTable)
 
-        --case statement above is to deal with secondaries - these have no upstream length
-        --there were a few cases where these were crossed by they were all on the same edge so it 
-        --doesn't matter
-        --we are using this up length to determine which edge to pick when there is more than
-        --one stream edge being crossed
-        
+        if propTableExist:
+
+            sql = f"""
+            UPDATE {schema}.cluster_{layer}_id 
+            SET upstream_length = CASE WHEN a.max_uplength IS NULL THEN b.length ELSE a.max_uplength + b.length END
+            FROM {schema}.{streamPropTable} a JOIN {schema}.{streamTable} b on a.id = b.id 
+            where {schema}.cluster_{layer}_id.chyf_stream_id = a.id;
+
+            --case statement above is to deal with secondaries - these have no upstream length
+            --there were a few cases where these were crossed by they were all on the same edge so it 
+            --doesn't matter
+            --we are using this up length to determine which edge to pick when there is more than
+            --one stream edge being crossed
+            """
+            executeQuery(conn, sql)
+
+        sql = f"""
         --new addition to deal with flowpaths that are from unprocessed NHN (no chyf_properties table)
         UPDATE {schema}.cluster_{layer}_id 
         SET upstream_length = b.length
@@ -706,12 +721,22 @@ def processRail(conn):
         WHERE e.id = {schema}.close_points.chyf_stream_id;
 
         ALTER TABLE {schema}.close_points ADD COLUMN upstream_length double precision;
+        """
+        executeQuery(conn, sql)
 
-        UPDATE {schema}.close_points 
-        SET upstream_length = CASE WHEN a.max_uplength is null THEN b.length ELSE a.max_uplength + b.length END
-        FROM {schema}.{streamPropTable} a join {schema}.{streamTable} b on a.id = b.id 
-        WHERE {schema}.close_points.chyf_stream_id = a.id;
+        propTableExist = checkTableExists(conn, streamPropTable)
 
+        if propTableExist:
+
+            sql = f"""
+            UPDATE {schema}.close_points 
+            SET upstream_length = CASE WHEN a.max_uplength is null THEN b.length ELSE a.max_uplength + b.length END
+            FROM {schema}.{streamPropTable} a join {schema}.{streamTable} b on a.id = b.id 
+            WHERE {schema}.close_points.chyf_stream_id = a.id;
+            """
+            executeQuery(conn, sql)
+
+        sql = f"""
         --new addition to deal with flowpaths that are from unprocessed NHN (no chyf_properties table)
         UPDATE {schema}.close_points
         SET upstream_length = b.length
@@ -724,7 +749,6 @@ def processRail(conn):
         SELECT cluster_id, max(upstream_length) as max_length from {schema}.close_points 
         GROUP BY cluster_id;
 
-
         --map the cluster to the edge
         DROP TABLE IF EXISTS {schema}.temp4;
         CREATE TABLE {schema}.temp4 AS
@@ -732,14 +756,12 @@ def processRail(conn):
         FROM {schema}.close_points b, {schema}.temp3 a
         WHERE a.cluster_id = b.cluster_id and b.upstream_length = a.max_length;
 
-
         --for the flowpath we want to find the most downstream point in the cluster
         DROP TABLE IF EXISTS {schema}.temp5;
         CREATE TABLE {schema}.temp5 as 
         SELECT a.cluster_id , max(point_on_line) as min_pol
         FROM {schema}.close_points a JOIN {schema}.temp4 b on a.cluster_id = b.cluster_id and a.chyf_stream_id = b.chyf_stream_id
         GROUP BY a.cluster_id;
-
         """
         executeQuery(conn, sql)
 
@@ -915,7 +937,20 @@ def finalizeCrossings(conn):
 
     UPDATE {schema}.modelled_crossings SET stream_name_1 = n.name_en FROM public.{streamNameTable} n WHERE rivernameid1 = n.name_id::varchar;
     UPDATE {schema}.modelled_crossings SET stream_name_2 = n.name_en FROM public.{streamNameTable} n WHERE rivernameid2 = n.name_id::varchar;
-    UPDATE {schema}.modelled_crossings SET strahler_order = p.strahler_order FROM {schema}.{streamPropTable} p WHERE chyf_stream_id = p.id;
+    """
+    executeQuery(conn, sql)
+
+    propTableExist = checkTableExists(conn, streamPropTable)
+
+    if propTableExist:
+
+        sql = f"""
+        UPDATE {schema}.modelled_crossings SET strahler_order = p.strahler_order FROM {schema}.{streamPropTable} p WHERE chyf_stream_id = p.id;
+        """
+
+        executeQuery(conn, sql)
+
+    sql = f"""
 
     ALTER TABLE {schema}.modelled_crossings
         ADD CONSTRAINT {schema}_crossing_type_fkey FOREIGN KEY (new_crossing_type)
@@ -923,11 +958,11 @@ def finalizeCrossings(conn):
         ON UPDATE NO ACTION
         ON DELETE NO ACTION;
 
-    GRANT USAGE ON SCHEMA {schema} TO gistech;
-    GRANT SELECT ON ALL TABLES IN SCHEMA {schema} TO gistech;
-    GRANT UPDATE(new_crossing_type) ON {schema}.modelled_crossings TO gistech;
-    GRANT UPDATE(reviewer_status) ON {schema}.modelled_crossings TO gistech;
-    GRANT UPDATE(reviewer_comments) ON {schema}.modelled_crossings TO gistech;
+    GRANT USAGE ON SCHEMA {schema} TO cwf_user;
+    GRANT SELECT ON ALL TABLES IN SCHEMA {schema} TO cwf_user;
+    GRANT UPDATE(new_crossing_type) ON {schema}.modelled_crossings TO cwf_user;
+    GRANT UPDATE(reviewer_status) ON {schema}.modelled_crossings TO cwf_user;
+    GRANT UPDATE(reviewer_comments) ON {schema}.modelled_crossings TO cwf_user;
     """
     executeQuery(conn, sql)
 
