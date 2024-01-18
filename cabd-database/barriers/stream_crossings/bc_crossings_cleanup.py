@@ -1,10 +1,10 @@
-import psycopg2 as pg2
 import sys
 import argparse
 import configparser
-import ast
+import getpass
+import psycopg2 as pg2
 
-#-- PARSE COMMAND LINE ARGUMENTS --  
+#-- PARSE COMMAND LINE ARGUMENTS --
 parser = argparse.ArgumentParser(description='Processing stream crossings.')
 parser.add_argument('-c', type=str, help='the configuration file', required=True)
 parser.add_argument('-user', type=str, help='the username to access the database')
@@ -12,16 +12,16 @@ parser.add_argument('-password', type=str, help='the password to access the data
 args = parser.parse_args()
 configfile = args.c
 
-#-- READ PARAMETERS FOR CONFIG FILE -- 
+#-- READ PARAMETERS FOR CONFIG FILE --
 config = configparser.ConfigParser()
 config.read(configfile)
 
-#database settings 
+#database settings
 dbHost = config['DATABASE']['host']
 dbPort = config['DATABASE']['port']
 dbName = config['DATABASE']['name']
-dbUser = args.user
-dbPassword = args.password
+dbUser = input(f"""Enter username to access {dbName}:\n""")
+dbPassword = getpass.getpass(f"""Enter password to access {dbName}:\n""")
 
 #output data schema
 schema = config['DATABASE']['data_schema']
@@ -50,14 +50,14 @@ print (f"Id/Geometry Fields: {id} {geometry}")
 print ("----")
 
 #--
-#-- function to execute a query 
+#-- function to execute a query
 #--
 def executeQuery(conn, sql):
     #print (sql)
     with conn.cursor() as cursor:
         cursor.execute(sql)
     conn.commit()
-    
+
 #--
 #-- checks if the first column of the first row
 #-- of the query results is 0 otherwise
@@ -66,7 +66,7 @@ def checkEmpty(conn, sql, error):
     with conn.cursor() as cursor:
         cursor.execute(sql)
         count = cursor.fetchone()
-        if (count[0] != 0):
+        if count[0] != 0:
             print ("ERROR: " + error)
             sys.exit(-1)
 
@@ -92,7 +92,7 @@ def getCrossings(conn):
     """
     executeQuery(conn, sql)
 
-def clipToWatershed(conn):
+def clipToWatershed(conn, aois):
 
     print("Clipping to watershed extent")
 
@@ -255,18 +255,18 @@ def checkCrossingLocations(conn):
     HAVING COUNT(*) > 1;
     """
 
-    while (True):
-        
+    while True:
+
         with conn.cursor() as cursor:
             cursor.execute(checkQuery)
             row = cursor.fetchone()
-        
+
         print("-----------------------------")
         print("ERROR: Some crossings intersect multiple streams\nPlease review and snap these (using the snapped_point geometry) to a single stream before continuing\nUse the following query to find these streams and compare to FWA networks for location:")
         print(checkQuery)
         input("Press any key to continue cleanup...")
         print("-----------------------------")
-        
+
         if row is None:
             print("All crossings have been fixed!")
             break
@@ -349,12 +349,12 @@ def main():
 
     print("Connecting to database...")
 
-    conn = pg2.connect(database=dbName, 
-                   user=dbUser, 
-                   host=dbHost, 
-                   password=dbPassword, 
+    conn = pg2.connect(database=dbName,
+                   user=dbUser,
+                   host=dbHost,
+                   password=dbPassword,
                    port=dbPort)
-    
+
     getCrossings(conn)
     # clipToWatershed(conn)
     addColumns(conn)

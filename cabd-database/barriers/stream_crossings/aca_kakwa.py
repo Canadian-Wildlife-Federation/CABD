@@ -1,33 +1,32 @@
-import psycopg2 as pg2
 import argparse
 import configparser
 import subprocess
 from datetime import datetime
 from pathlib import Path
+import getpass
+import psycopg2 as pg2
 
 startTime = datetime.now()
 print("Start time:", startTime)
 
-#-- PARSE COMMAND LINE ARGUMENTS --  
+#-- PARSE COMMAND LINE ARGUMENTS --
 parser = argparse.ArgumentParser(description='Processing stream crossings.')
 parser.add_argument('-c', type=str, help='the configuration file', required=True)
-parser.add_argument('-user', type=str, help='the username to access the database')
-parser.add_argument('-password', type=str, help='the password to access the database')
 parser.add_argument('-file', type=str, help='the file containing assessment data', required=True)
 parser.add_argument('-distance', type=int, help='the distance in meters for matching points', required=True)
 args = parser.parse_args()
 configfile = args.c
 
-#-- READ PARAMETERS FOR CONFIG FILE -- 
+#-- READ PARAMETERS FOR CONFIG FILE --
 config = configparser.ConfigParser()
 config.read(configfile)
 
-#database settings 
+#database settings
 dbHost = config['DATABASE']['host']
 dbPort = config['DATABASE']['port']
 dbName = config['DATABASE']['name']
-dbUser = args.user
-dbPassword = args.password
+dbUser = input(f"""Enter username to access {dbName}:\n""")
+dbPassword = getpass.getpass(f"""Enter password to access {dbName}:\n""")
 
 #assessment data
 dataFile = args.file
@@ -55,7 +54,7 @@ ogr = "C:\\Program Files\\GDAL\\ogr2ogr.exe"
 #ogr = "C:\\Program Files\\QGIS 3.22.3\\bin\\ogr2ogr.exe"
 
 print ("-- Parameters --")
-print (f"Database: {dbHost}:{dbPorSt}/{dbName}")
+print (f"Database: {dbHost}:{dbPort}/{dbName}")
 print (f"Data Schema: {schema}")
 print (f"CABD SRID: {cabdSRID}")
 print (f"Meters Projection: {mSRID} ")
@@ -70,14 +69,14 @@ def loadData(conn, file):
     # load updates into a table
     orgDb="dbname='" + dbName + "' host='" + dbHost + "' port='" + dbPort + "' user='" + dbUser + "' password='" + dbPassword + "'"
 
-    pycmd = '"' + ogr + '" -overwrite -f "PostgreSQL" PG:"' + orgDb + '" -t_srs EPSG:' + mSRID + ' -nln "' + schema + '.' + targetTable + '" -lco GEOMETRY_NAME=geometry "' + dataFile + '"'
+    pycmd = '"' + ogr + '" -overwrite -f "PostgreSQL" PG:"' + orgDb + '" -t_srs EPSG:' + mSRID + ' -nln "' + schema + '.' + targetTable + '" -lco GEOMETRY_NAME=geometry "' + file + '"'
     print(pycmd)
     subprocess.run(pycmd)
 
     query = f"""
     ALTER TABLE {schema}.{targetTable} ADD COLUMN unique_id uuid;
     UPDATE {schema}.{targetTable} SET unique_id = gen_random_uuid();
-    ALTER TABLE {schema}.{targetTable} OWNER TO developer;
+    ALTER TABLE {schema}.{targetTable} OWNER TO cwf_analyst;
     """
     with conn.cursor() as cursor:
         cursor.execute(query)
@@ -145,20 +144,19 @@ def mapAttributes(conn):
 
 def main():
 
-    # -- MAIN SCRIPT --  
+    # -- MAIN SCRIPT --
 
     print("Connecting to database...")
 
-    conn = pg2.connect(database=dbName, 
-                    user=dbUser, 
-                    host=dbHost, 
-                    password=dbPassword, 
+    conn = pg2.connect(database=dbName,
+                    user=dbUser,
+                    host=dbHost,
+                    password=dbPassword,
                     port=dbPort)
-    
+
     loadData(conn, dataFile)
     matchIds(conn)
-    mapAttributes(conn)
-    
+
     print("Done!")
     endTime = datetime.now()
     print("End time:", endTime)

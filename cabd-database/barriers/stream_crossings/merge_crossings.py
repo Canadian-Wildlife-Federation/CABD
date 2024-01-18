@@ -1,22 +1,21 @@
 import argparse
+import getpass
 import psycopg2 as pg2
 
-#-- PARSE COMMAND LINE ARGUMENTS --  
+#-- PARSE COMMAND LINE ARGUMENTS --
 parser = argparse.ArgumentParser(description='Processing stream crossings.')
-parser.add_argument('-user', type=str, help='the username to access the database')
-parser.add_argument('-password', type=str, help='the password to access the database')
 parser.add_argument('-table', type=str, help='the table to hold final data')
 args = parser.parse_args()
 
-#database settings 
+#database settings
 dbHost = 'cabd-postgres.postgres.database.azure.com'
 dbPort = '5432'
 dbName = 'cabd'
 dbSchema = 'stream_crossings'
 cabdSRID = 4617
 mSRID = 3347
-dbUser = args.user
-dbPassword = args.password
+dbUser = input(f"""Enter username to access {dbName}:\n""")
+dbPassword = getpass.getpass(f"""Enter password to access {dbName}:\n""")
 
 targetTable = args.table
 
@@ -87,7 +86,7 @@ def loadData(conn, table):
     with conn.cursor() as cursor:
         cursor.execute(sql)
         result = cursor.fetchall()
-    
+
     if not result:
         pass
     else:
@@ -98,9 +97,9 @@ def loadData(conn, table):
                 colList = colList + f"""{columnName}"""
             else:
                 colList = colList + f"""{columnName},\n"""
-        
+
         sql = f"""INSERT INTO {dbSchema}.{targetTable} ({colList})\nSELECT {colList} FROM {schemaName}.{tableName};"""
-        
+
         with conn.cursor() as cursor:
             cursor.execute(sql)
         conn.commit()
@@ -137,18 +136,18 @@ def finalizeAttributes(conn, table):
 
 def main():
 
-    # -- MAIN SCRIPT --  
+    # -- MAIN SCRIPT --
 
     print("Connecting to database...")
 
-    conn = pg2.connect(database=dbName, 
-                    user=dbUser, 
-                    host=dbHost, 
-                    password=dbPassword, 
+    conn = pg2.connect(database=dbName,
+                    user=dbUser,
+                    host=dbHost,
+                    password=dbPassword,
                     port=dbPort)
-    
+
     createTable(conn, targetTable)
-    
+
     for table in sourceTables:
         loadData(conn, table)
 

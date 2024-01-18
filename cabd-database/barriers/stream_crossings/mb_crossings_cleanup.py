@@ -2,13 +2,12 @@ import sys
 import argparse
 import configparser
 import ast
+import getpass
 import psycopg2 as pg2
 
 #-- PARSE COMMAND LINE ARGUMENTS --
 parser = argparse.ArgumentParser(description='Processing stream crossings.')
 parser.add_argument('-c', type=str, help='the configuration file', required=True)
-parser.add_argument('-user', type=str, help='the username to access the database')
-parser.add_argument('-password', type=str, help='the password to access the database')
 args = parser.parse_args()
 configfile = args.c
 
@@ -20,8 +19,8 @@ config.read(configfile)
 dbHost = config['DATABASE']['host']
 dbPort = config['DATABASE']['port']
 dbName = config['DATABASE']['name']
-dbUser = args.user
-dbPassword = args.password
+dbUser = input(f"""Enter username to access {dbName}:\n""")
+dbPassword = getpass.getpass(f"""Enter password to access {dbName}:\n""")
 
 #output data schema
 schema = config['DATABASE']['data_schema']
@@ -91,7 +90,7 @@ def executeQuery(connection, sql):
 #-- checks if the first column of the first row
 #-- of the query results is 0 otherwise
 # -- ends the program
-def checkEmpty(connection, sql, error):  
+def checkEmpty(connection, sql, error):
     with connection.cursor() as cursor:
         cursor.execute(sql)
         count = cursor.fetchone()

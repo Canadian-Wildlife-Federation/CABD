@@ -1,28 +1,27 @@
-import psycopg2 as pg2
 import sys
 import argparse
 import configparser
 import ast
+import getpass
+import psycopg2 as pg2
 
 
-#-- PARSE COMMAND LINE ARGUMENTS --  
+#-- PARSE COMMAND LINE ARGUMENTS -- 
 parser = argparse.ArgumentParser(description='Processing stream crossings.')
 parser.add_argument('-c', type=str, help='the configuration file', required=True)
-parser.add_argument('-user', type=str, help='the username to access the database')
-parser.add_argument('-password', type=str, help='the password to access the database')
 args = parser.parse_args()
 configfile = args.c
 
-#-- READ PARAMETERS FOR CONFIG FILE -- 
+#-- READ PARAMETERS FOR CONFIG FILE --
 config = configparser.ConfigParser()
 config.read(configfile)
 
-#database settings 
+#database settings
 dbHost = config['DATABASE']['host']
 dbPort = config['DATABASE']['port']
 dbName = config['DATABASE']['name']
-dbUser = args.user
-dbPassword = args.password
+dbUser = input(f"""Enter username to access {dbName}:\n""")
+dbPassword = getpass.getpass(f"""Enter password to access {dbName}:\n""")
 
 #output data schema
 schema = config['DATABASE']['data_schema']
@@ -77,35 +76,35 @@ print (f"Id/Geometry Fields: {id} {geometry}")
 print ("----")
 
 #--
-#-- function to execute a query 
+#-- function to execute a query
 #--
 def executeQuery(connection, sql):
     #print (sql)
     with connection.cursor() as cursor:
         cursor.execute(sql)
     conn.commit()
-    
+
 #--
 #-- checks if the first column of the first row
 #-- of the query results is 0 otherwise
 # -- ends the program
-def checkEmpty(connection, sql, error):    
+def checkEmpty(connection, sql, error):
     with connection.cursor() as cursor:
         cursor.execute(sql)
         count = cursor.fetchone()
-        if (count[0] != 0):
+        if count[0] != 0:
             print ("ERROR: " + error)
             sys.exit(-1)
-    
 
-# -- MAIN SCRIPT --  
+
+# -- MAIN SCRIPT --
 
 print("Connecting to database...")
 
-conn = pg2.connect(database=dbName, 
-                   user=dbUser, 
-                   host=dbHost, 
-                   password=dbPassword, 
+conn = pg2.connect(database=dbName,
+                   user=dbUser,
+                   host=dbHost,
+                   password=dbPassword,
                    port=dbPort)
 
 sql = f"SELECT count(*) FROM {schema}.modelled_crossings WHERE {mGeometry} is null;"
@@ -218,10 +217,10 @@ sql = f"""
 ALTER TABLE {schema}.modelled_crossings ALTER COLUMN transport_feature_id TYPE varchar;
 UPDATE {schema}.modelled_crossings SET transport_feature_id = 
     CASE
-    WHEN reseau_ferroviaire_uuid IS NOT NULL THEN reseau_ferroviaire_uuid::varchar
-    WHEN reseau_routier_uuid IS NOT NULL THEN reseau_routier_uuid::varchar
-    WHEN route_verte_uuid IS NOT NULL THEN route_verte_uuid::varchar
-    WHEN sentiers_quad_fqcq_uuid IS NOT NULL THEN sentiers_quad_fqcq_uuid::varchar
+    WHEN transport_feature_source = '{railTable[0]}' THEN reseau_ferroviaire_uuid::varchar
+    WHEN transport_feature_source = '{roadsTable[0]}' THEN reseau_routier_uuid::varchar
+    WHEN transport_feature_source = '{trailTable[0]}' THEN sentiers_quad_fqcq_uuid::varchar
+    WHEN transport_feature_source = '{trailTable[1]}' THEN route_verte_uuid::varchar
     ELSE NULL END;
 """
 executeQuery(conn, sql)
@@ -261,7 +260,7 @@ create table {schema}.parallel_crossings as (
 	order by cn desc
 );
 
-grant select on {schema}.parallel_crossings to gistech;
+grant select on {schema}.parallel_crossings to cwf_user;
 """
 executeQuery(conn, sql)
 

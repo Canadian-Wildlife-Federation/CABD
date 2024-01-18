@@ -1,22 +1,18 @@
-import psycopg2 as pg2
-import subprocess
-import os
 import argparse
 import configparser
 import getpass
+import psycopg2 as pg2
 from compute_stream_crossings import getStreamData
 
 parser = argparse.ArgumentParser(description='Processing stream crossings.')
 parser.add_argument('-c', type=str, help='the configuration file', required=True)
-parser.add_argument('-user', type=str, help='the username to access the database')
-parser.add_argument('-password', type=str, help='the password to access the database')
 parser.add_argument('--copystreams', dest='streams', action='store_true', help='stream data needs to be copied')
 parser.add_argument('--ignorestreams', dest='streams', action='store_false', help='stream data is already present')
 # parser.set_defaults(streams=False)
 args = parser.parse_args()
 configfile = args.c
 
-#-- READ PARAMETERS FOR CONFIG FILE -- 
+#-- READ PARAMETERS FOR CONFIG FILE --
 config = configparser.ConfigParser()
 config.read(configfile)
 
@@ -24,8 +20,8 @@ config.read(configfile)
 dbHost = config['DATABASE']['host']
 dbPort = config['DATABASE']['port']
 dbName = config['DATABASE']['name']
-dbUser = args.user
-dbPassword = args.password
+dbUser = input(f"""Enter username to access {dbName}:\n""")
+dbPassword = getpass.getpass(f"""Enter password to access {dbName}:\n""")
 
 #database settings - bc
 bcDbHost = '159.203.55.129'
@@ -40,17 +36,17 @@ cabdSRID = config['DATABASE']['cabdSRID']
 mSRID  = config['SETTINGS']['mSRID']
 
 def log(message):
-    if (1):
+    if 1:
         print(message)
-        
+
 #alternate ogr options
 ogr = "C:\\Program Files\\GDAL\\ogr2ogr.exe"
 #ogr = "C:\\Program Files\\QGIS 3.22.3\\bin\\ogr2ogr.exe"
 
-conn = pg2.connect(database=dbName, 
-                   user=dbUser, 
-                   host=dbHost, 
-                   password=dbPassword, 
+conn = pg2.connect(database=dbName,
+                   user=dbUser,
+                   host=dbHost,
+                   password=dbPassword,
                    port=dbPort)
 
 print("Loading data from bcfishpass_server")
@@ -233,5 +229,5 @@ else:
     print("Skipping copy of stream data")
 
 conn.commit()
-      
+
 log("LOAD DONE")

@@ -19,4 +19,4 @@ create table {schema}.parallel_crossings as (
 	order by cn desc
 );
 
-grant select on {schema}.parallel_crossings to gistech;
+grant select on {schema}.parallel_crossings to cwf_user;

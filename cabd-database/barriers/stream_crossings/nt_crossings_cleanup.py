@@ -1,28 +1,27 @@
-import psycopg2 as pg2
 import sys
 import argparse
 import configparser
 import ast
+import getpass
+import psycopg2 as pg2
 
 
-#-- PARSE COMMAND LINE ARGUMENTS --  
+#-- PARSE COMMAND LINE ARGUMENTS --
 parser = argparse.ArgumentParser(description='Processing stream crossings.')
 parser.add_argument('-c', type=str, help='the configuration file', required=True)
-parser.add_argument('-user', type=str, help='the username to access the database')
-parser.add_argument('-password', type=str, help='the password to access the database')
 args = parser.parse_args()
 configfile = args.c
 
-#-- READ PARAMETERS FOR CONFIG FILE -- 
+#-- READ PARAMETERS FOR CONFIG FILE --
 config = configparser.ConfigParser()
 config.read(configfile)
 
-#database settings 
+#database settings
 dbHost = config['DATABASE']['host']
 dbPort = config['DATABASE']['port']
 dbName = config['DATABASE']['name']
-dbUser = args.user
-dbPassword = args.password
+dbUser = input(f"""Enter username to access {dbName}:\n""")
+dbPassword = getpass.getpass(f"""Enter password to access {dbName}:\n""")
 
 #output data schema
 schema = config['DATABASE']['data_schema']
@@ -51,7 +50,7 @@ resourceRoadsTable = None if not resourceRoadsTable else resourceRoadsTable
 trailTable = None if not trailTable else trailTable
 
 #geometry and unique id fields from the above tables
-#id MUST be an integer 
+#id MUST be an integer
 geometry = config['DATASETS']['geometryField'].strip()
 id = config['DATASETS']['idField'].strip()
 
@@ -81,7 +80,7 @@ railStructureLine = 'nrwn_nt_structure_ln'
 railStructurePt = 'nrwn_nt_structure_pt'
 
 #--
-#-- function to execute a query 
+#-- function to execute a query
 #--
 def executeQuery(connection, sql):
     #print (sql)
@@ -93,23 +92,23 @@ def executeQuery(connection, sql):
 #-- checks if the first column of the first row
 #-- of the query results is 0 otherwise
 # -- ends the program
-def checkEmpty(connection, sql, error):    
+def checkEmpty(connection, sql, error):
     with connection.cursor() as cursor:
         cursor.execute(sql)
         count = cursor.fetchone()
-        if (count[0] != 0):
+        if count[0] != 0:
             print ("ERROR: " + error)
             sys.exit(-1)
-    
 
-# -- MAIN SCRIPT --  
+
+# -- MAIN SCRIPT --
 
 print("Connecting to database...")
 
-conn = pg2.connect(database=dbName, 
-                   user=dbUser, 
-                   host=dbHost, 
-                   password=dbPassword, 
+conn = pg2.connect(database=dbName,
+                   user=dbUser,
+                   host=dbHost,
+                   password=dbPassword,
                    port=dbPort)
 
 sql = f"SELECT count(*) FROM {schema}.modelled_crossings WHERE {mGeometry} is null;"
@@ -249,7 +248,7 @@ create table {schema}.parallel_crossings as (
 	order by cn desc
 );
 
-grant select on {schema}.parallel_crossings to gistech;
+grant select on {schema}.parallel_crossings to cwf_user;
 """
 executeQuery(conn, sql)
 
