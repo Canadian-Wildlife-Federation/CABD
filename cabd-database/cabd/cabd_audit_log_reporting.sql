@@ -94,7 +94,7 @@ left join changeset b on a.cabd_id = b.cabd_id and a.field = b.field and a.sorto
 
 -- the view for dams
 drop view if exists cabd.dams_audit_log_vw;
-create view cabd.dams_audit_log_vw as
+create or replace view cabd.dams_audit_log_vw as
 with dams_audit_log as (
 --insert
 select l.cabd_id, l.revision, l.datetime, l.action,p.id as field_name, newvalues->p.id as newvalue, cast(null as jsonb) as oldvalue
@@ -103,7 +103,7 @@ cabd.audit_log l
 cross join jsonb_each_text(newvalues) as p(id,data)
 where tablename  = 'dams' and schemaname ='dams' and action = 'INSERT' 
 and p.data is not null
-and p.id != 'last_modified'
+and p.id not in ( 'last_modified', 'snapped_ncc', 'snapped_point')
 union 
 --update
 select l.cabd_id, l.revision, l.datetime, l.action, p.id as field_name, newvalues->p.id as newvalue, oldvalues->p.id as oldvalue
@@ -111,7 +111,7 @@ from
 cabd.audit_log l
 cross join jsonb_each_text(oldvalues) as p(id,data) 
 where tablename  = 'dams' and schemaname ='dams' and action = 'UPDATE' 
-and p.id != 'last_modified'
+and p.id not in ( 'last_modified', 'snapped_ncc', 'snapped_point')
 union
 --delete
 select l.cabd_id, l.revision, l.datetime, l.action, null as field_name, null as newvalue, null as oldvalue
@@ -299,7 +299,7 @@ left join dams.condition_codes cco on cco.code = case when l.field_name = 'condi
 
 -- view for waterfalls --
 drop view if exists cabd.waterfalls_audit_log_vw;
-create view cabd.waterfalls_audit_log_vw as
+create or replace view cabd.waterfalls_audit_log_vw as
 with waterfalls_audit_log as (
 --insert
 select l.cabd_id, l.revision, l.datetime, l.action,p.id as field_name, newvalues->p.id as newvalue, cast(null as jsonb) as oldvalue
@@ -308,7 +308,7 @@ cabd.audit_log l
 cross join jsonb_each_text(newvalues) as p(id,data)
 where tablename  = 'waterfalls' and schemaname ='waterfalls' and action = 'INSERT' 
 and p.data is not null
-and p.id != 'last_modified'
+and p.id not in ( 'last_modified', 'snapped_ncc', 'snapped_point')
 union 
 --update
 select l.cabd_id, l.revision, l.datetime, l.action, p.id as field_name, newvalues->p.id as newvalue, oldvalues->p.id as oldvalue
@@ -316,7 +316,7 @@ from
 cabd.audit_log l
 cross join jsonb_each_text(oldvalues) as p(id,data) 
 where tablename  = 'waterfalls' and schemaname ='waterfalls' and action = 'UPDATE' 
-and p.id != 'last_modified'
+and p.id not in ( 'last_modified', 'snapped_ncc', 'snapped_point')
 union
 --delete
 select l.cabd_id, l.revision, l.datetime, l.action, null as field_name, null as newvalue, null as oldvalue
@@ -387,7 +387,7 @@ left join waterfalls.waterfall_type_codes tco on tco.code = case when l.field_na
 ;
 
 drop view if exists cabd.fishways_audit_log_vw;
-create view cabd.fishways_audit_log_vw as
+create or replace view cabd.fishways_audit_log_vw as
 with fishways_audit_log as (
 --insert
 select l.cabd_id, l.revision, l.datetime, l.action,p.id as field_name, newvalues->p.id as newvalue, cast(null as jsonb) as oldvalue
@@ -396,7 +396,7 @@ cabd.audit_log l
 cross join jsonb_each_text(newvalues) as p(id,data)
 where tablename  = 'fishways' and schemaname ='fishways' and action = 'INSERT' 
 and p.data is not null
-and p.id != 'last_modified'
+and p.id not in ( 'last_modified', 'snapped_ncc', 'snapped_point')
 union 
 --update
 select l.cabd_id, l.revision, l.datetime, l.action, p.id as field_name, newvalues->p.id as newvalue, oldvalues->p.id as oldvalue
@@ -404,7 +404,7 @@ from
 cabd.audit_log l
 cross join jsonb_each_text(oldvalues) as p(id,data) 
 where tablename  = 'fishways' and schemaname ='fishways' and action = 'UPDATE' 
-and p.id != 'last_modified'
+and p.id not in ( 'last_modified', 'snapped_ncc', 'snapped_point')
 union
 --delete
 select l.cabd_id, l.revision, l.datetime, l.action, null as field_name, null as newvalue, null as oldvalue
