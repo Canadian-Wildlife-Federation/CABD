@@ -44,7 +44,8 @@ public class UserFeatureUpdateDao {
 		if (cabdFeature == null)
 			throw new NotFoundException("Feature not found");
 
-		Contact c = contactDao.getUpdateOrCreateContact(changeRequest.getEmail(), changeRequest.getName(), changeRequest.getOrganization());
+		Contact c = contactDao.getUpdateOrCreateContact(changeRequest.getEmail(), 
+				changeRequest.getName(), changeRequest.getOrganization(), changeRequest.getMailinglist());
 		
 		StringBuilder sb = new StringBuilder();
 		sb.append("INSERT INTO ");
