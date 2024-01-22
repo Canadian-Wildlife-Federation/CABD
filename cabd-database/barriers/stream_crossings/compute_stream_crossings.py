@@ -22,7 +22,7 @@ configfile = args.c
 config = configparser.ConfigParser()
 config.read(configfile)
 
-#database settings 
+#database settings
 dbHost = config['DATABASE']['host']
 dbPort = config['DATABASE']['port']
 dbName = config['DATABASE']['name']
