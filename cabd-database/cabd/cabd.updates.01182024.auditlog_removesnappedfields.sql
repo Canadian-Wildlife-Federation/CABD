@@ -26,7 +26,7 @@ begin
   newvalues := js_new - js_old;
 
   if (oldvalues <> '{}' OR newvalues <> '{}') then
-    --log change only if these is a change;
+    --log change only if there is a change;
     INSERT INTO cabd.audit_log(action, schemaname, tablename, cabd_id, oldvalues, newvalues) VALUES('UPDATE', TG_TABLE_SCHEMA::text, TG_TABLE_NAME::text, NEW.cabd_id, oldvalues, newvalues);
   end if;
   
