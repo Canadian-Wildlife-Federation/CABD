@@ -62,7 +62,8 @@ public class ContactController {
 		
 		if (contact.getName() == null || contact.getName().isBlank()) throw new InvalidParameterException("Name is required for contacts.");
 		
-		Contact c = contactDao.getUpdateOrCreateContact(contact.getEmail(), contact.getName(), contact.getOrganization());
+		Contact c = contactDao.getUpdateOrCreateContact(contact.getEmail(), 
+				contact.getName(), contact.getOrganization(), contact.getMailinglist());
 		
 		return ResponseEntity.ok(c);
 	}

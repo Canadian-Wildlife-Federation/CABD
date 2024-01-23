@@ -28,6 +28,7 @@ public class FeatureChangeRequest {
 	private String organization;
 	private String description;
 	private String dataSource;
+	private Boolean mailinglist;
 	
 	public FeatureChangeRequest() {
 		
@@ -43,6 +44,14 @@ public class FeatureChangeRequest {
 	 */
 	public void setEmail(String email) {
 		this.email = email.toLowerCase();
+	}
+	
+	public Boolean getMailinglist() {
+		return this.mailinglist;
+	}
+	
+	public void setMailinglist(Boolean mailinglist) {
+		this.mailinglist = mailinglist;
 	}
 	
 	public String getName() {

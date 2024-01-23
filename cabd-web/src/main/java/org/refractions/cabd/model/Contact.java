@@ -26,6 +26,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
  * @author Emily
  *
  */
+//only works with jackson version 2.12 
+//@JsonFormat(with = JsonFormat.Feature.ACCEPT_CASE_INSENSITIVE_PROPERTIES)
 public class Contact {
 
 	private UUID id;
@@ -33,20 +35,31 @@ public class Contact {
 	private String name;
 	private String organization;
 	private UUID dataSource;
+	private Boolean mailinglist;
 	
 	public Contact() {
 		
 	}
-	public Contact(UUID id, String email, String name, String organization, UUID dataSource) {
+	
+	public Contact(UUID id, String email, String name, String organization, UUID dataSource, Boolean isMailingList) {
 		this.id = id;
 		this.email = email;
 		this.name = name;
 		this.organization = organization;
 		this.dataSource = dataSource;
+		this.mailinglist = isMailingList;
+	}
+	
+	public Contact(UUID id, String email, String name, String organization, UUID dataSource) {
+		this(id, email, name, organization, dataSource, null);		
 	}
 	
 	public Contact(String email, String name, String organization) {
-		this(null, email, name, organization, null);
+		this(null, email, name, organization, null, null);
+	}
+	
+	public Contact(String email, String name, String organization, Boolean isMailingList) {
+		this(null, email, name, organization, null, isMailingList);
 	}
 	
 	public UUID getId() {
@@ -72,6 +85,14 @@ public class Contact {
 	}
 	public void setOrganization(String organization) {
 		this.organization = organization;
+	}
+	
+	public Boolean getMailinglist() {
+		return this.mailinglist;
+	}
+	
+	public void setMailinglist(Boolean mailinglist) {
+		this.mailinglist = mailinglist;
 	}
 	
 	@JsonIgnore

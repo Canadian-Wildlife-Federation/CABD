@@ -38,7 +38,8 @@ public class ContactDao {
 	 */
 	private RowMapper<Contact> contactTypeMapper = (rs, rownum)-> 
 		new Contact((UUID)rs.getObject("id"), rs.getString("email"),
-				rs.getString("name"), rs.getString("organization"), (UUID)rs.getObject("datasource_id")); 
+				rs.getString("name"), rs.getString("organization"), 
+				(UUID)rs.getObject("datasource_id"), rs.getBoolean("mailing_list")); 
 				
 	
 	/**
@@ -48,7 +49,7 @@ public class ContactDao {
 	 */
 	public Contact getContact(String email) {
 		try {
-			String query = "SELECT id, email, name, organization, datasource_id FROM  " + TABLE + " WHERE email = ? ";
+			String query = "SELECT id, email, name, organization, datasource_id, mailing_list FROM  " + TABLE + " WHERE email = ? ";
 			return jdbcTemplate.queryForObject(query, contactTypeMapper, email);
 		}catch(EmptyResultDataAccessException ex) {
 			return null;
@@ -64,22 +65,34 @@ public class ContactDao {
 	 * @param organization
 	 * @return
 	 */
-	public Contact getUpdateOrCreateContact(String email, String name, String organization) {
+	public Contact getUpdateOrCreateContact(String email, String name, String organization, Boolean isMailingList) {
 		Contact c = getContact(email);
 		if (c == null) {
-			c = new Contact(email, name, organization);
+			c = new Contact(email, name, organization, isMailingList);
 			//save
-			String insert = "INSERT INTO " + TABLE + "(email, name, organization) VALUES (?, ?, ?)";
-			jdbcTemplate.update(insert, email, name, organization);
+			if (c.getMailinglist() != null) {
+				String insert = "INSERT INTO " + TABLE + "(email, name, organization, mailing_list) VALUES (?, ?, ?, ?)";
+				jdbcTemplate.update(insert, c.getEmail(), c.getName(), c.getOrganization(), c.getMailinglist());
+			}else {
+				String insert = "INSERT INTO " + TABLE + "(email, name, organization) VALUES (?, ?, ?)";
+				jdbcTemplate.update(insert, c.getEmail(), c.getName(), c.getOrganization());
+			}
 			c = getContact(email);
 		}else {
-			if (!nullequals(c.getName(), name) || !nullequals(c.getOrganization(), organization)) {
+			if (!nullequals(c.getName(), name) 
+					|| !nullequals(c.getOrganization(), organization) ||
+					(isMailingList != null && !isMailingList.equals(c.getMailinglist()))
+					) {
 				//update
 				c.setName(name);
 				c.setOrganization(organization);
+				if (isMailingList != null) {
+					//only update mailing list if value is provided
+					c.setMailinglist(isMailingList);
+				}
 				//save
-				String update = "UPDATE " + TABLE + " SET name = ?, organization = ? WHERE id = ? ";
-				jdbcTemplate.update(update, name, organization, c.getId());
+				String update = "UPDATE " + TABLE + " SET name = ?, organization = ?, mailing_list = ? WHERE id = ? ";
+				jdbcTemplate.update(update, c.getName(), c.getOrganization(), c.getMailinglist(), c.getId());
 			}
 		}
 		return c;
