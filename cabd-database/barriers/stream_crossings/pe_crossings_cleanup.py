@@ -1,0 +1,283 @@
+import sys
+import argparse
+import configparser
+import ast
+import getpass
+import psycopg2 as pg2
+
+#-- PARSE COMMAND LINE ARGUMENTS --  
+parser = argparse.ArgumentParser(description='Processing stream crossings.')
+parser.add_argument('-c', type=str, help='the configuration file', required=True)
+args = parser.parse_args()
+configfile = args.c
+
+#-- READ PARAMETERS FOR CONFIG FILE --
+config = configparser.ConfigParser()
+config.read(configfile)
+
+#database settings
+dbHost = config['DATABASE']['host']
+dbPort = config['DATABASE']['port']
+dbName = config['DATABASE']['name']
+dbUser = input(f"""Enter username to access {dbName}:\n""")
+dbPassword = getpass.getpass(f"""Enter password to access {dbName}:\n""")
+
+#output data schema
+schema = config['DATABASE']['data_schema']
+cabdSRID = config['DATABASE']['cabdSRID']
+
+mSRID = config['SETTINGS']['mSRID']
+mGeometry = config['SETTINGS']['mGeometry']
+
+#data tables
+#set to an empty dict if doesn't exist for data
+rail = ast.literal_eval(config['DATASETS']['railTable'])
+roads = ast.literal_eval(config['DATASETS']['roadsTable'])
+resourceRoads = ast.literal_eval(config['DATASETS']['resourceRoadsTable'])
+trail = ast.literal_eval(config['DATASETS']['trailTable'])
+
+all_datasets = rail | roads | resourceRoads | trail
+
+railTable = [k for k in rail]
+roadsTable = [k for k in roads]
+resourceRoadsTable = [k for k in resourceRoads]
+trailTable = [k for k in trail]
+
+railTable = None if not railTable else railTable
+roadsTable = None if not roadsTable else roadsTable
+resourceRoadsTable = None if not resourceRoadsTable else resourceRoadsTable
+trailTable = None if not trailTable else trailTable
+
+#geometry and unique id fields from the above tables
+#id MUST be an integer
+geometry = config['DATASETS']['geometryField'].strip()
+id = config['DATASETS']['idField'].strip()
+
+#all source transport layers to be used for computing crossings
+layers = [k for k in all_datasets]
+
+#non-rail layers - these are included in the clustering
+#these should be in order of priority for assigning ids to point
+nonRailLayers = ast.literal_eval(config['DATASETS']['nonRailLayers'])
+
+#rail layers - these are clustered separately from other features
+railLayers = ast.literal_eval(config['DATASETS']['railLayers'])
+
+print ("-- Processing Parameters --")
+print (f"Database: {dbHost}:{dbPort}/{dbName}")
+print (f"Data Schema: {schema}")
+print (f"CABD SRID: {cabdSRID}")
+print (f"Meters Projection: {mSRID} ")
+
+print (f"Data Tables: {railTable} {roadsTable} {resourceRoadsTable} {trailTable} ")
+print (f"Id/Geometry Fields: {id} {geometry}")
+
+print ("----")
+
+# PEI-specific additional datasets
+bridgePt = 'bridges_2005_inventory'
+invPt = 'confed_trail_inventory'
+
+#--
+#-- function to execute a query
+#--
+def executeQuery(connection, sql):
+    #print (sql)
+    with connection.cursor() as cursor:
+        cursor.execute(sql)
+    conn.commit()
+    
+#--
+#-- checks if the first column of the first row
+#-- of the query results is 0 otherwise
+# -- ends the program
+def checkEmpty(connection, sql, error):
+    with connection.cursor() as cursor:
+        cursor.execute(sql)
+        count = cursor.fetchone()
+        if count[0] != 0:
+            print ("ERROR: " + error)
+            sys.exit(-1)
+
+
+# -- MAIN SCRIPT --
+
+print("Connecting to database...")
+
+conn = pg2.connect(database=dbName,
+                   user=dbUser,
+                   host=dbHost,
+                   password=dbPassword,
+                   port=dbPort)
+
+sql = f"SELECT count(*) FROM {schema}.modelled_crossings WHERE {mGeometry} is null;"
+checkEmpty(conn, sql, "modelled_crossings table should not have any rows with null values in {mGeometry}")
+
+print("Mapping column names to modelled crossings data structure...")
+
+sql = f"""
+ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS transport_feature_type varchar;
+ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS transport_feature_name varchar;
+ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS roadway_type varchar;
+ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS roadway_surface varchar;
+ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS transport_feature_owner varchar;
+ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS railway_operator varchar;
+ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS num_railway_tracks varchar;
+ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS transport_feature_condition varchar;
+ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS crossing_type varchar;
+"""
+executeQuery(conn, sql)
+
+if railTable:
+    for table in railTable:
+        sql = f"""UPDATE {schema}.modelled_crossings SET transport_feature_type = 'rail' WHERE transport_feature_source = '{table}';"""
+        executeQuery(conn, sql)
+
+if roadsTable:
+    for table in roadsTable:
+        sql = f"""UPDATE {schema}.modelled_crossings SET transport_feature_type = 'road' WHERE transport_feature_source = '{table}';"""
+        executeQuery(conn, sql)
+
+if resourceRoadsTable:
+    for table in resourceRoadsTable:
+        sql = f"""UPDATE {schema}.modelled_crossings SET transport_feature_type = 'resource_road' WHERE transport_feature_source = '{table}';"""
+        executeQuery(conn, sql)
+
+if trailTable:
+    for table in trailTable:
+        sql = f"""UPDATE {schema}.modelled_crossings SET transport_feature_type = 'trail' WHERE transport_feature_source = '{table}';"""
+        executeQuery(conn, sql)
+
+sql = f"""
+UPDATE {schema}.modelled_crossings SET transport_feature_name =
+    CASE
+    WHEN transport_feature_source = '{roadsTable[0]}'
+        AND r_stname_c IS NOT NULL AND r_stname_c != 'None'
+        THEN r_stname_c
+    WHEN transport_feature_source = '{roadsTable[0]}'
+        AND (r_stname_c IS NULL OR r_stname_c = 'None')
+        AND rtename1en IS NOT NULL AND rtename1en != 'None'
+        THEN rtename1en
+    WHEN transport_feature_source = '{trailTable[0]}' THEN trail_name
+    ELSE NULL END;
+
+UPDATE {schema}.modelled_crossings SET roadway_type = 
+    CASE
+    WHEN transport_feature_source = '{roadsTable[0]}' THEN roadclass
+    ELSE NULL END;
+
+UPDATE {schema}.modelled_crossings SET roadway_surface =
+    CASE
+    WHEN pavstatus = 'Paved' THEN pavstatus
+    WHEN unpavsurf IN ('Dirt', 'Gravel') THEN unpavsurf
+    ELSE NULL END;
+
+"""
+executeQuery(conn, sql)
+
+sql = f"""
+ALTER TABLE {schema}.modelled_crossings ALTER COLUMN transport_feature_id TYPE varchar;
+UPDATE {schema}.modelled_crossings SET transport_feature_id = 
+    CASE
+    WHEN transport_feature_source = '{roadsTable[0]}' THEN nrn_nid::varchar
+    WHEN transport_feature_source = '{trailTable[0]}' THEN objectid::varchar
+    ELSE NULL END;
+"""
+executeQuery(conn, sql)
+
+for k in all_datasets:
+    print(k)
+    if k:
+        attributeValues = all_datasets[k]
+    else:
+        continue
+
+    print("Attribute Values:", attributeValues)
+
+    for val in attributeValues:
+        sql = f"ALTER TABLE {schema}.modelled_crossings DROP COLUMN IF EXISTS {val};"
+        executeQuery(conn, sql)
+
+print("Getting additional structure information...")
+
+sql = f"""
+--find bridge inventory points within 50 m of modelled crossings
+DROP TABLE IF EXISTS {schema}.temp_bridge_points;
+
+CREATE TABLE {schema}.temp_bridge_points AS (
+    SELECT DISTINCT ON (s.fid) s.fid AS structure_id, s.stru_type AS stru_type, s.type AS "type", s.shot_point AS shot_point, m.id AS modelled_id, m.transport_feature_source AS transport_feature_source, ST_Distance(s.geometry, m.geometry_m) AS dist, s.geometry
+    FROM {schema}.{bridgePt} s, {schema}.modelled_crossings m
+    WHERE ST_DWithin(s.geometry, m.geometry_m, 50)
+    ORDER BY structure_id, modelled_id, ST_Distance(s.geometry, m.geometry_m)
+);
+
+--find confederation trail inventory points within 10 m of modelled crossings
+DROP TABLE IF EXISTS {schema}.temp_inv_points;
+
+CREATE TABLE {schema}.temp_inv_points AS (
+    SELECT DISTINCT ON (s.fid) s.fid AS structure_id, s.stru_type AS stru_type, m.id AS modelled_id, m.transport_feature_source AS transport_feature_source, ST_Distance(s.geometry, m.geometry_m) AS dist, s.geometry
+    FROM {schema}.{invPt} s, {schema}.modelled_crossings m
+    WHERE ST_DWithin(s.geometry, m.geometry_m, 10)
+    ORDER BY structure_id, modelled_id, ST_Distance(s.geometry, m.geometry_m)
+);
+
+ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS crossing_type varchar;
+
+UPDATE {schema}.modelled_crossings SET crossing_type = 'bridge' FROM {schema}.temp_bridge_points s
+    WHERE s.modelled_id = id AND s.shot_point ILIKE '%bridge%' AND s.type NOT IN ('Driveway Steel Arch', 'Driveway timber box', 'Concrete Pipes (2)', 'Culvert', 'Concrete Box/Arch Ext.');
+
+UPDATE {schema}.modelled_crossings SET crossing_type = 'bridge' FROM {schema}.temp_bridge_points s
+    WHERE s.modelled_id = id AND s.type ILIKE '%bridge%';
+
+UPDATE {schema}.modelled_crossings SET crossing_type = 'culvert' FROM {schema}.temp_bridge_points s
+    WHERE s.modelled_id = id AND s.stru_type = 'ARCH' AND s.type = 'Mulit Plated Steel Arch' AND (s.shot_point IS NULL OR s.shot_point = 'Atlas/Air photo/Contours');
+
+UPDATE {schema}.modelled_crossings SET crossing_type = 'culvert' FROM {schema}.temp_bridge_points s
+    WHERE s.modelled_id = id AND s.stru_type = 'BOX' AND s.type IN ('Concrete Box', 'Concrete/timber box', 'Pre-Cast Concrete box', 'Timber Box', 'Timber Box/Pipe Cul.') AND s.shot_point IS NULL;
+
+UPDATE {schema}.modelled_crossings SET crossing_type = 'culvert' FROM {schema}.temp_bridge_points s
+    WHERE s.modelled_id = id AND s.stru_type = 'PIPE' AND s.type IN ('Concrete Pipes (2)', 'Concrete/steel pipe', 'Concrete/Timber/pipe', 'Culvert', 'Pipe')
+    AND (s.shot_point IS NULL OR s.shot_point = 'Bridge Centre');
+
+UPDATE {schema}.modelled_crossings SET crossing_type = 'culvert' FROM {schema}.temp_bridge_points s
+    WHERE s.modelled_id = id AND s.type = 'Concrete Box/Steel Arch';
+
+UPDATE {schema}.modelled_crossings SET crossing_type = 'culvert' FROM {schema}.temp_bridge_points s
+    WHERE s.modelled_id = id AND s.type = 'Steel pipe/Timber ext.' AND s.shot_point = '4to3/MOVED POINT/Old chainage';
+
+UPDATE {schema}.modelled_crossings SET crossing_type = 'culvert'
+    FROM {schema}.{invPt} s WHERE id IN (SELECT modelled_id FROM {schema}.temp_inv_points)
+    AND s.stru_type IN ('Arch', 'Box', 'Pipe');
+
+UPDATE {schema}.modelled_crossings SET crossing_type = 'bridge'
+    FROM {schema}.{invPt} s WHERE id IN (SELECT modelled_id FROM {schema}.temp_inv_points)
+    AND s.stru_type = 'Bridge';
+
+DROP TABLE {schema}.temp_bridge_points;
+DROP TABLE {schema}.temp_inv_points;
+
+UPDATE {schema}.modelled_crossings SET crossing_type = 'bridge' WHERE strahler_order >= 6 AND crossing_type IS NULL;
+
+ALTER TABLE {schema}.modelled_crossings ADD CONSTRAINT {schema}_modelled_crossings PRIMARY KEY (id);
+
+"""
+executeQuery(conn, sql)
+
+sql = f"""
+drop table if exists {schema}.parallel_crossings;
+
+create table {schema}.parallel_crossings as (
+	select * from (
+		select id, chyf_stream_id, transport_feature_id, geometry
+			, row_number() over (partition by chyf_stream_id, transport_feature_id order by id desc) as rn
+			, count(*) over (partition by chyf_stream_id, transport_feature_id) cn 
+		from {schema}.modelled_crossings
+	) t where cn > 1
+	order by cn desc
+);
+
+grant select on {schema}.parallel_crossings to cwf_user;
+"""
+executeQuery(conn, sql)
+
+print("** CLEANUP COMPLETE **")
