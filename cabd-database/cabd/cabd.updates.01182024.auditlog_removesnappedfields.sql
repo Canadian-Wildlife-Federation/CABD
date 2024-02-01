@@ -1,6 +1,7 @@
 -- DROP FUNCTION cabd.audit_cabdid_update();
 
-alter table cabd.contacts add column mailing_list boolean not null default true;
+alter table cabd.contacts add column mailing_list boolean not null default false;
+alter table cabd.contacts alter column mailing_list set default false;
 
 CREATE OR REPLACE FUNCTION cabd.audit_cabdid_update()
  RETURNS trigger

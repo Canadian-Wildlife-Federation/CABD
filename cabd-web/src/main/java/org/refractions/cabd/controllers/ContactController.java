@@ -81,7 +81,7 @@ public class ContactController {
 		if (email == null) return ResponseEntity.badRequest().build();
 		
 		Contact c = contactDao.getContact(email);
-		if (c == null) return ResponseEntity.ok("{\"mailinglist\": true}");
+		if (c == null) return ResponseEntity.ok("{\"mailinglist\": false}");
 		
 		String json = "{\"mailinglist\": " + (c.getMailinglist() ? "true" : "false") + "}";
 		return ResponseEntity.ok(json);
