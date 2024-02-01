@@ -58,8 +58,6 @@ public class DocumentationController {
 	@Autowired
 	DataSourceDao dataSourceDao;
 	@Autowired
-	UserFeatureUpdateDao featureUpdateDao;
-	@Autowired
 	FeatureTypeManager typeManager;
 	
 	/**
