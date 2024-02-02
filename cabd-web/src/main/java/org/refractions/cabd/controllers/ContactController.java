@@ -22,10 +22,13 @@ import javax.servlet.http.HttpServletRequest;
 import org.refractions.cabd.dao.ContactDao;
 import org.refractions.cabd.model.Contact;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -66,5 +69,21 @@ public class ContactController {
 				contact.getName(), contact.getOrganization(), contact.getMailinglist());
 		
 		return ResponseEntity.ok(c);
+	}
+	
+	/**
+	 * Get only the mailing perference for a given email 
+	 */
+	@GetMapping(produces=MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<Object> getContact( 
+			@RequestParam(name="email", required=true) String email) {
+		
+		if (email == null) return ResponseEntity.badRequest().build();
+		
+		Contact c = contactDao.getContact(email);
+		if (c == null) return ResponseEntity.ok("{\"mailinglist\": false}");
+		
+		String json = "{\"mailinglist\": " + (c.getMailinglist() ? "true" : "false") + "}";
+		return ResponseEntity.ok(json);
 	}
 }
