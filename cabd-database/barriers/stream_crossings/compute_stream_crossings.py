@@ -923,11 +923,11 @@ def finalizeCrossings(conn):
         ON UPDATE NO ACTION
         ON DELETE NO ACTION;
 
-    GRANT USAGE ON SCHEMA {schema} TO gistech;
-    GRANT SELECT ON ALL TABLES IN SCHEMA {schema} TO gistech;
-    GRANT UPDATE(new_crossing_type) ON {schema}.modelled_crossings TO gistech;
-    GRANT UPDATE(reviewer_status) ON {schema}.modelled_crossings TO gistech;
-    GRANT UPDATE(reviewer_comments) ON {schema}.modelled_crossings TO gistech;
+    GRANT USAGE ON SCHEMA {schema} TO cwf_user;
+    GRANT SELECT ON ALL TABLES IN SCHEMA {schema} TO cwf_user;
+    GRANT UPDATE(new_crossing_type) ON {schema}.modelled_crossings TO cwf_user;
+    GRANT UPDATE(reviewer_status) ON {schema}.modelled_crossings TO cwf_user;
+    GRANT UPDATE(reviewer_comments) ON {schema}.modelled_crossings TO cwf_user;
     """
     executeQuery(conn, sql)
 
