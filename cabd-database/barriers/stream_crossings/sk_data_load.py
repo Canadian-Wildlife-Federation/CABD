@@ -34,8 +34,9 @@ def log(message):
         print(message)
         
 #alternate ogr options
-ogr = "C:\\Program Files\\GDAL\\ogr2ogr.exe"
+#ogr = "C:\\Program Files\\GDAL\\ogr2ogr.exe"
 #ogr = "C:\\Program Files\\QGIS 3.22.3\\bin\\ogr2ogr.exe"
+ogr = "C:\\Program Files\\QGIS 3.22.1\\bin\\ogr2ogr.exe"
 
 conn = pg2.connect(database=dbName, 
                    user=dbUser, 

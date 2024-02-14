@@ -82,6 +82,8 @@ nonRailLayers = ast.literal_eval(config['DATASETS']['nonRailLayers'])
 #rail layers - these are clustered separately from other features
 railLayers = ast.literal_eval(config['DATASETS']['railLayers'])
 
+streamPropTableExists = False
+
 print ("-- Processing Parameters --")
 print (f"Database: {dbHost}:{dbPort}/{dbName}")
 print (f"Data Schema: {schema}")
@@ -177,9 +179,19 @@ def getStreamData(conn):
         FROM chyf_flowpath
         WHERE aoi_id in {aois} AND ef_type != 2;
 
+        UPDATE {schema}.{streamTable}
+            SET short_name = (
+                SELECT
+                    short_name
+                FROM chyf_aoi ch
+                WHERE {schema}.{streamTable}.aoi_id = ch.id
+            )
+        WHERE short_name IS NULL;
+
         CREATE TABLE {schema}.{streamPropTable} as SELECT * FROM chyf_flowpath_properties WHERE aoi_id IN {aois};
         """
         executeQuery(conn, sql)
+        streamPropTableExists = True
         
     def getNhnData(aoi_list):
 
@@ -294,6 +306,7 @@ def getStreamData(conn):
         );
     """
     executeQuery(conn, sql)
+    streamPropTableExists = False
 
     if aoiChyf:
         getChyfData(aoiChyf)
@@ -309,7 +322,8 @@ def getStreamData(conn):
         ANALYZE {schema}.{streamPropTable};
         ANALYZE {schema}.{streamTable};
     """
-    executeQuery(conn, sql)
+    if streamPropTableExists:
+        executeQuery(conn, sql)
 
     # calculate length as this is missing in NHN data, and is required for clustering operations
     sql = f"""
@@ -321,8 +335,9 @@ def getStreamData(conn):
     sql = f"SELECT case when count(*) = 0 then 1 else 0 end FROM {schema}.{streamTable}"
     checkEmpty(conn, sql, "stream table is empty")
 
-    sql = f"SELECT case when count(*) = 0 then 1 else 0 end FROM {schema}.{streamPropTable}"
-    checkEmpty(conn, sql, "stream property table is empty")
+    if streamPropTableExists:
+        sql = f"SELECT case when count(*) = 0 then 1 else 0 end FROM {schema}.{streamPropTable}"
+        checkEmpty(conn, sql, "stream property table is empty")
 
 # ----
 # -- compute modelled crossings for each layer
@@ -500,18 +515,32 @@ def processClusters(conn):
 
         --add upstream length
         ALTER TABLE  {schema}.cluster_{layer}_id ADD COLUMN upstream_length double precision;
+        """
+        executeQuery(conn, sql)
 
-        UPDATE {schema}.cluster_{layer}_id 
-        SET upstream_length = CASE WHEN a.max_uplength IS NULL THEN b.length ELSE a.max_uplength + b.length END
-        FROM {schema}.{streamPropTable} a JOIN {schema}.{streamTable} b on a.id = b.id 
-        where {schema}.cluster_{layer}_id.chyf_stream_id = a.id;
+        if streamPropTableExists:
+            sql = f"""
+            UPDATE {schema}.cluster_{layer}_id 
+            SET upstream_length = CASE WHEN a.max_uplength IS NULL THEN b.length ELSE a.max_uplength + b.length END
+            FROM {schema}.{streamPropTable} a JOIN {schema}.{streamTable} b on a.id = b.id 
+            where {schema}.cluster_{layer}_id.chyf_stream_id = a.id;
 
-        --case statement above is to deal with secondaries - these have no upstream length
-        --there were a few cases where these were crossed by they were all on the same edge so it 
-        --doesn't matter
-        --we are using this up length to determine which edge to pick when there is more than
-        --one stream edge being crossed
+            --case statement above is to deal with secondaries - these have no upstream length
+            --there were a few cases where these were crossed by they were all on the same edge so it 
+            --doesn't matter
+            --we are using this up length to determine which edge to pick when there is more than
+            --one stream edge being crossed
+            """
+        else:
+            sql = f"""
+            UPDATE {schema}.cluster_{layer}_id 
+            SET upstream_length = b.length 
+            FROM  {schema}.{streamTable} b
+            where {schema}.cluster_{layer}_id.chyf_stream_id = b.id;
+            """
+        executeQuery(conn, sql)
         
+        sql = f"""
         --new addition to deal with flowpaths that are from unprocessed NHN (no chyf_properties table)
         UPDATE {schema}.cluster_{layer}_id 
         SET upstream_length = b.length
