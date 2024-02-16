@@ -181,7 +181,7 @@ public class FeatureController {
 			@Parameter(description = "the feature type to search") @PathVariable("type") String type,
 			@ParameterObject FeatureRequestParameters params, HttpServletRequest request) {
 		
-		ParsedRequestParameters parameters = params.parseAndValidate();
+		ParsedRequestParameters parameters = params.parseAndValidate(typeManager);
 
 		FeatureType btype = typeManager.getFeatureType(type);
 		if (btype == null) throw new NotFoundException(MessageFormat.format("The feature type ''{0}'' is not supported.", type));

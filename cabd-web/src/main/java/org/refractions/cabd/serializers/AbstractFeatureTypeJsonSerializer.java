@@ -17,14 +17,16 @@ package org.refractions.cabd.serializers;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
+import org.refractions.cabd.controllers.AttributeSet;
+import org.refractions.cabd.dao.FeatureTypeManager;
 import org.refractions.cabd.model.FeatureType;
 import org.refractions.cabd.model.FeatureTypeListValue;
 import org.refractions.cabd.model.FeatureViewMetadata;
 import org.refractions.cabd.model.FeatureViewMetadataField;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;
@@ -38,6 +40,9 @@ import com.fasterxml.jackson.databind.SerializerProvider;
  * @param <T>
  */
 public abstract class AbstractFeatureTypeJsonSerializer<T> extends JsonSerializer<T> {
+	
+	@Autowired
+	private FeatureTypeManager manager;
 	
 	@Override
 	public abstract void serialize(T value, JsonGenerator gen, SerializerProvider serializers) throws IOException ;
@@ -111,22 +116,23 @@ public abstract class AbstractFeatureTypeJsonSerializer<T> extends JsonSerialize
 		gen.writeFieldName("views");
 		gen.writeStartObject();
 		
-		DataView[] views = new DataView[]{
-			new DataView("simple", a->a.getSimpleOrder()),
-			new DataView("all", a->a.getAllOrder()),
-		};
-		
-		for (DataView v : views) {
-			gen.writeFieldName(v.name);
+		for (AttributeSet set : manager.getAttributeSets()) {
+			
+			gen.writeFieldName(set.getName());
 			gen.writeStartObject();
 			
 			gen.writeFieldName("attribute_order");
 			gen.writeStartArray();
-			List<FeatureViewMetadataField> temp = new ArrayList<>(ftype.getViewMetadata().getFields());
-			temp = temp.stream()
-				.filter(e->v.orderer.apply(e) != null)
-				.sorted((a,b)->Integer.compare(v.orderer.apply(a), v.orderer.apply(b)))
-				.collect(Collectors.toList());
+			List<FeatureViewMetadataField> temp = new ArrayList<>(ftype.getViewMetadata().getFieldsOnly(set));
+			
+			Collections.sort(temp, (a,b)->{
+				Integer a1 = a.getOrder(set);
+				Integer b1 = b.getOrder(set);
+				if (a1 == null && b1 == null) return 0;
+				if (a1 != null && b1 == null) return -1;
+				if (a1 == null && b1 != null) return 1;						
+				return Integer.compare(a1, b1);
+			});
 			for (FeatureViewMetadataField f : temp) {
 				gen.writeString(f.getFieldName());
 			}
@@ -146,14 +152,4 @@ public abstract class AbstractFeatureTypeJsonSerializer<T> extends JsonSerialize
 	}
 	
 	
-	private static class DataView{
-		String name;
-		Function<FeatureViewMetadataField,Integer> orderer;
-		
-		public DataView(String name, Function<FeatureViewMetadataField,Integer> orderer) {
-			this.name = name;
-			this.orderer = orderer;
-		}
-	
-	}
 }

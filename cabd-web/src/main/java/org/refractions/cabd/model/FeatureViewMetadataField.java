@@ -17,8 +17,10 @@ package org.refractions.cabd.model;
 
 import java.sql.Date;
 import java.util.List;
+import java.util.Map;
 
 import org.locationtech.jts.geom.Geometry;
+import org.refractions.cabd.controllers.AttributeSet;
 
 /**
  * Contains details about a feature
@@ -32,8 +34,6 @@ public class FeatureViewMetadataField extends NamedDescriptionItem {
 	private String fieldName;
 	
 	private String datatype;
-	private Integer simpleOrder;
-	private Integer allOrder;
 	private String valueOptionsRef;
 	
 	private boolean isLink = false;
@@ -46,22 +46,26 @@ public class FeatureViewMetadataField extends NamedDescriptionItem {
 	private String shapeFieldName;
 	
 	private List<FeatureTypeListValue> valueOptions;
+	//mapping between attribute set and the order
+	//the attribute should appears in the results
+	private Map<String,Integer> attributeSetMapping;
 	
 	public FeatureViewMetadataField(String fieldName, String name_en, String description_en,
 			String name_fr, String description_fr,
-			boolean isLink, String datatype, Integer simpleOrder, Integer allOrder,
-			boolean includeVectorTile, String validValues, boolean isNameSearch, String shapeFieldName) {
+			boolean isLink, String datatype, 
+			boolean includeVectorTile, String validValues, 
+			boolean isNameSearch, String shapeFieldName,
+			Map<String,Integer> attributeSetMapping) {
 		super(name_en, name_fr, description_en, description_fr);
 		this.fieldName = fieldName;
 		this.isLink = isLink;
 		this.datatype = datatype;
-		this.simpleOrder = simpleOrder;
-		this.allOrder = allOrder;
 		this.includeVectorTile = includeVectorTile;
 		this.valueOptionsRef = validValues;
 		this.valueOptions = null;
 		this.isNameSearch = isNameSearch;
 		this.shapeFieldName = shapeFieldName;
+		this.attributeSetMapping = attributeSetMapping;
 	}
 	
 	public boolean isNameSearch() {
@@ -96,13 +100,11 @@ public class FeatureViewMetadataField extends NamedDescriptionItem {
 	public String getValidValuesReference() {
 		return this.valueOptionsRef;
 	}
-	public Integer getAllOrder() {
-		return this.allOrder;
+	
+	public Integer getOrder(AttributeSet s) {
+		return this.attributeSetMapping.get(s.getName());
 	}
 	
-	public Integer getSimpleOrder() {
-		return this.simpleOrder;
-	}
 	public boolean isLink() {
 		return this.isLink;
 	}

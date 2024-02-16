@@ -31,7 +31,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Envelope;
 import org.refractions.cabd.CabdConfigurationProperties;
-import org.refractions.cabd.controllers.AttributeSet;
 import org.refractions.cabd.controllers.ParsedRequestParameters;
 import org.refractions.cabd.controllers.TooManyFeaturesException;
 import org.refractions.cabd.controllers.VectorTileController;
@@ -140,7 +139,9 @@ public class FeatureDao {
 		sb.append(" = ? ");
 		
 		try {
-			return jdbcTemplate.queryForObject(sb.toString(), new FeatureRowMapper(btype.getViewMetadata(), AttributeSet.ALL), uuid);
+			return jdbcTemplate.queryForObject(
+					sb.toString(), 
+					new FeatureRowMapper(btype.getViewMetadata(), null), uuid);
 		}catch (EmptyResultDataAccessException ex) {
 			return null;
 		}
@@ -204,13 +205,13 @@ public class FeatureDao {
 		selectallSql.append(ID_FIELD);
 		
 		boolean hasftype = false;
-		for (FeatureViewMetadataField field : vmetadata.getFields()) {
+		for (FeatureViewMetadataField field : vmetadata.getFields(requestparams.getAttributeSet())) {
 			
 			if (!field.isGeometry()) {
-				if (requestparams.getAttributeSet() == AttributeSet.ALL || field.includeVectorTile()) {
+//				if (requestparams.getAttributeSet() == AttributeSet.ALL || field.includeVectorTile()) {
 					selectallSql.append("," + field.getFieldName() );
 					if (field.getFieldName().equals(FEATURE_TYPE_FIELD)) hasftype = true;
-				}
+//				}
 			}else {
 				geomField = field;
 				selectallSql.append(", st_asbinary(" + field.getFieldName() + ") as " + field.getFieldName() );
@@ -370,13 +371,13 @@ public class FeatureDao {
 		
 		boolean hasftype = false;
 		
-		for (FeatureViewMetadataField field : vmetadata.getFields()) {
+		for (FeatureViewMetadataField field : vmetadata.getFields(requestparams.getAttributeSet())) {
 			
 			if (!field.isGeometry()) {
-				if (requestparams.getAttributeSet() == AttributeSet.ALL || field.includeVectorTile()) {
+//				if (requestparams.getAttributeSet() == AttributeSet.ALL || field.includeVectorTile()) {
 					selectallSql.append("," + field.getFieldName() );
 					if (field.getFieldName().equals(FEATURE_TYPE_FIELD)) hasftype = true;
-				}
+//				}
 			}else {
 				geomField = field;
 				selectallSql.append(", st_asbinary(" + field.getFieldName() + ") as " + field.getFieldName() );

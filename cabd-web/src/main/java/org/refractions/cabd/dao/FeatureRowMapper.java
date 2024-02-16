@@ -17,6 +17,7 @@ package org.refractions.cabd.dao;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Collection;
 import java.util.UUID;
 
 import org.locationtech.jts.geom.Geometry;
@@ -36,15 +37,12 @@ import org.springframework.jdbc.core.RowMapper;
  */
 public class FeatureRowMapper implements RowMapper<Feature> {
 
-	
-	private FeatureViewMetadata metadata;
-	private AttributeSet attributes;
+	private Collection<FeatureViewMetadataField> fields;
 	
 	private WKBReader reader = new WKBReader();
 	
 	public FeatureRowMapper(FeatureViewMetadata metadata, AttributeSet attributes) {
-		this.metadata = metadata;
-		this.attributes = attributes;
+		this.fields = metadata.getFields(attributes);
 	}
 	
 	@Override
@@ -54,7 +52,7 @@ public class FeatureRowMapper implements RowMapper<Feature> {
 		
 		Feature feature = new Feature(buuid, featureType);
 		
-		for (FeatureViewMetadataField field : metadata.getFields()) {
+		for (FeatureViewMetadataField field : fields) {
 			if (field.isGeometry()) {
 				try {
 					byte[] data = rs.getBytes(field.getFieldName());
@@ -66,7 +64,7 @@ public class FeatureRowMapper implements RowMapper<Feature> {
 					throw new SQLException(ex);
 				}
 			}else {
-				if (attributes == AttributeSet.ALL || field.includeVectorTile()) {
+//				if (attributes == AttributeSet.ALL || field.includeVectorTile()) {
 					if (field.isLink()) {
 						String oo = (String)rs.getObject(field.getFieldName());
 						feature.addLinkAttribute(field.getFieldName(), oo);
@@ -74,7 +72,7 @@ public class FeatureRowMapper implements RowMapper<Feature> {
 						Object oo = rs.getObject(field.getFieldName());
 						feature.addAttribute(field.getFieldName(), oo);
 					}
-				}
+//				}
 			}
 		};
 		return feature;

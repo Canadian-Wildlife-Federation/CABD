@@ -38,7 +38,6 @@ import org.springframework.stereotype.Component;
 @Component
 public class FeatureGeoPkgSerializer extends AbstractHttpMessageConverter<Feature>{
 
-
 	@Autowired
 	private FeatureListGeoPkgSerializer listSerializer;
 	

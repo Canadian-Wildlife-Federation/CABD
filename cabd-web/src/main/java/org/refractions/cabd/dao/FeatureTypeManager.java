@@ -21,6 +21,7 @@ import java.util.Map;
 
 import javax.annotation.PostConstruct;
 
+import org.refractions.cabd.controllers.AttributeSet;
 import org.refractions.cabd.exceptions.InvalidDatabaseConfigException;
 import org.refractions.cabd.model.FeatureType;
 import org.refractions.cabd.model.FeatureViewMetadata;
@@ -47,6 +48,7 @@ public class FeatureTypeManager {
 	//cached types and metadata
 	private List<FeatureType> types;
 	private FeatureViewMetadata allViewMetadata;
+	private List<AttributeSet> attributeSets;
 	
 	/**
 	 * Sets feature types
@@ -63,6 +65,15 @@ public class FeatureTypeManager {
 	 */
 	public List<FeatureType> getFeatureTypes(){
 		return this.types;
+	}
+	
+	/**
+	 * Gets all attribute sets configured in the database
+	 * 
+	 * @return
+	 */
+	public List<AttributeSet> getAttributeSets(){
+		return this.attributeSets;
 	}
 	
 	/**
@@ -87,6 +98,18 @@ public class FeatureTypeManager {
 		return null;
 	}
 	
+	/**
+	 * Find the attribute set with the given name. Case insensitive
+	 * check. 
+	 * @param setName
+	 * @return null if attribute set doesn't exist
+	 */
+	public AttributeSet findAttributeSet(String setName) {
+		for (AttributeSet s : attributeSets) {
+			if (s.getName().equals(setName)) return s;
+		}
+		return null;
+	}
 	
 
 	/**
@@ -119,14 +142,15 @@ public class FeatureTypeManager {
     public void init() {
 		
         this.setFeatureTypes( typeDao.getFeatureTypes() );      
+        this.attributeSets = typeDao.getAttributeSets();
         
         for (FeatureType t : types) {
-        	FeatureViewMetadata metadata = typeDao.getViewMetadata(t.getDataViewName());
+        	FeatureViewMetadata metadata = typeDao.getViewMetadata(t.getDataViewName(), this.attributeSets);
         	validateMetadata(t, metadata);
         	t.setViewMetadata( metadata );
         }
         
-        allViewMetadata = typeDao.getViewMetadata(FeatureViewMetadata.ALL_FEATURES_VIEW_ROOT);
+        allViewMetadata = typeDao.getViewMetadata(FeatureViewMetadata.ALL_FEATURES_VIEW_ROOT, this.attributeSets);
         validateMetadata(null, allViewMetadata);
     }
 

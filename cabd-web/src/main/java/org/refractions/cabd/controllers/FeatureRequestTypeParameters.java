@@ -64,7 +64,7 @@ public class FeatureRequestTypeParameters extends FeatureRequestParameters{
 	 */
 	//TODO: figure out how  we can autowrite type manager; 
 	public ParsedRequestParameters parseAndValidate(FeatureTypeManager typeManager) {
-		ParsedRequestParameters bb = super.parseAndValidate();
+		ParsedRequestParameters bb = super.parseAndValidate(typeManager);
 		if (this.types != null) {
 			String[] ttypes = this.types.split(",");
 			bb.setFeatureTypes( parseTypes(ttypes, typeManager));

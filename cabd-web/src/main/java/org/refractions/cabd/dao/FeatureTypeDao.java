@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.refractions.cabd.controllers.AttributeSet;
 import org.refractions.cabd.model.FeatureType;
 import org.refractions.cabd.model.FeatureTypeListValue;
 import org.refractions.cabd.model.FeatureViewMetadata;
@@ -49,8 +50,18 @@ public class FeatureTypeDao {
 	public static final String FEATURE_TYPE_TABLE = "cabd.feature_types";
 	public static final String FEATURE_METADATA_TABLE = "cabd.feature_type_metadata";
 	
+	public static final String ATTRIBUTE_SET_TABLE = "cabd.attribute_set";
+
+	
 	@Autowired
 	private JdbcTemplate jdbcTemplate;
+	
+	/**
+	 * Mapper for attribute set query to Attribute Set 
+	 */
+	private RowMapper<AttributeSet> attributeSetMapper = (rs, rownum)-> 
+		new AttributeSet(rs.getString("name"), rs.getString("ft_metadata_col"));
+	
 		
 	/**
 	 * Mapper for feature type query to FeatureType 
@@ -63,18 +74,7 @@ public class FeatureTypeDao {
 				rs.getString("feature_source_table"),
 				rs.getString("default_featurename_field"), rs.getString("description"));
 		
-	/**
-	 * Mapper for metadata field row to FeatureViewMetadataField object
-	 */
-	private RowMapper<FeatureViewMetadataField> viewMetadataMapper = (rs, rownum) -> 
-		new FeatureViewMetadataField(
-				rs.getString("field_name"), rs.getString("name_en"), 
-				rs.getString("description_en"), rs.getString("name_fr"),
-				rs.getString("description_fr"), rs.getBoolean("is_link"),
-				rs.getString("data_type"), (Integer)rs.getObject("vw_simple_order"),
-				(Integer)rs.getObject("vw_all_order"), rs.getBoolean("include_vector_tile"), 
-				rs.getString("value_options_reference"), rs.getBoolean("is_name_search"), rs.getString("shape_field_name"));
-
+	
 	
 	private RowMapper<FeatureTypeListValue> validValueMapper = (rs, rownum) ->
 		new FeatureTypeListValue(rs.getObject("value"), rs.getString("name_en"),
@@ -88,6 +88,16 @@ public class FeatureTypeDao {
 	public FeatureTypeDao() {
 	}
 	
+	
+	/**
+	 * Gets all attribute sets configured in the database.
+	 * 
+	 * @return
+	 */
+	public List<AttributeSet> getAttributeSets(){
+		String query = "SELECT name, ft_metadata_col FROM " + ATTRIBUTE_SET_TABLE;
+		return jdbcTemplate.query(query, attributeSetMapper);		
+	}
 	
 	/**
 	 * Gets all feature types configured in the database.
@@ -104,18 +114,40 @@ public class FeatureTypeDao {
 	 * @param view
 	 * @return
 	 */
-	public FeatureViewMetadata getViewMetadata(String view) {
+	public FeatureViewMetadata getViewMetadata(String view, List<AttributeSet> sets) {
 
 		StringBuilder sb = new StringBuilder();
 		sb.append("SELECT field_name, ");
 		sb.append("name_en, description_en, name_fr, description_fr,");
 		sb.append("is_link, data_type, ");
-		sb.append("vw_simple_order, vw_all_order, include_vector_tile, value_options_reference, ");
+		for (AttributeSet s : sets) {
+			sb.append(s.getColumn());
+			sb.append(",");
+		}
+		sb.append("include_vector_tile, value_options_reference, ");
 		sb.append("is_name_search, shape_field_name");
 		sb.append(" FROM ");
 		sb.append(FEATURE_METADATA_TABLE);
 		sb.append(" WHERE view_name = ?");
 		
+		/**
+		 * Mapper for metadata field row to FeatureViewMetadataField object
+		 */
+		RowMapper<FeatureViewMetadataField> viewMetadataMapper = (rs, rownum) ->{
+			Map<String,Integer> attributeSetMappings = new HashMap<>();
+			for (AttributeSet s : sets) {
+				attributeSetMappings.put(s.getName(),  (Integer)rs.getObject(s.getColumn()));
+			}
+			return new FeatureViewMetadataField(
+					rs.getString("field_name"), rs.getString("name_en"), 
+					rs.getString("description_en"), rs.getString("name_fr"),
+					rs.getString("description_fr"), rs.getBoolean("is_link"),
+					rs.getString("data_type"), rs.getBoolean("include_vector_tile"), 
+					rs.getString("value_options_reference"), 
+					rs.getBoolean("is_name_search"), rs.getString("shape_field_name"),
+					attributeSetMappings);
+		};
+
 		List<FeatureViewMetadataField> fields = jdbcTemplate.query(sb.toString(), viewMetadataMapper, view);
 		
 		//get the geometry columns

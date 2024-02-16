@@ -29,7 +29,6 @@ import javax.servlet.http.HttpServletRequest;
 import org.refractions.cabd.CabdConfigurationProperties;
 import org.refractions.cabd.dao.DataSourceDao;
 import org.refractions.cabd.dao.FeatureTypeManager;
-import org.refractions.cabd.dao.UserFeatureUpdateDao;
 import org.refractions.cabd.model.DataSource;
 import org.refractions.cabd.model.FeatureType;
 import org.refractions.cabd.model.FeatureTypeListValue;
