@@ -18,6 +18,7 @@ package org.refractions.cabd.serializers;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -33,6 +34,7 @@ import org.locationtech.jts.geom.Envelope;
 import org.locationtech.jts.geom.Point;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
+import org.refractions.cabd.controllers.AttributeSet;
 import org.refractions.cabd.dao.FeatureTypeManager;
 import org.refractions.cabd.model.Feature;
 import org.refractions.cabd.model.FeatureList;
@@ -114,16 +116,19 @@ public class FeatureListUtil {
 		return features.getItems().stream().map(e->e.getFeatureType()).distinct().collect(Collectors.toSet());
 	}
 	
-	public static SimpleFeatureType asFeatureType(String featureType, FeatureViewMetadata metadata) throws IOException{
-		return asFeatureType(featureType, metadata, false).getLeft();
+	public static SimpleFeatureType asFeatureType(String featureType, 
+			AttributeSet set, FeatureViewMetadata metadata) throws IOException{
+		return asFeatureType(featureType, set, metadata, false).getLeft();
 	}
 	
-	public static ImmutablePair<SimpleFeatureType, Map<String,String>> asFeatureType(String featureType, FeatureViewMetadata metadata, boolean forshape) throws IOException{
+	public static ImmutablePair<SimpleFeatureType, Map<String,String>> asFeatureType(String featureType,
+			AttributeSet set,
+			FeatureViewMetadata metadata, boolean forshape) throws IOException{
 		
 		SimpleFeatureTypeBuilder builder = new SimpleFeatureTypeBuilder();
 		Set<String> names = new HashSet<>();
 		HashMap<String,String> nameMapping = new HashMap<>();
-		for (FeatureViewMetadataField field : metadata.getFields()) {
+		for (FeatureViewMetadataField field : metadata.getFields(set)) {
 			String fieldName = field.getFieldName();
 			if (forshape) {
 				if (field.getShapefileFieldName() != null) {
@@ -169,14 +174,16 @@ public class FeatureListUtil {
 		return fname;
 	}
 	
-	public static void writeFeatures(FeatureWriter<SimpleFeatureType, SimpleFeature> writer, FeatureList features, 
+	public static void writeFeatures(FeatureWriter<SimpleFeatureType, SimpleFeature> writer, 
+			FeatureList features, 
 			FeatureViewMetadata metadata, Function<String, String> attributeNameMapper ) throws IOException{
 		//create features
 		String rooturl = ServletUriComponentsBuilder.fromCurrentContextPath().path("/").build().toUriString();
 
+		Collection<FeatureViewMetadataField> fields = metadata.getFields(features.getAttributeSet());
 		for (Feature f : features.getItems()) {
 			SimpleFeature sfeature = writer.next();
-			for (FeatureViewMetadataField field : metadata.getFields()) {
+			for (FeatureViewMetadataField field : fields) {
 				if (field.isGeometry()) {
 					sfeature.setDefaultGeometry(f.getGeometry());
 				}else if (f.getAttributes().containsKey(field.getFieldName())) {

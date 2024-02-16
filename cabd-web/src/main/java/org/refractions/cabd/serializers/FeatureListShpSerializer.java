@@ -78,7 +78,9 @@ public class FeatureListShpSerializer extends AbstractFeatureListSerializer{
 		
 		FeatureViewMetadata metadata = metadataitems.getMiddle();
 		
-		ImmutablePair<SimpleFeatureType, Map<String,String>> typeInfo = FeatureListUtil.asFeatureType(metadataitems.getLeft(), metadata, true);
+		ImmutablePair<SimpleFeatureType, Map<String,String>> typeInfo = 
+				FeatureListUtil.asFeatureType(metadataitems.getLeft(), features.getAttributeSet(), 
+						metadata, true);
 
 		SimpleFeatureType type = typeInfo.getLeft();
 		Map<String,String> nameMapping = typeInfo.getRight();

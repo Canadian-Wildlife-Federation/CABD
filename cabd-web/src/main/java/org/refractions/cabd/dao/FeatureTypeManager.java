@@ -143,6 +143,7 @@ public class FeatureTypeManager {
 		
         this.setFeatureTypes( typeDao.getFeatureTypes() );      
         this.attributeSets = typeDao.getAttributeSets();
+        this.attributeSets.add(new AttributeSet(AttributeSet.VECTOR_TILE, "include_vector_tile"));
         
         for (FeatureType t : types) {
         	FeatureViewMetadata metadata = typeDao.getViewMetadata(t.getDataViewName(), this.attributeSets);

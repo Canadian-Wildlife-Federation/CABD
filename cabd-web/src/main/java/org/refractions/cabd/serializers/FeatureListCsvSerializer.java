@@ -71,6 +71,7 @@ public class FeatureListCsvSerializer extends AbstractFeatureListSerializer{
 		WKTWriter wktwriter = new WKTWriter();
 		
 		//determine attributes; sort
+		
 		Set<String> attributes = new HashSet<>();
 		for (Feature b : features.getItems()) {
 			for (String key : b.getAttributes().keySet()) {
@@ -98,7 +99,7 @@ public class FeatureListCsvSerializer extends AbstractFeatureListSerializer{
 				CSVWriter csvWriter = new CSVWriter(outwriter)){
 		
 			//write header
-			String[] data = new String[orderedAttributes.size() + 3];
+			String[] data = new String[orderedAttributes.size() + 1];
 			for (int i = 0; i < orderedAttributes.size(); i ++) {
 				data[i] = orderedAttributes.get(i);
 			}

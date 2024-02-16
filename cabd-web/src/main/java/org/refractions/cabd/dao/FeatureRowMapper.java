@@ -64,15 +64,13 @@ public class FeatureRowMapper implements RowMapper<Feature> {
 					throw new SQLException(ex);
 				}
 			}else {
-//				if (attributes == AttributeSet.ALL || field.includeVectorTile()) {
-					if (field.isLink()) {
-						String oo = (String)rs.getObject(field.getFieldName());
-						feature.addLinkAttribute(field.getFieldName(), oo);
-					}else {
-						Object oo = rs.getObject(field.getFieldName());
-						feature.addAttribute(field.getFieldName(), oo);
-					}
-//				}
+				if (field.isLink()) {
+					String oo = (String)rs.getObject(field.getFieldName());
+					feature.addLinkAttribute(field.getFieldName(), oo);
+				}else {
+					Object oo = rs.getObject(field.getFieldName());
+					feature.addAttribute(field.getFieldName(), oo);
+				}
 			}
 		};
 		return feature;

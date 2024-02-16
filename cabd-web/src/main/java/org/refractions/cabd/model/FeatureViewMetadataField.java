@@ -37,7 +37,6 @@ public class FeatureViewMetadataField extends NamedDescriptionItem {
 	private String valueOptionsRef;
 	
 	private boolean isLink = false;
-	private boolean includeVectorTile = false;
 	
 	private boolean isGeometry = false;
 	private Integer srid = null;
@@ -53,14 +52,13 @@ public class FeatureViewMetadataField extends NamedDescriptionItem {
 	public FeatureViewMetadataField(String fieldName, String name_en, String description_en,
 			String name_fr, String description_fr,
 			boolean isLink, String datatype, 
-			boolean includeVectorTile, String validValues, 
+			String validValues, 
 			boolean isNameSearch, String shapeFieldName,
 			Map<String,Integer> attributeSetMapping) {
 		super(name_en, name_fr, description_en, description_fr);
 		this.fieldName = fieldName;
 		this.isLink = isLink;
 		this.datatype = datatype;
-		this.includeVectorTile = includeVectorTile;
 		this.valueOptionsRef = validValues;
 		this.valueOptions = null;
 		this.isNameSearch = isNameSearch;
@@ -72,9 +70,6 @@ public class FeatureViewMetadataField extends NamedDescriptionItem {
 		return this.isNameSearch;
 	}
 	
-	public boolean includeVectorTile() {
-		return this.includeVectorTile;
-	}
 	public String getDataType() {
 		return this.datatype;
 	}

@@ -136,13 +136,24 @@ public class FeatureTypeDao {
 		RowMapper<FeatureViewMetadataField> viewMetadataMapper = (rs, rownum) ->{
 			Map<String,Integer> attributeSetMappings = new HashMap<>();
 			for (AttributeSet s : sets) {
-				attributeSetMappings.put(s.getName(),  (Integer)rs.getObject(s.getColumn()));
+				Integer x = null;
+				Object y = rs.getObject(s.getColumn());
+				if (y != null) {
+					if (y instanceof Integer) {
+						x = (Integer) y;
+					}else if (y instanceof Boolean) {
+						if ((Boolean)y) {
+							x = 1;
+						}
+					}
+				}
+				attributeSetMappings.put(s.getName(), x);
 			}
 			return new FeatureViewMetadataField(
 					rs.getString("field_name"), rs.getString("name_en"), 
 					rs.getString("description_en"), rs.getString("name_fr"),
 					rs.getString("description_fr"), rs.getBoolean("is_link"),
-					rs.getString("data_type"), rs.getBoolean("include_vector_tile"), 
+					rs.getString("data_type"), 
 					rs.getString("value_options_reference"), 
 					rs.getBoolean("is_name_search"), rs.getString("shape_field_name"),
 					attributeSetMappings);

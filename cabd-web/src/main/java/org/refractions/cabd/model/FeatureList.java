@@ -17,6 +17,7 @@ package org.refractions.cabd.model;
 
 import java.util.List;
 
+import org.refractions.cabd.controllers.AttributeSet;
 import org.refractions.cabd.controllers.FeatureController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
@@ -32,15 +33,21 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 public class FeatureList extends ItemList<Feature>{
 
 	private long totalResults = 0;
+	private AttributeSet attributeSet = null;
 	
-	public FeatureList(List<Feature> features) {
+	public FeatureList(List<Feature> features, AttributeSet attributeSet) {
 		super(features);
+		this.attributeSet = attributeSet;
 		
 		//add url attribute to link to individual feature
 		String rooturl = ServletUriComponentsBuilder.fromCurrentContextPath().path("/").path(FeatureController.PATH).build().toUriString();		
 		features.forEach(f->f.addAttribute(FeatureViewMetadata.URL_ATTRIBUTE, rooturl + "/" + f.getFeatureType() + "/" + f.getId().toString()));
 		
 		this.totalResults = features.size();
+	}
+	
+	public AttributeSet getAttributeSet() {
+		return this.attributeSet;
 	}
 	
 	public void setTotalResults(long totalResults) {

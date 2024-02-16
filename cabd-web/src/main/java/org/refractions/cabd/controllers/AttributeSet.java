@@ -24,6 +24,9 @@ package org.refractions.cabd.controllers;
  */
 public class AttributeSet {
 	
+	
+	public static final String VECTOR_TILE = "vectortile";
+	
 	private String name;
 	private String column;
 	
