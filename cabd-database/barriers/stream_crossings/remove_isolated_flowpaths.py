@@ -58,29 +58,10 @@ mSRID = appconfig['DATABASE']['cabdSRID']
 watershed_id = ast.literal_eval(appconfig['DATASETS']['watershed_id'])
 
 
-###########
-# WATERSHED ID's for Saskatchewan
-# watershed_id = ['05AK000', '05CK000', '05ED000', '05EF000', '05EG000', '05FE000', '05FF000', '05GA000', '05GB001', '05GB002', '05GC000', '05GD000', '05GE000', '05GF000', '05GG000']
-# watershed_id = ['05JA000', '05JB000', '05JC000', '05JD001', '05JD002', '05JE000', '05JF000', '05JG000', '05JH000', '05JJ000', '05JK000', '05JL000', '05JM000']
-# watershed_id = ['05KA000', '05KB000', '05KC000', '05KD000', '05KE000', '05KF000', '05KG000', '05KH000', '05KJ001']
-# watershed_id = ['05LA000', '05LB000', '05LC000', '05LD000', '05LE000', '05MA000', '05MB000', '05MC000', '05MD000', '05ME000', '05MG000']
-# watershed_id = ['05NA000', '05NB000', '05NC000', '05NDA00', '05NDB00', '05NE000', '05NFA00', '05NFB00', '05NG000']
-# watershed_id = ['06AD000', '06AE000', '06AF000', '06AG000', '06BA000', '06BB000', '06BC000', '06BD000', '06CA000', '06CB000', '06CC000', '06CD000', '06CE000']
-# watershed_id = ['06DA000', '06DB000', '06DC000', '06DD000', '06EA000', '06EB000', '06HA002', '06LA000']
-# watershed_id = ['11AAD00', '11ABA00', '11ABC00', '11ABD00', '11AC000', '11ADA00', '11AEA00', '11AEB00', '11AEC00', '11AFA00', '11AFB00']
-
-
-
-
-# if len(watershed_id) == 1:
-#     watershed_id = f"('{watershed_id[0]}')"
-# else:
-#     watershed_id = tuple(watershed_id)
-
 
 def createTable(connection):
     """
-    Creates a table to store the new version of the streams table
+    Creates a table to store the copy of the streams table
     """
 
     query = f"""
@@ -150,7 +131,6 @@ def disconnectedIslands(conn, watershed_id):
         # Calculate progress
         iteration = 1
         remaining = int(numRows/chunkSize)+1
-        # features = cursor.fetchall()
 
         while True:
             features = cursor.fetchmany(chunkSize)
@@ -279,7 +259,7 @@ def dissolveFeatures(conn):
     conn.commit()
 
 def deleteIsolated(conn):
-    """ Delete isolated streams from streams table """
+    """ Delete isolated streams from streams table and truncate copy of stream table"""
 
     # query = f"""
     #     DELETE 
@@ -294,14 +274,13 @@ def deleteIsolated(conn):
     longestNetworks = int(0.005 * numGroups)
     query = f"""
         DELETE 
-        FROM {dbTargetSchema}.{dbTargetStreamTable}_copy s
+        FROM {dbTargetSchema}.{dbTargetStreamTable} s
         USING network_groups n
         WHERE n.ng >= {longestNetworks} AND s.id = n.id;
 
         DROP TABLE network_groups;
+        TRUNCATE TABLE {dbTargetSchema}.{dbTargetStreamTable}_copy;
     """
-
-
     with conn.cursor() as cursor:
         cursor.execute(query)
         conn.commit()
@@ -323,7 +302,7 @@ def main():
 
     # Creates a copy of the stream table
     # Comment out if adding streams to existing table
-    # createTable(conn)
+    createTable(conn)
 
     for w in watershed_id:
         print(f"  WATERSHED: {w}")
@@ -341,6 +320,11 @@ def main():
 
         print("  deleting isolated flowpaths")
         deleteIsolated(conn)
+
+    # Drop copy of stream table when done processing watershed batch
+    with conn.cursor() as cursor:
+        cursor.execute(f"DROP TABLE {dbTargetSchema}.{dbTargetStreamTable}_copy;")
+        conn.commit()
 
     conn.close()
 
