@@ -1,9 +1,10 @@
-import psycopg2 as pg2
 import sys
 import argparse
 import configparser
 import ast
 from datetime import datetime
+import getpass
+import psycopg2 as pg2
 from psycopg2.extras import RealDictCursor
 
 startTime = datetime.now()
@@ -12,23 +13,21 @@ print("Start time:", startTime)
 #-- PARSE COMMAND LINE ARGUMENTS --  
 parser = argparse.ArgumentParser(description='Processing stream crossings.')
 parser.add_argument('-c', type=str, help='the configuration file', required=True)
-parser.add_argument('-user', type=str, help='the username to access the database')
-parser.add_argument('-password', type=str, help='the password to access the database')
 parser.add_argument('--copystreams', dest='streams', action='store_true', help='stream data needs to be copied')
 parser.add_argument('--ignorestreams', dest='streams', action='store_false', help='stream data is already present')
 args = parser.parse_args()
 configfile = args.c
 
-#-- READ PARAMETERS FOR CONFIG FILE -- 
+#-- READ PARAMETERS FOR CONFIG FILE --
 config = configparser.ConfigParser()
 config.read(configfile)
 
-#database settings 
+#database settings
 dbHost = config['DATABASE']['host']
 dbPort = config['DATABASE']['port']
 dbName = config['DATABASE']['name']
-dbUser = args.user
-dbPassword = args.password
+dbUser = input(f"""Enter username to access {dbName}:\n""")
+dbPassword = getpass.getpass(f"""Enter password to access {dbName}:\n""")
 
 #output data schema
 schema = config['DATABASE']['data_schema']
@@ -82,8 +81,6 @@ nonRailLayers = ast.literal_eval(config['DATASETS']['nonRailLayers'])
 #rail layers - these are clustered separately from other features
 railLayers = ast.literal_eval(config['DATASETS']['railLayers'])
 
-streamPropTableExists = False
-
 print ("-- Processing Parameters --")
 print (f"Database: {dbHost}:{dbPort}/{dbName}")
 print (f"Data Schema: {schema}")
@@ -102,25 +99,25 @@ print (f"Rail Layers: {railLayers}")
 print ("----")
 
 #--
-#-- function to execute a query 
+#-- function to execute a query
 #--
 def executeQuery(conn, sql):
     #print (sql)
     with conn.cursor() as cursor:
         cursor.execute(sql)
     conn.commit()
-    
-    
+
+
 #--
 #-- checks if the first column of the first row
 #-- of the query results is 0 otherwise
 # -- ends the program
 #--
-def checkEmpty(conn, sql, error):    
+def checkEmpty(conn, sql, error):
     with conn.cursor() as cursor:
         cursor.execute(sql)
         count = cursor.fetchone()
-        if (count[0] != 0):
+        if count[0] != 0:
             print ("ERROR: " + error)
             sys.exit(-1)
 
@@ -149,7 +146,11 @@ def getStreamData(conn):
 
     def getChyfData(aoi_list):
 
-        aois = tuple(aoi_list)
+        if len(aoi_list) > 1:
+            aois = tuple(aoi_list)
+        else:
+            aois = str(tuple(aoi_list))
+            aois = aois.replace(",", "")
 
         print("Getting CHyF data")
 
@@ -191,8 +192,7 @@ def getStreamData(conn):
         CREATE TABLE {schema}.{streamPropTable} as SELECT * FROM chyf_flowpath_properties WHERE aoi_id IN {aois};
         """
         executeQuery(conn, sql)
-        streamPropTableExists = True
-        
+
     def getNhnData(aoi_list):
 
         aois = tuple(aoi_list)
@@ -249,17 +249,17 @@ def getStreamData(conn):
             rows = cursor.fetchall()
 
         aoiChyf = []
-        
+
         for row in rows:
             id = row['id']
             name = row['short_name']
             aoiChyf.append(id)
-            
+
             if name in aoiNhn:
                 aoiNhn.remove(name)
             else:
                 continue
-            
+
     else:
         aoiQuery = f"""
             SELECT id, short_name from chyf_aoi
@@ -270,7 +270,7 @@ def getStreamData(conn):
             rows = cursor.fetchall()
 
         aoiChyf = []
-        
+
         for row in rows:
             id = row['id']
             name = row['short_name']
@@ -306,24 +306,25 @@ def getStreamData(conn):
         );
     """
     executeQuery(conn, sql)
-    streamPropTableExists = False
 
     if aoiChyf:
         getChyfData(aoiChyf)
 
+        sql = f"""
+        CREATE INDEX {schema}_{streamPropTable}_id on {schema}.{streamPropTable} (id);
+        ANALYZE {schema}.{streamPropTable};
+        """
+        executeQuery(conn, sql)
+
     if aoiNhn:
         getNhnData(aoiNhn)
-    
+
     sql = f"""
         CREATE INDEX {schema}_{streamTable}_{geometry} on {schema}.{streamTable} using gist({geometry}); 
         CREATE INDEX {schema}_{streamTable}_id on {schema}.{streamTable} (id);
-        CREATE INDEX {schema}_{streamPropTable}_id on {schema}.{streamPropTable} (id);
-        
-        ANALYZE {schema}.{streamPropTable};
         ANALYZE {schema}.{streamTable};
     """
-    if streamPropTableExists:
-        executeQuery(conn, sql)
+    executeQuery(conn, sql)
 
     # calculate length as this is missing in NHN data, and is required for clustering operations
     sql = f"""
@@ -331,24 +332,25 @@ def getStreamData(conn):
     """
     executeQuery(conn, sql)
 
-    # warn user if stream data has not been fetched
-    sql = f"SELECT case when count(*) = 0 then 1 else 0 end FROM {schema}.{streamTable}"
-    checkEmpty(conn, sql, "stream table is empty")
-
-    if streamPropTableExists:
+    if aoiChyf:
         sql = f"SELECT case when count(*) = 0 then 1 else 0 end FROM {schema}.{streamPropTable}"
         checkEmpty(conn, sql, "stream property table is empty")
+
+    else:
+        # warn user if stream data has not been fetched
+        sql = f"SELECT case when count(*) = 0 then 1 else 0 end FROM {schema}.{streamTable}"
+        checkEmpty(conn, sql, "stream table is empty")
 
 # ----
 # -- compute modelled crossings for each layer
 # ----
 def computeCrossings(conn):
     for layer in layers:
-        if (layer is None):
+        if layer is None:
             continue
-        
+
         print("Computing crossings for " + layer)
-        
+
         computeCrossing = f"""
             DROP TABLE IF EXISTS {schema}.{layer}_crossings;
         
@@ -394,7 +396,7 @@ def clusterPoints(conn):
 
     idFields = ""
     for layer in nonRailLayers:
-        if (layer is None):
+        if layer is None:
             continue
         idFields = idFields + f'z.{layer}_{id},'
     idFields = idFields[:-1]
@@ -478,7 +480,7 @@ def processClusters(conn):
 
         print(layer)
 
-        if (layer is None):
+        if layer is None:
             continue
 
         print(f"""Computing point to keep for cluster with {layer} crossings""")
@@ -516,9 +518,12 @@ def processClusters(conn):
         --add upstream length
         ALTER TABLE  {schema}.cluster_{layer}_id ADD COLUMN upstream_length double precision;
         """
-        executeQuery(conn, sql)
+        executeQuery(conn,sql)
 
-        if streamPropTableExists:
+        propTableExist = checkTableExists(conn, streamPropTable)
+
+        if propTableExist:
+
             sql = f"""
             UPDATE {schema}.cluster_{layer}_id 
             SET upstream_length = CASE WHEN a.max_uplength IS NULL THEN b.length ELSE a.max_uplength + b.length END
@@ -531,15 +536,8 @@ def processClusters(conn):
             --we are using this up length to determine which edge to pick when there is more than
             --one stream edge being crossed
             """
-        else:
-            sql = f"""
-            UPDATE {schema}.cluster_{layer}_id 
-            SET upstream_length = b.length 
-            FROM  {schema}.{streamTable} b
-            where {schema}.cluster_{layer}_id.chyf_stream_id = b.id;
-            """
-        executeQuery(conn, sql)
-        
+            executeQuery(conn, sql)
+
         sql = f"""
         --new addition to deal with flowpaths that are from unprocessed NHN (no chyf_properties table)
         UPDATE {schema}.cluster_{layer}_id 
@@ -616,7 +614,7 @@ def processClusters(conn):
     fieldswithtype = ""
     fields = ""
     for layer in nonRailLayers:
-        if (layer is None):
+        if layer is None:
             continue
         fieldswithtype += f'{layer}_{id} integer,'
         fields += f'{layer}_{id},'
@@ -649,11 +647,11 @@ def processClusters(conn):
     idcasesql = ""
     typecasesql = ""
     for layer in nonRailLayers:
-        if (layer is None):
+        if layer is None:
             continue
         idcasesql += f'WHEN {layer}_{id} IS NOT NULL THEN {layer}_{id} '
         typecasesql += f"WHEN {layer}_{id} IS NOT NULL THEN '{layer}' "
-        
+
         sql = f"""
             INSERT INTO {schema}.temp2(cluster_id, {layer}_{id})
             SELECT cluster_id, max({layer}_{id}) as {layer}_{id} 
@@ -685,7 +683,7 @@ def processClusters(conn):
 
 
 def processRail(conn):
-    
+
     for layer in railLayers:
         print(f"Adding {layer} crossings to crossing points")
 
@@ -697,7 +695,7 @@ def processRail(conn):
         executeQuery(conn, sql)
 
         sql = f"""
-        ALTER TABLE {schema}.modelled_crossings ADD column id uuid;
+        ALTER TABLE {schema}.modelled_crossings ADD column IF NOT EXISTS id uuid;
         UPDATE {schema}.modelled_crossings SET id = gen_random_uuid();
         ALTER TABLE {schema}.modelled_crossings DROP COLUMN cluster_id;
         """
@@ -735,12 +733,22 @@ def processRail(conn):
         WHERE e.id = {schema}.close_points.chyf_stream_id;
 
         ALTER TABLE {schema}.close_points ADD COLUMN upstream_length double precision;
+        """
+        executeQuery(conn, sql)
 
-        UPDATE {schema}.close_points 
-        SET upstream_length = CASE WHEN a.max_uplength is null THEN b.length ELSE a.max_uplength + b.length END
-        FROM {schema}.{streamPropTable} a join {schema}.{streamTable} b on a.id = b.id 
-        WHERE {schema}.close_points.chyf_stream_id = a.id;
+        propTableExist = checkTableExists(conn, streamPropTable)
 
+        if propTableExist:
+
+            sql = f"""
+            UPDATE {schema}.close_points 
+            SET upstream_length = CASE WHEN a.max_uplength is null THEN b.length ELSE a.max_uplength + b.length END
+            FROM {schema}.{streamPropTable} a join {schema}.{streamTable} b on a.id = b.id 
+            WHERE {schema}.close_points.chyf_stream_id = a.id;
+            """
+            executeQuery(conn, sql)
+
+        sql = f"""
         --new addition to deal with flowpaths that are from unprocessed NHN (no chyf_properties table)
         UPDATE {schema}.close_points
         SET upstream_length = b.length
@@ -753,7 +761,6 @@ def processRail(conn):
         SELECT cluster_id, max(upstream_length) as max_length from {schema}.close_points 
         GROUP BY cluster_id;
 
-
         --map the cluster to the edge
         DROP TABLE IF EXISTS {schema}.temp4;
         CREATE TABLE {schema}.temp4 AS
@@ -761,14 +768,12 @@ def processRail(conn):
         FROM {schema}.close_points b, {schema}.temp3 a
         WHERE a.cluster_id = b.cluster_id and b.upstream_length = a.max_length;
 
-
         --for the flowpath we want to find the most downstream point in the cluster
         DROP TABLE IF EXISTS {schema}.temp5;
         CREATE TABLE {schema}.temp5 as 
         SELECT a.cluster_id , max(point_on_line) as min_pol
         FROM {schema}.close_points a JOIN {schema}.temp4 b on a.cluster_id = b.cluster_id and a.chyf_stream_id = b.chyf_stream_id
         GROUP BY a.cluster_id;
-
         """
         executeQuery(conn, sql)
 
@@ -827,11 +832,17 @@ def processRail(conn):
         """
         executeQuery(conn, sql)
 
+    sql = f"""
+    ALTER TABLE {schema}.modelled_crossings ADD column IF NOT EXISTS id uuid;
+    UPDATE {schema}.modelled_crossings SET id = gen_random_uuid();
+    """
+    executeQuery(conn, sql)
+
 
 def matchArchive(conn):
 
     print("Matching ids to archived crossings")
-    
+
     query = f"""
         ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS new_crossing_type varchar;
         ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS reviewer_status varchar;
@@ -880,8 +891,8 @@ def matchArchive(conn):
         cursor.execute(query)
 
 def finalizeCrossings(conn):
-    
-    print(f"Adding layer attributes to crossing points: ")
+
+    print("Adding layer attributes to crossing points: ")
 
     # generate list of aliases to refer to each table
     prefix = []
@@ -890,7 +901,7 @@ def finalizeCrossings(conn):
         prefix.append(alpha)
         alpha = chr(ord(alpha) + 1)
 
-    sql = f"select cp.*,"
+    sql = "select cp.*,"
     sqlfrom = f" {schema}.modelled_crossings cp "
 
     idx = 0
@@ -908,7 +919,7 @@ def finalizeCrossings(conn):
 
         for val in attributeValues:
             sql += f"{prefix[idx]}.{val},"
-        
+
         sqlfrom += f" left join {schema}.{k} {prefix[idx]} on {prefix[idx]}.{id} = cp.transport_feature_id and cp.transport_feature_source = '{k}' "
 
         idx = idx + 1
@@ -944,7 +955,20 @@ def finalizeCrossings(conn):
 
     UPDATE {schema}.modelled_crossings SET stream_name_1 = n.name_en FROM public.{streamNameTable} n WHERE rivernameid1 = n.name_id::varchar;
     UPDATE {schema}.modelled_crossings SET stream_name_2 = n.name_en FROM public.{streamNameTable} n WHERE rivernameid2 = n.name_id::varchar;
-    UPDATE {schema}.modelled_crossings SET strahler_order = p.strahler_order FROM {schema}.{streamPropTable} p WHERE chyf_stream_id = p.id;
+    """
+    executeQuery(conn, sql)
+
+    propTableExist = checkTableExists(conn, streamPropTable)
+
+    if propTableExist:
+
+        sql = f"""
+        UPDATE {schema}.modelled_crossings SET strahler_order = p.strahler_order FROM {schema}.{streamPropTable} p WHERE chyf_stream_id = p.id;
+        """
+
+        executeQuery(conn, sql)
+
+    sql = f"""
 
     ALTER TABLE {schema}.modelled_crossings
         ADD CONSTRAINT {schema}_crossing_type_fkey FOREIGN KEY (new_crossing_type)
@@ -1013,7 +1037,7 @@ def main():
                     host=dbHost, 
                     password=dbPassword, 
                     port=dbPort)
-    
+
     if args.streams:
         print("Copying streams into schema")
         getStreamData(conn)
