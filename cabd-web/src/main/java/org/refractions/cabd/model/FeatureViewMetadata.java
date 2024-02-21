@@ -15,9 +15,12 @@
  */
 package org.refractions.cabd.model;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 import org.refractions.cabd.CabdApplication;
+import org.refractions.cabd.controllers.AttributeSet;
 
 /**
  * Represents the metadata about a view containing
@@ -57,10 +60,48 @@ public class FeatureViewMetadata {
 		return this.featureView + "_en";
 	}
 	
+	/**
+	 * returns all fields
+	 * @return
+	 */
 	public Collection<FeatureViewMetadataField> getFields(){
-		return this.fields;
+		return fields;
+	}
+	/**
+	 * Returns the fields associated with a given attribute set plus the geometry field. If the
+	 * set is null it returns all fields 
+	 * 
+	 * @param set
+	 * @return
+	 */
+	public Collection<FeatureViewMetadataField> getFields(AttributeSet set){
+		return getFieldsInternal(set, true);
+
 	}
 	
+	/**
+	 * Returns the fields associated with the given attribute set only - does
+	 * not include the geometry field.  If set is null returns all fields
+	 * 
+	 * @param set
+	 * @return
+	 */
+	public Collection<FeatureViewMetadataField> getFieldsOnly(AttributeSet set){
+		return getFieldsInternal(set, false);
+	}
 	
+	private Collection<FeatureViewMetadataField> getFieldsInternal(AttributeSet set, boolean includeGeom){
+		if (set == null) return this.fields;
+		
+		List<FeatureViewMetadataField> filtered = new ArrayList<>();
+		for (FeatureViewMetadataField field : this.fields) {
+			if (field.getOrder(set) != null) {
+				filtered.add(field);
+			}else if (field.isGeometry() && includeGeom) {
+				filtered.add(field);
+			}
+		}
+		return filtered;
+	}
 	
 }

@@ -140,7 +140,9 @@ public class FeatureDao {
 		sb.append(" = ? ");
 		
 		try {
-			return jdbcTemplate.queryForObject(sb.toString(), new FeatureRowMapper(btype.getViewMetadata(), AttributeSet.ALL), uuid);
+			return jdbcTemplate.queryForObject(
+					sb.toString(), 
+					new FeatureRowMapper(btype.getViewMetadata(), null), uuid);
 		}catch (EmptyResultDataAccessException ex) {
 			return null;
 		}
@@ -204,13 +206,11 @@ public class FeatureDao {
 		selectallSql.append(ID_FIELD);
 		
 		boolean hasftype = false;
-		for (FeatureViewMetadataField field : vmetadata.getFields()) {
+		for (FeatureViewMetadataField field : vmetadata.getFields(requestparams.getAttributeSet())) {
 			
 			if (!field.isGeometry()) {
-				if (requestparams.getAttributeSet() == AttributeSet.ALL || field.includeVectorTile()) {
-					selectallSql.append("," + field.getFieldName() );
-					if (field.getFieldName().equals(FEATURE_TYPE_FIELD)) hasftype = true;
-				}
+				selectallSql.append("," + field.getFieldName() );
+				if (field.getFieldName().equals(FEATURE_TYPE_FIELD)) hasftype = true;
 			}else {
 				geomField = field;
 				selectallSql.append(", st_asbinary(" + field.getFieldName() + ") as " + field.getFieldName() );
@@ -321,7 +321,7 @@ public class FeatureDao {
 			throw new TooManyFeaturesException();
 		}
 		
-		FeatureList featurelist = new FeatureList(features);
+		FeatureList featurelist = new FeatureList(features, requestparams.getAttributeSet());
 		
 		//add total count 
 		long total = jdbcTemplate.queryForObject(getCount.toString(), Long.class, params.toArray());
@@ -370,13 +370,11 @@ public class FeatureDao {
 		
 		boolean hasftype = false;
 		
-		for (FeatureViewMetadataField field : vmetadata.getFields()) {
+		for (FeatureViewMetadataField field : vmetadata.getFields(requestparams.getAttributeSet())) {
 			
 			if (!field.isGeometry()) {
-				if (requestparams.getAttributeSet() == AttributeSet.ALL || field.includeVectorTile()) {
-					selectallSql.append("," + field.getFieldName() );
-					if (field.getFieldName().equals(FEATURE_TYPE_FIELD)) hasftype = true;
-				}
+				selectallSql.append("," + field.getFieldName() );
+				if (field.getFieldName().equals(FEATURE_TYPE_FIELD)) hasftype = true;
 			}else {
 				geomField = field;
 				selectallSql.append(", st_asbinary(" + field.getFieldName() + ") as " + field.getFieldName() );
@@ -471,7 +469,7 @@ public class FeatureDao {
 			throw new TooManyFeaturesException();
 		}
 		
-		FeatureList featurelist = new FeatureList(features);
+		FeatureList featurelist = new FeatureList(features, requestparams.getAttributeSet());
 		
 		//add total count 
 		long total = jdbcTemplate.queryForObject(getCount.toString(), Long.class, params.toArray());
@@ -517,11 +515,11 @@ public class FeatureDao {
 		
 		if (ftype != null) {
 			sb.append("	SELECT ST_AsMVTGeom(ST_Transform(t.geometry, " + srid + "), bounds.b2d) AS geom,");
-			for (FeatureViewMetadataField field : ftype.getViewMetadata().getFields()) {
-				if(field.includeVectorTile()) {
-					sb.append(field.getFieldName());
-					sb.append(",");
-				}
+			
+			AttributeSet vectorSet = typeManager.findAttributeSet(AttributeSet.VECTOR_TILE);
+			for (FeatureViewMetadataField field : ftype.getViewMetadata().getFields(vectorSet)) {
+				sb.append(field.getFieldName());
+				sb.append(",");
 			}
 			sb.deleteCharAt(sb.length() - 1);
 			sb.append("	FROM " + ftype.getDataView() + " t, bounds ");
@@ -539,13 +537,13 @@ public class FeatureDao {
 				
 				sb.append("	SELECT ST_AsMVTGeom(ST_Transform(t.geometry, " + srid + "), bounds.b2d) AS geom,");
 				sb.append(" jsonb_build_object(");
-				for (FeatureViewMetadataField field : ft.getViewMetadata().getFields()) {
-					if(field.includeVectorTile()) {
-						sb.append("'" + field.getFieldName() + "'");
-						sb.append(",");
-						sb.append(field.getFieldName());
-						sb.append(",");
-					}
+				
+				AttributeSet vectorSet = typeManager.findAttributeSet(AttributeSet.VECTOR_TILE);
+				for (FeatureViewMetadataField field : ft.getViewMetadata().getFields(vectorSet)) {
+					sb.append("'" + field.getFieldName() + "'");
+					sb.append(",");
+					sb.append(field.getFieldName());
+					sb.append(",");
 				}
 				sb.deleteCharAt(sb.length() - 1);
 				sb.append(" )");

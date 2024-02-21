@@ -21,6 +21,7 @@ import java.text.MessageFormat;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Envelope;
 import org.refractions.cabd.dao.FeatureDao;
+import org.refractions.cabd.dao.FeatureTypeManager;
 import org.refractions.cabd.dao.filter.Filter;
 import org.refractions.cabd.dao.filter.NameFilter;
 import org.refractions.cabd.exceptions.InvalidParameterException;
@@ -39,7 +40,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 public class FeatureRequestParameters {
 
 	private Logger logger = LoggerFactory.getLogger(FeatureDao.class);
-
+	
 	@Parameter(required = false, description = "A bounding box in lat/long to search.  Should be of the form: 'xmin,ymin,xmax,ymax'")
 	private String bbox;
 	
@@ -55,8 +56,8 @@ public class FeatureRequestParameters {
 	@Parameter(name="namefilter", required = false, description = "Filters feature by multiple system defined named fields.")
 	private String[] namefilter;
 	
-	@Parameter(name="attributes", required = false, description = "A flag to set if a complete set or limitted set of attributes should be returned.")
-	private AttributeSet attributes;
+	@Parameter(name="attributes", required = false, description = "A flag to select which set of attributes are returned (all, limited, etc.).")
+	private String attributes;
 	
 	//this is the only way I could figure out
 	//how to provide names for query parameters and
@@ -74,7 +75,7 @@ public class FeatureRequestParameters {
 	    this.maxresults = maxResults;
 	    this.filter = filter;
 	    this.namefilter = namefilter;
-	    this.attributes = AttributeSet.parse(attributes);
+	    this.attributes = attributes;
 	}
 	
 	public String getBbox() { return this.bbox; }
@@ -82,7 +83,7 @@ public class FeatureRequestParameters {
 	public Integer getMaxresults() { return maxresults;	}
 	public String[] getFilter() { return filter; }
 	public String[] getNameFilter() { return namefilter; }
-	public AttributeSet getAttributeSet() { return this.attributes; }
+	public String getAttributeSet() { return this.attributes; }
 
 	
 	/**
@@ -91,7 +92,7 @@ public class FeatureRequestParameters {
 	 * 
 	 * @param typeManager
 	 */
-	public ParsedRequestParameters parseAndValidate() {
+	public ParsedRequestParameters parseAndValidate(FeatureTypeManager typeManager) {
 		Envelope env = null;
 		if (bbox != null) {
 			env = parseBbox();
@@ -125,8 +126,15 @@ public class FeatureRequestParameters {
 				throw new InvalidParameterException("The 'max-results' parameter must be larger than 0");
 			}
 		}
+		AttributeSet set = null;
+		if (this.attributes != null) {
+			set = typeManager.findAttributeSet(this.attributes);
+			if (set == null) {
+				throw new InvalidParameterException("The 'attributes' parameter '" + this.attributes + "' is not supported.");
+			}
+		}
 		return new ParsedRequestParameters(env, searchPoint, maxresults, parseFilter(filter), 
-				parseNameFilter(namefilter), attributes);
+				parseNameFilter(namefilter), set);
 	}
 
 	private Envelope parseBbox() {

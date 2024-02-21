@@ -38,7 +38,6 @@ import org.springframework.stereotype.Component;
 @Component
 public class FeatureGeoPkgSerializer extends AbstractHttpMessageConverter<Feature>{
 
-
 	@Autowired
 	private FeatureListGeoPkgSerializer listSerializer;
 	
@@ -61,7 +60,7 @@ public class FeatureGeoPkgSerializer extends AbstractHttpMessageConverter<Featur
 	protected void writeInternal(Feature feature, HttpOutputMessage outputMessage)
 			throws IOException, HttpMessageNotWritableException {
 	
-		FeatureList fl = new FeatureList(Collections.singletonList(feature));
+		FeatureList fl = new FeatureList(Collections.singletonList(feature), null);
 		listSerializer.writeInternal(fl, outputMessage);
 	}
 	

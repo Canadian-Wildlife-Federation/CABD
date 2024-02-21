@@ -22,13 +22,25 @@ package org.refractions.cabd.controllers;
  * @author Emily
  *
  */
-public enum AttributeSet {
-	LIMITED,
-	ALL;
+public class AttributeSet {
 	
-	public static AttributeSet parse(String value) {
-		if (value == null || value.isEmpty()) return ALL;
-		if (value.equalsIgnoreCase("limited")) return LIMITED;
-		return ALL;
+	
+	public static final String VECTOR_TILE = "vectortile";
+	
+	private String name;
+	private String column;
+	
+	public AttributeSet(String name, String column) {
+		this.name = name.toLowerCase().trim();
+		this.column = column;
 	}
+	
+	public String getName() {
+		return this.name;
+	}
+	
+	public String getColumn() {
+		return this.column;
+	}
+	
 }

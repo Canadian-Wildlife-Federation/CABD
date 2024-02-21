@@ -84,7 +84,8 @@ public class FeatureListKmlSerializer extends AbstractFeatureListSerializer{
 
 		FeatureViewMetadata metadata = metadataitems.getMiddle();
 
-		SimpleFeatureType type = FeatureListUtil.asFeatureType(metadataitems.getLeft(), metadata);
+		SimpleFeatureType type = FeatureListUtil.asFeatureType(metadataitems.getLeft(), 
+				features.getAttributeSet(), metadata);
 
 		ListFeatureCollection cfeatures = new ListFeatureCollection(type);
 

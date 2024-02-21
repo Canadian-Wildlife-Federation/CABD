@@ -75,7 +75,9 @@ public class FeatureListGeoPkgSerializer extends AbstractFeatureListSerializer{
 		ImmutableTriple<String, FeatureViewMetadata, Envelope> metadataitems = FeatureListUtil.getMetadata(features, typeManager);
 		
 		
-		SimpleFeatureType type = FeatureListUtil.asFeatureType(metadataitems.getLeft(), metadataitems.getMiddle());
+		SimpleFeatureType type = FeatureListUtil.asFeatureType(metadataitems.getLeft(), 
+				features.getAttributeSet(), 
+				metadataitems.getMiddle());
 		Envelope env = metadataitems.getRight();
 		Path temp = Files.createTempFile("cabdgeopkg", ".gpkg");
 		
