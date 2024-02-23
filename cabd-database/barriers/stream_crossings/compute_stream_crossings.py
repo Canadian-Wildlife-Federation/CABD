@@ -180,6 +180,15 @@ def getStreamData(conn):
         FROM chyf_flowpath
         WHERE aoi_id in {aois} AND ef_type != 2;
 
+        UPDATE {schema}.{streamTable}
+            SET short_name = (
+                SELECT
+                    short_name
+                FROM chyf_aoi ch
+                WHERE {schema}.{streamTable}.aoi_id = ch.id
+            )
+        WHERE short_name IS NULL;
+
         CREATE TABLE {schema}.{streamPropTable} as SELECT * FROM chyf_flowpath_properties WHERE aoi_id IN {aois};
         """
         executeQuery(conn, sql)
