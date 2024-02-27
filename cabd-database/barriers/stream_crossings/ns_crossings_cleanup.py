@@ -223,7 +223,7 @@ UPDATE {schema}.modelled_crossings SET crossing_type = 'bridge' FROM {schema}.te
     WHERE s.modelled_id = id AND s.structurename ILIKE '%bridge%' AND s.structurename NOT ILIKE '%culvert bridge%';
 
 UPDATE {schema}.modelled_crossings SET crossing_type = 'culvert' FROM {schema}.temp_struc_pt s
-    WHERE s.modelled_id = id AND s.structurename ILIKE '%culvert%' OR s.structurename ILIKE '%culvert bridge%';
+    WHERE s.modelled_id = id AND (s.structurename ILIKE '%culvert%' OR s.structurename ILIKE '%culvert bridge%');
 
 --find NS Topo points within 25 m of modelled crossing
 DROP TABLE IF EXISTS {schema}.temp_topo_pt;
