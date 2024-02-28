@@ -103,10 +103,6 @@ conn.commit()
 
 #remove some types of transport features we don't want
 query = f"""
-DELETE FROM {schema}.nsrn WHERE feat_desc IN ('DAM - Local - 1 Lane - Unpaved', 'FERRY CROSSING line') OR feat_desc ILIKE '%tunnel%';
-DELETE FROM {schema}.nssdb_pt WHERE structurename ilike '%underpass%';
-DELETE FROM {schema}.nstdb_pt WHERE feat_desc NOT ILIKE '%culvert%';
-DELETE FROM {schema}.nstdb_ln WHERE nstdb_ln_feat_desc = 'TUNNEL line';
 DELETE FROM {schema}.nstdb_poly WHERE feat_desc IN ('CUTTING polygon', 'FILL polygon');
 """
 with conn.cursor() as cursor:

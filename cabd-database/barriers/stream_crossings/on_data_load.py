@@ -84,18 +84,6 @@ pycmd = '"' + ogr + '" -f "PostgreSQL" PG:"' + orgDb + '" -nln "' + schema + '.n
 log(pycmd)
 subprocess.run(pycmd)
 
-log("Cleaning up layers...")
-
-#remove trails that are canoe or paddling routes
-query = f"""
-DELETE FROM {schema}.otn_segment
-WHERE trail_name ILIKE '%canoe%'
-OR permitted_uses = 'Paddling';
-"""
-with conn.cursor() as cursor:
-    cursor.execute(query)
-conn.commit()
-
 #rename ids to be unique for insert into modelled crossing table
 query = f"""
 ALTER TABLE {schema}.orn_segment
