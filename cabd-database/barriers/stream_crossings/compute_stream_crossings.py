@@ -876,7 +876,7 @@ def matchArchive(conn):
             reviewer_comments = m.reviewer_comments
         FROM match_distinct m WHERE m.modelled_id = a.id;
 
-        --DROP TABLE {schema}.modelled_crossings_archive;
+        DROP TABLE {schema}.modelled_crossings_archive;
     """
     with conn.cursor() as cursor:
         cursor.execute(query)

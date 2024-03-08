@@ -255,15 +255,15 @@ UPDATE {schema}.modelled_crossings SET crossing_subtype = 'culvert', crossing_su
     FROM {schema}.temp_bridge_points s
     WHERE s.modelled_id = id AND s.type = 'Steel pipe/Timber ext.' AND s.shot_point = '4to3/MOVED POINT/Old chainage';
 
-UPDATE {schema}.modelled_crossings SET reviewer_status = 'removed', reviewer_comments = 'crossing removed based on match from {bridgePt} that indicates there is no water flowing here'
+UPDATE {schema}.modelled_crossings SET crossing_subtype = 'no upstream channel', crossing_subtype_source = '{bridgePt} indicates there is no water flowing here'
     FROM {schema}.temp_bridge_points s
     WHERE s.modelled_id = id AND s.watercourse ILIKE 'dry%';
 
-UPDATE {schema}.modelled_crossings SET crossing_subtype = 'culvert', crossing_subtype_source = 'crossing subtype set based on match from {invPt} - Line 262'
+UPDATE {schema}.modelled_crossings SET crossing_subtype = 'culvert', crossing_subtype_source = 'crossing subtype set based on match from {invPt}'
     FROM {schema}.temp_inv_points s
     WHERE s.modelled_id = id AND s.stru_type IN ('Arch', 'Box', 'Pipe');
 
-UPDATE {schema}.modelled_crossings SET crossing_subtype = 'bridge', crossing_subtype_source = 'crossing subtype set based on match from {invPt} - Line 266'
+UPDATE {schema}.modelled_crossings SET crossing_subtype = 'bridge', crossing_subtype_source = 'crossing subtype set based on match from {invPt}'
     FROM {schema}.temp_inv_points s
     WHERE s.modelled_id = id AND s.stru_type = 'Bridge';
 
