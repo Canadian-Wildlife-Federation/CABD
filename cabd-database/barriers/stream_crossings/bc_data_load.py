@@ -85,9 +85,9 @@ query = f"""
         crossing_source text,
         crossing_feature_type text,
         pscis_status text,
-        crossing_type_code text,
         crossing_subtype_code text,
-        modelled_crossing_type_source text[],
+        crossing_subtype_code text,
+        modelled_crossing_subtype_source text[],
         barrier_status text,
         pscis_road_name text,
         pscis_stream_name text,
@@ -128,8 +128,8 @@ query = f"""
 
     CREATE FOREIGN TABLE public.bc_modelled_stream_crossings (
         modelled_crossing_id integer NOT NULL,
-        modelled_crossing_type character varying(5),
-        modelled_crossing_type_source text[],
+        modelled_crossing_subtype character varying(5),
+        modelled_crossing_subtype_source text[],
         transport_line_id integer,
         ften_road_section_lines_id integer,
         og_road_segment_permit_id integer,

@@ -128,8 +128,8 @@ executeQuery(conn, sql)
 print("Mapping column names to modelled crossings data structure...")
 
 sql = f"""
-ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS crossing_type varchar;
-ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS crossing_type_source varchar;
+ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS crossing_subtype varchar;
+ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS crossing_subtype_source varchar;
 ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS num_railway_tracks varchar;
 ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS passability_status varchar;
 ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS railway_operator varchar;
@@ -172,14 +172,14 @@ UPDATE {schema}.modelled_crossings SET transport_feature_type =
     WHEN feat_desc ILIKE '%railroad%' THEN 'rail'
     ELSE transport_feature_type END;
 
-UPDATE {schema}.modelled_crossings SET crossing_type =
+UPDATE {schema}.modelled_crossings SET crossing_subtype =
     CASE
     WHEN feat_desc ILIKE '%bridge%' THEN 'bridge'
     WHEN nstdb_ln_feat_desc ILIKE '%bridge%' THEN 'bridge'
     WHEN nstdb_ln_feat_desc ILIKE '%culvert%' THEN 'culvert'
     ELSE NULL END;
 
-UPDATE {schema}.modelled_crossings SET crossing_type_source = 'crossing type set based on transportation network' WHERE
+UPDATE {schema}.modelled_crossings SET crossing_subtype_source = 'crossing subtype set based on transportation network' WHERE
     feat_desc ILIKE '%bridge%'
     OR nstdb_ln_feat_desc ILIKE '%bridge%'
     OR nstdb_ln_feat_desc ILIKE '%culvert%';
@@ -223,7 +223,7 @@ sql = f"""
 ALTER TABLE {schema}.{topoLn} ADD COLUMN IF NOT EXISTS geometry_m geometry(LineString, {mSRID});
 UPDATE {schema}.{topoLn} SET geometry_m = ST_Transform(ST_LineMerge(geometry), {mSRID});
 
-ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS crossing_type varchar;
+ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS crossing_subtype varchar;
 
 --find NS Structure Database points within 30 m of modelled crossings
 DROP TABLE IF EXISTS {schema}.temp_struc_pt;
@@ -233,15 +233,15 @@ CREATE TABLE {schema}.temp_struc_pt AS (
     FROM {schema}.{strucPt} s, {schema}.modelled_crossings m
     WHERE ST_DWithin(s.geometry, m.geometry_m, 30)
     AND (s.structurename ILIKE '%bridge%' OR s.structurename ILIKE '%culvert%' OR structurename ilike '%underpass%')
-    AND m.crossing_type IS NULL
+    AND m.crossing_subtype IS NULL
     ORDER BY structure_id, modelled_id, ST_Distance(s.geometry, m.geometry_m)
 );
 
-UPDATE {schema}.modelled_crossings SET crossing_type = 'bridge', crossing_type_source = 'crossing type set based on match from {strucPt}'
+UPDATE {schema}.modelled_crossings SET crossing_subtype = 'bridge', crossing_subtype_source = 'crossing subtype set based on match from {strucPt}'
     FROM {schema}.temp_struc_pt s
     WHERE s.modelled_id = id AND s.structurename ILIKE '%bridge%' AND s.structurename NOT ILIKE '%culvert bridge%';
 
-UPDATE {schema}.modelled_crossings SET crossing_type = 'culvert', crossing_type_source = 'crossing type set based on match from {strucPt}'
+UPDATE {schema}.modelled_crossings SET crossing_subtype = 'culvert', crossing_subtype_source = 'crossing subtype set based on match from {strucPt}'
     FROM {schema}.temp_struc_pt s
     WHERE s.modelled_id = id AND (s.structurename ILIKE '%culvert%' OR s.structurename ILIKE '%culvert bridge%');
 
@@ -256,11 +256,11 @@ CREATE TABLE {schema}.temp_topo_pt AS (
     SELECT DISTINCT ON (s.fid) s.fid AS structure_id, s.feat_desc AS feat_desc, m.id AS modelled_id, m.transport_feature_source AS transport_feature_source, ST_Distance(s.geometry, m.geometry_m) AS dist, s.geometry
     FROM {schema}.{topoPt} s, {schema}.modelled_crossings m
     WHERE ST_DWithin(s.geometry, m.geometry_m, 25)
-    AND m.crossing_type IS NULL
+    AND m.crossing_subtype IS NULL
     ORDER BY structure_id, modelled_id, ST_Distance(s.geometry, m.geometry_m)
 );
 
-UPDATE {schema}.modelled_crossings SET crossing_type = 'culvert', crossing_type_source = 'crossing type set based on match from {topoPt}'
+UPDATE {schema}.modelled_crossings SET crossing_subtype = 'culvert', crossing_subtype_source = 'crossing subtype set based on match from {topoPt}'
     FROM {schema}.temp_topo_pt s
     WHERE s.modelled_id = id AND s.feat_desc ILIKE '%culvert%';
 
@@ -271,11 +271,11 @@ CREATE TABLE {schema}.temp_topo_poly AS (
     SELECT DISTINCT ON (s.fid) s.fid AS structure_id, s.feat_desc AS feat_desc, m.id AS modelled_id, m.transport_feature_source AS transport_feature_source, ST_Distance(ST_Transform(s.geometry, {mSRID}), m.geometry_m) AS dist, ST_Transform(s.geometry, {mSRID})
     FROM {schema}.{topoPoly} s, {schema}.modelled_crossings m
     WHERE ST_DWithin(ST_Transform(s.geometry, {mSRID}), m.geometry_m, 20)
-    AND m.crossing_type IS NULL
+    AND m.crossing_subtype IS NULL
     ORDER BY structure_id, modelled_id, ST_Distance(ST_Transform(s.geometry, {mSRID}), m.geometry_m)
 );
 
-UPDATE {schema}.modelled_crossings SET crossing_type = 'bridge', crossing_type_source = 'crossing type set based on match from {topoPoly}'
+UPDATE {schema}.modelled_crossings SET crossing_subtype = 'bridge', crossing_subtype_source = 'crossing subtype set based on match from {topoPoly}'
     FROM {schema}.temp_topo_poly s
     WHERE s.modelled_id = id AND s.feat_desc ILIKE '%bridge%';
 
@@ -283,7 +283,7 @@ DROP TABLE {schema}.temp_struc_pt;
 DROP TABLE {schema}.temp_topo_pt;
 DROP TABLE {schema}.temp_topo_poly;
 
-UPDATE {schema}.modelled_crossings SET crossing_type = 'bridge', crossing_type_source = 'crossing type set based on strahler order' WHERE strahler_order >= 6 AND crossing_type IS NULL;
+UPDATE {schema}.modelled_crossings SET crossing_subtype = 'bridge', crossing_subtype_source = 'crossing subtype set based on strahler order' WHERE strahler_order >= 6 AND crossing_subtype IS NULL;
 
 ALTER TABLE {schema}.modelled_crossings ADD CONSTRAINT {schema}_modelled_crossings PRIMARY KEY (id);
 

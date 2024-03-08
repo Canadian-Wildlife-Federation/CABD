@@ -116,8 +116,8 @@ checkEmpty(conn, sql, "modelled_crossings table should not have any rows with nu
 print("Mapping column names to modelled crossings data structure...")
 
 sql = f"""
-ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS crossing_type varchar;
-ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS crossing_type_source varchar;
+ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS crossing_subtype varchar;
+ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS crossing_subtype_source varchar;
 ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS num_railway_tracks varchar;
 ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS passability_status varchar;
 ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS railway_operator varchar;
@@ -208,7 +208,7 @@ sql = f"""
 DROP TABLE IF EXISTS {schema}.temp_bridge_points;
 
 CREATE TABLE {schema}.temp_bridge_points AS (
-    SELECT DISTINCT ON (s.fid) s.fid AS structure_id, s.stru_type AS stru_type, s.type AS "type", s.shot_point AS shot_point, s.watercourse AS watercourse, m.id AS modelled_id, m.transport_feature_source AS transport_feature_source, ST_Distance(s.geometry, m.geometry_m) AS dist, s.geometry
+    SELECT DISTINCT ON (s.fid) s.fid AS structure_id, s.stru_type AS stru_type, s.type AS "type", s.shot_point AS shot_point, s.watercours AS watercourse, m.id AS modelled_id, m.transport_feature_source AS transport_feature_source, ST_Distance(s.geometry, m.geometry_m) AS dist, s.geometry
     FROM {schema}.{bridgePt} s, {schema}.modelled_crossings m
     WHERE ST_DWithin(s.geometry, m.geometry_m, 50)
     ORDER BY structure_id, modelled_id, ST_Distance(s.geometry, m.geometry_m)
@@ -224,34 +224,34 @@ CREATE TABLE {schema}.temp_inv_points AS (
     ORDER BY structure_id, modelled_id, ST_Distance(s.geometry, m.geometry_m)
 );
 
-ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS crossing_type varchar;
+ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS crossing_subtype varchar;
 
-UPDATE {schema}.modelled_crossings SET crossing_type = 'bridge', crossing_type_source = 'crossing type set based on match from {bridgePt}'
+UPDATE {schema}.modelled_crossings SET crossing_subtype = 'bridge', crossing_subtype_source = 'crossing subtype set based on match from {bridgePt}'
     FROM {schema}.temp_bridge_points s
     WHERE s.modelled_id = id AND s.shot_point ILIKE '%bridge%' AND s.type NOT IN ('Driveway Steel Arch', 'Driveway timber box', 'Concrete Pipes (2)', 'Culvert', 'Concrete Box/Arch Ext.');
 
-UPDATE {schema}.modelled_crossings SET crossing_type = 'bridge', crossing_type_source = 'crossing type set based on match from {bridgePt}'
+UPDATE {schema}.modelled_crossings SET crossing_subtype = 'bridge', crossing_subtype_source = 'crossing subtype set based on match from {bridgePt}'
     FROM {schema}.temp_bridge_points s
     WHERE s.modelled_id = id AND s.type ILIKE '%bridge%';
 
-UPDATE {schema}.modelled_crossings SET crossing_type = 'culvert', crossing_type_source = 'crossing type set based on match from {bridgePt}'
+UPDATE {schema}.modelled_crossings SET crossing_subtype = 'culvert', crossing_subtype_source = 'crossing subtype set based on match from {bridgePt}'
     FROM {schema}.temp_bridge_points s
     WHERE s.modelled_id = id AND s.stru_type = 'ARCH' AND s.type = 'Mulit Plated Steel Arch' AND (s.shot_point IS NULL OR s.shot_point = 'Atlas/Air photo/Contours');
 
-UPDATE {schema}.modelled_crossings SET crossing_type = 'culvert', crossing_type_source = 'crossing type set based on match from {bridgePt}'
+UPDATE {schema}.modelled_crossings SET crossing_subtype = 'culvert', crossing_subtype_source = 'crossing subtype set based on match from {bridgePt}'
     FROM {schema}.temp_bridge_points s
     WHERE s.modelled_id = id AND s.stru_type = 'BOX' AND s.type IN ('Concrete Box', 'Concrete/timber box', 'Pre-Cast Concrete box', 'Timber Box', 'Timber Box/Pipe Cul.') AND s.shot_point IS NULL;
 
-UPDATE {schema}.modelled_crossings SET crossing_type = 'culvert', crossing_type_source = 'crossing type set based on match from {bridgePt}'
+UPDATE {schema}.modelled_crossings SET crossing_subtype = 'culvert', crossing_subtype_source = 'crossing subtype set based on match from {bridgePt}'
     FROM {schema}.temp_bridge_points s
     WHERE s.modelled_id = id AND s.stru_type = 'PIPE' AND s.type IN ('Concrete Pipes (2)', 'Concrete/steel pipe', 'Concrete/Timber/pipe', 'Culvert', 'Pipe')
     AND (s.shot_point IS NULL OR s.shot_point = 'Bridge Centre');
 
-UPDATE {schema}.modelled_crossings SET crossing_type = 'culvert', crossing_type_source = 'crossing type set based on match from {bridgePt}'
+UPDATE {schema}.modelled_crossings SET crossing_subtype = 'culvert', crossing_subtype_source = 'crossing subtype set based on match from {bridgePt}'
     FROM {schema}.temp_bridge_points s
     WHERE s.modelled_id = id AND s.type = 'Concrete Box/Steel Arch';
 
-UPDATE {schema}.modelled_crossings SET crossing_type = 'culvert', crossing_type_source = 'crossing type set based on match from {bridgePt}'
+UPDATE {schema}.modelled_crossings SET crossing_subtype = 'culvert', crossing_subtype_source = 'crossing subtype set based on match from {bridgePt}'
     FROM {schema}.temp_bridge_points s
     WHERE s.modelled_id = id AND s.type = 'Steel pipe/Timber ext.' AND s.shot_point = '4to3/MOVED POINT/Old chainage';
 
@@ -259,18 +259,18 @@ UPDATE {schema}.modelled_crossings SET reviewer_status = 'removed', reviewer_com
     FROM {schema}.temp_bridge_points s
     WHERE s.modelled_id = id AND s.watercourse ILIKE 'dry%';
 
-UPDATE {schema}.modelled_crossings SET crossing_type = 'culvert', crossing_type_source = 'crossing type set based on match from {invPt}'
-    FROM {schema}.{invPt} s WHERE id IN (SELECT modelled_id FROM {schema}.temp_inv_points)
-    AND s.stru_type IN ('Arch', 'Box', 'Pipe');
+UPDATE {schema}.modelled_crossings SET crossing_subtype = 'culvert', crossing_subtype_source = 'crossing subtype set based on match from {invPt} - Line 262'
+    FROM {schema}.temp_inv_points s
+    WHERE s.modelled_id = id AND s.stru_type IN ('Arch', 'Box', 'Pipe');
 
-UPDATE {schema}.modelled_crossings SET crossing_type = 'bridge', crossing_type_source = 'crossing type set based on match from {invPt}'
-    FROM {schema}.{invPt} s WHERE id IN (SELECT modelled_id FROM {schema}.temp_inv_points)
-    AND s.stru_type = 'Bridge';
+UPDATE {schema}.modelled_crossings SET crossing_subtype = 'bridge', crossing_subtype_source = 'crossing subtype set based on match from {invPt} - Line 266'
+    FROM {schema}.temp_inv_points s
+    WHERE s.modelled_id = id AND s.stru_type = 'Bridge';
 
 DROP TABLE {schema}.temp_bridge_points;
 DROP TABLE {schema}.temp_inv_points;
 
-UPDATE {schema}.modelled_crossings SET crossing_type = 'bridge', crossing_type_source = 'crossing type set based on strahler order' WHERE strahler_order >= 6 AND crossing_type IS NULL;
+UPDATE {schema}.modelled_crossings SET crossing_subtype = 'bridge', crossing_subtype_source = 'crossing subtype set based on strahler order' WHERE strahler_order >= 6 AND crossing_subtype IS NULL;
 
 ALTER TABLE {schema}.modelled_crossings ADD CONSTRAINT {schema}_modelled_crossings PRIMARY KEY (id);
 

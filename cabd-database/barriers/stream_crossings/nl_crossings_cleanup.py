@@ -119,8 +119,8 @@ executeQuery(conn, sql)
 print("Mapping column names to modelled crossings data structure...")
 
 sql = f"""
-ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS crossing_type varchar;
-ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS crossing_type_source varchar;
+ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS crossing_subtype varchar;
+ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS crossing_subtype_source varchar;
 ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS num_railway_tracks varchar;
 ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS passability_status varchar;
 ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS railway_operator varchar;
@@ -172,7 +172,7 @@ UPDATE {schema}.modelled_crossings SET transport_feature_name =
         THEN lab_road_name
     ELSE NULL END;
 
-UPDATE {schema}.modelled_crossings SET crossing_type = 'bridge', crossing_type_source = 'crossing type set based on structure type from {roadsTable[0]}' WHERE structtype ILIKE '%bridge%';
+UPDATE {schema}.modelled_crossings SET crossing_subtype = 'bridge', crossing_subtype_source = 'crossing subtype set based on structure type from {roadsTable[0]}' WHERE structtype ILIKE '%bridge%';
 
 UPDATE {schema}.modelled_crossings SET roadway_type = 
     CASE
@@ -195,7 +195,7 @@ UPDATE {schema}.modelled_crossings SET transport_feature_owner =
     WHEN lab_authority IS NOT NULL THEN RIGHT(lab_authority, LENGTH(lab_authority) - 2)
     ELSE NULL END;
 
-UPDATE {schema}.modelled_crossings SET crossing_type = 'bridge', crossing_type_source = 'crossing type set based on strahler order' WHERE strahler_order >= 6 AND crossing_type IS NULL;
+UPDATE {schema}.modelled_crossings SET crossing_subtype = 'bridge', crossing_subtype_source = 'crossing subtype set based on strahler order' WHERE strahler_order >= 6 AND crossing_subtype IS NULL;
 """
 executeQuery(conn, sql)
 

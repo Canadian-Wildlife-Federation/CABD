@@ -122,8 +122,8 @@ executeQuery(conn, sql)
 print("Mapping column names to modelled crossings data structure...")
 
 sql = f"""
-ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS crossing_type varchar;
-ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS crossing_type_source varchar;
+ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS crossing_subtype varchar;
+ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS crossing_subtype_source varchar;
 ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS num_railway_tracks varchar;
 ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS passability_status varchar;
 ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS railway_operator varchar;
@@ -166,7 +166,7 @@ UPDATE {schema}.modelled_crossings SET transport_feature_type =
     WHEN clsrte = 'Accès aux ressources et aux localités isolées' THEN 'resource_road'
     ELSE transport_feature_type END;
 
-UPDATE {schema}.modelled_crossings SET crossing_type = 
+UPDATE {schema}.modelled_crossings SET crossing_subtype = 
     CASE
     WHEN caractrte = 'Passerelle piétonnière' THEN 'bridge'
     WHEN caractrte = 'Passerelle piétonnière et cycliste' THEN 'bridge'
@@ -180,10 +180,10 @@ UPDATE {schema}.modelled_crossings SET crossing_type =
     WHEN typestruct = 'Pont mobile' THEN 'bridge'
     ELSE NULL END;
 
-UPDATE {schema}.modelled_crossings SET crossing_type_source = 'crossing type set based on structure type from {roadsTable[0]}'
+UPDATE {schema}.modelled_crossings SET crossing_subtype_source = 'crossing subtype set based on structure type from {roadsTable[0]}'
     WHERE caractrte IN ('Passerelle piétonnière', 'Passerelle piétonnière et cycliste', 'Pont couvert', 'Pont ferroviaire', 'Pont ferroviaire (abandonné) / piéton', 'Ponceau', 'Pont', 'Pont à étagement');
 
-UPDATE {schema}.modelled_crossings SET crossing_type_source = 'crossing type set based on structure type from {railTable[0]}'
+UPDATE {schema}.modelled_crossings SET crossing_subtype_source = 'crossing subtype set based on structure type from {railTable[0]}'
     WHERE typestruc IN ('Pont', 'Pont mobile');
 
 UPDATE {schema}.modelled_crossings SET transport_feature_name =
@@ -260,7 +260,7 @@ for k in all_datasets:
 print("Getting additional structure information...")
 
 sql = f"""
-UPDATE {schema}.modelled_crossings SET crossing_type = 'bridge', crossing_type_source = 'crossing type set based on strahler order' WHERE strahler_order >= 6 AND crossing_type IS NULL;
+UPDATE {schema}.modelled_crossings SET crossing_subtype = 'bridge', crossing_subtype_source = 'crossing subtype set based on strahler order' WHERE strahler_order >= 6 AND crossing_subtype IS NULL;
 ALTER TABLE {schema}.modelled_crossings DROP CONSTRAINT IF EXISTS {schema}_modelled_crossings_pkey;
 ALTER TABLE {schema}.modelled_crossings ADD CONSTRAINT {schema}_modelled_crossings_pkey PRIMARY KEY (id);
 """

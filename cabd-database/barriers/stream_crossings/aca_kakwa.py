@@ -134,7 +134,7 @@ def mapAttributes(conn):
     ALTER TABLE {schema}.modelled_crossings ADD COLUMN passability_status varchar;
 
     UPDATE {schema}.modelled_crossings
-    SET passability_status = 'barrier', crossing_type = 'culvert'
+    SET passability_status = 'barrier', crossing_subtype = 'culvert'
     FROM {schema}.{targetTable} a WHERE id = a.crossing_id;
 
     """

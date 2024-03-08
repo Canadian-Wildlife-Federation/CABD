@@ -48,7 +48,7 @@ def createTable(conn, tableName):
         transport_feature_source varchar(64),
         transport_feature_type varchar,
         transport_feature_name varchar,
-        crossing_type varchar,
+        crossing_subtype varchar,
         passability_status varchar,
         roadway_type varchar,
         roadway_surface varchar,
@@ -56,7 +56,7 @@ def createTable(conn, tableName):
         railway_operator varchar,
         num_railway_tracks varchar,
         transport_feature_condition varchar,
-        new_crossing_type varchar,
+        new_crossing_subtype varchar,
         reviewer_status varchar,
         reviewer_comments varchar,
         comments varchar(256)
@@ -112,19 +112,19 @@ def finalizeAttributes(conn, table):
     print("Finalizing attributes")
     
     sql = f"""
-    UPDATE {dbSchema}.{targetTable} SET crossing_type =
+    UPDATE {dbSchema}.{targetTable} SET crossing_subtype =
         CASE
-        WHEN new_crossing_type IS NOT NULL AND new_crossing_type != 'unknown' AND (reviewer_comments IS NULL OR reviewer_comments ILIKE '%misrepresented%') AND new_crossing_type != crossing_type
-            THEN new_crossing_type
-        WHEN new_crossing_type = 'unknown' AND crossing_type IS NOT NULL AND (reviewer_comments IS NULL OR reviewer_comments ILIKE '%misrepresented%')
+        WHEN new_crossing_subtype IS NOT NULL AND new_crossing_subtype != 'unknown' AND (reviewer_comments IS NULL OR reviewer_comments ILIKE '%misrepresented%') AND new_crossing_subtype != crossing_subtype
+            THEN new_crossing_subtype
+        WHEN new_crossing_subtype = 'unknown' AND crossing_subtype IS NOT NULL AND (reviewer_comments IS NULL OR reviewer_comments ILIKE '%misrepresented%')
             THEN NULL
-        ELSE crossing_type END;
+        ELSE crossing_subtype END;
 
-    UPDATE {dbSchema}.{targetTable} SET passability_status = 'passable' WHERE crossing_type = 'bridge' AND passability_status IS NULL;
+    UPDATE {dbSchema}.{targetTable} SET passability_status = 'passable' WHERE crossing_subtype = 'bridge' AND passability_status IS NULL;
 
     UPDATE {dbSchema}.{targetTable} SET passability_status = 'unknown' WHERE passability_status IS NULL;
 
-    UPDATE {dbSchema}.{targetTable} SET crossing_type = 'unknown' WHERE crossing_type IS NULL;
+    UPDATE {dbSchema}.{targetTable} SET crossing_subtype = 'unknown' WHERE crossing_subtype IS NULL;
 
     CREATE INDEX IF NOT EXISTS {targetTable}_geometry_idx ON {dbSchema}.{targetTable} USING gist(geometry);
 

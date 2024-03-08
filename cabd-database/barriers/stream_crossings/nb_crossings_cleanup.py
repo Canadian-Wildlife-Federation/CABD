@@ -112,8 +112,8 @@ checkEmpty(conn, sql, "modelled_crossings table should not have any rows with nu
 print("Mapping column names to modelled crossings data structure...")
 
 sql = f"""
-ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS crossing_type varchar;
-ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS crossing_type_source varchar;
+ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS crossing_subtype varchar;
+ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS crossing_subtype_source varchar;
 ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS num_railway_tracks varchar;
 ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS passability_status varchar;
 ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS railway_operator varchar;
@@ -149,7 +149,7 @@ if trailTable:
 
 sql = f"""
 UPDATE {schema}.modelled_crossings SET reviewer_status = 'removed', reviewer_comments = 'Automatically removed crossing on dam' WHERE struc_type = 'Dam';
-UPDATE {schema}.modelled_crossings SET crossing_type = 'bridge', crossing_type_source = 'crossing type set based on structure type from {roadsTable[0]}' WHERE struc_type ILIKE '%bridge%';
+UPDATE {schema}.modelled_crossings SET crossing_subtype = 'bridge', crossing_subtype_source = 'crossing subtype set based on structure type from {roadsTable[0]}' WHERE struc_type ILIKE '%bridge%';
 
 UPDATE {schema}.modelled_crossings SET transport_feature_name =
     CASE
@@ -174,7 +174,7 @@ UPDATE {schema}.modelled_crossings SET roadway_surface =
     WHEN unpaved_road_surf_type IN ('Dirt', 'Gravel') THEN unpaved_road_surf_type
     ELSE NULL END;
 
-UPDATE {schema}.modelled_crossings SET crossing_type = 'bridge', crossing_type_source = 'crossing type set based on strahler order' WHERE strahler_order >= 6 AND crossing_type IS NULL;
+UPDATE {schema}.modelled_crossings SET crossing_subtype = 'bridge', crossing_subtype_source = 'crossing subtype set based on strahler order' WHERE strahler_order >= 6 AND crossing_subtype IS NULL;
 """
 executeQuery(conn, sql)
 
