@@ -190,15 +190,18 @@ checkEmpty(conn, sql, "There are still rail and trail crossings within 5 m of ea
 print("Removing crossings on winter roads and other invalid road types...")
 
 sql = f"""
-UPDATE {schema}.modelled_crossings SET reviewer_status = 'removed', reviewer_comments = 'Automatically removed crossing on winter road'
+ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS crossing_subtype varchar;
+ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS crossing_subtype_source varchar;
+
+UPDATE {schema}.modelled_crossings SET crossing_subtype = 'no crossing', reviewer_status = 'removed', crossing_subtype_source = 'Automatically removed crossing on winter road based on match from {resourceRoadsTable[0]}'
     WHERE transport_feature_source = '{resourceRoadsTable[0]}' AND national_road_class = 'Winter';
-UPDATE {schema}.modelled_crossings SET reviewer_status = 'removed', reviewer_comments = 'Automatically removed crossing on winter road'
+UPDATE {schema}.modelled_crossings SET crossing_subtype = 'no crossing', reviewer_status = 'removed', crossing_subtype_source = 'Automatically removed crossing on winter road based on match from {roadsTable[0]}'
     WHERE transport_feature_source = '{roadsTable[0]}' AND road_class = 'Winter';
-UPDATE {schema}.modelled_crossings SET reviewer_status = 'removed', reviewer_comments = 'Automatically removed crossing on ferry route'
+UPDATE {schema}.modelled_crossings SET crossing_subtype = 'no crossing', reviewer_status = 'removed', crossing_subtype_source = 'Automatically removed crossing on ferry route based on match from {roadsTable[0]}'
     WHERE transport_feature_source = '{roadsTable[0]}' AND road_element_type = 'FERRY CONNECTION';
-UPDATE {schema}.modelled_crossings SET reviewer_status = 'removed', reviewer_comments = 'Automatically removed crossing on virtual road'
+UPDATE {schema}.modelled_crossings SET crossing_subtype = 'no crossing', reviewer_status = 'removed', crossing_subtype_source = 'Automatically removed crossing on virtual road based on match from {roadsTable[0]}'
     WHERE transport_feature_source = '{roadsTable[0]}' AND road_element_type = 'VIRTUAL ROAD';
-UPDATE {schema}.modelled_crossings SET reviewer_status = 'removed', reviewer_comments = 'Automatically removed crossing on canoe/paddling route'
+UPDATE {schema}.modelled_crossings SET crossing_subtype = 'no crossing', reviewer_status = 'removed', crossing_subtype_source = 'Automatically removed crossing on canoe/paddling route based on match from {trailTable[0]}'
     WHERE trail_name ILIKE '%canoe%' OR trail_name ILIKE '%paddl%' OR permitted_uses = 'Paddling' OR permitted_uses = 'Paddling, Portage';
 """
 executeQuery(conn, sql)
