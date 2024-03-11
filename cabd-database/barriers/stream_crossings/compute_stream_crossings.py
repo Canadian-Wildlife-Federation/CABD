@@ -946,6 +946,8 @@ def finalizeCrossings(conn):
 
     UPDATE {schema}.modelled_crossings SET stream_name_1 = n.name_en FROM public.{streamNameTable} n WHERE rivernameid1 = n.name_id::varchar;
     UPDATE {schema}.modelled_crossings SET stream_name_2 = n.name_en FROM public.{streamNameTable} n WHERE rivernameid2 = n.name_id::varchar;
+    UPDATE {schema}.modelled_crossings m SET stream_name_1 = n.name_1 FROM {schema}.{streamTable} n WHERE n.rivernameid1 = m.rivernameid1 AND m.stream_name_1 IS NULL;
+    UPDATE {schema}.modelled_crossings m SET stream_name_2 = n.name_2 FROM {schema}.{streamTable} n WHERE n.rivernameid2 = m.rivernameid2 AND m.stream_name_2 IS NULL;
     """
     executeQuery(conn, sql)
 
