@@ -115,8 +115,11 @@ checkEmpty(conn, sql, "modelled_crossings table should not have any rows with nu
 print("Removing crossings on winter roads and other invalid road types...")
 
 sql = f"""
-UPDATE {schema}.modelled_crossings SET reviewer_status = 'removed', reviewer_comments = 'Automatically removed crossing on dam' WHERE structtype = 'Dam';
-UPDATE {schema}.modelled_crossings SET reviewer_status = 'removed', reviewer_comments = 'Automatically removed crossing on winter road' WHERE roadclass = 'Winter';
+ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS crossing_subtype varchar;
+ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS crossing_subtype_source varchar;
+
+UPDATE {schema}.modelled_crossings SET reviewer_status = 'removed', crossing_subtype = 'no crossing', crossing_subtype_source = 'Automatically removed crossing on dam based on match from {roadsTable[0]}' WHERE structtype = 'Dam';
+UPDATE {schema}.modelled_crossings SET reviewer_status = 'removed', crossing_subtype = 'no crossing', crossing_subtype_source = 'Automatically removed crossing on winter road based on match from {roadsTable[0]}' WHERE roadclass = 'Winter';
 """
 executeQuery(conn, sql)
 
@@ -196,7 +199,7 @@ UPDATE {schema}.modelled_crossings SET railway_operator = operatoena;
 UPDATE {schema}.modelled_crossings SET num_railway_tracks = numtracks;
 UPDATE {schema}.modelled_crossings SET transport_feature_condition = status;
 
-UPDATE {schema}.modelled_crossings SET crossing_subtype = 'bridge' WHERE structtype = 'Bridge';
+UPDATE {schema}.modelled_crossings SET crossing_subtype = 'bridge', crossing_subtype_source = 'crossing subtype set based on match from {roadsTable[0]}' WHERE structtype = 'Bridge';
 
 """
 executeQuery(conn, sql)
