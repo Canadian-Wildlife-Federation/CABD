@@ -58,7 +58,7 @@ log("Loading data into: " + schema)
 #load files into db
 orgDb="dbname='" + dbName + "' host='"+ dbHost+"' port='"+dbPort+"' user='"+dbUser+"' password='"+ dbPassword+"'"
 
-pycmd = '"' + ogr + '" -f "PostgreSQL" PG:"' + orgDb + '" -nln "' + schema + '.canvec_track" -lco GEOMETRY_NAME=geometry -nlt MULTILINESTRING "' + srcFile + '" "canvec_track" -t_srs EPSG:' + cabdSRID + ' -overwrite"'
+pycmd = '"' + ogr + '" -f "PostgreSQL" PG:"' + orgDb + '" -nln "' + schema + '.canvec_track_nb" -lco GEOMETRY_NAME=geometry -nlt MULTILINESTRING "' + srcFile + '" "canvec_track" -t_srs EPSG:' + cabdSRID + ' -overwrite"'
 log(pycmd)
 subprocess.run(pycmd)
 

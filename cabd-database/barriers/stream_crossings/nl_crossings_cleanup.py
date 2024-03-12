@@ -112,7 +112,11 @@ checkEmpty(conn, sql, "modelled_crossings table should not have any rows with nu
 print("Removing crossings on winter roads and other invalid road types...")
 
 sql = f"""
-UPDATE {schema}.modelled_crossings SET reviewer_status = 'removed', reviewer_comments = 'Automatically removed crossing on winter road' WHERE WHERE road_type = '3_Winter' OR comments LIKE 'Winter%';
+ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS crossing_subtype varchar;
+ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS crossing_subtype_source varchar;
+
+UPDATE {schema}.modelled_crossings SET reviewer_status = 'removed', crossing_subtype = 'no crossing', crossing_subtype_source = 'Automatically removed crossing on winter road based on match from {resourceRoadsTable[0]}'
+    WHERE road_type = '3_Winter' OR comments LIKE 'Winter%';
 """
 executeQuery(conn, sql)
 

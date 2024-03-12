@@ -117,8 +117,11 @@ print("Removing crossings on winter roads and other invalid road types...")
 
 sql = f"""
 --remove winter roads and ferry crossings
-UPDATE {schema}.modelled_crossings SET reviewer_status = 'removed', reviewer_comments = 'Automatically removed crossing on ferry route' WHERE afr_road_feature_type = 1;
-UPDATE {schema}.modelled_crossings SET reviewer_status = 'removed', reviewer_comments = 'Automatically removed crossing on winter road' WHERE afr_road_feature_type = 12;
+ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS crossing_subtype varchar;
+ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS crossing_subtype_source varchar;
+
+UPDATE {schema}.modelled_crossings SET reviewer_status = 'removed', crossing_subtype = 'no crossing', crossing_subtype_source = 'Automatically removed crossing on ferry route based on match from {roadsTable[0]}' WHERE afr_road_feature_type = 1;
+UPDATE {schema}.modelled_crossings SET reviewer_status = 'removed', crossing_subtype = 'no crossing', crossing_subtype_source = 'Automatically removed crossing on winter road based on match from {roadsTable[0]}' WHERE afr_road_feature_type = 12;
 """
 executeQuery(conn, sql)
 

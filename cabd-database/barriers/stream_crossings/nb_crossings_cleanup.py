@@ -148,8 +148,8 @@ if trailTable:
         executeQuery(conn, sql)
 
 sql = f"""
-UPDATE {schema}.modelled_crossings SET reviewer_status = 'removed', reviewer_comments = 'Automatically removed crossing on dam' WHERE struc_type = 'Dam';
-UPDATE {schema}.modelled_crossings SET crossing_subtype = 'bridge', crossing_subtype_source = 'crossing subtype set based on structure type from {roadsTable[0]}' WHERE struc_type ILIKE '%bridge%';
+UPDATE {schema}.modelled_crossings SET reviewer_status = 'removed', crossing_subtype = 'no crossing', crossing_subtype_source = 'Automatically removed crossing on dam based on match from {roadsTable[0]}' WHERE struc_type = 'Dam';
+UPDATE {schema}.modelled_crossings SET crossing_subtype = 'bridge', crossing_subtype_source = 'crossing subtype set based on match from {roadsTable[0]}' WHERE struc_type ILIKE '%bridge%';
 
 UPDATE {schema}.modelled_crossings SET transport_feature_name =
     CASE
