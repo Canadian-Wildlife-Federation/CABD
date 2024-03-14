@@ -114,8 +114,12 @@ print("Removing crossings on winter roads and other invalid road types...")
 
 sql = f"""
 --remove winter roads and ferry crossings
-UPDATE {schema}.modelled_crossings SET reviewer_status = 'removed', reviewer_comments = 'Automatically removed crossing on ferry route' WHERE classvoie = 'Transbordeur' OR clsrte = 'Liaison maritime';
-UPDATE {schema}.modelled_crossings SET reviewer_status = 'removed', reviewer_comments = 'Automatically removed crossing on winter road' WHERE caractrte = 'Saisonnier';
+ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS crossing_subtype varchar;
+ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS crossing_subtype_source varchar;
+
+UPDATE {schema}.modelled_crossings SET reviewer_status = 'removed', crossing_subtype = 'no crossing', crossing_subtype_source = 'Automatically removed crossing on ferry route based on match from {railTable[0]}' WHERE classvoie = 'Transbordeur';
+UPDATE {schema}.modelled_crossings SET reviewer_status = 'removed', crossing_subtype = 'no crossing', crossing_subtype_source = 'Automatically removed crossing on ferry route based on match from {roadsTable[0]}' WHERE clsrte = 'Liaison maritime';
+UPDATE {schema}.modelled_crossings SET reviewer_status = 'removed', crossing_subtype = 'no crossing', crossing_subtype_source = 'Automatically removed crossing on winter road based on match from {roadsTable[0]}' WHERE caractrte = 'Saisonnier';
 """
 executeQuery(conn, sql)
 
@@ -184,7 +188,7 @@ UPDATE {schema}.modelled_crossings SET crossing_subtype_source = 'crossing subty
     WHERE caractrte IN ('Passerelle piétonnière', 'Passerelle piétonnière et cycliste', 'Pont couvert', 'Pont ferroviaire', 'Pont ferroviaire (abandonné) / piéton', 'Ponceau', 'Pont', 'Pont à étagement');
 
 UPDATE {schema}.modelled_crossings SET crossing_subtype_source = 'crossing subtype set based on structure type from {railTable[0]}'
-    WHERE typestruc IN ('Pont', 'Pont mobile');
+    WHERE typestruct IN ('Pont', 'Pont mobile');
 
 UPDATE {schema}.modelled_crossings SET transport_feature_name =
     CASE
