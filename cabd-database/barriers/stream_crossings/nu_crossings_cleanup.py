@@ -187,6 +187,8 @@ UPDATE {schema}.modelled_crossings SET roadway_surface =
     ELSE NULL END;
 
 UPDATE {schema}.modelled_crossings SET crossing_subtype = 'bridge', crossing_subtype_source = 'crossing subtype set based on strahler order' WHERE strahler_order >= 6 AND crossing_subtype IS NULL;
+
+ALTER TABLE {schema}.modelled_crossings ADD CONSTRAINT {schema}_modelled_crossings PRIMARY KEY (id);
 """
 executeQuery(conn, sql)
 
