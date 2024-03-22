@@ -986,5 +986,3 @@ WHERE view_name = 'cabd.modelled_crossings_view' AND field_name IN (
     'crossing_subtype',
     'crossing_subtype_code'
 );
-
--- ATTRIBUTE SETS --
