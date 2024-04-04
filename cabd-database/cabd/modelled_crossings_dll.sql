@@ -107,6 +107,34 @@ SELECT
     licence
 FROM source_data.modelled_crossing_data_sources;
 
+-- ADD EMPTY FEATURE SOURCE TABLE --
+
+CREATE TABLE IF NOT EXISTS modelled_crossings.feature_source
+(
+    cabd_id uuid NOT NULL,
+    datasource_id uuid NOT NULL,
+    datasource_feature_id character varying COLLATE pg_catalog."default" NOT NULL,
+    CONSTRAINT modelled_feature_source_pkey PRIMARY KEY (cabd_id, datasource_feature_id),
+    CONSTRAINT modelled_feature_source_cabd_id_fkey FOREIGN KEY (cabd_id)
+        REFERENCES modelled_crossings.modelled_crossings (cabd_id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION,
+    CONSTRAINT modelled_data_source_id_fk FOREIGN KEY (datasource_id)
+        REFERENCES cabd.data_source (id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE RESTRICT,
+    CONSTRAINT modelled_feature_source_cabd_id_fk FOREIGN KEY (cabd_id)
+        REFERENCES modelled_crossings.modelled_crossings (cabd_id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE CASCADE
+);
+
+ALTER TABLE IF EXISTS modelled_crossings.feature_source
+    OWNER to cabd;
+REVOKE ALL ON TABLE modelled_crossings.feature_source FROM cwf_user;
+GRANT ALL ON TABLE modelled_crossings.feature_source TO cabd;
+GRANT SELECT ON TABLE modelled_crossings.feature_source TO cwf_user;
+
 -- MAIN TABLE SETUP --
 
 UPDATE modelled_crossings.modelled_crossings AS a SET crossing_type = ct.code FROM modelled_crossings.crossing_type_codes ct WHERE ct.name_en = crossing_type;
@@ -844,7 +872,8 @@ INSERT INTO cabd.feature_types (
     name_fr,
     data_version,
     description,
-    data_table
+    data_table,
+    feature_source_table
 )
 VALUES
     ('modelled_crossings',
@@ -853,7 +882,8 @@ VALUES
     'Modelled Crossings',
     '1.0',
     'Modelled stream crossings based on locations where a stream is crossed by a road, railway, or trail.',
-    '{modelled_crossings.modelled_crossings}')
+    '{modelled_crossings.modelled_crossings}',
+    'modelled_crossings.feature_source')
 ;
 
 -- FEATURE TYPE VERSION HISTORY TABLE --
