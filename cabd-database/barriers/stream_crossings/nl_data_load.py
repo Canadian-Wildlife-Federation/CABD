@@ -90,12 +90,4 @@ with conn.cursor() as cursor:
     cursor.execute(query)
 conn.commit()
 
-# remove some transportation types we want to exclude
-query = f"""
-DELETE FROM {schema}.resource_newfoundland WHERE road_type = '3_Winter' OR comments LIKE 'Winter%';
-"""
-with conn.cursor() as cursor:
-    cursor.execute(query)
-conn.commit()
-
 log("LOAD DONE")

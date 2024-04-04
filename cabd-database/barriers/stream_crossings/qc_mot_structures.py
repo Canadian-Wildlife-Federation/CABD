@@ -133,7 +133,7 @@ def mapAttributes(conn):
     ALTER TABLE {schema}.modelled_crossings DROP COLUMN IF EXISTS passability_status;
     ALTER TABLE {schema}.modelled_crossings ADD COLUMN passability_status varchar;
 
-    UPDATE {schema}.modelled_crossings SET passability_status = 'passable', crossing_type = 'bridge'
+    UPDATE {schema}.modelled_crossings SET passability_status = 'passable', crossing_subtype = 'bridge'
     FROM {schema}.{targetTable} a
     WHERE id = a.crossing_id AND (
         a.code_des_t ILIKE '%pont%'
@@ -145,7 +145,7 @@ def mapAttributes(conn):
         )
         );
 
-    UPDATE {schema}.modelled_crossings SET crossing_type = 'culvert'
+    UPDATE {schema}.modelled_crossings SET crossing_subtype = 'culvert'
     FROM {schema}.{targetTable} a WHERE id = a.crossing_id AND a.code_des_t ILIKE '%ponceau%';
     """
     with conn.cursor() as cursor:

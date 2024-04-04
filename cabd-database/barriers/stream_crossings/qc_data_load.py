@@ -98,15 +98,8 @@ with conn.cursor() as cursor:
     cursor.execute(query)
 conn.commit()
 
-# delete records that do not have associated infrastructure (e.g., ferry crossings)
+# remove trails that are not constructed or where the route is part of an existing road
 query = f"""
---ferry routes
-DELETE FROM {schema}.reseau_ferroviaire WHERE classvoie = 'Transbordeur';
-
---winter roads, maritime routes
-DELETE FROM {schema}.reseau_routier WHERE caractrte = 'Saisonnier' OR clsrte = 'Liaison maritime';
-
---trail not constructed yet or the route is part of an existing road
 DELETE FROM {schema}.route_verte WHERE codetatavc = 'P' OR (codtypvcyc != '5' AND codtypvcyc IS NOT NULL);
 """
 

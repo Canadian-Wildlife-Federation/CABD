@@ -115,23 +115,29 @@ checkEmpty(conn, sql, "modelled_crossings table should not have any rows with nu
 print("Removing crossings on winter roads and other invalid road types...")
 
 sql = f"""
-DELETE FROM {schema}.modelled_crossings WHERE structtype = 'Dam';
-DELETE FROM {schema}.modelled_crossings WHERE roadclass = 'Winter';
+ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS crossing_subtype varchar;
+ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS crossing_subtype_source varchar;
+
+UPDATE {schema}.modelled_crossings SET reviewer_status = 'removed', crossing_subtype = 'no crossing', crossing_subtype_source = 'Automatically removed crossing on dam based on match from {roadsTable[0]}' WHERE structtype = 'Dam';
+UPDATE {schema}.modelled_crossings SET reviewer_status = 'removed', crossing_subtype = 'no crossing', crossing_subtype_source = 'Automatically removed crossing on winter road based on match from {roadsTable[0]}' WHERE roadclass = 'Winter';
 """
 executeQuery(conn, sql)
 
 print("Mapping column names to modelled crossings data structure...")
 
 sql = f"""
-ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS transport_feature_type varchar;
-ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS transport_feature_name varchar;
-ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS roadway_type varchar;
-ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS roadway_surface varchar;
-ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS transport_feature_owner varchar;
-ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS railway_operator varchar;
+ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS crossing_subtype varchar;
+ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS crossing_subtype_source varchar;
 ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS num_railway_tracks varchar;
+ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS passability_status varchar;
+ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS railway_operator varchar;
+ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS roadway_paved_status varchar;
+ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS roadway_surface varchar;
+ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS roadway_type varchar;
 ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS transport_feature_condition varchar;
-ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS crossing_type varchar;
+ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS transport_feature_name varchar;
+ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS transport_feature_owner varchar;
+ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS transport_feature_type varchar;
 """
 executeQuery(conn, sql)
 
@@ -193,7 +199,7 @@ UPDATE {schema}.modelled_crossings SET railway_operator = operatoena;
 UPDATE {schema}.modelled_crossings SET num_railway_tracks = numtracks;
 UPDATE {schema}.modelled_crossings SET transport_feature_condition = status;
 
-UPDATE {schema}.modelled_crossings SET crossing_type = 'bridge' WHERE structtype = 'Bridge';
+UPDATE {schema}.modelled_crossings SET crossing_subtype = 'bridge', crossing_subtype_source = 'crossing subtype set based on match from {roadsTable[0]}' WHERE structtype = 'Bridge';
 
 """
 executeQuery(conn, sql)
@@ -221,13 +227,12 @@ CREATE TABLE {schema}.temp_road_points AS (
     ORDER BY structure_id, modelled_id, ST_Distance(s.geometry, m.geometry_m)
 );
 
-ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS crossing_type varchar;
-UPDATE {schema}.modelled_crossings SET crossing_type = 'culvert'
+UPDATE {schema}.modelled_crossings SET crossing_subtype = 'culvert', crossing_subtype_source = 'crossing subtype set based on match from {roadPt}'
     FROM {schema}.{roadPt} s WHERE id IN (SELECT modelled_id FROM {schema}.temp_road_points);
 
 DROP TABLE {schema}.temp_road_points;
 
-UPDATE {schema}.modelled_crossings SET crossing_type = 'bridge' WHERE strahler_order >= 6 AND crossing_type IS NULL;
+UPDATE {schema}.modelled_crossings SET crossing_subtype = 'bridge', crossing_subtype_source = 'crossing subtype set based on strahler order' WHERE strahler_order >= 6 AND crossing_subtype IS NULL;
 
 ALTER TABLE {schema}.modelled_crossings ADD CONSTRAINT {schema}_modelled_crossings PRIMARY KEY (id);
 

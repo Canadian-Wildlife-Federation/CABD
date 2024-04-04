@@ -103,7 +103,6 @@ conn.commit()
 
 # remove some transportation types we want to exclude
 query = f"""
-DELETE FROM {schema}.bridges_2005_inventory WHERE watercours ILIKE 'dry%';
 DELETE FROM {schema}.confed_trail WHERE "status" = 'Undeveloped';
 DELETE FROM {schema}.confed_trail_inventory WHERE stru_type IS NULL;
 """

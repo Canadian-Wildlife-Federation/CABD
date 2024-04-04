@@ -140,7 +140,7 @@ def mapAttributes(conn):
         ELSE NULL END
     FROM {schema}.{targetTable} a WHERE id = a.crossing_id;
 
-    UPDATE {schema}.modelled_crossings SET crossing_type = 'ford'
+    UPDATE {schema}.modelled_crossings SET crossing_subtype = 'ford'
     FROM {schema}.{targetTable} a WHERE id = a.crossing_id AND a.engineered_ford_ind is true;
     """
     with conn.cursor() as cursor:

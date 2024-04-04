@@ -140,7 +140,7 @@ def mapAttributes(conn):
         ELSE NULL END
     FROM {schema}.{targetTable} a WHERE id = a.crossing_id;
 
-    UPDATE {schema}.modelled_crossings SET crossing_type = 
+    UPDATE {schema}.modelled_crossings SET crossing_subtype = 
         CASE
         WHEN a.structure_type IN ('MAJOR BRIDGE', 'STANDARD BRIDGE', 'Undefined BRIDGE') AND a.structure_status != 'CANCELLED' THEN 'bridge'
         WHEN a.structure_type = 'BRIDGE CULV' AND a.structure_status != 'CANCELLED' THEN 'culvert'

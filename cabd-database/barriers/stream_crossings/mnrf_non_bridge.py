@@ -141,7 +141,7 @@ def mapAttributes(conn):
     FROM {schema}.{targetTable} a WHERE id = a.crossing_id;
 
     UPDATE {schema}.modelled_crossings
-    SET crossing_type = 'culvert'
+    SET crossing_subtype = 'culvert'
     FROM {schema}.{targetTable} a WHERE id = a.crossing_id
     AND a.primary_structure_type ILIKE '%culvert%' AND a.primary_structure_type IS NOT NULL;
 

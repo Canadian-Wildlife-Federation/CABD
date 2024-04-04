@@ -835,7 +835,7 @@ def matchArchive(conn):
     print("Matching ids to archived crossings")
 
     query = f"""
-        ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS new_crossing_type varchar;
+        ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS new_crossing_subtype varchar;
         ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS reviewer_status varchar;
         ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS reviewer_comments varchar;
 
@@ -843,7 +843,7 @@ def matchArchive(conn):
             SELECT
             a.id AS modelled_id,
             nn.id AS archive_id,
-            nn.new_crossing_type AS new_crossing_type,
+            nn.new_crossing_subtype AS new_crossing_subtype,
             nn.reviewer_status AS reviewer_status,
             nn.reviewer_comments AS reviewer_comments,
             nn.dist
@@ -851,7 +851,7 @@ def matchArchive(conn):
             CROSS JOIN LATERAL (
                 SELECT
                 id,
-                new_crossing_type,
+                new_crossing_subtype,
                 reviewer_status,
                 reviewer_comments,
                 ST_Distance(a.{mGeometry}, b.{mGeometry}) as dist
@@ -863,7 +863,7 @@ def matchArchive(conn):
         ),
 
         match_distinct AS (
-            select distinct on(archive_id) archive_id, dist, modelled_id, new_crossing_type, reviewer_status, reviewer_comments
+            select distinct on(archive_id) archive_id, dist, modelled_id, new_crossing_subtype, reviewer_status, reviewer_comments
             from match
             order by archive_id, dist asc
         )
@@ -871,12 +871,12 @@ def matchArchive(conn):
         UPDATE {schema}.modelled_crossings a
         SET 
             id = m.archive_id,
-            new_crossing_type = m.new_crossing_type,
+            new_crossing_subtype = m.new_crossing_subtype,
             reviewer_status = m.reviewer_status,
             reviewer_comments = m.reviewer_comments
         FROM match_distinct m WHERE m.modelled_id = a.id;
 
-        --DROP TABLE {schema}.modelled_crossings_archive;
+        DROP TABLE {schema}.modelled_crossings_archive;
     """
     with conn.cursor() as cursor:
         cursor.execute(query)
@@ -938,7 +938,7 @@ def finalizeCrossings(conn):
     ALTER TABLE {schema}.modelled_crossings ADD COLUMN stream_name_1 varchar;
     ALTER TABLE {schema}.modelled_crossings ADD COLUMN stream_name_2 varchar;
     ALTER TABLE {schema}.modelled_crossings ADD COLUMN strahler_order integer;
-    ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS new_crossing_type varchar;
+    ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS new_crossing_subtype varchar;
     ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS reviewer_status varchar;
     ALTER TABLE {schema}.modelled_crossings ADD COLUMN IF NOT EXISTS reviewer_comments varchar;
     ALTER TABLE {schema}.modelled_crossings ADD COLUMN last_modified TIMESTAMPTZ default now();
@@ -946,6 +946,8 @@ def finalizeCrossings(conn):
 
     UPDATE {schema}.modelled_crossings SET stream_name_1 = n.name_en FROM public.{streamNameTable} n WHERE rivernameid1 = n.name_id::varchar;
     UPDATE {schema}.modelled_crossings SET stream_name_2 = n.name_en FROM public.{streamNameTable} n WHERE rivernameid2 = n.name_id::varchar;
+    UPDATE {schema}.modelled_crossings m SET stream_name_1 = n.name_1 FROM {schema}.{streamTable} n WHERE n.rivernameid1 = m.rivernameid1 AND m.stream_name_1 IS NULL;
+    UPDATE {schema}.modelled_crossings m SET stream_name_2 = n.name_2 FROM {schema}.{streamTable} n WHERE n.rivernameid2 = m.rivernameid2 AND m.stream_name_2 IS NULL;
     """
     executeQuery(conn, sql)
 
@@ -962,14 +964,14 @@ def finalizeCrossings(conn):
     sql = f"""
 
     ALTER TABLE {schema}.modelled_crossings
-        ADD CONSTRAINT {schema}_crossing_type_fkey FOREIGN KEY (new_crossing_type)
+        ADD CONSTRAINT {schema}_crossing_subtype_fkey FOREIGN KEY (new_crossing_subtype)
         REFERENCES stream_crossings.crossing_type_codes (name_en) MATCH SIMPLE
         ON UPDATE NO ACTION
         ON DELETE NO ACTION;
 
     GRANT USAGE ON SCHEMA {schema} TO cwf_user;
     GRANT SELECT ON ALL TABLES IN SCHEMA {schema} TO cwf_user;
-    GRANT UPDATE(new_crossing_type) ON {schema}.modelled_crossings TO cwf_user;
+    GRANT UPDATE(new_crossing_subtype) ON {schema}.modelled_crossings TO cwf_user;
     GRANT UPDATE(reviewer_status) ON {schema}.modelled_crossings TO cwf_user;
     GRANT UPDATE(reviewer_comments) ON {schema}.modelled_crossings TO cwf_user;
     """
