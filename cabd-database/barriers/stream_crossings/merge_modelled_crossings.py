@@ -4,7 +4,7 @@ import psycopg2 as pg2
 
 #-- PARSE COMMAND LINE ARGUMENTS --
 parser = argparse.ArgumentParser(description='Processing stream crossings.')
-parser.add_argument('-table', type=str, help='the table to hold final data')
+parser.add_argument('-table', type=str, help='the table to hold final data', required=True)
 args = parser.parse_args()
 
 #database settings
@@ -172,6 +172,8 @@ def finalizeAttributes(conn, table):
 
     UPDATE {dbSchema}.{table} SET crossing_subtype = 'unknown' WHERE crossing_subtype IS NULL;
 
+    UPDATE {dbSchema}.{table} SET use_analysis = CASE WHEN crossing_subtype = 'no crossing' THEN false ELSE true END;
+
     UPDATE {dbSchema}.{table} SET crossing_subtype_source = replace(crossing_subtype_source, 'crossing subtype set based on match from ', '')
     WHERE crossing_subtype_source ILIKE 'crossing subtype set based on match from%';
         
@@ -266,29 +268,8 @@ def joinLocation(conn, table):
 
     sql = f"""
     UPDATE {dbSchema}.{table} AS a SET province_territory_code = n.code FROM cabd.province_territory_codes AS n WHERE st_contains(n.geometry, a.geometry) AND province_territory_code IS NULL;
-    --UPDATE {dbSchema}.{table} AS a SET nhn_watershed_id = n.id FROM cabd.nhn_workunit AS n WHERE st_contains(n.polygon, a.geometry) AND nhn_watershed_id IS NULL;
-    --UPDATE {dbSchema}.{table} AS a SET municipality = n.csdname FROM cabd.census_subdivisions AS n WHERE st_contains(n.geometry, a.geometry) AND municipality IS NULL;
-    """
-    with conn.cursor() as cursor:
-        cursor.execute(sql)
-    conn.commit()
-
-def finalizeColumns(conn, table):
-
-    print("Finalizing column names and converting column types")
-
-    sql = f"""
-        UPDATE {dbSchema}.{table} AS a SET crossing_type = ct.code FROM modelled_crossings.crossing_type_codes ct WHERE ct.name_en = crossing_type;
-        UPDATE {dbSchema}.{table} AS a SET crossing_subtype = ct.code FROM modelled_crossings.crossing_subtype_codes ct WHERE ct.name_en = crossing_subtype;
-        UPDATE {dbSchema}.{table} AS a SET passability_status = p.code FROM cabd.passability_status_codes p WHERE p.name_en = passability_status;
-        
-        ALTER TABLE {dbSchema}.{table} ALTER COLUMN crossing_type TYPE integer USING crossing_type::integer;
-        ALTER TABLE {dbSchema}.{table} ALTER COLUMN crossing_subtype TYPE integer USING crossing_subtype::integer;
-        ALTER TABLE {dbSchema}.{table} ALTER COLUMN passability_status TYPE integer USING passability_status::integer;
-
-        ALTER TABLE {dbSchema}.{table} RENAME COLUMN crossing_type TO crossing_type_code;
-        ALTER TABLE {dbSchema}.{table} RENAME COLUMN crossing_subtype TO crossing_subtype_code;
-        ALTER TABLE {dbSchema}.{table} RENAME COLUMN passability_status TO passability_status_code;
+    UPDATE {dbSchema}.{table} AS a SET nhn_watershed_id = n.id FROM cabd.nhn_workunit AS n WHERE st_contains(n.polygon, a.geometry) AND nhn_watershed_id IS NULL;
+    UPDATE {dbSchema}.{table} AS a SET municipality = n.csdname FROM cabd.census_subdivisions AS n WHERE st_contains(n.geometry, a.geometry) AND municipality IS NULL;
     """
     with conn.cursor() as cursor:
         cursor.execute(sql)
@@ -329,7 +310,6 @@ def main():
     createArchive(conn, targetTable)
     finalizeAttributes(conn, targetTable)
     joinLocation(conn, targetTable)
-    finalizeColumns(conn, targetTable)
 
     print("Done!")
 

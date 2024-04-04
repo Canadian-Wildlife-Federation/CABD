@@ -16,7 +16,7 @@ insert into modelled_crossings.crossing_type_codes (code, name_en, description_e
 (1, 'open-bottom structure', 'Open-bottom structures may include bridges, bottomless arch structures, and open bottom box culverts. Open-bottom structures generally have less impact on aquatic habitat than closed-bottom structures.'),
 (2, 'closed-bottom structure', 'Closed-bottom structures may include box culverts, pipe arch culverts, and pipe culverts. They may be used on public roads, forest roads, driveways and in areas where difficult terrain limits other watercourse crossing options.'),
 (3, 'ford-like structure', 'Ford-like structures are low-profile crossings typically used for low-traffic or intermittent use roads to facilitate crossing a stream.'),
-(4, 'no structure', 'There is no crossing where anticipated, usually because of incorrect road or stream location on maps.'),
+(4, 'no crossing', 'There is no crossing where anticipated, usually because of incorrect road or stream location on maps.'),
 (99, 'unknown', 'The crossing type is unknown.');
 
 update modelled_crossings.crossing_type_codes SET name_fr = name_en, description_fr = description_en;
@@ -41,9 +41,9 @@ insert into modelled_crossings.crossing_subtype_codes (code, name_en, descriptio
 
 update modelled_crossings.crossing_subtype_codes SET name_fr = name_en, description_fr = description_en;
 
-drop table if exists modelled_crossings.crossing_status_codes;
+drop table if exists modelled_crossings.addressed_status_codes;
 
-create table modelled_crossings.crossing_status_codes(
+create table modelled_crossings.addressed_status_codes(
   code integer primary key,
   name_en varchar(2056),
   name_fr varchar(2056),
@@ -51,34 +51,78 @@ create table modelled_crossings.crossing_status_codes(
   description_fr varchar (100000)
 );
 
-insert into modelled_crossings.crossing_status_codes (code, name_en) values
-(1, 'active'),
-(2, 'decommissioned/ removed'),
-(3, 'rehabilitated'),
-(99, 'unknown');
+insert into modelled_crossings.addressed_status_codes (code, name_en, description_en) values
+(1, 'Decommissioned/ Removed', 'The crossing has been decommissioned or removed.'),
+(2, 'Replaced', 'The crossing has been replaced with a fully passable structure.'),
+(3, 'Fish Ladder', 'A fish ladder has been added to the crossing to improve fish passage.'),
+(4, 'Baffling', 'Baffling has been installed at the crossing to reduce water velocity and provide resting areas for fish.'),
+(5, 'Backwatering', 'Backwatering has been added at the crossing to reduce water velocity and turbulence and raise water levels.'),
+(6, 'Other', 'The crossing has been addressed in some way to improve fish passage, but the measure is different than those defined in this table.'),
+(99, 'Unknown', 'It is unknown whether the crossing has been addressed to improve fish passage.');
 
-insert into cabd.passability_status_codes (code, name_en, description_en) values
-(5, 'NA - No Structure', 'Not applicable - there is no structure at this location.'),
-(6, 'NA - Decommissioned/ Removed', 'Not applicable - the structure has been decommissioned or removed.');
+update modelled_crossings.addressed_status_codes SET name_fr = name_en, description_fr = description_en;
 
-update cabd.passability_status_codes SET name_fr = name_en, description_fr = description_en WHERE name_fr is null AND description_fr IS NULL;
+drop table if exists modelled_crossings.assessment_type_codes;
+
+create table modelled_crossings.assessment_type_codes(
+  code integer primary key,
+  name_en varchar(2056),
+  name_fr varchar(2056),
+  description_en varchar (100000),
+  description_fr varchar (100000)
+);
+
+insert into modelled_crossings.assessment_type_codes (code, name_en, description_en) values
+(1, 'Rapid', 'A rapid assessment has been conducted at the crossing.'),
+(2, 'Full', 'A full assessment has been conducted at the crossing.'),
+(3, 'Other', 'An assessment has been conducted at the crossing, but the type of assessment is different than those defined in this table.'),
+(4, 'Imagery', 'The crossing has been reviewed through available satellite imagery, but has not been visited in the field.'),
+(5, 'Modelled', 'The crossing has not been visited in the field or reviewed in satellite imagery.');
+
+update modelled_crossings.assessment_type_codes SET name_fr = name_en, description_fr = description_en;
+
+-- ADD NEW DATA SOURCES --
+
+INSERT INTO cabd.data_source (
+    id,
+    name,
+    source,
+    source_type,
+    full_name,
+    organization_name,
+    data_source_category,
+    geographic_coverage,
+    source_id_field,
+    licence)
+SELECT
+    gen_random_uuid(),
+    name,
+    source,
+    source_type,
+    full_name,
+    organization_name,
+    data_source_category,
+    geographic_coverage,
+    source_id_field,
+    licence
+FROM source_data.modelled_crossing_data_sources;
 
 -- MAIN TABLE SETUP --
-
-ALTER TABLE modelled_crossings.modelled_crossings ADD COLUMN crossing_status_code int2;
-ALTER TABLE modelled_crossings.modelled_crossings ADD COLUMN crossing_status_notes text;
 
 UPDATE modelled_crossings.modelled_crossings AS a SET crossing_type = ct.code FROM modelled_crossings.crossing_type_codes ct WHERE ct.name_en = crossing_type;
 UPDATE modelled_crossings.modelled_crossings AS a SET crossing_subtype = ct.code FROM modelled_crossings.crossing_subtype_codes ct WHERE ct.name_en = crossing_subtype;
 UPDATE modelled_crossings.modelled_crossings AS a SET passability_status = p.code FROM cabd.passability_status_codes p WHERE p.name_en = passability_status;
 
-ALTER TABLE modelled_crossings.modelled_crossings ALTER COLUMN crossing_type TYPE integer USING crossing_type::integer;
-ALTER TABLE modelled_crossings.modelled_crossings ALTER COLUMN crossing_subtype TYPE integer USING crossing_subtype::integer;
-ALTER TABLE modelled_crossings.modelled_crossings ALTER COLUMN passability_status TYPE integer USING passability_status::integer;
+ALTER TABLE modelled_crossings.modelled_crossings ALTER COLUMN crossing_type TYPE int2 USING crossing_type::int2;
+ALTER TABLE modelled_crossings.modelled_crossings ALTER COLUMN crossing_subtype TYPE int2 USING crossing_subtype::int2;
+ALTER TABLE modelled_crossings.modelled_crossings ALTER COLUMN passability_status TYPE int2 USING passability_status::int2;
 
 ALTER TABLE modelled_crossings.modelled_crossings RENAME COLUMN crossing_type TO crossing_type_code;
 ALTER TABLE modelled_crossings.modelled_crossings RENAME COLUMN crossing_subtype TO crossing_subtype_code;
 ALTER TABLE modelled_crossings.modelled_crossings RENAME COLUMN passability_status TO passability_status_code;
+
+UPDATE modelled_crossings.crossing_type_codes SET name_en = initcap(name_en), name_fr = initcap(name_fr);
+UPDATE modelled_crossings.crossing_subtype_codes SET name_en = initcap(name_en), name_fr = initcap(name_fr);
 
 ALTER TABLE modelled_crossings.modelled_crossings DROP COLUMN IF EXISTS new_crossing_subtype;
 ALTER TABLE modelled_crossings.modelled_crossings DROP COLUMN IF EXISTS reviewer_comments;
@@ -100,15 +144,19 @@ ALTER TABLE modelled_crossings.modelled_crossings
         REFERENCES modelled_crossings.crossing_subtype_codes (code) MATCH SIMPLE
         ON UPDATE NO ACTION
         ON DELETE NO ACTION,
-    ADD CONSTRAINT modelled_crossings_crossing_status_code_fkey FOREIGN KEY (crossing_status_code)
-        REFERENCES modelled_crossings.crossing_status_codes (code) MATCH SIMPLE
+    ADD CONSTRAINT modelled_crossings_addressed_status_code_fkey FOREIGN KEY (addressed_status_code)
+        REFERENCES modelled_crossings.addressed_status_codes (code) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION,
+    ADD CONSTRAINT modelled_crossings_assessment_type_code_fkey FOREIGN KEY (assessment_type_code)
+        REFERENCES modelled_crossings.assessment_type_codes (code) MATCH SIMPLE
         ON UPDATE NO ACTION
         ON DELETE NO ACTION
-;
+    ;
 
 -- ENGLISH VIEW --
 
-DROP VIEW cabd.modelled_crossings_view_en;
+DROP VIEW IF EXISTS cabd.modelled_crossings_view_en;
 
 CREATE OR REPLACE VIEW cabd.modelled_crossings_view_en
  AS
@@ -120,12 +168,21 @@ CREATE OR REPLACE VIEW cabd.modelled_crossings_view_en
     ct.name_en AS crossing_type,
     m.crossing_subtype_code,
     cst.name_en AS crossing_subtype,
-    m.crossing_subtype_source,
+    m.crossing_type_source,
     m.passability_status_code,
     ps.name_en AS passability_status,
-    m.crossing_status_code,
-    cs.name_en AS crossing_status,
-    m.crossing_status_notes,
+    m.addressed_status_code,
+    ast.name_en AS addressed_status,
+    m.assessment_type_code,
+    at.name_en AS assessment_type,
+    CASE
+        WHEN m.addressed_status_code != (SELECT code FROM modelled_crossings.addressed_status_codes WHERE name_en = 'Unknown') THEN true
+        ELSE false
+        END AS crossing_addressed,
+    CASE
+        WHEN m.assessment_type_code IN (SELECT code FROM modelled_crossings.assessment_type_codes WHERE name_en IN ('Rapid', 'Full', 'Other')) THEN true
+        ELSE false
+        END AS crossing_confirmed,
     m.municipality,
     m.nhn_watershed_id,
     nhn.name_en AS nhn_watershed_name,
@@ -148,7 +205,9 @@ CREATE OR REPLACE VIEW cabd.modelled_crossings_view_en
      LEFT JOIN cabd.passability_status_codes ps ON ps.code = m.passability_status_code
      LEFT JOIN modelled_crossings.crossing_type_codes ct ON ct.code = m.crossing_type_code
      LEFT JOIN modelled_crossings.crossing_subtype_codes cst ON cst.code = m.crossing_subtype_code
-     LEFT JOIN modelled_crossings.crossing_status_codes cs ON cs.code = m.crossing_status_code;
+     LEFT JOIN modelled_crossings.addressed_status_codes ast ON ast.code = m.addressed_status_code
+     LEFT JOIN modelled_crossings.assessment_type_codes at ON at.code = m.assessment_type_code
+    ;
 
 ALTER TABLE cabd.modelled_crossings_view_en
     OWNER TO cabd;
@@ -160,7 +219,7 @@ GRANT SELECT ON TABLE cabd.modelled_crossings_view_en TO egouge;
 
 -- FRENCH VIEW --
 
-DROP VIEW cabd.modelled_crossings_view_fr;
+DROP VIEW IF EXISTS cabd.modelled_crossings_view_fr;
 
 CREATE OR REPLACE VIEW cabd.modelled_crossings_view_fr
  AS
@@ -172,12 +231,21 @@ CREATE OR REPLACE VIEW cabd.modelled_crossings_view_fr
     ct.name_fr AS crossing_type,
     m.crossing_subtype_code,
     cst.name_fr AS crossing_subtype,
-    m.crossing_subtype_source,
+    m.crossing_type_source,
     m.passability_status_code,
     ps.name_fr AS passability_status,
-    m.crossing_status_code,
-    cs.name_fr AS crossing_status,
-    m.crossing_status_notes,
+    m.addressed_status_code,
+    ast.name_fr AS addressed_status,
+    m.assessment_type_code,
+    at.name_fr AS assessment_type,
+    CASE
+        WHEN m.addressed_status_code != (SELECT code FROM modelled_crossings.addressed_status_codes WHERE name_en = 'Unknown') THEN true
+        ELSE false
+        END AS crossing_addressed,
+    CASE
+        WHEN m.assessment_type_code IN (SELECT code FROM modelled_crossings.assessment_type_codes WHERE name_en IN ('Rapid', 'Full', 'Other')) THEN true
+        ELSE false
+        END AS crossing_confirmed,
     m.municipality,
     m.nhn_watershed_id,
     nhn.name_fr AS nhn_watershed_name,
@@ -200,8 +268,9 @@ CREATE OR REPLACE VIEW cabd.modelled_crossings_view_fr
      LEFT JOIN cabd.passability_status_codes ps ON ps.code = m.passability_status_code
      LEFT JOIN modelled_crossings.crossing_type_codes ct ON ct.code = m.crossing_type_code
      LEFT JOIN modelled_crossings.crossing_subtype_codes cst ON cst.code = m.crossing_subtype_code
-     LEFT JOIN modelled_crossings.crossing_status_codes cs ON cs.code = m.crossing_status_code;
-
+     LEFT JOIN modelled_crossings.addressed_status_codes ast ON ast.code = m.addressed_status_code
+     LEFT JOIN modelled_crossings.assessment_type_codes at ON at.code = m.assessment_type_code
+    ;
 ALTER TABLE cabd.modelled_crossings_view_fr
     OWNER TO cabd;
 
@@ -339,9 +408,9 @@ CREATE OR REPLACE VIEW cabd.all_features_view_en
             NULL::character varying(512) AS "varchar",
             NULL::character varying(512) AS "varchar",
             NULL::character varying(512) AS "varchar",
-            c.passability_status_code AS passability_status_code,
+            c.passability_status_code,
             c.use_analysis,
-            c.geometry
+            c.geometry AS snapped_point
         FROM modelled_crossings.modelled_crossings c
              ) barriers
      LEFT JOIN cabd.province_territory_codes pt ON barriers.province_territory_code::text = pt.code::text
@@ -486,9 +555,9 @@ CREATE OR REPLACE VIEW cabd.all_features_view_fr
             NULL::character varying(512) AS "varchar",
             NULL::character varying(512) AS "varchar",
             NULL::character varying(512) AS "varchar",
-            c.passability_status_code AS passability_status_code,
+            c.passability_status_code,
             c.use_analysis,
-            c.geometry
+            c.geometry AS snapped_point
         FROM modelled_crossings.modelled_crossings c
              ) barriers
      LEFT JOIN cabd.province_territory_codes pt ON barriers.province_territory_code::text = pt.code::text
@@ -505,8 +574,6 @@ GRANT SELECT ON TABLE cabd.all_features_view_fr TO cwf_user;
 GRANT SELECT ON TABLE cabd.all_features_view_fr TO egouge;
 
 -- BARRIERS VIEW - ENGLISH --
-
-DROP VIEW cabd.barriers_view_en;
 
 CREATE OR REPLACE VIEW cabd.barriers_view_en
  AS
@@ -619,9 +686,9 @@ CREATE OR REPLACE VIEW cabd.barriers_view_en
             NULL::character varying(512) AS "varchar",
             NULL::character varying(512) AS "varchar",
             NULL::character varying(512) AS "varchar",
-            c.passability_status_code AS passability_status_code,
+            c.passability_status_code,
             c.use_analysis,
-            c.geometry
+            c.geometry AS snapped_point
             FROM modelled_crossings.modelled_crossings c
         ) barriers
      LEFT JOIN cabd.province_territory_codes pt ON barriers.province_territory_code::text = pt.code::text
@@ -638,8 +705,6 @@ GRANT SELECT ON TABLE cabd.barriers_view_en TO cwf_user;
 GRANT SELECT ON TABLE cabd.barriers_view_en TO egouge;
 
 -- BARRIERS VIEW - FRENCH --
-
-DROP VIEW cabd.barriers_view_fr;
 
 CREATE OR REPLACE VIEW cabd.barriers_view_fr
  AS
@@ -752,9 +817,9 @@ CREATE OR REPLACE VIEW cabd.barriers_view_fr
             NULL::character varying(512) AS "varchar",
             NULL::character varying(512) AS "varchar",
             NULL::character varying(512) AS "varchar",
-            c.passability_status_code AS passability_status_code,
+            c.passability_status_code,
             c.use_analysis,
-            c.geometry
+            c.geometry AS snapped_point
             FROM modelled_crossings.modelled_crossings c
         ) barriers
      LEFT JOIN cabd.province_territory_codes pt ON barriers.province_territory_code::text = pt.code::text
@@ -795,7 +860,7 @@ VALUES
 
 INSERT INTO cabd.feature_type_version_history (type, version, start_date, end_date)
 VALUES
-('modelled_crossings', '1.0', '2024-03-36', NULL);
+('modelled_crossings', '1.0', NULL, NULL);
 
 -- FEATURE TYPE METADATA TABLE --
 
@@ -857,6 +922,15 @@ VALUES
     'varchar(32)',
     5
 ),
+
+(   'cabd.modelled_crossings_view',
+    'crossing_type_source',
+    'cr_typ_s',
+    'Crossing Type Source',
+    'The source of the crossing type',
+    'varchar',
+    6
+),
 (   'cabd.modelled_crossings_view',
     'crossing_subtype_code',
     'cr_styp_c',
@@ -871,14 +945,6 @@ VALUES
     'Crossing Subtype',
     'The crossing subtype',
     'varchar(32)',
-    6
-),
-(   'cabd.modelled_crossings_view',
-    'crossing_subtype_source',
-    'cr_styp_s',
-    'Crossing Subtype Source',
-    'The source of the crossing subtype',
-    'varchar',
     7
 ),
 (   'cabd.modelled_crossings_view',
@@ -898,36 +964,61 @@ VALUES
     8
 ),
 (   'cabd.modelled_crossings_view',
-    'crossing_status_code',
-    'crosstat_c',
-    'Crossing Status Code',
-    'The status of the stream crossing.',
+    'addressed_status_code',
+    'addstat_c',
+    'Addressed Status Code',
+    'Indicates whether the crossing has been rehabilitated in some way to improve fish passage.',
     'integer',
     NULL
 ),
 (   'cabd.modelled_crossings_view',
-    'crossing_status',
-    'crosstat',
-    'Crossing Status',
-    'The status of the stream crossing.',
+    'addressed_status',
+    'addstat',
+    'Addressed Status',
+    'Indicates whether the crossing has been rehabilitated in some way to improve fish passage.',
     'varchar(32)',
     9
 ),
 (   'cabd.modelled_crossings_view',
-    'crossing_status_notes',
-    'crosstat_n',
-    'Crossing Status Notes',
-    'Notes about the status of the stream crossing.',
+    'assessment_type_code',
+    'atype_c',
+    'Assessment Type Code',
+    'The type of assessment carried out at the stream crossing.',
+    'integer',
+    NULL
+),
+(   'cabd.modelled_crossings_view',
+    'assessment_type',
+    'atype',
+    'Assessment Type',
+    'The type of assessment carried out at the stream crossing.',
     'varchar(32)',
     10
 ),
+(   'cabd.modelled_crossings_view',
+    'crossing_addressed',
+    'cross_add',
+    'Crossing Addressed',
+    'If true, the stream crossing has been rehabilitated in some way to improve fish passage.',
+    'boolean',
+    11
+),
+(   'cabd.modelled_crossings_view',
+    'crossing_confirmed',
+    'cross_conf',
+    'Crossing Confirmed',
+    'If true, the existence of the stream crossing has been confirmed through a field visit.',
+    'boolean',
+    12
+),
+
 (   'cabd.modelled_crossings_view',
     'municipality',
     'muni_name',
     'Municipality',
     'The municipality the stream crossing is located in.',
     'varchar(512)',
-    11
+    13
 ),
 (   'cabd.modelled_crossings_view',
     'nhn_watershed_id',
@@ -935,7 +1026,7 @@ VALUES
     'NHN Watershed ID',
     'A code referencing the work unit ''Dataset Name'' from the National Hydrographic Network (NHN) that the feature is located in.',
     'varchar(7)',
-    12
+    14
 ),
 (   'cabd.modelled_crossings_view',
     'nhn_watershed_name',
@@ -943,7 +1034,7 @@ VALUES
     'NHN Watershed Name',
     'The name of the NHN sub-sub drainage area.',
     'varchar(500)',
-    13
+    15
 ),
 (   'cabd.modelled_crossings_view',
     'province_territory_code',
@@ -959,7 +1050,7 @@ VALUES
     'Province/Territory Name',
     'The province or territory the stream crossing is located in.',
     'varchar(32)',
-    14
+    16
 ),
 (   'cabd.modelled_crossings_view',
     'stream_name_1',
@@ -967,7 +1058,7 @@ VALUES
     'Stream Name',
     'Name of river/stream in which the stream crossing is recorded.',
     'varchar(512)',
-    15
+    17
 ),
 (   'cabd.modelled_crossings_view',
     'stream_order',
@@ -975,7 +1066,7 @@ VALUES
     'Stream Order',
     'Strahler stream order of the stream in which the stream crossing is recorded.',
     'integer',
-    16
+    18
 ),
 (   'cabd.modelled_crossings_view',
     'transport_feature_name',
@@ -983,7 +1074,7 @@ VALUES
     'Transport Feature Name',
     'Name of the road or other transportation infrastructure that uses the stream crossing.',
     'varchar',
-    17
+    19
 ),
 (   'cabd.modelled_crossings_view',
     'transport_feature_type',
@@ -991,7 +1082,7 @@ VALUES
     'Transport Feature Type',
     'Type of road or other transportation infrastructure that uses the stream crossing.',
     'varchar',
-    18
+    20
 ),
 (   'cabd.modelled_crossings_view',
     'transport_feature_owner',
@@ -999,7 +1090,7 @@ VALUES
     'Transport Feature Owner',
     'Owner of the transportation infrastructure that uses the stream crossing.',
     'varchar',
-    19
+    21
 ),
 (   'cabd.modelled_crossings_view',
     'railway_operator',
@@ -1007,7 +1098,7 @@ VALUES
     'Railway Operator',
     'Operator of the railway that uses the stream crossing.',
     'varchar',
-    20
+    22
 ),
 (   'cabd.modelled_crossings_view',
     'railway_status',
@@ -1015,7 +1106,7 @@ VALUES
     'Railway Status',
     'Operating status of the railway that uses the stream crossing.',
     'varchar',
-    21
+    23
 ),
 (   'cabd.modelled_crossings_view',
     'roadway_type',
@@ -1023,7 +1114,7 @@ VALUES
     'Roadway Type',
     'Classification of the road, typically describing the type of service the road is intended to provide.',
     'varchar',
-    22
+    24
 ),
 (   'cabd.modelled_crossings_view',
     'comments',
@@ -1031,7 +1122,7 @@ VALUES
     'Comments',
     'Unstructured comments about the stream crossing.',
     'varchar',
-    23
+    25
 ),
 (   'cabd.modelled_crossings_view',
     'use_analysis',
@@ -1039,7 +1130,7 @@ VALUES
     'Use for Network Analysis',
     'If true, the data point representing this feature is/should be snapped to hydrographic networks for analysis purposes.',
     'boolean',
-    24
+    26
 ),
 (   'cabd.modelled_crossings_view',
     'geometry',
@@ -1081,12 +1172,17 @@ WHERE view_name = 'cabd.modelled_crossings_view' AND field_name = 'crossing_subt
 UPDATE cabd.feature_type_metadata SET value_options_reference = 'modelled_crossings.crossing_subtype_codes;code;name;description'
 WHERE view_name = 'cabd.modelled_crossings_view' AND field_name = 'crossing_subtype_code';
 
-UPDATE cabd.feature_type_metadata SET value_options_reference = 'modelled_crossings.crossing_status_codes;;name;description'
-WHERE view_name = 'cabd.modelled_crossings_view' AND field_name = 'crossing_status';
+UPDATE cabd.feature_type_metadata SET value_options_reference = 'modelled_crossings.addressed_status_codes;;name;description'
+WHERE view_name = 'cabd.modelled_crossings_view' AND field_name = 'addressed_status';
 
-UPDATE cabd.feature_type_metadata SET value_options_reference = 'modelled_crossings.crossing_status_codes;code;name;description'
-WHERE view_name = 'cabd.modelled_crossings_view' AND field_name = 'crossing_status_code';
+UPDATE cabd.feature_type_metadata SET value_options_reference = 'modelled_crossings.addressed_status_codes;code;name;description'
+WHERE view_name = 'cabd.modelled_crossings_view' AND field_name = 'addressed_status_code';
 
+UPDATE cabd.feature_type_metadata SET value_options_reference = 'modelled_crossings.assessment_type_codes;;name;description'
+WHERE view_name = 'cabd.modelled_crossings_view' AND field_name = 'assessment_type';
+
+UPDATE cabd.feature_type_metadata SET value_options_reference = 'modelled_crossings.assessment_type_codes;code;name;description'
+WHERE view_name = 'cabd.modelled_crossings_view' AND field_name = 'assessment_type_code';
 
 UPDATE cabd.feature_type_metadata SET include_vector_tile = 'true'
 WHERE view_name = 'cabd.modelled_crossings_view' AND field_name IN (
@@ -1101,5 +1197,13 @@ WHERE view_name = 'cabd.modelled_crossings_view' AND field_name IN (
     'crossing_type',
     'crossing_type_code',
     'crossing_subtype',
-    'crossing_subtype_code'
+    'crossing_subtype_code',
+    'addressed_status',
+    'addressed_status_code',
+    'assessment_type',
+    'assessment_type_code',
+    'crossing_addressed',
+    'crossing_confirmed'
 );
+
+TRUNCATE cabd.vector_tile_cache;
