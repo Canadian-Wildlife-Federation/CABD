@@ -69,8 +69,7 @@ UPDATE dams.dams_attribute_source AS cabdsource
 
 UPDATE dams.dams
     SET 
-        passability_status_code = (SELECT code FROM cabd.passability_status_codes WHERE name_en = 'Passable'),
-        passability_status_note = 'Marked as passable since this structure is decommissioned or removed.'
+        passability_status_code = (SELECT code FROM cabd.passability_status_codes WHERE name_en = 'NA - Decommissioned/ Removed')
     WHERE operating_status_code = (SELECT code FROM dams.operating_status_codes WHERE name_en = 'Decommissioned/ Removed');
 
 --dams with a comment that indicates a fishway are set to partial barriers
