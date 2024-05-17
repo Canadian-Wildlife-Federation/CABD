@@ -96,11 +96,5 @@ public class CabdApplication extends SpringBootServletInitializer {
     public static final boolean isFrench() {
     	return (LocaleContextHolder.getLocale().getLanguage() == Locale.FRENCH.getLanguage()) ;
     }
-    
-//    @Bean
-//    public HttpMessageConverters customConverters() {
-//    	FeatureListGeoPkgSerializer geopkgConverter = new FeatureListGeoPkgSerializer();
-////    	FeatureListJsonSerializer jsonConverter = new FeatureListJsonSerializer();
-//    	return new HttpMessageConverters(geopkgConverter);
-//    }
+
 }
