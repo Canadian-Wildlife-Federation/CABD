@@ -15,6 +15,8 @@
  */
 package org.refractions.cabd;
 
+import java.util.Map;
+
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
@@ -32,6 +34,25 @@ public class CabdConfigurationProperties {
 	private long vectorcachesize = 0;
 	private long cachefree = 0;
 	
+	private Map<String, String> azureSettings;
+	
+	/**
+	 * The storage azure account url 
+	 * @return
+	 */
+	public String getAzureStorageaccounturl() {
+		return azureSettings.get("storageaccounturl");
+	}
+
+	/**
+	 * The azure container name
+	 * @return
+	 */
+	public String getAzureContainername() {
+		return azureSettings.get("containername");
+	}
+
+
 	/**
 	 * The system defined maximum number of search results
 	 * @return
@@ -67,5 +88,13 @@ public class CabdConfigurationProperties {
 	
 	public void setCachefree(long cachefree) {
 		this.cachefree = cachefree;
+	}
+
+	public Map<String, String> getAzure() {
+		return azureSettings;
+	}
+
+	public void setAzure(Map<String, String> azureSettings) {
+		this.azureSettings = azureSettings;
 	}
 }

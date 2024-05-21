@@ -65,7 +65,6 @@ public class CommunityController {
 		//save data and return; data is parsed as a part of a separate job
 		saveCommunityData(new CommunityData(featuresJson, Instant.now()));
 		communityProcessor.start();
-		System.out.println("next");
 		return ResponseEntity.status(HttpStatus.OK).build();
 	}
 	

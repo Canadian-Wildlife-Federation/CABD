@@ -147,7 +147,6 @@ public class FeatureController {
 	 * @param parameters
 	 * @return
 	 */
-	//TODO: document that feature types can only contain a-Z0-9_ characters
 	@Operation(summary = "Searches for features of a given type.")
 	@ApiResponses(value = { 
 			@ApiResponse(responseCode = "200",

@@ -130,10 +130,11 @@ public class CommunityDataDao {
 		StringBuilder sb = new StringBuilder();
 		sb.append(" INSERT INTO ");
 		sb.append(dataTable);
-		sb.append(" (cabd_id, uploaded_datetime, user_id, data)");
-		sb.append("VALUES(?,?,?,?::jsonb)");
+		sb.append(" (id, cabd_id, uploaded_datetime, user_id, data)");
+		sb.append("VALUES(?,?,?,?,?::jsonb)");
 		
 		jdbcTemplate.update(sb.toString(), 
+				feature.getId(),
 				feature.getCabdId(),
 				Timestamp.from( feature.getRawData().getUploadeddatetime()),
 				feature.getCommunityContact().getId(),

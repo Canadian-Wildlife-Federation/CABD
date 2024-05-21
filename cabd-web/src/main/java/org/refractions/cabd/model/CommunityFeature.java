@@ -6,28 +6,30 @@ import com.google.gson.JsonObject;
 
 public class CommunityFeature {
 	
+	private UUID id;
+	
 	private CommunityData rawData;
-	
 	private UUID cabdId;
-	
-	
 	private String featureType;
-	
 	private String username;
 	private CommunityContact contact;
-	
 	private JsonObject propertiesJson;
 	
+	//for parsing
+	//index of feature in the data files
 	private int index;
 	
-	
 	public CommunityFeature(UUID cabdId, String featureType, String username, JsonObject properties) {
+		this.id = UUID.randomUUID();
 		this.cabdId = cabdId;
 		this.featureType = featureType;
 		this.username = username;
 		this.propertiesJson = properties;
 	}
 	
+	public UUID getId() {
+		return this.id;
+	}
 	public int getIndex() {
 		return this.index;
 	}
