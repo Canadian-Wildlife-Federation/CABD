@@ -123,8 +123,17 @@
     		<groupId>com.azure</groupId>
 			<artifactId>azure-storage-blob</artifactId>
 			<version>12.26.0</version>
+			<exclusions>
+				<!--  if we don't exclude this then all responses (feature types etc) default to xml -->
+				<!--  unless you add accept headers -->
+				<!--  https://github.com/Azure/azure-sdk-for-java/issues/7694 -->
+                <exclusion>
+                    <groupId>com.fasterxml.jackson.dataformat</groupId>
+                    <artifactId>jackson-dataformat-xml</artifactId>
+                </exclusion>
+            </exclusions>
 		</dependency>
-    	
+    	 
 	</dependencies>
 
 	<build>
