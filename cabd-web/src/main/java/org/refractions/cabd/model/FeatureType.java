@@ -40,10 +40,14 @@ public class FeatureType extends NamedItem{
 	private String dataurl;
 	private String metadataurl;
 	
+	private String communityDataTable;
+	private String[] communityPhotoFields;
+	
 	private FeatureViewMetadata metadata;
 	
 	public FeatureType(String type, String dataView, String dataVersion, String name_en, String name_fr, String attributeSourceTable, 
-			String featureSourceTable, String defaultNameField, String description) {
+			String featureSourceTable, String defaultNameField, String description,
+			String communityDataTable, String[] communityPhotoFields) {
 		super(name_en, name_fr);
 		this.type = type;
 		this.dataVersion = dataVersion;
@@ -52,8 +56,18 @@ public class FeatureType extends NamedItem{
 		this.featureSourceTable = featureSourceTable;
 		this.defaultNameField = defaultNameField;
 		this.description = description;
+		this.communityDataTable = communityDataTable;
+		this.communityPhotoFields = communityPhotoFields;
 	}
 
+	public String getCommunityDataTable() {
+		return this.communityDataTable;
+	}
+	
+	public String[] getCommunityPhotoFields() {
+		return this.communityPhotoFields;
+	}
+	
 	public String getDescription() {
 		return this.description;
 	}

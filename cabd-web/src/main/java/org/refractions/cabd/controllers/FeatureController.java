@@ -51,7 +51,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 
 /**
- * REST api for Databaes Features
+ * REST api for database features
  * 
  * @author Emily
  *
@@ -119,17 +119,9 @@ public class FeatureController {
 	}
 	
 	//requires content-type = application/json in request
-	@Operation(summary = "Adds a feature update record the Find an individual feature.")
+	@Operation(summary = "Stores feature updates suggested by UI users.")
 	@ApiResponses(value = { 
-			@ApiResponse(responseCode = "200",
-						description = "The feature as a GeoJson feature. Feature attributes will vary by feature type.",
-						content = {
-						@Content(mediaType = "application/geo+json")}),
-			 @ApiResponse(responseCode = "404",
-					 	description = "feature not found", 
-			 			content = {
-						@Content(mediaType = "application/json", schema = @Schema(implementation = ApiError.class))})})
-
+			@ApiResponse(responseCode = "200")})						
 	@PutMapping(value = "/{id:[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}}")
 	public ResponseEntity<Object> putFeature(
 			@Parameter(description = "unique feature identifier") 
@@ -155,7 +147,6 @@ public class FeatureController {
 	 * @param parameters
 	 * @return
 	 */
-	//TODO: document that feature types can only contain a-Z0-9_ characters
 	@Operation(summary = "Searches for features of a given type.")
 	@ApiResponses(value = { 
 			@ApiResponse(responseCode = "200",

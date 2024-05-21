@@ -18,7 +18,10 @@ package org.refractions.cabd.model;
 import java.util.concurrent.Callable;
 
 import org.refractions.cabd.CabdConfigurationProperties;
+import org.refractions.cabd.controllers.CommunityProcessor;
 import org.refractions.cabd.dao.VectorTileCacheDao;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.support.AbstractValueAdaptingCache;
 import org.springframework.stereotype.Component;
@@ -31,6 +34,8 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class VectorTileCache extends AbstractValueAdaptingCache {
+
+	private Logger logger = LoggerFactory.getLogger(VectorTileCache.class);
 
 	private static final String cacheName = "vectortilecache";
 
@@ -68,8 +73,7 @@ public class VectorTileCache extends AbstractValueAdaptingCache {
 		try {
 			return valueLoader.call();
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			logger.warn(e.getMessage(), e);
 		}
 		return null;
 	}

@@ -18,6 +18,15 @@
   "name": "cabd.cachecleanupdelay",
   "type": "java.lang.Long",
   "description": "The amount of time in seconds between vector tile cache clearing"
+},
+{
+  "name": "cabd.azure.storageaccounturl",
+  "type": "java.lang.String",
+  "description": "The url of the azure storage account"
+},
+{
+  "name": "cabd.azure.containername",
+  "type": "java.lang.String",
+  "description": "The azure storage acount name"
 }
-
 ]}

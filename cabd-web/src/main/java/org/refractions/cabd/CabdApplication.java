@@ -21,6 +21,7 @@ import java.util.Locale;
 
 import javax.sql.DataSource;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.jdbc.DataSourceBuilder;
@@ -57,14 +58,18 @@ public class CabdApplication extends SpringBootServletInitializer {
 		
 	public static final String DATA_LICENCE_URL = "https://creativecommons.org/licenses/by-nc-sa/4.0/";
 	
+	@Autowired
+	CabdConfigurationProperties properties;
+	
 	public static void main(String[] args) {
 		SpringApplication.run(CabdApplication.class, args);
+		
+		
 	}
 
 	
     @Bean
-    public DataSource getDataSource() 
-    {
+    public DataSource getDataSource() {
     	String url = System.getProperty(DB_URL_ENV);
     	if (url == null) url = System.getenv(DB_URL_ENV);
     	
@@ -96,11 +101,5 @@ public class CabdApplication extends SpringBootServletInitializer {
     public static final boolean isFrench() {
     	return (LocaleContextHolder.getLocale().getLanguage() == Locale.FRENCH.getLanguage()) ;
     }
-    
-//    @Bean
-//    public HttpMessageConverters customConverters() {
-//    	FeatureListGeoPkgSerializer geopkgConverter = new FeatureListGeoPkgSerializer();
-////    	FeatureListJsonSerializer jsonConverter = new FeatureListJsonSerializer();
-//    	return new HttpMessageConverters(geopkgConverter);
-//    }
+
 }
