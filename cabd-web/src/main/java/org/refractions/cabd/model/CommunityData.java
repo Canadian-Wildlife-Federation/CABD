@@ -43,8 +43,14 @@ public class CommunityData {
 		this.data = data;
 		this.uploadeddatetime = datetime;
 		this.status = Status.valueOf(status);
-		this.data = data;
-		
+	}
+	
+	public CommunityData(UUID id, Instant datetime, String status, String statusMessage, String[] warnings) {
+		this.id = id;
+		this.uploadeddatetime = datetime;
+		this.status = Status.valueOf(status);
+		this.statusMessage = statusMessage;
+		this.warnings = List.of(warnings);
 	}
 	
 	public void setStatus(Status s) {
