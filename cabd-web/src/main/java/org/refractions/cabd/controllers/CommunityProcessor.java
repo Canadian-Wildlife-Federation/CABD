@@ -152,7 +152,7 @@ public class CommunityProcessor {
 				if (f == null) {
 					//feature doesn't exist; not sure where uuid came from but I guess it doesn't matter
 					//let's generate a new id & a warning
-					data.getWarnings().add(MessageFormat.format("Feature {0}: Feature with id {0} not found in cabd. New cabd_id will be generated and the feature will be processed.  ",feature.getIndex(), feature.getCabdId().toString()));
+					data.getWarnings().add(MessageFormat.format("Feature {0}: Feature with id {1} not found in cabd. New cabd_id will be generated and the feature will be processed.  ",feature.getIndex(), feature.getCabdId().toString()));
 					feature.setCabdId(UUID.randomUUID());	
 				}else {
 					if (!f.getFeatureType().equalsIgnoreCase(featuretype.getType())) {
@@ -279,7 +279,7 @@ public class CommunityProcessor {
 				cd.setIndex(1);
 				features.add(cd);
 			}catch (Exception ex) {
-				warnings.add(MessageFormat.format("Could not parse feature {0}.", ex.getMessage()));
+				warnings.add(MessageFormat.format("Could not parse feature: {0}.", ex.getMessage()));
 			}
 		}
 		

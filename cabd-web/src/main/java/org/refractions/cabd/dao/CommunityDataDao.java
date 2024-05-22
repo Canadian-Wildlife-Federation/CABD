@@ -15,7 +15,9 @@
  */
 package org.refractions.cabd.dao;
 
+import java.sql.Array;
 import java.sql.Timestamp;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -67,11 +69,15 @@ public class CommunityDataDao {
 				rs.getString("status"));
 
 	 
-		  
+	private RowMapper<CommunityData> communityDataMapperNoData = (rs, rownum)-> 
+		new CommunityData((UUID)rs.getObject("id"), 
+				rs.getTimestamp("uploaded_datetime").toInstant(),
+				rs.getString("status"),
+				rs.getString("status_message"),
+				(String[])((Array)rs.getObject("warnings")).getArray());	  
 		
 	/**
-	 * Finds the feature with the given uuid.  Will return null
-	 * if no feature is found.
+	 * Saves the raw community data and assigned id from database.
 	 * 
 	 * @param uuid
 	 * @return
@@ -81,9 +87,12 @@ public class CommunityDataDao {
 		sb.append("INSERT INTO ");
 		sb.append(COMMUNITY_DATA_TABLE);
 		sb.append(" (uploaded_datetime, data)");
-		sb.append(" VALUES (?, ?)");
+		sb.append(" VALUES (?, ?) ");
+		sb.append(" RETURNING id ");
 
-		jdbcTemplate.update(sb.toString(), Timestamp.from( data.getUploadeddatetime() ), data.getData());		
+		
+		UUID id = jdbcTemplate.queryForObject(sb.toString(),UUID.class, Timestamp.from( data.getUploadeddatetime() ), data.getData());
+		data.setId(id);
 	}
 	
 	
@@ -170,6 +179,27 @@ public class CommunityDataDao {
 			return first.get();
 		}
 	}
+	
+	/**
+	 * This is intended for testing purposes only.
+	 * 
+	 * Gets the community data status from the database for a given id.
+	 * Excludes the data field from the results. 
+	 * @param id
+	 * @return
+	 */
+	public CommunityData getCommunityDataRaw(UUID id) {
+		
+		StringBuilder sb = new StringBuilder();
+		sb.append("SELECT id, uploaded_datetime, status, status_message, warnings FROM ");
+		sb.append(COMMUNITY_DATA_TABLE);
+		sb.append(" WHERE id = ? ");
+		
+		List<CommunityData> data = jdbcTemplate.query(sb.toString(), communityDataMapperNoData, id);
+		if (data.isEmpty()) return null;
+		return data.get(0);
+	}
+	
 	
 	/**
 	 * Updates the status, message, and warnings associated with the community data field.  

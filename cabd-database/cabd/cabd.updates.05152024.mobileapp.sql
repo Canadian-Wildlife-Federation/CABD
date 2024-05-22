@@ -51,3 +51,8 @@ create table dams.dams_community_staging(
   CONSTRAINT status_value_ch CHECK (status IN ('NEW', 'REVIEWED'))
 );
 
+
+alter table cabd.community_data_raw owner to cabd;
+alter table stream_crossings.stream_crossings_community_staging owner to cabd;
+alter table dams.dams_community_staging owner to cabd;
+alter table cabd.community_contact owner to cabd;
