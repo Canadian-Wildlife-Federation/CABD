@@ -54,7 +54,7 @@ public class UserFeatureUpdateDao {
 		sb.append(" VALUES (?, ?, ?, ?, ?, ?)");
 
 		jdbcTemplate.update(sb.toString(),
-				c.getId(), cabdFeature.getId(), cabdFeature.getFeatureType(), changeRequest.getDescription(), changeRequest.getDataSource(),
+				c.getId(), cabdFeature.getId(), cabdFeature.getFeatureType(), changeRequest.getDescription(), changeRequest.getDatasource(),
 						Status.NEEDS_REVIEW.name().toLowerCase() );
 
 	}

@@ -72,10 +72,10 @@ public class FeatureChangeRequest {
 	public void setDescription(String description) {
 		this.description = description;
 	}
-	public String getDataSource() {
+	public String getDatasource() {
 		return dataSource;
 	}
-	public void setDataSource(String dataSource) {
+	public void setDatasource(String dataSource) {
 		this.dataSource = dataSource;
 	}
 	
