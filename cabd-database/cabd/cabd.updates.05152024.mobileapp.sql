@@ -37,7 +37,7 @@ create table stream_crossings.stream_crossings_community_staging(
   data jsonb,
   status varchar(16) not null default 'NEW',
   primary key (id),
-  CONSTRAINT status_value_ch CHECK (status IN ('NEW', 'REVIEWED'))
+  CONSTRAINT status_value_ch CHECK (status IN ('NEW', 'REJECTED', 'REVIEWED'))
 );
 
 create table dams.dams_community_staging(
@@ -48,7 +48,7 @@ create table dams.dams_community_staging(
   data jsonb,
   status varchar(16) not null default 'NEW',
   primary key (id),
-  CONSTRAINT status_value_ch CHECK (status IN ('NEW', 'REVIEWED'))
+  CONSTRAINT status_value_ch CHECK (status IN ('NEW', 'REJECTED',  'REVIEWED'))
 );
 
 
@@ -56,3 +56,31 @@ alter table cabd.community_data_raw owner to cabd;
 alter table stream_crossings.stream_crossings_community_staging owner to cabd;
 alter table dams.dams_community_staging owner to cabd;
 alter table cabd.community_contact owner to cabd;
+
+
+
+--
+-- support updates pending from the community staging table
+-- as new community tables are added for other
+-- feature types this will need to be updated as well
+--
+CREATE OR REPLACE VIEW cabd.updates_pending
+AS 
+SELECT cabd_id FROM cabd.dam_updates
+union ALL
+ SELECT cabd_id FROM cabd.fishway_updates
+union ALL
+ SELECT cabd_id FROM cabd.waterfall_updates
+union ALL 
+ select cabd_id from dams.dams_community_staging WHERE status = 'NEW'
+union ALL 
+ select cabd_id from stream_crossings.stream_crossings_community_staging WHERE status = 'NEW'
+
+
+-- support rejected status for community features
+alter table dams.dams_community_staging drop CONSTRAINT status_value_ch;
+alter table dams.dams_community_staging add CONSTRAINT status_value_ch CHECK (status IN ('NEW', 'REJECTED', 'REVIEWED'));
+
+alter table stream_crossings.stream_crossings_community_staging drop CONSTRAINT status_value_ch; 
+alter table stream_crossings.stream_crossings_community_staging add CONSTRAINT status_value_ch CHECK (status IN ('NEW', 'REJECTED', 'REVIEWED'));
+ 
