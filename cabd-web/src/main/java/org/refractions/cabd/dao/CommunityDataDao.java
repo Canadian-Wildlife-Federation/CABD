@@ -16,16 +16,25 @@
 package org.refractions.cabd.dao;
 
 import java.sql.Array;
+import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
 
+import org.locationtech.jts.geom.Point;
+import org.locationtech.jts.io.WKBReader;
 import org.refractions.cabd.CabdConfigurationProperties;
 import org.refractions.cabd.model.CommunityContact;
 import org.refractions.cabd.model.CommunityData;
 import org.refractions.cabd.model.CommunityFeature;
+import org.refractions.cabd.model.Feature;
+import org.refractions.cabd.model.FeatureType;
+import org.refractions.cabd.model.FeatureViewMetadata;
+import org.refractions.cabd.model.SimpleFeatureList;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -76,6 +85,23 @@ public class CommunityDataDao {
 				rs.getString("status_message"),
 				(String[])((Array)rs.getObject("warnings")).getArray());	  
 		
+	private WKBReader reader = new WKBReader();
+
+	private RowMapper<Feature> ghostFeatureMapper = (rs, rownum)-> 
+	{
+		UUID cabdId = (UUID) rs.getObject(2);
+		String fType = rs.getString(1);
+		Feature gFeature = new Feature(cabdId, fType);
+		
+		try {
+			Point pnt = (Point) reader.read(rs.getBytes(3));
+			gFeature.setGeometry(pnt);
+		}catch (Exception ex) {
+			throw new SQLException(ex);
+		}
+		return gFeature;
+	};
+	
 	/**
 	 * Saves the raw community data and assigned id from database.
 	 * 
@@ -233,5 +259,33 @@ public class CommunityDataDao {
 		sb.append(" WHERE id = ? ");
 		
 		jdbcTemplate.update(sb.toString(), data.getId());
+	}
+	
+	
+	public SimpleFeatureList getGhostFeatures(Collection<FeatureType> fTypes){
+		
+		
+		boolean hasCd = false;
+		StringBuilder sb = new StringBuilder();
+		for (FeatureType fType : fTypes) {
+			if (fType.getCommunityDataTable() == null || fType.getCommunityDataTable().isBlank()) continue;
+			
+			if (sb.length() > 0) {
+				sb.append(" UNION ");
+			}
+			hasCd = true;
+			sb.append(" SELECT '" + fType.getType() + "', cabd_id, st_asewkb(st_geomfromgeojson(data->'geometry'))");
+			sb.append(" FROM ");
+			sb.append(fType.getCommunityDataTable());
+			sb.append(" f WHERE status = 'NEW' AND NOT EXISTS (SELECT 1 FROM ");
+			sb.append( FeatureViewMetadata.getAllFeaturesView() );
+			sb.append(" a WHERE a.cabd_id = f.cabd_id )");			
+		}
+		sb.append(" LIMIT 5000" );
+		
+		if (!hasCd) return new SimpleFeatureList(Collections.emptyList());
+		
+		return new SimpleFeatureList(jdbcTemplate.query(sb.toString(), ghostFeatureMapper));
+		
 	}
 }

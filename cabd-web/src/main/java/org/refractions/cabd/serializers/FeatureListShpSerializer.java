@@ -67,6 +67,11 @@ public class FeatureListShpSerializer extends AbstractFeatureListSerializer{
 	}
 
 	@Override
+	protected boolean supports(Class<?> clazz) {
+		return FeatureList.class.isAssignableFrom(clazz);
+	}
+	
+	@Override
 	protected void writeInternal(FeatureList features, HttpOutputMessage outputMessage)
 			throws IOException, HttpMessageNotWritableException {
 		

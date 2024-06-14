@@ -67,18 +67,13 @@ public enum GeoJsonUtils {
 
 		// properties
 		writeString(stream, ", " + convertKey("properties") + "{");
-		writeString(stream, convertKey(FeatureDao.ID_FIELD) + convertObject(feature.getId().toString()) + ",");
+		writeString(stream, convertKey(FeatureDao.ID_FIELD) + convertObject(feature.getId().toString()));
 		
 		try {
-			boolean first = true;
+
 			//attributes
 			for (Entry<String, Object> prop : feature.getAttributes().entrySet()) {
-				
-				if (!first) {
-					writeString(stream, ",");	
-				}
-				first = false;
-				
+				writeString(stream, ",");	
 				Object propValue = prop.getValue();
 				if (propValue instanceof PgArray) {
 					StringBuilder sb = new StringBuilder();
@@ -100,10 +95,7 @@ public enum GeoJsonUtils {
 			String rooturl = ServletUriComponentsBuilder.fromCurrentContextPath().path("/").build().toUriString();
 			StringBuilder sb = new StringBuilder();
 			for (Entry<String, String> link : feature.getLinkAttributes().entrySet()) {
-				if (!first) {
-					sb.append(",");	
-				}
-				first = false;
+				sb.append(",");	
 				sb.append(convertKey(link.getKey()));
 				if (link.getValue() != null) {
 					sb.append( convertObject(rooturl + link.getValue() ) );

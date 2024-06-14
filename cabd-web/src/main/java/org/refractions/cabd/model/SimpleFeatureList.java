@@ -17,12 +17,8 @@ package org.refractions.cabd.model;
 
 import java.util.List;
 
-import org.refractions.cabd.controllers.AttributeSet;
-import org.refractions.cabd.controllers.FeatureController;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
-
 /**
- * A collection of CaBD features with an associated attributeSet.
+ * A collection of random features.
  * 
  * @author Emily
  *
@@ -30,28 +26,13 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 //I created this class to make it simple to
 //serialize a list of features to a GeoJson
 //feature collection
-public class FeatureList extends ItemList<Feature>{
+public class SimpleFeatureList extends ItemList<Feature>{
 
 	private long totalResults = 0;
-	private AttributeSet attributeSet = null;
 	
-	public FeatureList(List<Feature> features, AttributeSet attributeSet) {
+	public SimpleFeatureList(List<Feature> features) {
 		super(features);
-		this.attributeSet = attributeSet;
-		
-		//add url attribute to link to individual feature
-		String rooturl = ServletUriComponentsBuilder.fromCurrentContextPath().path("/").path(FeatureController.PATH).build().toUriString();		
-		features.forEach(f->f.addAttribute(FeatureViewMetadata.URL_ATTRIBUTE, rooturl + "/" + f.getFeatureType() + "/" + f.getId().toString()));
-		
 		this.totalResults = features.size();
-	}
-	
-	public AttributeSet getAttributeSet() {
-		return this.attributeSet;
-	}
-	
-	public void setTotalResults(long totalResults) {
-		this.totalResults = totalResults;
 	}
 	
 	public long getTotalResults() {

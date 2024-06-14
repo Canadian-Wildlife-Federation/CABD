@@ -18,15 +18,21 @@ package org.refractions.cabd.controllers;
 import java.text.MessageFormat;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 import javax.servlet.http.HttpServletRequest;
 
 import org.refractions.cabd.dao.CommunityDataDao;
+import org.refractions.cabd.dao.FeatureTypeManager;
 import org.refractions.cabd.exceptions.NotFoundException;
 import org.refractions.cabd.model.CommunityData;
+import org.refractions.cabd.model.FeatureType;
+import org.refractions.cabd.model.SimpleFeatureList;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -62,6 +68,10 @@ public class CommunityController {
 
 	@Autowired
 	private CommunityProcessor communityProcessor;
+	
+	
+	@Autowired
+	FeatureTypeManager typeManager;
 	
 	//requires content-type = application/json in request
 	@Operation(summary = "Uploads json data from community app.")
@@ -112,6 +122,45 @@ public class CommunityController {
 
 	}
 	
+	/**
+	 * Return all ghost features - these are features submitted to the community
+	 * data api but not yet reviewed and added to the core cabd tables.
+	 * 
+	 * @return list of ghost features with id and type
+	 * 
+	 */
+	@Operation(summary = "Gets community data ghost features")
+	@GetMapping(value = "/ghost",
+			produces = {MediaType.APPLICATION_JSON_VALUE, "application/geo+json"})
+	public ResponseEntity<SimpleFeatureList> getAllGhostFeatures(HttpServletRequest request) {
+		return getAllGhostFeatures(request, null);
+	}
+	
+	/**
+	 * Return all ghost features for a given feature type
+	 * @param request
+	 * @param type
+	 * @return
+	 */
+	@Operation(summary = "Gets community data ghost features of specific type")
+	@GetMapping(value = "/ghost/{type:[a-zA-Z0-9_]+}",
+			produces = {MediaType.APPLICATION_JSON_VALUE, "application/geo+json"})
+	public ResponseEntity<SimpleFeatureList> getAllGhostFeatures(HttpServletRequest request,
+			@PathVariable("type") String type) {
+		
+		List<FeatureType> types = new ArrayList<>();
+		if (type == null || type.isBlank()) {
+			types.addAll(typeManager.getFeatureTypes());
+		}else {
+			FeatureType ftype = typeManager.getFeatureType(type);
+			if (ftype == null) {
+				throw new NotFoundException(MessageFormat.format("The feature type {0} does not exist.", type));
+			}
+			types.add(ftype);
+		}
+		return ResponseEntity.ok(communityDao.getGhostFeatures(types));
+		
+	}
 	
 	@Transactional
 	private void saveCommunityData(CommunityData cd) {
