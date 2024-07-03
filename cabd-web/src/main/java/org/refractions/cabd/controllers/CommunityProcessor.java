@@ -138,7 +138,7 @@ public class CommunityProcessor {
 			
 			FeatureType featuretype = typeManager.getFeatureType(feature.getFeatureType());
 			if (featuretype == null) {
-				data.getWarnings().add(MessageFormat.format("Feature {0): Feature type {1} not found. Community data not processed.", feature.getIndex(), feature.getFeatureType()));
+				data.getWarnings().add(MessageFormat.format("Feature {0}: Feature type {1} not found. Community data not processed.", feature.getIndex(), feature.getFeatureType()));
 				continue;
 			}
 			
