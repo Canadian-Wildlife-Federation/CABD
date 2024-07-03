@@ -84,3 +84,27 @@ alter table dams.dams_community_staging add CONSTRAINT status_value_ch CHECK (st
 alter table stream_crossings.stream_crossings_community_staging drop CONSTRAINT status_value_ch; 
 alter table stream_crossings.stream_crossings_community_staging add CONSTRAINT status_value_ch CHECK (status IN ('NEW', 'REJECTED', 'REVIEWED'));
  
+ 
+ 
+ -- ** bug fixes ** --
+ 
+alter table cabd.vector_tile_cache alter column key type varchar(128);
+
+
+CREATE OR REPLACE VIEW cabd.updates_pending
+AS SELECT DISTINCT dam_updates.cabd_id
+   FROM cabd.dam_updates
+UNION ALL
+ SELECT DISTINCT fishway_updates.cabd_id
+   FROM cabd.fishway_updates
+UNION ALL
+ SELECT DISTINCT waterfall_updates.cabd_id
+   FROM cabd.waterfall_updates
+UNION ALL
+ SELECT DISTINCT dams_community_staging.cabd_id
+   FROM dams.dams_community_staging
+  WHERE dams_community_staging.status::text = 'NEW'::text
+UNION ALL
+ SELECT DISTINCT stream_crossings_community_staging.cabd_id
+   FROM stream_crossings.stream_crossings_community_staging
+  WHERE stream_crossings_community_staging.status::text = 'NEW'::text;
