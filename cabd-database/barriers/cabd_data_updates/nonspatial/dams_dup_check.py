@@ -14,13 +14,13 @@ pd.options.display.max_rows = None
 dataFile = ""
 dataFile = sys.argv[1]
 
-data = pd.read_csv(dataFile)
+data = pd.read_csv(dataFile, encoding='mbcs')
 
 # only check unprocessed updates
 df = data[data['status'] != 'complete']
 
 # list of columns that will usually have conflicting info
-colskip = ['submitted_on', 'email', 'latitude', 'longitude', 'province_territory_code', 'entry_classification', 'data_source_short_name', 'use_analysis', 'Name', 'Organization', 'status', 'release_version']
+colskip = ['submitted_on', 'email', 'latitude', 'longitude', 'reviewer_comments', 'entry_classification', 'data_source_short_name', 'use_analysis', 'Name', 'Organization', 'status', 'release_version']
 
 # this dataframe holds the list of changes with conflicting info
 cabd = pd.DataFrame(columns=['cabd_id', 'email', 'colname', 'conflict', 'entry_classification'])
