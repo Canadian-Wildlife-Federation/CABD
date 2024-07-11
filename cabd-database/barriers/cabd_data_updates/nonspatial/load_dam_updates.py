@@ -102,7 +102,7 @@ UPDATE {sourceTable} SET cabd_id = gen_random_uuid() WHERE entry_classification 
 
 --trim fields that are getting a type conversion
 UPDATE {sourceTable} SET cabd_id = TRIM(cabd_id);
-UPDATE {sourceTable} SET reservoir_present = LOWER(reservoir_present);
+--UPDATE {sourceTable} SET reservoir_present = LOWER(reservoir_present);
 
 --change field types
 ALTER TABLE {sourceTable} ALTER COLUMN cabd_id TYPE uuid USING cabd_id::uuid;
@@ -123,6 +123,7 @@ ALTER TABLE {sourceTable} ALTER COLUMN reservoir_depth_m TYPE real USING reservo
 ALTER TABLE {sourceTable} ALTER COLUMN height_m TYPE real USING height_m::real;
 ALTER TABLE {sourceTable} ALTER COLUMN length_m TYPE real USING length_m::real;
 ALTER TABLE {sourceTable} ALTER COLUMN turbine_number TYPE smallint USING turbine_number::smallint;
+ALTER TABLE {sourceTable} ALTER COLUMN lake_control_code TYPE varchar USING lake_control_code::varchar;
 
 --trim varchars and categorical fields that are not coded values
 UPDATE {sourceTable} SET email = TRIM(email);
@@ -355,7 +356,7 @@ ALTER TABLE {sourceTable} ALTER COLUMN turbine_type_code TYPE int2 USING turbine
 
 UPDATE {sourceTable} SET lake_control_code =
     CASE
-    WHEN lake_control_code = 'yes' THEN (select code::varchar FROM dams.lake_control_codes WHERE name_en = 'Yes')
+    WHEN lake_control_code = 'yes' OR lake_control_code = 'true' THEN (select code::varchar FROM dams.lake_control_codes WHERE name_en = 'Yes')
     WHEN lake_control_code = 'enlarged' THEN (select code::varchar FROM dams.lake_control_codes WHERE name_en = 'Enlarged')
     WHEN lake_control_code = 'maybe' THEN (select code::varchar FROM dams.lake_control_codes WHERE name_en = 'Maybe')
     WHEN lake_control_code IS NULL THEN NULL
@@ -568,6 +569,7 @@ FROM {sourceTable};
 
 print("Cleaning CSV")
 with conn.cursor() as cursor:
+    # print(loadQuery)
     cursor.execute(loadQuery)
     print("Adding records to " + damUpdateTable)
     cursor.execute(moveQuery)
