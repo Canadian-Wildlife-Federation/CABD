@@ -1,7 +1,7 @@
-# filter through CABD dam updates to check duplicates
-# make sure to use an exported csv from the CABD data updates form
+# filter through CABD updates to check duplicates
+# you must use an exported csv (or Excel file converted to csv) from the CABD data updates list
 
-# usage: dams_dup_check.py <filepath>
+# usage: dup_check.py <filepath>
 
 
 import pandas as pd
