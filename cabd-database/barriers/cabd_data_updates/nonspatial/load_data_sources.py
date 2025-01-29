@@ -9,17 +9,28 @@
 # You should also check for % signs in your CSV. SharePoint's CSV exporter changes # signs
 # to % signs, so you will need to find and replace these instances.
 # Avoid replacing legitimate % signs in your CSV.
+#
+# Usage: py load_data_sources.py <file> <sourceTableRaw>
+# <file>: the file from which you are loading the updates
+# <sourceTableRaw>: The table where the updates will be loaded for staging (look at the schema source_data)
+#
 
 import subprocess
 import sys
 import getpass
 import psycopg2 as pg2
 
-ogr = "C:\\Program Files\\GDAL\\ogr2ogr.exe"
+# ogr = "C:\\Program Files\\GDAL\\ogr2ogr.exe"
+ogr = "C:\\Program Files\\QGIS 3.22.1\\bin\\ogr2ogr.exe"
 
-dbHost = "cabd-postgres.postgres.database.azure.com"
+# dbHost = "localhost"
+# dbPort = "5432"
+# dbName = "cabd_dev_2024"
+
+dbHost = "cabd-postgres-prod.postgres.database.azure.com"
 dbPort = "5432"
 dbName = "cabd"
+
 dbUser = input(f"""Enter username to access {dbName}:\n""")
 dbPassword = getpass.getpass(f"""Enter password to access {dbName}:\n""")
 
@@ -97,7 +108,7 @@ ALTER TABLE {sourceTable} ADD COLUMN IF NOT EXISTS source_type varchar;
 ALTER TABLE {sourceTable} ADD COLUMN id uuid;
 
 UPDATE {sourceTable} SET last_updated = TRIM(last_updated);
-UPDATE {sourceTable} SET last_updated = NULL WHERE last_updated = 'n.d.';
+UPDATE {sourceTable} SET last_updated = NULL WHERE last_updated LIKE 'n.d%';
 ALTER TABLE {sourceTable} ALTER COLUMN last_updated TYPE date USING last_updated::date;
 
 UPDATE {sourceTable} SET source_type = 'non-spatial'; --NOTE THIS ASSUMES ALL DATA SOURCES ARE NON-SPATIAL

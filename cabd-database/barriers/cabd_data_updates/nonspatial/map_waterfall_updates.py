@@ -1,6 +1,6 @@
 ##################
 
-# Expected usage: py map_dam_updates.py <featureType>
+# Expected usage: py map_waterfall_updates.py waterfalls
 # Please ensure you have run insert_data_sources.py for the data sources you are mapping from
 # Otherwise any updates missing a data source id will not be made
 
