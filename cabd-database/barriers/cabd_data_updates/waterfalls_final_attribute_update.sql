@@ -9,7 +9,8 @@ UPDATE waterfalls.waterfalls SET passability_status_code =
     WHEN fall_height_m >= 5 THEN 1
     WHEN fall_height_m < 5 THEN 2
     WHEN fall_height_m IS NULL THEN 4
-    ELSE passability_status_code END;
+    ELSE passability_status_code END
+WHERE passability_status_code IS NULL;
 
 --Various spatial joins/queries to populate fields
 UPDATE waterfalls.waterfalls AS falls SET province_territory_code = n.code FROM cabd.province_territory_codes AS n WHERE st_contains(n.geometry, falls.snapped_point) AND province_territory_code IS NULL;

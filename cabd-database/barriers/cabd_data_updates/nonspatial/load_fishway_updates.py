@@ -14,11 +14,17 @@ import sys
 import getpass
 import psycopg2 as pg2
 
-ogr = "C:\\Program Files\\GDAL\\ogr2ogr.exe"
+# ogr = "C:\\Program Files\\GDAL\\ogr2ogr.exe"
+ogr = "C:\\Program Files\\QGIS 3.22.1\\bin\\ogr2ogr.exe"
 
-dbHost = "cabd-postgres.postgres.database.azure.com"
+# dbHost = "localhost"
+# dbPort = "5432"
+# dbName = "cabd_dev_2024"
+
+dbHost = "cabd-postgres-prod.postgres.database.azure.com"
 dbPort = "5432"
 dbName = "cabd"
+
 dbUser = input(f"""Enter username to access {dbName}:\n""")
 dbPassword = getpass.getpass(f"""Enter password to access {dbName}:\n""")
 
@@ -197,8 +203,8 @@ INSERT INTO {fishUpdateTable} (
 )
 SELECT
     cabd_id,
-    latitude,
-    longitude,
+    cast(latitude as double precision),
+    cast(longitude as double precision),
     entry_classification,
     data_source_short_name,
     "status",
@@ -209,25 +215,25 @@ SELECT
     constructed_by,
     contracted_by,
     dam_id,
-    depth_m,
+    depth_m::real,
     designed_on_biology,
-    elevation_m,
+    elevation_m::real,
     engineering_notes,
     entrance_location_code,
     entrance_position_code,
-    estimate_of_attraction_pct,
-    estimate_of_passage_success_pct,
+    estimate_of_attraction_pct::real,
+    estimate_of_passage_success_pct::real,
     fishpass_type_code,
     fishway_reference_id,
-    gradient,
+    gradient::real,
     has_evaluating_studies,
     known_notuse,
     known_use,
-    length_m,
-    max_fishway_velocity_ms,
-    mean_fishway_velocity_ms,
+    length_m::real,
+    max_fishway_velocity_ms::real,
+    mean_fishway_velocity_ms::real,
     modification_purpose,
-    modification_year,
+    modification_year::smallint,
     modified,
     monitoring_equipment,
     nature_of_evaluation_studies,
@@ -243,7 +249,7 @@ SELECT
     structure_name_fr,
     waterbody_name_en,
     waterbody_name_fr,
-    year_constructed
+    year_constructed::smallint
 FROM {sourceTable};
 """
 

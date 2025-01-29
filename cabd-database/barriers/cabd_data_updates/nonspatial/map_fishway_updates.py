@@ -1,6 +1,6 @@
 ##################
 
-# Expected usage: py map_fishway_updates.py <featureType>
+# Expected usage: py map_fishway_updates.py fishways
 # Please ensure you have run insert_data_sources.py for the data sources you are mapping from
 # Otherwise any updates missing a data source id will not be made
 
@@ -182,12 +182,14 @@ INSERT INTO fishways.species_mapping (fishway_id, species_id, known_to_use)
 SELECT a.cabd_id, b.id, true
 FROM {script.fishUpdateTable} a, cabd.fish_species b
 WHERE a.known_use ILIKE '%' || b.common_name || '%' AND b.id IS NOT NULL
+AND a.update_status = 'ready'
 ON CONFLICT DO NOTHING;
 
 INSERT INTO fishways.species_mapping (fishway_id, species_id, known_to_use)
 SELECT a.cabd_id, b.id, false
 FROM {script.fishUpdateTable} a, cabd.fish_species b
 WHERE a.known_notuse ILIKE '%' || b.common_name || '%' AND b.id IS NOT NULL
+AND a.update_status = 'ready'
 ON CONFLICT DO NOTHING;
 
 -- deal with records to be deleted

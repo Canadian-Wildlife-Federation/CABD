@@ -8,17 +8,28 @@
 # You should also check for % signs in your CSV. SharePoint's CSV exporter changes # signs
 # to % signs, so you will need to find and replace these instances.
 # Avoid replacing legitimate % signs in your CSV.
+#
+#
+# usage: py load_dam_updates.py <file> <sourceTableRaw>
+# <file>: the file from which you are loading the dam updates
+# <sourceTableRaw>: The table where the updates will be loaded for staging (look at the schema source_data)
 
 import subprocess
 import sys
 import getpass
 import psycopg2 as pg2
 
-ogr = "C:\\Program Files\\GDAL\\ogr2ogr.exe"
+# ogr = "C:\\Program Files\\GDAL\\ogr2ogr.exe"
+ogr = "C:\\Program Files\\QGIS 3.22.1\\bin\\ogr2ogr.exe"
 
-dbHost = "cabd-postgres.postgres.database.azure.com"
+# dbHost = "localhost"
+# dbPort = "5432"
+# dbName = "cabd_dev_2024"
+
+dbHost = "cabd-postgres-prod.postgres.database.azure.com"
 dbPort = "5432"
 dbName = "cabd"
+
 dbUser = input(f"""Enter username to access {dbName}:\n""")
 dbPassword = getpass.getpass(f"""Enter password to access {dbName}:\n""")
 
@@ -80,7 +91,7 @@ ALTER TABLE {damUpdateTable} ADD CONSTRAINT update_type_check CHECK (update_type
 
 --make sure records are not duplicated
 ALTER TABLE {damUpdateTable} DROP CONSTRAINT IF EXISTS record_unique;
-ALTER TABLE {damUpdateTable} ADD CONSTRAINT record_unique UNIQUE (cabd_id, data_source_short_name);
+--ALTER TABLE {damUpdateTable} ADD CONSTRAINT record_unique UNIQUE (cabd_id, data_source_short_name);
 
 --ALTER TABLE IF EXISTS {damUpdateTable} OWNER to cabd;
 --ALTER TABLE IF EXISTS {sourceTable} OWNER to cabd;
@@ -102,7 +113,7 @@ UPDATE {sourceTable} SET cabd_id = gen_random_uuid() WHERE entry_classification 
 
 --trim fields that are getting a type conversion
 UPDATE {sourceTable} SET cabd_id = TRIM(cabd_id);
---UPDATE {sourceTable} SET reservoir_present = LOWER(reservoir_present);
+UPDATE {sourceTable} SET reservoir_present = LOWER(reservoir_present);
 
 --change field types
 ALTER TABLE {sourceTable} ALTER COLUMN cabd_id TYPE uuid USING cabd_id::uuid;
@@ -123,7 +134,6 @@ ALTER TABLE {sourceTable} ALTER COLUMN reservoir_depth_m TYPE real USING reservo
 ALTER TABLE {sourceTable} ALTER COLUMN height_m TYPE real USING height_m::real;
 ALTER TABLE {sourceTable} ALTER COLUMN length_m TYPE real USING length_m::real;
 ALTER TABLE {sourceTable} ALTER COLUMN turbine_number TYPE smallint USING turbine_number::smallint;
-ALTER TABLE {sourceTable} ALTER COLUMN lake_control_code TYPE varchar USING lake_control_code::varchar;
 
 --trim varchars and categorical fields that are not coded values
 UPDATE {sourceTable} SET email = TRIM(email);
@@ -356,7 +366,7 @@ ALTER TABLE {sourceTable} ALTER COLUMN turbine_type_code TYPE int2 USING turbine
 
 UPDATE {sourceTable} SET lake_control_code =
     CASE
-    WHEN lake_control_code = 'yes' OR lake_control_code = 'true' THEN (select code::varchar FROM dams.lake_control_codes WHERE name_en = 'Yes')
+    WHEN lake_control_code = 'yes' THEN (select code::varchar FROM dams.lake_control_codes WHERE name_en = 'Yes')
     WHEN lake_control_code = 'enlarged' THEN (select code::varchar FROM dams.lake_control_codes WHERE name_en = 'Enlarged')
     WHEN lake_control_code = 'maybe' THEN (select code::varchar FROM dams.lake_control_codes WHERE name_en = 'Maybe')
     WHEN lake_control_code IS NULL THEN NULL
@@ -383,6 +393,7 @@ UPDATE {sourceTable} SET up_passage_type_code =
     WHEN up_passage_type_code = 'pool and weir with hole' THEN (select code::varchar FROM cabd.upstream_passage_type_codes WHERE name_en = 'Pool and weir with hole')
     WHEN up_passage_type_code = 'trap and truck' THEN (select code::varchar FROM cabd.upstream_passage_type_codes WHERE name_en = 'Trap and truck')
     WHEN up_passage_type_code = 'vertical slot' THEN (select code::varchar FROM cabd.upstream_passage_type_codes WHERE name_en = 'Vertical slot')
+    WHEN up_passage_type_code = 'eel ladder' THEN (select code::varchar FROM cabd.upstream_passage_type_codes WHERE name_en = 'eel ladder')
     WHEN up_passage_type_code = 'other' THEN (select code::varchar FROM cabd.upstream_passage_type_codes WHERE name_en = 'Other')
     WHEN up_passage_type_code = 'no structure' THEN (select code::varchar FROM cabd.upstream_passage_type_codes WHERE name_en = 'No structure')
     WHEN up_passage_type_code = 'unknown' THEN (select code::varchar FROM cabd.upstream_passage_type_codes WHERE name_en = 'Unknown')
@@ -496,8 +507,8 @@ INSERT INTO {damUpdateTable} (
 )
 SELECT
     cabd_id,
-    latitude,
-    longitude,
+    cast(latitude as double precision),
+    cast(longitude as double precision),
     entry_classification,
     data_source_short_name,
     "status",
@@ -530,7 +541,7 @@ SELECT
     use_conservation_code,
     use_other_code,
     lake_control_code,
-    construction_year,
+    cast(construction_year as integer),
     removed_year,
     assess_schedule,
     expected_end_of_life,
@@ -545,15 +556,15 @@ SELECT
     spillway_capacity,
     spillway_type_code,
     reservoir_present,
-    reservoir_area_skm,
+    cast(reservoir_area_skm as double precision),
     reservoir_depth_m,
-    storage_capacity_mcm,
+    cast(storage_capacity_mcm as double precision),
     avg_rate_of_discharge_ls,
     degree_of_regulation_pc,
     provincial_flow_req,
     federal_flow_req,
     hydro_peaking_system,
-    generating_capacity_mwh,
+    cast(generating_capacity_mwh as double precision),
     turbine_number,
     turbine_type_code,
     up_passage_type_code,
@@ -569,7 +580,6 @@ FROM {sourceTable};
 
 print("Cleaning CSV")
 with conn.cursor() as cursor:
-    # print(loadQuery)
     cursor.execute(loadQuery)
     print("Adding records to " + damUpdateTable)
     cursor.execute(moveQuery)

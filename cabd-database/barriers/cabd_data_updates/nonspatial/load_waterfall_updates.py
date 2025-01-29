@@ -8,15 +8,21 @@
 # You should also check for % signs in your CSV. SharePoint's CSV exporter changes # signs
 # to % signs, so you will need to find and replace these instances.
 # Avoid replacing legitimate % signs in your CSV.
+#
+#
+# usage: py load_waterfall_updates.py <file> <sourceTableRaw>
+# <file>: the file from which you are loading the waterfall updates
+# <sourceTableRaw>: The table where the updates will be loaded for staging (look at the schema source_data)
 
 import subprocess
 import sys
 import getpass
 import psycopg2 as pg2
 
-ogr = "C:\\Program Files\\GDAL\\ogr2ogr.exe"
+# ogr = "C:\\Program Files\\GDAL\\ogr2ogr.exe"
+ogr = "C:\\Program Files\\QGIS 3.22.1\\bin\\ogr2ogr.exe"
 
-dbHost = "cabd-postgres.postgres.database.azure.com"
+dbHost = "cabd-postgres-prod.postgres.database.azure.com"
 dbPort = "5432"
 dbName = "cabd"
 dbUser = input(f"""Enter username to access {dbName}:\n""")
@@ -162,8 +168,8 @@ INSERT INTO {fallUpdateTable} (
 )
 SELECT
     cabd_id,
-    latitude,
-    longitude,
+    latitude::numeric,
+    longitude::numeric,
     entry_classification,
     data_source_short_name,
     "status",
