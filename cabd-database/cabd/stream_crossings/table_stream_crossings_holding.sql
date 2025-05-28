@@ -4,7 +4,7 @@
 --notes:
 -- downstream_direction_image and upstream_direction_image were duplicated
 -- upstream_physical_blockages_code & downstream_physical_blockages_code are int arrays, postgresql does not support foreign keys on arrays
-
+drop table if exists stream_crossings.stream_crossings_community_holding;
 create table stream_crossings.stream_crossings_community_holding(
     id uuid primary key not null,
     cabd_id uuid not null,

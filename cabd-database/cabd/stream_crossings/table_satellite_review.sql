@@ -5,7 +5,7 @@
 -- added an original_point geometry field
 -- added a crossing_type_code field that is automatically calculated based on the new_crossing_type_field
 -- status is an int here, but you might want to use the string values instead
-
+-- added date_of_review -> not in original xlsx file but in mapping file
 drop table if exists stream_crossings.cwf_satellite_review;
 
 create table stream_crossings.cwf_satellite_review (
@@ -29,11 +29,15 @@ create table stream_crossings.cwf_satellite_review (
               else null
             end)
         stored,
-    create_dam boolean	default false,
+    create_dam boolean default false,
     existing_dam_cabd_id uuid,
     new_dam_latitude decimal,
     new_dam_longitude decimal,
     driveway_crossing boolean default false,
     reviewer_comments varchar,
-    original_point public.geometry(point, 4617) NULL
+    
+    date_of_review date --not in original table structure but in mapping definition
 );
+
+INSERT INTO stream_crossings.cwf_satellite_review (ID,CABD_ID,LAST_MODIFIED,REVIEWER,STATUS,MULTIPOINT_FEATURE,CROSSING_TYPE,"new_crossing_type",CREATE_DAM,EXISTING_DAM_CABD_ID,NEW_DAM_LATITUDE,NEW_DAM_LONGITUDE,DRIVEWAY_CROSSING,REVIEWER_COMMENTS,DATE_OF_REVIEW) VALUES
+	 ('89de3e0a-8610-4fbd-9aa1-883421365373'::uuid,'e0338c6c-0cbc-436d-a74b-becb7f97bd88'::uuid,NULL,'Emily',2,false,'No Crossing','No Crossing',false,NULL,NULL,NULL,true,'Test','2025-05-27');

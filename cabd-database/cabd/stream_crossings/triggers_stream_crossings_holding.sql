@@ -20,7 +20,7 @@ set community_data_photo_field = array[
 	'upstream_direction_image',
 	'upstream_side_image'
 ]
-where type = 'modelled_crossings'
+where type = 'modelled_crossings';
 
 -- reset the status types for this table
 alter table stream_crossings.stream_crossings_community_staging drop constraint status_value_ch;
@@ -32,6 +32,7 @@ alter table stream_crossings.stream_crossings_community_staging add constraint s
 -- this maps all the values, but for a few of the cabd attributes
 -- the mapping table is not used, because of the mapping rules are complex
 -- see the trigger for details
+drop table if exists cabd.community_attribute_mapping;
 create table cabd.community_attribute_mapping(
 	attribute_name varchar,
 	attribute_value varchar,
@@ -364,7 +365,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 
-CREATE TRIGGER stream_crossing_community_staging_trigger
+CREATE OR REPLACE TRIGGER stream_crossing_community_staging_trigger
 AFTER INSERT ON stream_crossings.stream_crossings_community_staging
 FOR EACH ROW
 EXECUTE FUNCTION stream_crossing_community_staging_insert_trigger();

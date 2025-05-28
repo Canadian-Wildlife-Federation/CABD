@@ -1,0 +1,2 @@
+-- trigger to apply new satellite data to sites and structures
+-- TODO:
