@@ -2,8 +2,7 @@
 -- source: tbl_structure_stream_crossings_sites.xlsx & tbl_structure_stream_crossings_structures.xlsx
 
 -- notes:
--- added a data_source_code field to both tables to identify the source (modelled crossings, satellite, community,assessment)
--- include_in_act I've setup as generated
+-- include_in_act -? I've setup as generated
 -- last_modified needs to be sorted still - triggers or other way to maintain
 
 drop table if exists stream_crossings.sites_attribute_source;
