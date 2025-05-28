@@ -2,7 +2,6 @@
 -- source: tbl_structure_stream_crossings_satellite_review.xlsx
 
 -- notes:
--- added an original_point geometry field
 -- added a crossing_type_code field that is automatically calculated based on the new_crossing_type_field
 -- status is an int here, but you might want to use the string values instead
 -- added date_of_review -> not in original xlsx file but in mapping file
