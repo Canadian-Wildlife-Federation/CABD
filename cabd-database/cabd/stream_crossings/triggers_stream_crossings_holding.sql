@@ -8,7 +8,7 @@
 --TODO: is this modelled_crossings or stream crossings?
 --this is not tested
 update cabd.feature_types 
-set community_data_photo_field = array[
+set community_data_photo_fields = array[
 	'transportation_route_image',
 	'structure_outlet_image',
 	'structure_inlet_image',
@@ -69,14 +69,16 @@ insert into cabd.community_attribute_mapping (attribute_name, attribute_value, c
 ('selected_type', 'obs', 1),
 ('selected_type', 'cbs', 2),
 ('selected_type', 'ford', 4),
-('transport_type_code', 'multilane', 1),
-('transport_type_code', 'multi-lane (>2 lanes)', 1),
-('transport_type_code', '1-2-lane', 2),
-('transport_type_code', '1 and 2 lane paved', 2),
-('transport_type_code', 'unpaved', 3),
-('transport_type_code', 'driveway', 4),
-('transport_type_code', 'trail', 5),
-('transport_type_code', 'railroad', 6),
+-- our mapping sheet had a typo
+-- this should be transport_type, not transport_type_code
+('transport_type', 'multilane', 1),
+('transport_type', 'multi-lane (>2 lanes)', 1),
+('transport_type', '1-2-lane', 2),
+('transport_type', '1 and 2 lane paved', 2),
+('transport_type', 'unpaved', 3),
+('transport_type', 'driveway', 4),
+('transport_type', 'trail', 5),
+('transport_type', 'railroad', 6),
 ('obs', 'no - the structure is wider than the stream', 1),
 ('obs', 'structure_wider', 1),
 ('obs', 'no - the structure is the same width as the stream', 2),
@@ -294,7 +296,7 @@ BEGIN
 		case when NEW.data->'properties'->>'site_accessible' ilike 'yes' then 1 when NEW.data->'properties'->>'site_accessible' ilike 'no' then 2  when NEW.data->'properties'->>'to_feature_type' ilike 'no_access' then 2 else null end,
 		cabd.lookup_community_attribute(NEW.data->'properties','inaccessible_reason', 'no_access_reason'),
 		cabd.lookup_community_attribute(NEW.data->'properties','selected_type', 'structure_type'),
-		cabd.lookup_community_attribute(NEW.data->'properties','transport_type_code'),
+		cabd.lookup_community_attribute(NEW.data->'properties','transport_type'),
 		NEW.data->'properties'->>'transportation_route_image',
 		cabd.lookup_community_attribute(NEW.data->'properties','obs'),
 		cabd.lookup_community_attribute(NEW.data->'properties','water_flowing_upstream'),
