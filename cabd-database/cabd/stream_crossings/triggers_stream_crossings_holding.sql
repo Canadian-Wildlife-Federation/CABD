@@ -18,7 +18,9 @@ set community_data_photo_fields = array[
 	'downstream_direction_image',
 	'downstream_side_image',
 	'upstream_direction_image',
-	'upstream_side_image'
+	'upstream_side_image',
+	'fishway_image',
+
 ]
 where type = 'modelled_crossings';
 

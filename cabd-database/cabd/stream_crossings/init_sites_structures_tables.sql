@@ -90,7 +90,7 @@ BEGIN
         case when reviewer_comments is not null then reviewer_comments end as crossing_comments,
         4 as assessment_type_code
     from stream_crossings.cwf_satellite_review
-    where status = 2 and (new_crossing_type is null or new_crossing_type not ilike 'dam');
+    where status_code = 2 and (new_crossing_type is null or new_crossing_type not ilike 'dam');
 
    -- assumption is that only one record per cabd_id; if there are more throw an error
    select count(*) into srowcnt
@@ -121,16 +121,16 @@ BEGIN
 
     drop table supdates;
     --there are no structure attributes to update
-    update stream_crossings.cwf_satellite_review set status = 3 where status = 2 and new_crossing_type not ilike 'dam';
+    update stream_crossings.cwf_satellite_review set status_code = 3 where status_code = 2 and new_crossing_type not ilike 'dam';
 
 
     -- deal with dams cases
 	
 	--remove dams from site/structures tables
-	delete from stream_crossings.structures_attribute_source where structure_id in (select structure_id from stream_crossings.structures a where a.site_id in (select cabd_id from stream_crossings.cwf_satellite_review where status = 2 and new_crossing_type ilike 'dam'));
-    delete from stream_crossings.sites_attribute_source where cabd_id in (select cabd_id from stream_crossings.cwf_satellite_review where status = 2 and new_crossing_type ilike 'dam');
-    delete from stream_crossings.structures where site_id in (select cabd_id from stream_crossings.cwf_satellite_review where status = 2 and new_crossing_type ilike 'dam');
-    delete from stream_crossings.sites where cabd_id in (select cabd_id from stream_crossings.cwf_satellite_review where status = 2 and new_crossing_type ilike 'dam');
+	delete from stream_crossings.structures_attribute_source where structure_id in (select structure_id from stream_crossings.structures a where a.site_id in (select cabd_id from stream_crossings.cwf_satellite_review where status_code = 2 and new_crossing_type ilike 'dam'));
+    delete from stream_crossings.sites_attribute_source where cabd_id in (select cabd_id from stream_crossings.cwf_satellite_review where status_code = 2 and new_crossing_type ilike 'dam');
+    delete from stream_crossings.structures where site_id in (select cabd_id from stream_crossings.cwf_satellite_review where status_code = 2 and new_crossing_type ilike 'dam');
+    delete from stream_crossings.sites where cabd_id in (select cabd_id from stream_crossings.cwf_satellite_review where status_code = 2 and new_crossing_type ilike 'dam');
 
 	--add to dams
     -- TODO: nhn_watershed_id, municipality?
@@ -140,14 +140,14 @@ BEGIN
 		null, --todo: cabd.snap_point_to_chyf_network(st_transform(st_setsrid(st_makepoint(new_dam_longitude, new_dam_latitude), 4326), 4617), STREAM_SNAP_TOLERANCE),
 		null --todo: cabd.snap_point_to_nhn_network(st_transform(st_setsrid(st_makepoint(new_dam_longitude, new_dam_latitude), 4326), 4617), STREAM_SNAP_TOLERANCE)
     from stream_crossings.cwf_satellite_review 
-    where status = 2 and new_crossing_type ilike 'dam' and create_dam ;
+    where status_code = 2 and new_crossing_type ilike 'dam' and create_dam ;
 
     insert into dams.dams_attribute_source(cabd_id, assessment_type_code_ds, original_point_ds)
 	select cabd_id, b.id, b.id
 	from stream_crossings.cwf_satellite_review, (select id from cabd.data_source where name = 'cwf') b
-	where status = 2 and new_crossing_type ilike 'dam' and create_dam ;
+	where status_code = 2 and new_crossing_type ilike 'dam' and create_dam ;
 
-    update stream_crossings.cwf_satellite_review set status = 3 where status = 2 and new_crossing_type ilike 'dam';
+    update stream_crossings.cwf_satellite_review set status = 3 where status_code = 2 and new_crossing_type ilike 'dam';
 
    -- **** COMMUNITY DATA ****
    

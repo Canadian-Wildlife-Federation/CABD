@@ -24,7 +24,7 @@ create table stream_crossings.cwf_satellite_review (
     status_code int references cabd.status_codes(code)
         GENERATED always as(
             case
-                -- ilike does not work with enums to using '=' instead
+                -- ilike does not work with enums so using '=' instead
                 when status = 'NEW' then 1
                 when status = 'REVIEWED' then 2
                 when status = 'PROCESSED' then 3
@@ -56,6 +56,12 @@ create table stream_crossings.cwf_satellite_review (
     
     date_of_review date --not in original table structure but in mapping definition
 );
+
+GRANT ALL ON TABLE stream_crossings.satellite_review TO cabd;
+
+GRANT ALL ON TABLE stream_crossings.satellite_review TO cwf_analyst;
+
+GRANT UPDATE, DELETE, INSERT, SELECT ON TABLE stream_crossings.satellite_review TO cwf_user;
 
 INSERT INTO stream_crossings.cwf_satellite_review (ID,CABD_ID,LAST_MODIFIED,REVIEWER,STATUS,MULTIPOINT_FEATURE,CROSSING_TYPE,"new_crossing_type",CREATE_DAM,EXISTING_DAM_CABD_ID,NEW_DAM_LATITUDE,NEW_DAM_LONGITUDE,DRIVEWAY_CROSSING,REVIEWER_COMMENTS,DATE_OF_REVIEW) VALUES
 	 ('89de3e0a-8610-4fbd-9aa1-883421365373'::uuid,'e0338c6c-0cbc-436d-a74b-becb7f97bd88'::uuid,NULL,'Emily',2,false,'No Crossing','No Crossing',false,NULL,NULL,NULL,true,'Test','2025-05-27');
