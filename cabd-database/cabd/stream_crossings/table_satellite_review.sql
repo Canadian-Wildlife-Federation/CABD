@@ -31,8 +31,9 @@ create table stream_crossings.cwf_satellite_review (
                 when status = 'ERROR/WARNING' then 4
                 when status = 'REQUIRES CLARIFICATION' then 5
             else 1
-        end),
-    multipoint_feature boolean default false,
+        end)
+        stored,
+    multipoint_feature boolean, -- setting default values causes qgis to display as text field
     crossing_type varchar,
     new_crossing_type stream_crossings.new_crossing_type,
     crossing_type_code int references stream_crossings.crossing_type_codes(code) 
@@ -47,11 +48,11 @@ create table stream_crossings.cwf_satellite_review (
               else null
             end)
         stored,
-    create_dam boolean default false,
+    create_dam boolean,
     existing_dam_cabd_id uuid,
     new_dam_latitude decimal,
     new_dam_longitude decimal,
-    driveway_crossing boolean default false,
+    driveway_crossing boolean,
     reviewer_comments varchar,
     
     date_of_review date --not in original table structure but in mapping definition
@@ -64,4 +65,4 @@ GRANT ALL ON TABLE stream_crossings.satellite_review TO cwf_analyst;
 GRANT UPDATE, DELETE, INSERT, SELECT ON TABLE stream_crossings.satellite_review TO cwf_user;
 
 INSERT INTO stream_crossings.cwf_satellite_review (ID,CABD_ID,LAST_MODIFIED,REVIEWER,STATUS,MULTIPOINT_FEATURE,CROSSING_TYPE,"new_crossing_type",CREATE_DAM,EXISTING_DAM_CABD_ID,NEW_DAM_LATITUDE,NEW_DAM_LONGITUDE,DRIVEWAY_CROSSING,REVIEWER_COMMENTS,DATE_OF_REVIEW) VALUES
-	 ('89de3e0a-8610-4fbd-9aa1-883421365373'::uuid,'e0338c6c-0cbc-436d-a74b-becb7f97bd88'::uuid,NULL,'Emily',2,false,'No Crossing','No Crossing',false,NULL,NULL,NULL,true,'Test','2025-05-27');
+	 ('89de3e0a-8610-4fbd-9aa1-883421365373'::uuid,'e0338c6c-0cbc-436d-a74b-becb7f97bd88'::uuid,NULL,'Emily','REVIEWED',false,'No Crossing','no crossing',false,NULL,NULL,NULL,true,'Test','2025-05-27');
