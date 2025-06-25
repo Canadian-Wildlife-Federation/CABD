@@ -68,6 +68,9 @@ create table stream_crossings.sites(
     include_in_act boolean GENERATED always as (case when snapped_ncc is not null then true else false end) stored   --IF sites.snapped_ncc IS NOT NULL THEN "TRUE"; ELSE "FALSE"
 );
 
+-- Index speeds up snapping function in init script
+CREATE INDEX ON stream_crossings.sites USING GIST (original_point);
+
 
 create table stream_crossings.sites_attribute_source(
     cabd_id uuid not null primary key references stream_crossings.sites(cabd_id),
