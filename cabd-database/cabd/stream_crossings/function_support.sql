@@ -66,7 +66,7 @@ DECLARE
   fp_geom GEOMETRY;
 BEGIN
 
-	SELECT ST_LineMerge(ST_CurveToLine(fp.geometry)) -- Error since fp.geometry is MultiLineCurve type. Convert to usable line.
+	SELECT ST_LineMerge(fp.geometry_ls)
 	INTO fp_geom
 	FROM nhn_raw.flowpaths fp
 	WHERE st_expand(raw_geom::geometry, 0.01) && fp.geometry_ls and st_distance(raw_geom::geography, fp.geometry_ls::geography) < max_distance_m

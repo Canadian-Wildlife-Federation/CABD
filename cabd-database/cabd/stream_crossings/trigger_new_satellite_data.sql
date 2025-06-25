@@ -51,7 +51,7 @@ BEGIN
         insert into dams.dams_attribute_source(cabd_id, assessment_type_code_ds, original_point_ds)
         select NEW.cabd_id, id, id from cabd.data_source where name = 'cwf'; 
 
-        update stream_crossings.cwf_satellite_review set status_code = 3 where id = NEW.id;
+        update stream_crossings.cwf_satellite_review set status = 'PROCESSED' where id = NEW.id;
 
     else    
         --this is not a dam; update attributes where appropriate
@@ -111,7 +111,7 @@ BEGIN
             update stream_crossings.sites_attribute_source set assessment_type_code_src = 's', assessment_type_code_dsid = NEW.id where cabd_id = NEW.cabd_id;
         end if;
         
-        update stream_crossings.cwf_satellite_review set status_code = 3 where id = NEW.id;
+        update stream_crossings.cwf_satellite_review set status = 'PROCESSED' where id = NEW.id;
     end if ;
 	RETURN NEW;
 END;
@@ -122,5 +122,5 @@ $$;
 CREATE OR REPLACE TRIGGER cwf_satellite_data_data_trg
 AFTER INSERT OR UPDATE ON stream_crossings.cwf_satellite_review
 FOR EACH ROW
-WHEN (NEW.status_code = 2)
+WHEN (NEW.status = 'REVIEWED')
 EXECUTE FUNCTION stream_crossings.cwf_satellite_data_data_trg();

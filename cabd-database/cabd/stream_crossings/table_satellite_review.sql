@@ -8,12 +8,14 @@
 drop table if exists stream_crossings.cwf_satellite_review;
 
 drop type if exists
-    stream_crossings.status_type;
+    stream_crossings.status_type,
+    stream_crossings.new_crossing_type;
 
 -- Enum type columns appear as dropdowns when the layer is pulled into QGIS.
 -- Unfortunately, NULL is not an option that can appear in a dropdown in QGIS but the type can be 
 -- set to NULL. One way to get around this is to have a 'NULL' option in the enum and a trigger to set this value to NULL
 create type stream_crossings.status_type as enum('NEW', 'REVIEWED', 'PROCESSED', 'ERROR/WARNING', 'REQUIRES CLARIFICATION');
+CREATE TYPE stream_crossings.new_crossing_type AS ENUM('open-bottom structure', 'closed-bottom structure', 'multiple closed-bottom structure', 'ford-like structure', 'no crossing', 'removed crossing', 'NULL');
 
 create table stream_crossings.cwf_satellite_review (
     id uuid default gen_random_uuid() primary key,
@@ -21,33 +23,9 @@ create table stream_crossings.cwf_satellite_review (
     last_modified timestamp, -- autopopulated from last update
     reviewer varchar, --autopopulated from user
     status stream_crossings.status_type,
-    status_code int references cabd.status_codes(code)
-        GENERATED always as(
-            case
-                -- ilike does not work with enums so using '=' instead
-                when status = 'NEW' then 1
-                when status = 'REVIEWED' then 2
-                when status = 'PROCESSED' then 3
-                when status = 'ERROR/WARNING' then 4
-                when status = 'REQUIRES CLARIFICATION' then 5
-            else 1
-        end)
-        stored,
     multipoint_feature boolean, -- setting default values causes qgis to display as text field
     crossing_type varchar,
     new_crossing_type stream_crossings.new_crossing_type,
-    crossing_type_code int references stream_crossings.crossing_type_codes(code) 
-        GENERATED always as (
-            case 
-              when new_crossing_type = 'open-bottom structure' then 1 
-              when new_crossing_type = 'closed-bottom structure' then 2
-              when new_crossing_type = 'multiple closed-bottom structure' then 3
-              when new_crossing_type = 'ford-like structure' then 4
-              when new_crossing_type = 'no crossing' then 5
-              when new_crossing_type = 'removed crossing' then 6
-              else null
-            end)
-        stored,
     create_dam boolean,
     existing_dam_cabd_id uuid,
     new_dam_latitude decimal,
