@@ -21,6 +21,27 @@ END;
 $function$
 ;
 
+-
+-- given a point geometry looks up the appropriate nhn_watershed_id
+-- from the cabd.nhn_workunit table
+--
+CREATE OR REPLACE FUNCTION cabd.find_nhn_watershed_id(raw_geom geometry)
+ RETURNS varchar
+ LANGUAGE plpgsql
+AS $function$
+DECLARE
+  id VARCHAR;
+BEGIN
+	SELECT a.id
+	INTO id
+	FROM cabd.nhn_workunit  a
+	WHERE ST_INTERSECTS(raw_geom, polygon)
+	LIMIT 1;	
+    return id;    
+END;
+$function$
+;
+
 --
 -- This function returns the closest point on the CHYF stream network to the provided
 -- point. If no flowpath exist within max_distance then null is returned;

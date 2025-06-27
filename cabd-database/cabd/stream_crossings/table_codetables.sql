@@ -1,3 +1,16 @@
+-- supporting data types
+
+drop type if exists stream_crossings.status_type;
+-- Enum type columns appear as dropdowns when the layer is pulled into QGIS.
+-- Unfortunately, NULL is not an option that can appear in a dropdown in QGIS but the type can be 
+-- set to NULL. One way to get around this is to have a 'NULL' option in the enum and a trigger to set this value to NULL
+create type stream_crossings.status_type as enum('NEW', 'REVIEWED', 'PROCESSED', 'ERROR/WARNING', 'REQUIRES CLARIFICATION');
+
+-- this type already exists in the database;created with the stream_crossings.satellite_review table
+-- CREATE TYPE stream_crossings.new_crossing_type AS ENUM('open-bottom structure', 'closed-bottom structure', 'multiple closed-bottom structure', 'ford-like structure', 'no crossing', 'removed crossing', 'NULL');
+-- drop type if exists stream_crossings.new_crossing_type;
+
+
 -- CREATE various code tables and populates them
 -- source: codes_tables.xlsx
 
@@ -470,14 +483,6 @@ create table cabd.passability_status_codes(
   description_fr  varchar
 ); 
 
-create table cabd.status_codes(
-  code integer primary key,
-  name_en varchar(2056),
-  name_fr varchar(2056),
-  description_en varchar,
-  description_fr  varchar
-); 
-
 create table cabd.assessment_type_codes(
   code integer primary key,
   name_en varchar(2056),
@@ -556,13 +561,6 @@ insert into cabd.passability_status_codes (code, name_en) values
 (4,'Unknown'),
 (5,'NA - No Structure'),
 (6,'NA - Decommissioned/Removed');
-
-insert into cabd.status_codes (code, name_en) values	
-(1,'NEW'),
-(2,'REVIEWED'),
-(3,'PROCESSED'),
-(4,'ERROR/WARNING'),
-(5,'REQUIRES CLARIFICATION');
 
 insert into cabd.assessment_type_codes (code, name_en) values	
 (1,'rapid'),

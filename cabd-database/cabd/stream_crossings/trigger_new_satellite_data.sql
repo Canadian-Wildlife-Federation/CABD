@@ -1,17 +1,13 @@
 -- trigger to apply new satellite data to sites and structures
 
--- TODO (see todo text):
--- * sort out nhn, chyf snapping (I don't have these setup to test locally)
--- * review settings of  nhn_watershed_id
-
 CREATE OR REPLACE FUNCTION stream_crossings.cwf_satellite_data_data_trg() 
 RETURNS TRIGGER  
 LANGUAGE plpgsql 
 as $$
 DECLARE
-
+  dampoint geometry;
   doupdate boolean;
-  STREAM_SNAP_TOLERANCE integer := 500;
+  STREAM_SNAP_TOLERANCE integer := 500; --for snapping points to stream network chyf and nhn
 
 BEGIN
 
@@ -25,7 +21,7 @@ BEGIN
     NEW.crossing_type = OLD.crossing_type;
 
     --sites data to update
-    if (NEW.status_code != 2) then
+    if (NEW.status != 'REVIEWED') then
         return NEW;
     end if;
 
@@ -38,14 +34,17 @@ BEGIN
         delete from stream_crossings.structures where site_id = NEW.cabd_id;
         delete from stream_crossings.sites where cabd_id = NEW.cabd_id;
 
+        dampoint := st_transform(st_setsrid(st_makepoint(NEW.new_dam_longitude, NEW.new_dam_latitude), 4326), 4617);
     	--add to dams
-        -- TODO: nhn_watershed_id
-        insert into dams.dams (cabd_id, assessment_type_code, province_territory_code, original_point, snapped_point, snapped_ncc)
+        insert into dams.dams (cabd_id, assessment_type_code, 
+            province_territory_code, nhn_watershed_id, 
+            original_point, snapped_point, snapped_ncc)
         values (NEW.cabd_id, 4, 
-            cabd.find_province_territory_code(st_transform(st_setsrid(st_makepoint(NEW.new_dam_longitude, NEW.new_dam_latitude), 4326), 4617)),
-		    st_transform(st_setsrid(st_makepoint(NEW.new_dam_longitude, NEW.new_dam_latitude), 4326), 4617), 
-		    null, --todo: cabd.snap_point_to_chyf_network(st_transform(st_setsrid(NEW.st_makepoint(NEW.dam_longitude, NEW.new_dam_latitude), 4326), 4617), STREAM_SNAP_TOLERANCE),
-		    null --todo: cabd.snap_point_to_nhn_network(st_transform(st_setsrid(NEW.st_makepoint(NEW.dam_longitude, NEW.new_dam_latitude), 4326), 4617), STREAM_SNAP_TOLERANCE)
+            cabd.find_province_territory_code(dampoint),
+            cabd.find_nhn_watershed_id(dampoint),
+		    dampoint,
+		    cabd.snap_point_to_chyf_network(dampoint, STREAM_SNAP_TOLERANCE),
+		    cabd.snap_point_to_nhn_network(dampoint, STREAM_SNAP_TOLERANCE)
         );
     
         insert into dams.dams_attribute_source(cabd_id, assessment_type_code_ds, original_point_ds)
@@ -62,7 +61,8 @@ BEGIN
 				when (road_type_code_src in ('m') or (road_type_code_src = 's' and b.date_of_review < NEW.date_of_review)) then true 
 				else false end  into doupdate
 			from stream_crossings.sites_attribute_source a 
-				left join stream_crossings.cwf_satellite_review b on b.id = a.road_type_code_dsid; 
+				left join stream_crossings.cwf_satellite_review b on b.id = a.road_type_code_dsid
+            where a.cabd_id = NEW.cabd_id; 
 			
             if (doupdate) then
                 update stream_crossings.sites set road_type_code = case when NEW.driveway_crossing is not null and NEW.driveway_crossing then 4 else null end where cabd_id = NEW.cabd_id;
@@ -76,7 +76,8 @@ BEGIN
 				when (crossing_type_code_src in ('m') or (crossing_type_code_src = 's' and b.date_of_review < NEW.date_of_review)) then true 
 				else false end  into doupdate
 			from stream_crossings.sites_attribute_source a 
-				left join stream_crossings.cwf_satellite_review b on b.id = a.crossing_type_code_dsid; 
+				left join stream_crossings.cwf_satellite_review b on b.id = a.crossing_type_code_dsid
+            where a.cabd_id = NEW.cabd_id;
 			
             if (doupdate) then
                 update stream_crossings.sites set crossing_type_code = NEW.crossing_type_code where cabd_id = NEW.cabd_id;
@@ -90,7 +91,8 @@ BEGIN
 				when (crossing_comments_src in ('m') or (crossing_comments_src = 's' and b.date_of_review < NEW.date_of_review)) then true 
 				else false end  into doupdate
 			from stream_crossings.sites_attribute_source a 
-				left join stream_crossings.cwf_satellite_review b on b.id = a.crossing_comments_dsid; 
+				left join stream_crossings.cwf_satellite_review b on b.id = a.crossing_comments_dsid
+            where a.cabd_id = NEW.cabd_id;
 			
             if (doupdate) then
                 update stream_crossings.sites set crossing_comments = NEW.reviewer_comments where cabd_id = NEW.cabd_id;
@@ -104,7 +106,8 @@ BEGIN
 			when (assessment_type_code_src in ('m') or (assessment_type_code_src = 's' and b.date_of_review < NEW.date_of_review)) then true 
 			else false end  into doupdate
 		from stream_crossings.sites_attribute_source a 
-			left join stream_crossings.cwf_satellite_review b on b.id = a.assessment_type_code_dsid; 
+			left join stream_crossings.cwf_satellite_review b on b.id = a.assessment_type_code_dsid
+        where a.cabd_id = NEW.cabd_id;
 			
         if (doupdate) then
             update stream_crossings.sites set assessment_type_code = 4 where cabd_id = NEW.cabd_id;

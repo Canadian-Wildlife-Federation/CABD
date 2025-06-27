@@ -19,8 +19,7 @@ set community_data_photo_fields = array[
 	'downstream_side_image',
 	'upstream_direction_image',
 	'upstream_side_image',
-	'fishway_image',
-
+	'fishway_image'
 ]
 where type = 'modelled_crossings';
 
@@ -286,7 +285,7 @@ BEGIN
 		upstream_side_image,
 		notes
 	)values (
-		1, --status NEW
+		'NEW',
 		NEW.id, 
 		NEW.cabd_id, 
 		NEW.user_id, 
