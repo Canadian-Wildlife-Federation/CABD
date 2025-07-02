@@ -293,6 +293,8 @@ BEGIN
     END LOOP; 
 	--status   
 	update stream_crossings.stream_crossings_community_holding set status = 'PROCESSED' where site_cabd_id is not null;
+    update stream_crossings.stream_crossings_community_holding set cabd_id = site_cabd_id where site_cabd_id is not null;
+
 	drop table supdates;
 
 	--new sites&structures
@@ -432,19 +434,41 @@ BEGIN
 	-- ***** ASSESSMENT DATA *******
 	
 	--find the newest assessment data 
+
+    create temp table newassessments as select * from stream_crossings.assessment_data where status = 'NEW';
+    alter table newassessments add column site_cabd_id uuid;
+    --find existing ids
+	update newassessments set site_cabd_id = cabd_id where cabd_id in (select cabd_id from stream_crossings.sites);
+	--calculate geometry
+	alter table newassessments add column newpoint geometry(point, 4617);
+	update newassessments set newpoint = st_transform(st_setsrid(st_makepoint(longitude, latitude), 4326), 4617);
+
+	--search based on distance
+	with toprocess as (
+    	select *, newpoint::geography as point from newassessments where site_cabd_id is null
+	),
+    updates as (
+		SELECT sat.id, structs.cabd_id, structs.dist as distance
+		FROM toprocess sat
+		CROSS JOIN LATERAL (
+		  SELECT sat.id, b.cabd_id, b.original_point::geography <-> sat.point AS dist
+		  FROM stream_crossings.sites b
+		  ORDER BY dist
+		  LIMIT 1
+		) structs
+	)
+	update newassessments set site_cabd_id = updates.cabd_id
+	from updates
+	where site_cabd_id is null and updates.id = newassessments.id and updates.distance < CABD_FEATURE_DISANCE_MATCH_TOLDERANCE; 
+
 	create temp table allassessmentdata as (
 		select * from (
 			SELECT *,
-			ROW_NUMBER() OVER (PARTITION BY cabd_id ORDER BY date_assessed DESC) AS rn
-			FROM stream_crossings.assessment_data WHERE status = 'NEW')
+			ROW_NUMBER() OVER (PARTITION BY site_cabd_id ORDER BY date_assessed DESC) AS rn
+			FROM newassessments WHERE status = 'NEW')
 		foo where rn = 1
 	);
-	
-	alter table allassessmentdata add column site_cabd_id uuid;
-
-	--calculate geometry
-	alter table allassessmentdata add column newpoint geometry(point, 4617);
-	update allassessmentdata set newpoint = st_transform(st_setsrid(st_makepoint(longitude, latitude), 4326), 4617);
+    drop table newassessments;
 
     --calculate addressed_status_code
     alter table allassessmentdata add column addressed_status_code integer;
@@ -462,27 +486,7 @@ BEGIN
     update allassessmentdata set addressed_status_code = 5 where
         addressed_status_code is null and id in (select assessment_id from records);
 
-	--find existing ids
-	update allassessmentdata set site_cabd_id = cabd_id where cabd_id in (select cabd_id from stream_crossings.sites);
-
-	--search based on distance
-	with toprocess as (
-    	select *, newpoint::geography as point from allassessmentdata where site_cabd_id is null
-	),
-    updates as (
-		SELECT sat.id, structs.cabd_id, structs.dist as distance
-		FROM toprocess sat
-		CROSS JOIN LATERAL (
-		  SELECT sat.id, b.cabd_id, b.original_point::geography <-> sat.point AS dist
-		  FROM stream_crossings.sites b
-		  ORDER BY dist
-		  LIMIT 1
-		) structs
-	)
-	update allassessmentdata set site_cabd_id = updates.cabd_id
-	from updates
-	where site_cabd_id is null and updates.id = allassessmentdata.id and updates.distance < CABD_FEATURE_DISANCE_MATCH_TOLDERANCE; 
-
+	
     --keep existing strahler_order if possible
     alter table allassessmentdata add column strahler_order integer;
     alter table allassessmentdata add column strahler_order_dsid uuid;
@@ -839,6 +843,7 @@ BEGIN
         'a',a.id
 	from stream_crossings.structures b join allassessmentdata a on a.site_cabd_id = b.site_id;
 	
+    update stream_crossings.assessment_data set cabd_id = a.site_cabd_id from allassessmentdata a  where a.id = stream_crossings.assessment_data.id;
 	update stream_crossings.assessment_data set status = 'PROCESSED' where status = 'NEW';
 
 	drop table allassessmentdata;
