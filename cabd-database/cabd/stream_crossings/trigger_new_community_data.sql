@@ -48,6 +48,11 @@ BEGIN
             cabdid := null;
             distance := null;
         end if;
+
+        if (cabdid is not null) THEN
+            --want to update the cabd_id of this record so we can find all assessments associated with a given site
+            update stream_crossings.stream_crossings_community_holding set cabd_id = cabdid where id = NEW.id;
+        end if;
 	end if;
 	
 
