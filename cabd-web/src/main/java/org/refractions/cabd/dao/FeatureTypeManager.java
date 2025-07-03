@@ -27,6 +27,8 @@ import org.refractions.cabd.model.FeatureType;
 import org.refractions.cabd.model.FeatureViewMetadata;
 import org.refractions.cabd.model.FeatureViewMetadataField;
 import org.refractions.cabd.model.FeatureViewMetadataFieldData;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -141,11 +143,14 @@ public class FeatureTypeManager {
 	@PostConstruct
     public void init() {
 		
+	    LoggerFactory.getLogger(getClass()).info("Loading Feature Type Metadata");
+
         this.setFeatureTypes( typeDao.getFeatureTypes() );      
         this.attributeSets = typeDao.getAttributeSets();
         this.attributeSets.add(new AttributeSet(AttributeSet.VECTOR_TILE, "include_vector_tile"));
         
         for (FeatureType t : types) {
+        	System.out.println(t.getType());
         	FeatureViewMetadata metadata = typeDao.getViewMetadata(t.getDataViewName(), this.attributeSets);
         	validateMetadata(t, metadata);
         	t.setViewMetadata( metadata );
@@ -153,6 +158,8 @@ public class FeatureTypeManager {
         
         allViewMetadata = typeDao.getViewMetadata(FeatureViewMetadata.ALL_FEATURES_VIEW_ROOT, this.attributeSets);
         validateMetadata(null, allViewMetadata);
+        
+        LoggerFactory.getLogger(getClass()).info("Loading Feature Type Metadata ... Complete");
     }
 
 	/*

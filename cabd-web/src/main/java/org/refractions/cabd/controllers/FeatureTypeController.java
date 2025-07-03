@@ -25,6 +25,7 @@ import org.refractions.cabd.dao.FeatureTypeManager;
 import org.refractions.cabd.exceptions.ApiError;
 import org.refractions.cabd.exceptions.NotFoundException;
 import org.refractions.cabd.model.FeatureType;
+import org.refractions.cabd.model.FeatureTypeList;
 import org.refractions.cabd.model.FeatureTypeWithDataMetadata;
 import org.refractions.cabd.model.FeatureViewMetadataField;
 import org.refractions.cabd.model.FeatureViewMetadataFieldData;
@@ -69,7 +70,7 @@ public class FeatureTypeController {
 	@ApiResponses(value = { @ApiResponse(responseCode = "200", content = {
 			@Content(mediaType = "application/json", array = @ArraySchema(schema = @Schema(implementation = FeatureType.class))) }) }) 
 	@GetMapping(value = "/")
-	public ResponseEntity<List<FeatureType>> getFeatureTypes(HttpServletRequest request) {
+	public ResponseEntity<FeatureTypeList> getFeatureTypes(HttpServletRequest request) {
 		
 		List<FeatureType> types = typeManager.getFeatureTypes();
 		
@@ -80,7 +81,7 @@ public class FeatureTypeController {
 		        .path("/" + PATH).build();
 		types.forEach(e->e.setUrls(dataurl.toUriString(), metadataurl.toUriString()));
 		
-		return ResponseEntity.ok(types);
+		return ResponseEntity.ok(new FeatureTypeList(types));
 	}
 	
 	/**
