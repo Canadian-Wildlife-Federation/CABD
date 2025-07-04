@@ -22,11 +22,13 @@ import java.util.UUID;
 
 import javax.servlet.http.HttpServletRequest;
 
-import org.apache.commons.lang3.tuple.Pair;
 import org.refractions.cabd.CabdApplication;
+import org.refractions.cabd.dao.AssessmentDao;
 import org.refractions.cabd.dao.FeatureDao;
+import org.refractions.cabd.dao.FeatureTypeManager;
 import org.refractions.cabd.exceptions.ApiError;
 import org.refractions.cabd.exceptions.NotFoundException;
+import org.refractions.cabd.model.Assessment;
 import org.refractions.cabd.model.DataSource;
 import org.refractions.cabd.model.Feature;
 import org.refractions.cabd.model.FeatureSourceDetails;
@@ -39,6 +41,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+import org.springframework.web.util.UriComponents;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -60,7 +64,10 @@ public class FeatureDataSourceController {
 	public static final String PATH = FeatureController.PATH + "/datasources";
 	
 	@Autowired
-	FeatureDao featureDao;
+	private FeatureDao featureDao;
+	
+	@Autowired
+	private AssessmentDao assessmentDao;
 	
 	@Operation(summary = "Find the feature source attribute details for an individual feature")
 	@ApiResponses(value = { 
@@ -100,24 +107,46 @@ public class FeatureDataSourceController {
 			details.setFeatureName(feature.getAttribute(ftype.getDefaultNameField()).toString());
 		}
 		
-		//data sources by type
-		List<DataSource> sources = featureDao.getDataSources(id, ftype);
-		List<DataSource> dsspatial = new ArrayList<>();
-		List<DataSource> dsnon = new ArrayList<>();
-		for (DataSource s : sources) {
-			if (s.getType().equalsIgnoreCase("spatial")) {
-				dsspatial.add(s);
-			}else {
-				dsnon.add(s);
+		if(ftype.getType().equals(FeatureTypeManager.SITE_FEATURE_TYPE)) {
+			//we have to do something special for sites/structures
+			buildSitesStructureData(feature.getId(), ftype, details, request);
+		} else {
+			//data sources by type
+			List<DataSource> sources = featureDao.getDataSources(id, ftype);
+			List<DataSource> dsspatial = new ArrayList<>();
+			List<DataSource> dsnon = new ArrayList<>();
+			for (DataSource s : sources) {
+				if (s.getType().equalsIgnoreCase("spatial")) {
+					dsspatial.add(s);
+				}else {
+					dsnon.add(s);
+				}
 			}
+			details.setSpatialDataSources(dsspatial);
+			details.setNonSpatialDataSources(dsnon);
+			
+			//attribute sources
+			List<String[]> fields = featureDao.getFeatureSourceDetails(id, ftype);
+			details.setAttributeDataSources(fields);
 		}
-		details.setSpatialDataSources(dsspatial);
-		details.setNonSpatialDataSources(dsnon);
-		
-		//attribute sources
-		List<Pair<String,String>> fields = featureDao.getFeatureSourceDetails(id, ftype);
-		details.setAttributeDataSources(fields);
 		
 		return ResponseEntity.ok(details);		
+	}
+	
+	/*
+	 * build datasource details for sites/structures data
+	 */
+	private void buildSitesStructureData(UUID cabdid, FeatureType ftype, FeatureSourceDetails details, HttpServletRequest request) {
+		
+		UriComponents metadataurl = ServletUriComponentsBuilder.fromContextPath(request)
+		        .path("/" + AssessmentController.PATH).build();
+		
+		List<Assessment> assessments = assessmentDao.getAllAssessments(cabdid);
+		assessments.forEach(a->a.setRefUrl(metadataurl.toUriString()));
+		
+		details.setAssessmentDataSources(assessments);
+		
+		List<String[]> fields = assessmentDao.getFeatureSourceDetails(cabdid, ftype);
+		details.setAttributeDataSources(fields);			
 	}
 }

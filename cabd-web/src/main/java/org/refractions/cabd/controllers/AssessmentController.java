@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Canadian Wildlife Federation
+ * Copyright 2025 Canadian Wildlife Federation
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); 
  * you may not use this file except in compliance with the License. 
@@ -21,7 +21,6 @@ import java.util.UUID;
 
 import javax.servlet.http.HttpServletRequest;
 
-import org.refractions.cabd.CabdApplication;
 import org.refractions.cabd.CabdConfigurationProperties;
 import org.refractions.cabd.dao.AssessmentDao;
 import org.refractions.cabd.dao.AssessmentTypeManager;
@@ -47,7 +46,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 
 /**
- * REST api for database features
+ * REST api for assessment data
  * 
  * @author Emily
  *
@@ -71,8 +70,7 @@ public class AssessmentController {
 	AssessmentTypeManager typeManager;
 		
 	/**
-	 * Gets an individual feature by identifier. Search the all_features
-	 * view for the feature type.
+	 * Gets an individual assessment by identifier. Returns are only returned as json.
 	 * 
 	 * @param id
 	 * @return
@@ -95,19 +93,17 @@ public class AssessmentController {
 	}
 	
 	/**
-	 * Gets an individual feature by type and identifier
+	 * Gets all assessments as JSON array for a given cabd feature
 	 * 
 	 * @param id
 	 * @return
 	 */
 	@Operation(summary = "Gets a feature by type and id.")
-	@GetMapping(value = "/cabd/{id:[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}}",
-			produces = {MediaType.APPLICATION_JSON_VALUE, "application/geo+json",
-					CabdApplication.CSV_MEDIA_TYPE_STR,
-					CabdApplication.GEOPKG_MEDIA_TYPE_STR})
+	@GetMapping(value = "/cabd/{cabdid:[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}}",
+			produces = {MediaType.APPLICATION_JSON_VALUE, "application/json"})
 	public ResponseEntity<JsonNode> getAssessmentsByCabdId(
 			@Parameter(description = "unique feature identifier") 
-			@PathVariable("id") UUID cabdid,
+			@PathVariable("cabdid") UUID cabdid,
 			HttpServletRequest request) {
 		
 		JsonNode f;
@@ -120,9 +116,8 @@ public class AssessmentController {
 	}
 	
 	/**
-	 * Gets an individual feature by type and identifier
+	 * Gets list of all assessment types 
 	 * 
-	 * @param id
 	 * @return
 	 */
 	@Operation(summary = "Gets the assessment types.")
@@ -153,9 +148,9 @@ public class AssessmentController {
 	}
 	
 	/**
-	 * Gets an individual feature by type and identifier
+	 * Gets metadata details about a given assessment type
 	 * 
-	 * @param id
+	 * @param type assessment type
 	 * @return
 	 */
 	@Operation(summary = "Gets the assessment type metadata")

@@ -27,7 +27,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 /**
- * Object to manage feature types configured in 
+ * Object to manage assessment types configured in 
  * database.  This object is populated on startup
  * and the details are cached.  If the metadata changes
  * in the database, the server needs to be restarted.
@@ -45,7 +45,7 @@ public class AssessmentTypeManager {
 	private List<AssessmentType> types;
 	
 	/**
-	 * Sets feature types
+	 * Sets assessment types
 	 * @param types
 	 */
 	private void setAssessmentTypes(List<AssessmentType> types) {
@@ -53,7 +53,7 @@ public class AssessmentTypeManager {
 	}
 	
 	/**
-	 * Gets all feature types
+	 * Gets all assessment types
 	 * 
 	 * @return
 	 */
@@ -73,7 +73,7 @@ public class AssessmentTypeManager {
 	}
 	
 	/**
-	 * Find the assessment type object for the given feature type.
+	 * Find the assessment type object for the given type.
 	 * @param assessmentType
 	 * @return
 	 */
@@ -85,7 +85,7 @@ public class AssessmentTypeManager {
 	}
 	
 	/**
-	 * Initializes the feature type cache from the database
+	 * Initializes the cache from the database
 	 * on startup.
 	 */
 	@PostConstruct
@@ -97,7 +97,6 @@ public class AssessmentTypeManager {
         for (AssessmentType t : this.types) {
         	Collection<AssessmentTypeMetadataField> sites = typeDao.getTypeMetadata(t.getType());
         	Collection<AssessmentTypeMetadataField> structures = typeDao.getTypeMetadata(t.getType() + ".structure");
-        	//validateMetadata(t, metadata);
         	t.setViewMetadata( sites, structures);
         }
         

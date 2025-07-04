@@ -19,8 +19,8 @@ import java.io.IOException;
 import java.text.DateFormat;
 import java.util.Date;
 
-import org.apache.commons.lang3.tuple.Pair;
 import org.refractions.cabd.CabdApplication;
+import org.refractions.cabd.model.Assessment;
 import org.refractions.cabd.model.DataSource;
 import org.refractions.cabd.model.FeatureSourceDetails;
 import org.springframework.http.HttpInputMessage;
@@ -87,51 +87,73 @@ public class FeatureDataSourceListCsvSerializer extends AbstractHttpMessageConve
 			seqW.write(new String[] {"", ""});
 			seqW.write(new String[] {"Complete list of data source names and links:", "https://cabd-docs.netlify.app/docs_user/docs_user_data_sources.html"});
 			seqW.write(new String[] {"", ""});
-			
-			seqW.write(new String[] {"Spatial Data Sources", ""});
-			if (features.getIncludeAllDatasourceDetails()) {
-				seqW.write(new String[] {"datasource_name", "datasource_feature_id", "datasource_date", "datasource_version"});
-			}else {
-				seqW.write(new String[] {"datasource_name", "datasource_feature_id"});
-			}
-			
-			for (DataSource ds : features.getSpatialDataSources()) {
+						
+			if (features.getSpatialDataSources() != null) {
+				seqW.write(new String[] {"Spatial Data Sources", ""});
 				if (features.getIncludeAllDatasourceDetails()) {
-					seqW.write(new String[] {convertToString(ds.getName()), 
-							convertToString(ds.getFeatureId()),
-							convertToString(ds.getVersionDate()),
-							convertToString(ds.getVersion())});
+					seqW.write(new String[] {"datasource_name", "datasource_feature_id", "datasource_date", "datasource_version"});
 				}else {
-					seqW.write(new String[] {convertToString(ds.getName()), convertToString(ds.getFeatureId())} );
+					seqW.write(new String[] {"datasource_name", "datasource_feature_id"});
+				}
+				
+				for (DataSource ds : features.getSpatialDataSources()) {
+					if (features.getIncludeAllDatasourceDetails()) {
+						seqW.write(new String[] {convertToString(ds.getName()), 
+								convertToString(ds.getFeatureId()),
+								convertToString(ds.getVersionDate()),
+								convertToString(ds.getVersion())});
+					}else {
+						seqW.write(new String[] {convertToString(ds.getName()), convertToString(ds.getFeatureId())} );
+					}
+				}
+			}
+			if (features.getNonSpatialDataSources() != null) {
+				seqW.write(new String[] {"", ""});
+				seqW.write(new String[] {"Non-Spatial Data Sources", ""});
+				if (features.getIncludeAllDatasourceDetails()) {
+					seqW.write(new String[] {"datasource_name", "datasource_feature_id", "datasource_date", "datasource_version"});
+				}else {
+					seqW.write(new String[] {"datasource_name", ""});
+				}
+	
+				
+				for (DataSource ds : features.getNonSpatialDataSources()) {
+					if (features.getIncludeAllDatasourceDetails()) {
+						seqW.write(new String[] {convertToString(ds.getName()), 
+								convertToString(ds.getFeatureId()),
+								convertToString(ds.getVersionDate()),
+								convertToString(ds.getVersion())});
+					}else {
+						seqW.write(new String[] {convertToString(ds.getName()), ""} );
+					}
 				}
 			}
 			
-			seqW.write(new String[] {"", ""});
-			seqW.write(new String[] {"Non-Spatial Data Sources", ""});
-			if (features.getIncludeAllDatasourceDetails()) {
-				seqW.write(new String[] {"datasource_name", "datasource_feature_id", "datasource_date", "datasource_version"});
-			}else {
-				seqW.write(new String[] {"datasource_name", ""});
-			}
-
-			
-			for (DataSource ds : features.getNonSpatialDataSources()) {
-				if (features.getIncludeAllDatasourceDetails()) {
-					seqW.write(new String[] {convertToString(ds.getName()), 
-							convertToString(ds.getFeatureId()),
-							convertToString(ds.getVersionDate()),
-							convertToString(ds.getVersion())});
-				}else {
-					seqW.write(new String[] {convertToString(ds.getName()), ""} );
+			if (features.getAssessmentDataSources() != null) {
+				seqW.write(new String[] {"", ""});
+				seqW.write(new String[] {"Assessments", ""});
+				seqW.write(new String[] {"assessment_id", "assessment_date", "assessment_type", "assessment_url"});
+				
+				for (Assessment a : features.getAssessmentDataSources()) {
+					seqW.write(new String[] {
+							convertToString(a.getAssessmentId().toString()), 
+							convertToString(a.getDatetime().toString()),
+							convertToString(a.getAssessmentType()),
+							convertToString(a.getUrl())});
 				}
 			}
+			
 			
 			seqW.write(new String[] {"", ""});
 			seqW.write(new String[] {"Attributes", ""});
 			seqW.write(new String[] {"attribute_field_name", "datasource_name"});
 			
-			for (Pair<String,String> ds : features.getAttributeDataSources()) {
-				seqW.write(new String[] {convertToString(ds.getLeft()), convertToString(ds.getRight())} );
+			for (String[] ds : features.getAttributeDataSources()) {
+				String[] bits = new String[ds.length];
+				for(int i = 0; i < ds.length; i ++) {
+					bits[i] = convertToString(ds[i]);
+				}
+				seqW.write(bits);
 			}
 		}
 		

@@ -15,7 +15,6 @@
  */
 package org.refractions.cabd.model.assessment;
 
-import java.util.ArrayList;
 import java.util.Collection;
 
 import org.refractions.cabd.CabdApplication;
@@ -24,13 +23,48 @@ import org.refractions.cabd.model.NamedItem;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
- * Represents a feature type.
+ * Represents a assessment type.
  * 
  * @author Emily
  *
  */
 public class AssessmentType extends NamedItem{
 
+	/**
+	 * These are the types used for source types in the database. We haven't created
+	 * database types for modelled crossings or satellite as those are not required.
+	 * 
+	 * @author Emily
+	 *
+	 */
+	public enum RawAssessmentType{
+		MODELLED_CROSSINGS("m", "modelled-crossings"),
+		SATELLITE("s", "satellite-review"),
+		COMMUNITY("c", "rapid"),
+		ASSESSMENT("a", "long-form");
+		
+		private String dbkey;
+		private String datasourcename;
+		
+		RawAssessmentType(String dbkey, String datasourcename){
+			this.dbkey = dbkey;
+			this.datasourcename = datasourcename;
+		}
+		
+		public static RawAssessmentType findType(String dbkey) {
+			dbkey = dbkey.toLowerCase();
+			for(RawAssessmentType t : values()) {
+				if (t.dbkey.equals(dbkey)) return t; 
+			}
+			return null;
+		}
+		
+		public String getDataSourceName() {
+			return this.datasourcename;
+		}
+	}
+	
+	
 	private String type;
 	private String dataView;
 	

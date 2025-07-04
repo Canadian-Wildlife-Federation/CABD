@@ -21,7 +21,7 @@ import org.locationtech.jts.geom.Geometry;
 import org.refractions.cabd.model.NamedDescriptionItem;
 
 /**
- * Contains details about a feature
+ * Contains details about a assessment field
  * view field.
  * 
  * @author Emily

@@ -18,6 +18,7 @@ package org.refractions.cabd.serializers;
 import java.io.IOException;
 
 import org.apache.commons.lang3.tuple.Pair;
+import org.refractions.cabd.model.Assessment;
 import org.refractions.cabd.model.DataSource;
 import org.refractions.cabd.model.FeatureSourceDetails;
 import org.springframework.boot.jackson.JsonComponent;
@@ -44,38 +45,55 @@ public class FeatureDataSourceListJsonSerializer extends JsonSerializer<FeatureS
 		
 		gen.writeFieldName("data_sources");
 		gen.writeStartArray();
-		for (DataSource ds : value.getSpatialDataSources()) {
-			gen.writeStartObject();
-			gen.writeObjectField("name", ds.getName());
-			gen.writeObjectField("type", ds.getType());
-			gen.writeObjectField("datasource_feature_id", ds.getFeatureId());
-			if (value.getIncludeAllDatasourceDetails()) {
-				gen.writeObjectField("version_date", ds.getVersionDate());
-				gen.writeObjectField("version_number", ds.getVersion());
-			}
-			
-			gen.writeEndObject();
-		}
-		for (DataSource ds : value.getNonSpatialDataSources()) {
-			gen.writeStartObject();
-			gen.writeObjectField("name", ds.getName());
-			gen.writeObjectField("type", ds.getType());
-			if (ds.getFeatureId() != null && !ds.getFeatureId().isBlank()) {
+		if (value.getSpatialDataSources() != null) {
+			for (DataSource ds : value.getSpatialDataSources()) {
+				gen.writeStartObject();
+				gen.writeObjectField("name", ds.getName());
+				gen.writeObjectField("type", ds.getType());
 				gen.writeObjectField("datasource_feature_id", ds.getFeatureId());
+				if (value.getIncludeAllDatasourceDetails()) {
+					gen.writeObjectField("version_date", ds.getVersionDate());
+					gen.writeObjectField("version_number", ds.getVersion());
+				}
+				
+				gen.writeEndObject();
 			}
-			if (value.getIncludeAllDatasourceDetails()) {
-				gen.writeObjectField("version_date", ds.getVersionDate());
-				gen.writeObjectField("version_number", ds.getVersion());
+		}
+		
+		if (value.getNonSpatialDataSources() != null) {
+			for (DataSource ds : value.getNonSpatialDataSources()) {
+				gen.writeStartObject();
+				gen.writeObjectField("name", ds.getName());
+				gen.writeObjectField("type", ds.getType());
+				if (ds.getFeatureId() != null && !ds.getFeatureId().isBlank()) {
+					gen.writeObjectField("datasource_feature_id", ds.getFeatureId());
+				}
+				if (value.getIncludeAllDatasourceDetails()) {
+					gen.writeObjectField("version_date", ds.getVersionDate());
+					gen.writeObjectField("version_number", ds.getVersion());
+				}
+				
+				gen.writeEndObject();
 			}
-			
-			gen.writeEndObject();
+		}
+		
+		if (value.getAssessmentDataSources() != null) {
+			for (Assessment a : value.getAssessmentDataSources()) {
+				gen.writeStartObject();
+				gen.writeObjectField("name", a.getAssessmentId().toString());
+				gen.writeObjectField("type", a.getAssessmentType());
+				gen.writeObjectField("assessment_date", a.getDatetime().toString());
+				gen.writeObjectField("assessment_url", a.getUrl());
+				gen.writeEndObject();
+			}
 		}
 		gen.writeEndArray();
 		
 		gen.writeFieldName("attribute_data_sources");
 		gen.writeStartObject();
-		for (Pair<String,String> a : value.getAttributeDataSources()) {
-			gen.writeObjectField(a.getLeft(), a.getRight());
+		for (String[] a : value.getAttributeDataSources()) {
+			//TODO: sort out for string arrays greater then two elements
+			gen.writeObjectField(a[0], a[1]);
 		}
 		gen.writeEndObject();
 		

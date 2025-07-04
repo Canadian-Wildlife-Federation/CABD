@@ -26,7 +26,7 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Component;
 
 /**
- * Manage database mapping for Feature types and associated metadata.
+ * Manage database mapping for assessment types and associated metadata.
  * 
  * @author Emily
  *
@@ -34,16 +34,19 @@ import org.springframework.stereotype.Component;
 @Component
 public class AssessmentTypeDao {
 
+	/**
+	 * assessment type table
+	 */
 	public static final String ASSESSMENT_TYPE_TABLE = "cabd.assessment_types";
+	/**
+	 * assessment type metadata table
+	 */
 	public static final String ASSESSMENT_METADATA_TABLE = "cabd.assessment_type_metadata";
 
 	
 	@Autowired
 	private JdbcTemplate jdbcTemplate;
 		
-	/**
-	 * Mapper for feature type query to FeatureType 
-	 */
 	private RowMapper<AssessmentType> typeMapper = (rs, rownum)-> 
 		new AssessmentType(rs.getString("type"), 
 				rs.getString("data_view"),
@@ -78,9 +81,6 @@ public class AssessmentTypeDao {
 		sb.append(ASSESSMENT_METADATA_TABLE);
 		sb.append(" WHERE type = ?");
 		
-		/**
-		 * Mapper for metadata field row to FeatureViewMetadataField object
-		 */
 		RowMapper<AssessmentTypeMetadataField> viewMetadataMapper = (rs, rownum) ->{		
 			return new AssessmentTypeMetadataField(
 					rs.getString("field_name"), rs.getString("name_en"), 
