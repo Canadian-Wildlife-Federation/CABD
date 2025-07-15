@@ -8,6 +8,16 @@ create table cabd.assessment_types(
     constraint assessment_types_pkey primary key (type)
 );
 
+ALTER TABLE IF EXISTS cabd.assessment_types
+    OWNER to cabd;
+REVOKE ALL ON TABLE cabd.assessment_types FROM cwf_user;
+REVOKE ALL ON TABLE cabd.assessment_types FROM foundry_viewer;
+GRANT ALL ON TABLE cabd.assessment_types TO alexl;
+GRANT ALL ON TABLE cabd.assessment_types TO cabd;
+GRANT SELECT ON TABLE cabd.assessment_types TO cwf_user;
+GRANT SELECT ON TABLE cabd.assessment_types TO foundry_viewer;
+
+
 create table cabd.assessment_type_metadata(
     type varchar,
     field_name varchar,
@@ -21,6 +31,15 @@ create table cabd.assessment_type_metadata(
     data_type varchar,
     constraint assessment_type_metdata_pkey primary key (type, field_name)
 );
+
+ALTER TABLE IF EXISTS cabd.assessment_type_metadata
+    OWNER to cabd;
+REVOKE ALL ON TABLE cabd.assessment_type_metadata FROM cwf_user;
+REVOKE ALL ON TABLE cabd.assessment_type_metadata FROM foundry_viewer;
+GRANT ALL ON TABLE cabd.assessment_type_metadata TO alexl;
+GRANT ALL ON TABLE cabd.assessment_type_metadata TO cabd;
+GRANT SELECT ON TABLE cabd.assessment_type_metadata TO cwf_user;
+GRANT SELECT ON TABLE cabd.assessment_type_metadata TO foundry_viewer;
 
 insert into cabd.assessment_types (type, data_view, name_en, name_fr) values
 ('rapid', 'stream_crossings.assessment_rapid', 'Rapid Assessment', 'Rapid Assessment'),
@@ -234,6 +253,15 @@ left join
     ) as downph on downph.id = a.id
 where a.status = 'PROCESSED';
 
+ALTER TABLE IF EXISTS stream_crossings.assessment_rapid_en
+    OWNER to cabd;
+REVOKE ALL ON TABLE stream_crossings.assessment_rapid_en FROM cwf_user;
+REVOKE ALL ON TABLE stream_crossings.assessment_rapid_en FROM foundry_viewer;
+GRANT ALL ON TABLE stream_crossings.assessment_rapid_en TO alexl;
+GRANT ALL ON TABLE stream_crossings.assessment_rapid_en TO cabd;
+GRANT SELECT ON TABLE stream_crossings.assessment_rapid_en TO cwf_user;
+GRANT SELECT ON TABLE stream_crossings.assessment_rapid_en TO foundry_viewer;
+
 
 drop view if exists stream_crossings.assessment_rapid_fr;
 
@@ -363,6 +391,16 @@ left join
     ) as downph on downph.id = a.id
 where a.status = 'PROCESSED';
 
+ALTER TABLE IF EXISTS stream_crossings.assessment_rapid_fr
+    OWNER to cabd;
+REVOKE ALL ON TABLE stream_crossings.assessment_rapid_fr FROM cwf_user;
+REVOKE ALL ON TABLE stream_crossings.assessment_rapid_fr FROM foundry_viewer;
+GRANT ALL ON TABLE stream_crossings.assessment_rapid_fr TO alexl;
+GRANT ALL ON TABLE stream_crossings.assessment_rapid_fr TO cabd;
+GRANT SELECT ON TABLE stream_crossings.assessment_rapid_fr TO cwf_user;
+GRANT SELECT ON TABLE stream_crossings.assessment_rapid_fr TO foundry_viewer;
+
+
 
 insert into cabd.assessment_type_metadata (type, field_name, data_type, name_en, name_fr) values
 ('long-form', 'assessment_id', 'uuid', 'Assessment Id', 'Assessment Id'),
@@ -413,7 +451,7 @@ insert into cabd.assessment_type_metadata (type, field_name, data_type, name_en,
 ('long-form', 'bankfull_confidence_code', 'integer', 'Bankfull Confidence Code', 'Bankfull Confidence Code'),
 ('long-form', 'bankful_confidence', 'varchar', 'Bankful Confidence', 'Bankful Confidence'),
 ('long-form', 'scour_pool_tailwater_code', 'integer', 'Scour Pool Tailwater Code', 'Scour Pool Tailwater Code'),
-('long-form', 'sour_pool_tailwater', 'varchar', 'Sour Pool Tailwater', 'Sour Pool Tailwater'),
+('long-form', 'scour_pool_tailwater', 'varchar', 'Scour Pool Tailwater', 'Scour Pool Tailwater'),
 ('long-form', 'crossing_comments', 'varchar', 'Crossing Comments', 'Crossing Comments'),
 ('long-form', 'structure_info', 'json', 'Structure Info', 'Structure Info'),
 ('long-form.structure', 'assessment_id', 'uuid', 'Assessment Id', 'Assessment Id'),
@@ -637,7 +675,7 @@ a.bankfull_width_dnstr_avg_m,
 a.bankfull_confidence_code,
 bc.name_en as bankful_confidence,
 a.scour_pool_tailwater_code,
-spt.name_en as sour_pool_tailwater,
+spt.name_en as scour_pool_tailwater,
 a.crossing_comments,
 b.structure_info as structure_data
 
@@ -653,6 +691,16 @@ left join cabd.road_type_codes rt on rt.code = a.road_type_code
 left join stream_crossings.scour_pool_codes spt on spt.code = a.scour_pool_tailwater_code
 left join stream_crossings.site_type_codes st on st.code = a.site_type_code
 where a.status = 'PROCESSED';
+
+ALTER TABLE IF EXISTS stream_crossings.assessment_longform_en
+    OWNER to cabd;
+REVOKE ALL ON TABLE stream_crossings.assessment_longform_en FROM cwf_user;
+REVOKE ALL ON TABLE stream_crossings.assessment_longform_en FROM foundry_viewer;
+GRANT ALL ON TABLE stream_crossings.assessment_longform_en TO alexl;
+GRANT ALL ON TABLE stream_crossings.assessment_longform_en TO cabd;
+GRANT SELECT ON TABLE stream_crossings.assessment_longform_en TO cwf_user;
+GRANT SELECT ON TABLE stream_crossings.assessment_longform_en TO foundry_viewer;
+
 
 
 
@@ -812,7 +860,7 @@ a.bankfull_width_dnstr_avg_m,
 a.bankfull_confidence_code,
 bc.name_fr as bankful_confidence,
 a.scour_pool_tailwater_code,
-spt.name_fr as sour_pool_tailwater,
+spt.name_fr as scour_pool_tailwater,
 a.crossing_comments,
 b.structure_info as structure_data
 
@@ -828,3 +876,12 @@ left join cabd.road_type_codes rt on rt.code = a.road_type_code
 left join stream_crossings.scour_pool_codes spt on spt.code = a.scour_pool_tailwater_code
 left join stream_crossings.site_type_codes st on st.code = a.site_type_code
 where a.status = 'PROCESSED';
+
+ALTER TABLE IF EXISTS stream_crossings.assessment_longform_fr
+    OWNER to cabd;
+REVOKE ALL ON TABLE stream_crossings.assessment_longform_fr FROM cwf_user;
+REVOKE ALL ON TABLE stream_crossings.assessment_longform_fr FROM foundry_viewer;
+GRANT ALL ON TABLE stream_crossings.assessment_longform_fr TO alexl;
+GRANT ALL ON TABLE stream_crossings.assessment_longform_fr TO cabd;
+GRANT SELECT ON TABLE stream_crossings.assessment_longform_fr TO cwf_user;
+GRANT SELECT ON TABLE stream_crossings.assessment_longform_fr TO foundry_viewer;
