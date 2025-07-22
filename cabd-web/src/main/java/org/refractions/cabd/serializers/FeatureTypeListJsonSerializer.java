@@ -16,11 +16,9 @@
 package org.refractions.cabd.serializers;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.function.Function;
 
 import org.refractions.cabd.model.FeatureType;
-import org.refractions.cabd.model.FeatureViewMetadataField;
+import org.refractions.cabd.model.FeatureTypeList;
 import org.springframework.boot.jackson.JsonComponent;
 
 import com.fasterxml.jackson.core.JsonGenerator;
@@ -34,13 +32,14 @@ import com.fasterxml.jackson.databind.SerializerProvider;
  *
  */
 @JsonComponent
-public class FeatureTypeListJsonSerializer extends JsonSerializer<List<FeatureType>> {
+public class FeatureTypeListJsonSerializer extends JsonSerializer<FeatureTypeList> {
 
+	
 	@Override
-	public void serialize(List<FeatureType> value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+	public void serialize(FeatureTypeList value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
 
 		gen.writeStartArray();
-		for (FeatureType type: value) {
+		for (FeatureType type: value.getItems()) {
 			gen.writeStartObject();
 			gen.writeStringField("type", type.getType());
 			gen.writeStringField("name", type.getName());
@@ -50,17 +49,5 @@ public class FeatureTypeListJsonSerializer extends JsonSerializer<List<FeatureTy
 			gen.writeEndObject();
 		}
 		gen.writeEndArray();
-	}
-		
-	class DataView{
-		String name;
-		Function<FeatureViewMetadataField,Integer> orderer;
-		
-		public DataView(String name, Function<FeatureViewMetadataField,Integer> orderer) {
-			this.name = name;
-			this.orderer = orderer;
-		}
-	
-	}
-	
+	}	
 }

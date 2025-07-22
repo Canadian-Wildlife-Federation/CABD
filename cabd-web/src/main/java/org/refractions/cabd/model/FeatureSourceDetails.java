@@ -18,8 +18,6 @@ package org.refractions.cabd.model;
 import java.util.List;
 import java.util.UUID;
 
-import org.apache.commons.lang3.tuple.Pair;
-
 /**
  * Feature Source Details 
  * 
@@ -32,7 +30,8 @@ public class FeatureSourceDetails {
 	private UUID featureId;
 	private List<DataSource> spatialDataSources;
 	private List<DataSource> nonSpatialDataSources;
-	private List<Pair<String,String>> attributeDataSources;
+	private List<Assessment> assessmentDataSources;
+	private List<String[]> attributeDataSources;
 	
 	private boolean includeAllDsDetails = false;
 	
@@ -59,7 +58,12 @@ public class FeatureSourceDetails {
 	public List<DataSource> getNonSpatialDataSources( ) {
 		return this.nonSpatialDataSources ;
 	}
-	public List<Pair<String,String>> getAttributeDataSources() {
+	
+	public List<Assessment> getAssessmentDataSources( ) {
+		return this.assessmentDataSources ;
+	}
+	
+	public List<String[]> getAttributeDataSources() {
 		return this.attributeDataSources ;
 	}
 	
@@ -74,7 +78,12 @@ public class FeatureSourceDetails {
 	public void setNonSpatialDataSources( List<DataSource> nonSpatialDataSources) {
 		this.nonSpatialDataSources = nonSpatialDataSources;
 	}
-	public void setAttributeDataSources(List<Pair<String,String>> attributeDataSources) {
+	
+	public void setAssessmentDataSources( List<Assessment> assessmentDataSources) {
+		this.assessmentDataSources = assessmentDataSources;
+	}
+	
+	public void setAttributeDataSources(List<String[]> attributeDataSources) {
 		this.attributeDataSources = attributeDataSources;
 	}
 }

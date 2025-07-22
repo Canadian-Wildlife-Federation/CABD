@@ -616,7 +616,7 @@ public class FeatureDao {
 	 * @param ftype the feature type
 	 * @return
 	 */
-	public List<Pair<String,String>> getFeatureSourceDetails(UUID featureId, FeatureType ftype) {
+	public List<String[]> getFeatureSourceDetails(UUID featureId, FeatureType ftype) {
 		
 		//get data source names
 		HashMap<UUID, String> dataSourceNames = new HashMap<>();
@@ -665,31 +665,30 @@ public class FeatureDao {
 		sb.append(ftype.getAttributeSourceTable());
 		sb.append(" WHERE cabd_id = ?");
 	
-		List<List<Pair<String,String>>> fieldData = jdbcTemplate.query(sb.toString(),
+		List<List<String[]>> fieldData = jdbcTemplate.query(sb.toString(),
 				new Object[] {featureId}, new int[] {SqlTypeValue.TYPE_UNKNOWN}, 
-				new RowMapper<List<Pair<String, String>>>() {
+				new RowMapper<List<String[]>>() {
 			
 			@Override
-			public List<Pair<String, String>> mapRow(ResultSet rs, int rowNum) throws SQLException {
-				List<Pair<String, String>> columnData = new ArrayList<>();
+			public List<String[]> mapRow(ResultSet rs, int rowNum) throws SQLException {
+				List<String[]> columnData = new ArrayList<>();
 				
 				for (String field:columns) {
 					UUID dsuuid = (UUID) rs.getObject(field + "_ds");
 					if (dsuuid != null) {
-						columnData.add(new ImmutablePair<String,String>(field, dataSourceNames.get(dsuuid)));
+						columnData.add(new String[] {field, dataSourceNames.get(dsuuid)});
 					}else {
-						columnData.add(new ImmutablePair<String,String>(field, ""));
+						columnData.add(new String[] {field, ""});
 					}
 				}
 				return columnData;
 			}});
-		List<Pair<String,String>> attributesources = new ArrayList<>();
+		List<String[]> attributesources = new ArrayList<>();
 		if (!fieldData.isEmpty()) {
 			attributesources = fieldData.get(0);
 		}
-		
-		
-		attributesources.sort((a,b)->a.getLeft().compareTo(b.getLeft()));
+				
+		attributesources.sort((a,b)->a[0].compareTo(b[0]));
 		
 		return attributesources;
 	}
