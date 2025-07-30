@@ -1,6 +1,9 @@
 ---- !! AUDIT LOG TRIGGERS !! ----
 
 -- create audit log triggers for sites and sites_attribute_source tables
+set role cabd;
+
+
 create trigger sites_delete_trg after delete on stream_crossings.sites for each row execute function cabd.audit_cabdid_delete();
 create trigger sites_insert_trg after insert on stream_crossings.sites for each row execute function cabd.audit_cabdid_insert();
 create trigger sites_update_trg after update on stream_crossings.sites for each row execute function cabd.audit_cabdid_update();
