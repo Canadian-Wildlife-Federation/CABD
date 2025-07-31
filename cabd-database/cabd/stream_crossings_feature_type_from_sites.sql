@@ -4,7 +4,8 @@ alter table stream_crossings.structures add constraint structures_passability_st
 
 alter table stream_crossings.sites add constraint site_province_territory_code_fk foreign key (province_territory_code) REFERENCES cabd.province_territory_codes(code);
 alter table stream_crossings.sites add constraint site_nhn_watershed_id_fk foreign key (nhn_watershed_id) REFERENCES cabd.nhn_workunit(id);
-	
+
+delete from cabd.feature_type_metadata ftm where view_name = 'cabd.structures_view' and field_name = 'structure_id';	
 
 drop VIEW if exists cabd.stream_crossings_sites_structures_view_en;
 drop VIEW if exists cabd.stream_crossings_sites_structures_view_fr;
@@ -144,7 +145,7 @@ CREATE OR REPLACE VIEW cabd.stream_crossings_sites_structures_view_en AS
     s.passability_status_code,
     psc.name_en as passability_status,
     
-    t.snapped_point AS geometry
+    case when t.snapped_point is not null then t.snapped_point else t.original_point end as geometry
   
    FROM stream_crossings.sites t
      JOIN stream_crossings.structures s ON t.cabd_id = s.site_id
@@ -323,8 +324,7 @@ CREATE OR REPLACE VIEW cabd.stream_crossings_sites_structures_view_fr AS
     s.structure_comments,
     s.passability_status_code,
     psc.name_fr as passability_status,
-    
-    t.snapped_point AS geometry
+    case when t.snapped_point is not null then t.snapped_point else t.original_point end as geometry
   
    FROM stream_crossings.sites t
      JOIN stream_crossings.structures s ON t.cabd_id = s.site_id
@@ -613,7 +613,7 @@ AS SELECT barriers.cabd_id,
                     ELSE ts.passability_status_code::smallint
                 END AS passability_status_code,
             NULL::boolean AS "boolean",
-            c.snapped_point
+            case when c.snapped_point is not null then c.snapped_point else c.original_point end
            FROM stream_crossings.sites c
              LEFT JOIN stream_crossings.structures ts ON ts.site_id = c.cabd_id AND ts.primary_structure IS TRUE) barriers
      LEFT JOIN cabd.province_territory_codes pt ON barriers.province_territory_code::text = pt.code::text
@@ -712,7 +712,7 @@ AS SELECT barriers.cabd_id,
                     ELSE ts.passability_status_code::smallint
                 END AS passability_status_code,
             NULL::boolean AS "boolean",
-            c.snapped_point
+            case when c.snapped_point is not null then c.snapped_point else c.original_point end
            FROM stream_crossings.sites c
              LEFT JOIN stream_crossings.structures ts ON ts.site_id = c.cabd_id AND ts.primary_structure IS TRUE) barriers
      LEFT JOIN cabd.province_territory_codes pt ON barriers.province_territory_code::text = pt.code::text
@@ -798,7 +798,7 @@ AS SELECT barriers.cabd_id,
                     ELSE ts.passability_status_code::smallint
                 END AS passability_status_code,
             NULL::boolean AS "boolean",
-            c.snapped_point
+            case when c.snapped_point is not null then c.snapped_point else c.original_point end
            FROM stream_crossings.sites c
              LEFT JOIN stream_crossings.structures ts ON ts.site_id = c.cabd_id AND ts.primary_structure IS TRUE) barriers
      LEFT JOIN cabd.province_territory_codes pt ON barriers.province_territory_code::text = pt.code::text
@@ -880,10 +880,371 @@ AS SELECT barriers.cabd_id,
                     ELSE ts.passability_status_code::smallint
                 END AS passability_status_code,
             NULL::boolean AS "boolean",
-            c.snapped_point
+            case when c.snapped_point is not null then c.snapped_point else c.original_point end
            FROM stream_crossings.sites c
              LEFT JOIN stream_crossings.structures ts ON ts.site_id = c.cabd_id AND ts.primary_structure IS TRUE) barriers
      LEFT JOIN cabd.province_territory_codes pt ON barriers.province_territory_code::text = pt.code::text
      LEFT JOIN cabd.nhn_workunit nhn ON nhn.id::text = barriers.nhn_watershed_id::text
      LEFT JOIN cabd.passability_status_codes ps ON ps.code = barriers.passability_status_code
      LEFT JOIN cabd.updates_pending up ON up.cabd_id = barriers.cabd_id;
+
+
+
+
+
+
+
+
+
+
+
+     -- cabd.sites_view_en source
+
+CREATE OR REPLACE VIEW cabd.sites_view_en
+AS SELECT s.cabd_id,
+    'sites'::text AS feature_type,
+    'features/datasources/'::text || s.cabd_id AS datasource_url,
+    'features/structures?filter=site_id:eq:'::text || s.cabd_id AS structures_url,
+    st_y(s.snapped_point) AS latitude,
+    st_x(s.snapped_point) AS longitude,
+    s.last_modified,
+    s.other_id,
+    s.cabd_assessment_id,
+    s.original_assessment_id,
+    s.date_assessed,
+    s.lead_assessor,
+    s.municipality,
+    s.stream_name,
+    s.road_name,
+    s.road_type_code,
+    rt.name_en AS road_type_name,
+    s.location_description,
+    s.land_ownership_context,
+    s.incomplete_assess_code,
+    ia.name_en AS incomplete_assess_name,
+    s.crossing_type_code,
+    ct.name_en AS crossing_type_name,
+    s.num_structures,
+    s.photo_id_inlet,
+    s.photo_id_outlet,
+    s.photo_id_upstream,
+    s.photo_id_downstream,
+    s.photo_id_road_surface,
+    s.photo_id_other_a,
+    s.photo_id_other_b,
+    s.photo_id_other_c,
+    s.flow_condition_code,
+    fc.name_en AS flow_condition_name,
+    s.crossing_condition_code,
+    con.name_en AS crossing_condition_name,
+    s.site_type_code,
+    st.name_en AS site_type_name,
+    s.alignment_code,
+    ac.name_en AS alignment_name,
+    s.road_fill_height_m,
+    s.bankfull_width_upstr_a_m,
+    s.bankfull_width_upstr_b_m,
+    s.bankfull_width_upstr_c_m,
+    s.bankfull_width_upstr_avg_m,
+    s.bankfull_width_dnstr_a_m,
+    s.bankfull_width_dnstr_b_m,
+    s.bankfull_width_dnstr_c_m,
+    s.bankfull_width_dnstr_avg_m,
+    s.bankfull_confidence_code,
+    cc.name_en AS bankfull_confidence_name,
+    s.scour_pool_tailwater_code,
+    sc.name_en AS scour_pool_name,
+    s.crossing_comments,
+    s.province_territory_code,
+    s.nhn_watershed_id,
+    s.strahler_order,
+    s.assessment_type_code,
+    s.addressed_status_code,
+    s.chu_12_id,
+    s.chu_10_id,
+    s.chu_8_id,
+    s.chu_6_id,
+    s.chu_4_id,
+    s.chu_2_id,
+    s.include_in_act,
+    case when s.snapped_point is not null then s.snapped_point else s.original_point end AS geometry
+   FROM stream_crossings.sites s
+     LEFT JOIN stream_crossings.alignment_codes ac ON s.alignment_code = ac.code
+     LEFT JOIN stream_crossings.confidence_codes cc ON s.bankfull_confidence_code = cc.code
+     LEFT JOIN stream_crossings.crossing_condition_codes con ON s.crossing_condition_code = con.code
+     LEFT JOIN stream_crossings.crossing_type_codes ct ON s.crossing_type_code = ct.code
+     LEFT JOIN stream_crossings.flow_condition_codes fc ON s.flow_condition_code = fc.code
+     LEFT JOIN stream_crossings.incomplete_assessment_codes ia ON s.incomplete_assess_code = ia.code
+     LEFT JOIN cabd.road_type_codes rt ON s.road_type_code = rt.code
+     LEFT JOIN stream_crossings.scour_pool_codes sc ON s.scour_pool_tailwater_code = sc.code
+     LEFT JOIN stream_crossings.site_type_codes st ON s.site_type_code = st.code;
+
+
+
+     -- cabd.sites_view_fr source
+
+CREATE OR REPLACE VIEW cabd.sites_view_fr
+AS SELECT s.cabd_id,
+    'sites'::text AS feature_type,
+    'features/datasources/'::text || s.cabd_id AS datasource_url,
+    'features/structures?filter=site_id:eq:'::text || s.cabd_id AS structures_url,
+    st_y(s.snapped_point) AS latitude,
+    st_x(s.snapped_point) AS longitude,
+    s.last_modified,
+    s.other_id,
+    s.cabd_assessment_id,
+    s.original_assessment_id,
+    s.date_assessed,
+    s.lead_assessor,
+    s.municipality,
+    s.stream_name,
+    s.road_name,
+    s.road_type_code,
+    rt.name_fr AS road_type_name,
+    s.location_description,
+    s.land_ownership_context,
+    s.incomplete_assess_code,
+    ia.name_fr AS incomplete_assess_name,
+    s.crossing_type_code,
+    ct.name_fr AS crossing_type_name,
+    s.num_structures,
+    s.photo_id_inlet,
+    s.photo_id_outlet,
+    s.photo_id_upstream,
+    s.photo_id_downstream,
+    s.photo_id_road_surface,
+    s.photo_id_other_a,
+    s.photo_id_other_b,
+    s.photo_id_other_c,
+    s.flow_condition_code,
+    fc.name_fr AS flow_condition_name,
+    s.crossing_condition_code,
+    con.name_fr AS crossing_condition_name,
+    s.site_type_code,
+    st.name_fr AS site_type_name,
+    s.alignment_code,
+    ac.name_fr AS alignment_name,
+    s.road_fill_height_m,
+    s.bankfull_width_upstr_a_m,
+    s.bankfull_width_upstr_b_m,
+    s.bankfull_width_upstr_c_m,
+    s.bankfull_width_upstr_avg_m,
+    s.bankfull_width_dnstr_a_m,
+    s.bankfull_width_dnstr_b_m,
+    s.bankfull_width_dnstr_c_m,
+    s.bankfull_width_dnstr_avg_m,
+    s.bankfull_confidence_code,
+    cc.name_fr AS bankfull_confidence_name,
+    s.scour_pool_tailwater_code,
+    sc.name_fr AS scour_pool_name,
+    s.crossing_comments,
+    s.province_territory_code,
+    s.nhn_watershed_id,
+    s.strahler_order,
+    s.assessment_type_code,
+    s.addressed_status_code,
+    s.chu_12_id,
+    s.chu_10_id,
+    s.chu_8_id,
+    s.chu_6_id,
+    s.chu_4_id,
+    s.chu_2_id,
+    s.include_in_act,
+    case when s.snapped_point is not null then s.snapped_point else s.original_point end AS geometry
+   FROM stream_crossings.sites s
+     LEFT JOIN stream_crossings.alignment_codes ac ON s.alignment_code = ac.code
+     LEFT JOIN stream_crossings.confidence_codes cc ON s.bankfull_confidence_code = cc.code
+     LEFT JOIN stream_crossings.crossing_condition_codes con ON s.crossing_condition_code = con.code
+     LEFT JOIN stream_crossings.crossing_type_codes ct ON s.crossing_type_code = ct.code
+     LEFT JOIN stream_crossings.flow_condition_codes fc ON s.flow_condition_code = fc.code
+     LEFT JOIN stream_crossings.incomplete_assessment_codes ia ON s.incomplete_assess_code = ia.code
+     LEFT JOIN cabd.road_type_codes rt ON s.road_type_code = rt.code
+     LEFT JOIN stream_crossings.scour_pool_codes sc ON s.scour_pool_tailwater_code = sc.code
+     LEFT JOIN stream_crossings.site_type_codes st ON s.site_type_code = st.code;
+
+
+     -- cabd.structures_view_en source
+
+CREATE OR REPLACE VIEW cabd.structures_view_en
+AS SELECT s.structure_id AS cabd_id,
+    'structures'::text AS feature_type,
+    s.site_id,
+    s.last_modified,
+    s.cabd_assessment_id,
+    s.original_assessment_id,
+    s.primary_structure,
+    s.structure_number,
+    s.outlet_shape_code,
+    os.name_en AS outlet_shape,
+    s.internal_structures_code,
+    istruct.name_en AS internal_structures,
+    s.liner_material_code,
+    lm.name_en AS liner_material,
+    s.outlet_armouring_code,
+    oa.name_en AS outlet_armouring,
+    s.outlet_grade_code,
+    og.name_en AS outlet_grade,
+    s.outlet_width_m,
+    s.outlet_height_m,
+    s.outlet_substrate_water_width_m,
+    s.outlet_water_depth_m,
+    s.abutment_height_m,
+    s.outlet_drop_to_water_surface_m,
+    s.outlet_drop_to_stream_bottom_m,
+    s.outlet_water_surface_to_residual_pool_top_m,
+    s.residual_pool_confidence_code,
+    rpc.name_en AS residual_pool_confidence,
+    s.structure_length_m,
+    s.inlet_shape_code,
+    ishp.name_en AS inlet_shape,
+    s.inlet_type_code,
+    it.name_en AS inlet_type,
+    s.inlet_grade_code,
+    ig.name_en AS inlet_grade,
+    s.inlet_width_m,
+    s.inlet_height_m,
+    s.inlet_substrate_water_width_m,
+    s.inlet_water_depth_m,
+    s.structure_slope_pct,
+    s.structure_slope_method_code,
+    sm.name_en AS slope_method,
+    s.structure_slope_to_channel_code,
+    sc.name_en AS slope_to_channel,
+    s.substrate_type_code,
+    st.name_en AS substrate_type,
+    s.substrate_matches_stream_code,
+    sms.name_en AS substrate_matches,
+    s.substrate_coverage_code,
+    scov.name_en AS substrate_coverage,
+    s.substrate_depth_consistent_code,
+    sdc.name_en AS substrate_depth_consistent,
+    s.backwatered_pct_code,
+    bwp.name_en AS backwatered_pct,
+    s.physical_blockage_severity_code,
+    pbs.name_en AS blockage_severity,
+    s.water_depth_matches_stream_code,
+    wdms.name_en AS water_depth_matches,
+    s.water_velocity_matches_stream_code,
+    wvms.name_en AS water_velocity_matches,
+    s.dry_passage_code,
+    dp.name_en AS dry_passage,
+    s.height_above_dry_passage_m,
+    s.structure_comments,
+    s.passability_status_code,
+    case when ss.snapped_point is null then ss.original_point else ss.snapped_point end AS geometry
+   FROM stream_crossings.structures s
+     JOIN stream_crossings.sites ss ON ss.cabd_id = s.site_id
+     LEFT JOIN stream_crossings.shape_codes os ON s.outlet_shape_code = os.code
+     LEFT JOIN stream_crossings.internal_structure_codes istruct ON s.internal_structures_code = istruct.code
+     LEFT JOIN stream_crossings.material_codes lm ON s.liner_material_code = lm.code
+     LEFT JOIN stream_crossings.armouring_codes oa ON s.outlet_armouring_code = oa.code
+     LEFT JOIN stream_crossings.grade_codes og ON s.outlet_grade_code = og.code
+     LEFT JOIN stream_crossings.confidence_codes rpc ON s.residual_pool_confidence_code = rpc.code
+     LEFT JOIN stream_crossings.shape_codes ishp ON s.inlet_shape_code = ishp.code
+     LEFT JOIN stream_crossings.inlet_type_codes it ON s.inlet_type_code = it.code
+     LEFT JOIN stream_crossings.grade_codes ig ON s.inlet_grade_code = ig.code
+     LEFT JOIN stream_crossings.slope_method_codes sm ON s.structure_slope_method_code = sm.code
+     LEFT JOIN stream_crossings.relative_slope_codes sc ON s.structure_slope_to_channel_code = sc.code
+     LEFT JOIN stream_crossings.substrate_type_codes st ON s.substrate_type_code = st.code
+     LEFT JOIN stream_crossings.substrate_matches_stream_codes sms ON s.substrate_matches_stream_code = sms.code
+     LEFT JOIN stream_crossings.structure_coverage_codes scov ON s.substrate_coverage_code = scov.code
+     LEFT JOIN cabd.response_codes sdc ON s.substrate_depth_consistent_code = sdc.code
+     LEFT JOIN stream_crossings.structure_coverage_codes bwp ON s.backwatered_pct_code = bwp.code
+     LEFT JOIN stream_crossings.blockage_severity_codes pbs ON s.physical_blockage_severity_code = pbs.code
+     LEFT JOIN stream_crossings.water_depth_matches_stream_codes wdms ON s.water_depth_matches_stream_code = wdms.code
+     LEFT JOIN stream_crossings.water_velocity_matches_stream_codes wvms ON s.water_velocity_matches_stream_code = wvms.code
+     LEFT JOIN cabd.response_codes dp ON s.dry_passage_code = dp.code;
+
+
+
+-- cabd.structures_view_fr source
+
+CREATE OR REPLACE VIEW cabd.structures_view_fr
+AS SELECT s.structure_id AS cabd_id,
+    'structures'::text AS feature_type,
+    s.site_id,
+    s.last_modified,
+    s.cabd_assessment_id,
+    s.original_assessment_id,
+    s.primary_structure,
+    s.structure_number,
+    s.outlet_shape_code,
+    os.name_fr AS outlet_shape,
+    s.internal_structures_code,
+    istruct.name_fr AS internal_structures,
+    s.liner_material_code,
+    lm.name_fr AS liner_material,
+    s.outlet_armouring_code,
+    oa.name_fr AS outlet_armouring,
+    s.outlet_grade_code,
+    og.name_fr AS outlet_grade,
+    s.outlet_width_m,
+    s.outlet_height_m,
+    s.outlet_substrate_water_width_m,
+    s.outlet_water_depth_m,
+    s.abutment_height_m,
+    s.outlet_drop_to_water_surface_m,
+    s.outlet_drop_to_stream_bottom_m,
+    s.outlet_water_surface_to_residual_pool_top_m,
+    s.residual_pool_confidence_code,
+    rpc.name_fr AS residual_pool_confidence,
+    s.structure_length_m,
+    s.inlet_shape_code,
+    ishp.name_fr AS inlet_shape,
+    s.inlet_type_code,
+    it.name_fr AS inlet_type,
+    s.inlet_grade_code,
+    ig.name_fr AS inlet_grade,
+    s.inlet_width_m,
+    s.inlet_height_m,
+    s.inlet_substrate_water_width_m,
+    s.inlet_water_depth_m,
+    s.structure_slope_pct,
+    s.structure_slope_method_code,
+    sm.name_fr AS slope_method,
+    s.structure_slope_to_channel_code,
+    sc.name_fr AS slope_to_channel,
+    s.substrate_type_code,
+    st.name_fr AS substrate_type,
+    s.substrate_matches_stream_code,
+    sms.name_fr AS substrate_matches,
+    s.substrate_coverage_code,
+    scov.name_fr AS substrate_coverage,
+    s.substrate_depth_consistent_code,
+    sdc.name_fr AS substrate_depth_consistent,
+    s.backwatered_pct_code,
+    bwp.name_fr AS backwatered_pct,
+    s.physical_blockage_severity_code,
+    pbs.name_fr AS blockage_severity,
+    s.water_depth_matches_stream_code,
+    wdms.name_fr AS water_depth_matches,
+    s.water_velocity_matches_stream_code,
+    wvms.name_fr AS water_velocity_matches,
+    s.dry_passage_code,
+    dp.name_fr AS dry_passage,
+    s.height_above_dry_passage_m,
+    s.structure_comments,
+    s.passability_status_code,
+    case when ss.snapped_point is null then ss.original_point else ss.snapped_point end AS geometry
+   FROM stream_crossings.structures s
+     JOIN stream_crossings.sites ss ON ss.cabd_id = s.site_id
+     LEFT JOIN stream_crossings.shape_codes os ON s.outlet_shape_code = os.code
+     LEFT JOIN stream_crossings.internal_structure_codes istruct ON s.internal_structures_code = istruct.code
+     LEFT JOIN stream_crossings.material_codes lm ON s.liner_material_code = lm.code
+     LEFT JOIN stream_crossings.armouring_codes oa ON s.outlet_armouring_code = oa.code
+     LEFT JOIN stream_crossings.grade_codes og ON s.outlet_grade_code = og.code
+     LEFT JOIN stream_crossings.confidence_codes rpc ON s.residual_pool_confidence_code = rpc.code
+     LEFT JOIN stream_crossings.shape_codes ishp ON s.inlet_shape_code = ishp.code
+     LEFT JOIN stream_crossings.inlet_type_codes it ON s.inlet_type_code = it.code
+     LEFT JOIN stream_crossings.grade_codes ig ON s.inlet_grade_code = ig.code
+     LEFT JOIN stream_crossings.slope_method_codes sm ON s.structure_slope_method_code = sm.code
+     LEFT JOIN stream_crossings.relative_slope_codes sc ON s.structure_slope_to_channel_code = sc.code
+     LEFT JOIN stream_crossings.substrate_type_codes st ON s.substrate_type_code = st.code
+     LEFT JOIN stream_crossings.substrate_matches_stream_codes sms ON s.substrate_matches_stream_code = sms.code
+     LEFT JOIN stream_crossings.structure_coverage_codes scov ON s.substrate_coverage_code = scov.code
+     LEFT JOIN cabd.response_codes sdc ON s.substrate_depth_consistent_code = sdc.code
+     LEFT JOIN stream_crossings.structure_coverage_codes bwp ON s.backwatered_pct_code = bwp.code
+     LEFT JOIN stream_crossings.blockage_severity_codes pbs ON s.physical_blockage_severity_code = pbs.code
+     LEFT JOIN stream_crossings.water_depth_matches_stream_codes wdms ON s.water_depth_matches_stream_code = wdms.code
+     LEFT JOIN stream_crossings.water_velocity_matches_stream_codes wvms ON s.water_velocity_matches_stream_code = wvms.code
+     LEFT JOIN cabd.response_codes dp ON s.dry_passage_code = dp.code;     
