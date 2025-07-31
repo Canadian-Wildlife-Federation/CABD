@@ -180,8 +180,8 @@ public class AssessmentDao {
 	 */
 	public List<String[]> getFeatureSourceDetails(UUID featureId, FeatureType ftype) {
 		
-		if (!ftype.getType().equals(FeatureTypeManager.SITE_FEATURE_TYPE)) {
-			throw new RuntimeException("Assessment feature source details are only available for site feature types");
+		if (!ftype.isAssessmentSite()) {
+			throw new RuntimeException("Assessment feature source details are only available for feature types defined as assessment feature types");
 		}
 		
 		//for the main assessment data

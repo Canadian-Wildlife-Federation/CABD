@@ -45,9 +45,11 @@ public class FeatureType extends NamedItem{
 	
 	private FeatureViewMetadata metadata;
 	
+	private boolean isAssessmentSite = false;
+	
 	public FeatureType(String type, String dataView, String dataVersion, String name_en, String name_fr, String attributeSourceTable, 
 			String featureSourceTable, String defaultNameField, String description,
-			String communityDataTable, String[] communityPhotoFields) {
+			String communityDataTable, String[] communityPhotoFields, boolean isAssessmentSite) {
 		super(name_en, name_fr);
 		this.type = type;
 		this.dataVersion = dataVersion;
@@ -58,6 +60,7 @@ public class FeatureType extends NamedItem{
 		this.description = description;
 		this.communityDataTable = communityDataTable;
 		this.communityPhotoFields = communityPhotoFields;
+		this.isAssessmentSite = isAssessmentSite;
 	}
 
 	public String getCommunityDataTable() {
@@ -66,6 +69,10 @@ public class FeatureType extends NamedItem{
 	
 	public String[] getCommunityPhotoFields() {
 		return this.communityPhotoFields;
+	}
+	
+	public boolean isAssessmentSite() {
+		return this.isAssessmentSite;
 	}
 	
 	public String getDescription() {

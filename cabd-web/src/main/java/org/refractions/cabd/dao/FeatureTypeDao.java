@@ -77,7 +77,8 @@ public class FeatureTypeDao {
 				rs.getString("default_featurename_field"), 
 				rs.getString("description"),
 				rs.getString("community_data_table"),
-				rs.getArray("community_data_photo_fields") == null ? null : (String[])rs.getArray("community_data_photo_fields").getArray()
+				rs.getArray("community_data_photo_fields") == null ? null : (String[])rs.getArray("community_data_photo_fields").getArray(),
+				rs.getBoolean("is_assessment")
 				);
 		
 	
@@ -111,7 +112,7 @@ public class FeatureTypeDao {
 	 * @return
 	 */
 	public List<FeatureType> getFeatureTypes(){
-		String query = "SELECT type, data_view, data_version, name_en, name_fr, attribute_source_table, feature_source_table, default_featurename_field, description, community_data_table, community_data_photo_fields FROM " + FEATURE_TYPE_TABLE;
+		String query = "SELECT type, data_view, data_version, name_en, name_fr, attribute_source_table, feature_source_table, default_featurename_field, description, community_data_table, community_data_photo_fields, is_assessment FROM " + FEATURE_TYPE_TABLE;
 		return jdbcTemplate.query(query, typeMapper);		
 	}
 	

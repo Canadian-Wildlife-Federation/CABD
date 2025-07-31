@@ -107,7 +107,7 @@ public class FeatureDataSourceController {
 			details.setFeatureName(feature.getAttribute(ftype.getDefaultNameField()).toString());
 		}
 		
-		if(ftype.getType().equals(FeatureTypeManager.SITE_FEATURE_TYPE)) {
+		if (ftype.isAssessmentSite()) {
 			//we have to do something special for sites/structures
 			buildSitesStructureData(feature.getId(), ftype, details, request);
 		} else {
