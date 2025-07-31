@@ -504,11 +504,12 @@ insert into cabd.feature_type_metadata(view_name,field_name,name_en,description_
 update cabd.feature_types set 
 	data_view = 'cabd.stream_crossings_sites_structures_view',
 	feature_source_table = null, --we might consider setting this to sites, but this might cause issues as I think it is used for data_sources and sites doesn't have a datasource_id field
+	attribute_source_table = 'stream_crossings.sites_attribute_source', --required but not actually used; for sites we get assessment data
 	data_version = '1.0',
 	data_table = array['stream_crossings.sites'], --data table is used for feature version reporting; structures don't have cabd_id so we don't want to include them here
 	community_data_table = 'stream_crossings.stream_crossings_community_staging',
 	community_data_photo_fields = array['transportation_route_image','structure_outlet_image','structure_inlet_image','upstream_blockage_image','downstream_blockage_image','site_image','downstream_direction_image','downstream_side_image','upstream_direction_image','upstream_side_image','fishway_image']
-where type = 'stream_crossings'
+where type = 'stream_crossings';
 
 
 alter table cabd.feature_types add column is_assessment boolean default false;
