@@ -45,8 +45,7 @@ public class FeatureTypeManager {
 
 	/**
 	 * These two feature types have some special handing for data sources
-	 */
-	public static final String SITE_FEATURE_TYPE = "sites";
+	 */	
 	public static final String STRUCTURE_FEATURE_TYPE = "structures";
 	
 	@Autowired
