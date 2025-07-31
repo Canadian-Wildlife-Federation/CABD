@@ -507,7 +507,7 @@ update cabd.feature_types set
 	data_version = '1.0',
 	data_table = array['stream_crossings.sites'], --data table is used for feature version reporting; structures don't have cabd_id so we don't want to include them here
 	community_data_table = 'stream_crossings.stream_crossings_community_staging',
-	community_data_photo_fields = null --TODO
+	community_data_photo_fields = array['transportation_route_image','structure_outlet_image','structure_inlet_image','upstream_blockage_image','downstream_blockage_image','site_image','downstream_direction_image','downstream_side_image','upstream_direction_image','upstream_side_image','fishway_image']
 where type = 'stream_crossings'
 
 
