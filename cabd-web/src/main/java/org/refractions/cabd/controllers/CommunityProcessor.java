@@ -171,7 +171,7 @@ public class CommunityProcessor {
 			try {
 				feature.setCommunityContact(parseUser(feature.getUsername()));
 			}catch (Exception ex) {
-				logger.warn(ex.getMessage(), ex);
+				logger.error(ex.getMessage(), ex);
 				data.getWarnings().add(MessageFormat.format("Feature {0}: Could not create community user for feature. username: {1} error: {2}. Community data not processed.", feature.getIndex(), feature.getUsername(), ex.toString()));
 				continue;
 			}
@@ -199,7 +199,7 @@ public class CommunityProcessor {
 					properties.add(field, new JsonPrimitive(fileId));
 					
 				}catch (Exception ex) {
-					logger.warn(ex.getMessage(), ex);
+					logger.error(ex.getMessage(), ex);
 					data.getWarnings().add(MessageFormat.format("Feature {0}: Could not write image data for photo field {1} to azure: {2}. Community data not processed.", feature.getIndex(), field, ex.toString()));	
 					throw ex;
 				}
@@ -213,7 +213,8 @@ public class CommunityProcessor {
 			try {
 				communityDao.saveCommunityFeature(featuretype.getCommunityDataTable(), feature);
 			}catch (Exception ex) {
-				data.getWarnings().add(MessageFormat.format("Feature {0}: Could not save feature to the feature staging table. Community data not processed. PHOTO files were uploaded to Azure so these need to be removed manually, files that start with id '{1}'.", feature.getIndex(), fileIdPrefix));
+				logger.error(ex.getMessage(), ex);
+				data.getWarnings().add(MessageFormat.format("Feature {0}: Could not save feature to the feature staging table. Community data not processed. PHOTO files were uploaded to Azure so these need to be removed manually, files that start with id ''{1}''.", feature.getIndex(), fileIdPrefix));
 			}
 		}
 		
