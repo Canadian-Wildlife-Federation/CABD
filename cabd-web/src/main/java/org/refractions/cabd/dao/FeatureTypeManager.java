@@ -19,8 +19,6 @@ import java.text.MessageFormat;
 import java.util.List;
 import java.util.Map;
 
-import javax.annotation.PostConstruct;
-
 import org.refractions.cabd.controllers.AttributeSet;
 import org.refractions.cabd.exceptions.InvalidDatabaseConfigException;
 import org.refractions.cabd.model.FeatureType;
@@ -30,6 +28,8 @@ import org.refractions.cabd.model.FeatureViewMetadataFieldData;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import jakarta.annotation.PostConstruct;
 
 /**
  * Object to manage feature types configured in 

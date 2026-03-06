@@ -22,8 +22,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-import javax.servlet.http.HttpServletRequest;
-
 import org.refractions.cabd.dao.CommunityDataDao;
 import org.refractions.cabd.dao.FeatureTypeManager;
 import org.refractions.cabd.exceptions.NotFoundException;
@@ -49,6 +47,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import jakarta.servlet.http.HttpServletRequest;
 
 
 /**

@@ -4,6 +4,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -25,7 +26,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.Base64Utils;
 
 import com.azure.identity.DefaultAzureCredential;
 import com.azure.identity.DefaultAzureCredentialBuilder;
@@ -191,7 +191,7 @@ public class CommunityProcessor {
 				try {
 					
 					String base64 = properties.get(field).getAsString();
-					byte[] imagedata = Base64Utils.decodeFromString(base64);
+					byte[] imagedata = Base64.getDecoder().decode(base64);
 					
 					writeToAzure(fileId, imagedata);
 					

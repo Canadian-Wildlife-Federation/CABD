@@ -19,8 +19,6 @@ import java.text.MessageFormat;
 import java.util.List;
 import java.util.Map;
 
-import javax.servlet.http.HttpServletRequest;
-
 import org.refractions.cabd.dao.FeatureTypeManager;
 import org.refractions.cabd.exceptions.ApiError;
 import org.refractions.cabd.exceptions.NotFoundException;
@@ -45,6 +43,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * Controller for feature types

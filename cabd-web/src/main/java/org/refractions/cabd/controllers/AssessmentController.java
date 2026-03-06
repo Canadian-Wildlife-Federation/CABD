@@ -19,8 +19,6 @@ import java.text.MessageFormat;
 import java.util.List;
 import java.util.UUID;
 
-import javax.servlet.http.HttpServletRequest;
-
 import org.refractions.cabd.CabdConfigurationProperties;
 import org.refractions.cabd.dao.AssessmentDao;
 import org.refractions.cabd.dao.AssessmentTypeManager;
@@ -44,6 +42,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * REST api for assessment data

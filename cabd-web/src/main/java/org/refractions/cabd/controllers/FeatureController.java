@@ -18,8 +18,6 @@ package org.refractions.cabd.controllers;
 import java.text.MessageFormat;
 import java.util.UUID;
 
-import javax.servlet.http.HttpServletRequest;
-
 import org.refractions.cabd.CabdApplication;
 import org.refractions.cabd.CabdConfigurationProperties;
 import org.refractions.cabd.dao.FeatureDao;
@@ -32,7 +30,7 @@ import org.refractions.cabd.model.Feature;
 import org.refractions.cabd.model.FeatureChangeRequest;
 import org.refractions.cabd.model.FeatureList;
 import org.refractions.cabd.model.FeatureType;
-import org.springdoc.api.annotations.ParameterObject;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -49,6 +47,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * REST api for database features
