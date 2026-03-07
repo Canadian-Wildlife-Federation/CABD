@@ -31,6 +31,8 @@ import org.refractions.cabd.model.SimpleFeatureList;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -78,10 +80,14 @@ public class CommunityController {
 			@ApiResponse(responseCode = "204")})
 	@PostMapping(produces = {MediaType.APPLICATION_JSON_VALUE} )
 	public String postData(@RequestBody String featuresJson,
-			HttpServletRequest request) {
+			HttpServletRequest request,
+			@AuthenticationPrincipal Jwt jwt) {
 		
+		String userId = jwt.getClaim("sub");      // Auth0 user ID
+	    String email = jwt.getClaim("email");     // if available
+	    
 		//save data and return; data is parsed as a part of a separate job
-		CommunityData data = new CommunityData(featuresJson, Instant.now());
+		CommunityData data = new CommunityData(featuresJson, Instant.now(), userId, email);
 		saveCommunityData(data);
 		communityProcessor.start();
 		

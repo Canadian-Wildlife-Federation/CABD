@@ -65,7 +65,7 @@ public class CommunityDataDao {
 	 * Mapper for contact  
 	 */
 	private RowMapper<CommunityContact> contactTypeMapper = (rs, rownum)-> 
-		new CommunityContact((UUID)rs.getObject("user_id"), rs.getString("username")); 
+		new CommunityContact((UUID)rs.getObject("user_id"), rs.getString("username"), rs.getString("oauth_id")); 
 	
 	/**
 	 * Mapper for community data - only maps id, data, uploaded_datetime, and status 
@@ -75,7 +75,9 @@ public class CommunityDataDao {
 		new CommunityData((UUID)rs.getObject("id"), 
 				rs.getString("data"),
 				rs.getTimestamp("uploaded_datetime").toInstant(),
-				rs.getString("status"));
+				rs.getString("status"),
+				rs.getString("oauth_id"),
+				rs.getString("oauth_email"));
 
 	 
 	private RowMapper<CommunityData> communityDataMapperNoData = (rs, rownum)-> 
@@ -83,7 +85,9 @@ public class CommunityDataDao {
 				rs.getTimestamp("uploaded_datetime").toInstant(),
 				rs.getString("status"),
 				rs.getString("status_message"),
-				(String[])((Array)rs.getObject("warnings")).getArray());	  
+				(String[])((Array)rs.getObject("warnings")).getArray(),
+				rs.getString("oauth_id"),
+				rs.getString("oauth_email"));	  
 		
 	private WKBReader reader = new WKBReader();
 
@@ -112,28 +116,13 @@ public class CommunityDataDao {
 		StringBuilder sb = new StringBuilder();
 		sb.append("INSERT INTO ");
 		sb.append(COMMUNITY_DATA_TABLE);
-		sb.append(" (uploaded_datetime, data)");
-		sb.append(" VALUES (?, ?) ");
+		sb.append(" (uploaded_datetime, data, oauth_id, oauth_email)");
+		sb.append(" VALUES (?, ?, ?, ?) ");
 		sb.append(" RETURNING id ");
 
 		
-		UUID id = jdbcTemplate.queryForObject(sb.toString(),UUID.class, Timestamp.from( data.getUploadeddatetime() ), data.getData());
+		UUID id = jdbcTemplate.queryForObject(sb.toString(),UUID.class, Timestamp.from( data.getUploadeddatetime() ), data.getData(), data.getOAuthId(), data.getOAuthEmail());
 		data.setId(id);
-	}
-	
-	
-	/**
-	 * Find a contact with the given email address or return null if none found
-	 * @param email
-	 * @return
-	 */
-	public CommunityContact getCommunityContact(String username) {
-		try {
-			String query = "SELECT user_id, username FROM  " + COMMUNITY_CONTACT_TABLE + " WHERE username = ? ";
-			return jdbcTemplate.queryForObject(query, contactTypeMapper, username.toLowerCase());
-		}catch(EmptyResultDataAccessException ex) {
-			return null;
-		}
 	}
 	
 	/**
@@ -145,14 +134,50 @@ public class CommunityDataDao {
 	 * @param organization
 	 * @return
 	 */
-	public CommunityContact getOrCreateCommunityContact(String username) {
-		CommunityContact c = getCommunityContact(username);
-		if (c == null) {
-			String insert = "INSERT INTO " + COMMUNITY_CONTACT_TABLE + "(username) VALUES (?)";
-			jdbcTemplate.update(insert, username.toLowerCase());
-			c = getCommunityContact(username);
+	public CommunityContact getOrCreateCommunityContact(String oauthId, String oauthEmail, String dataUsername) {
+		//1. find user with same oauthid		
+		//2. find user with the same oauth email - make assumptions that this is the same user		
+		//3. find user with username 		
+		//4. create new user
+		String querypart = "SELECT user_id, username, oauth_id FROM  " + COMMUNITY_CONTACT_TABLE + " WHERE ";
+		
+		if (oauthId != null) {
+			String query = querypart + "oauth_id = ?";
+			try {
+				return jdbcTemplate.queryForObject(query, contactTypeMapper, oauthId);
+			}catch (EmptyResultDataAccessException ex) {				
+			}
 		}
+		
+		if (oauthEmail != null) {
+			String query = querypart + "username = ?";
+			try {
+				CommunityContact c = jdbcTemplate.queryForObject(query, contactTypeMapper, oauthEmail);
+				return updateCommunityContact(c, oauthId);
+			}catch (EmptyResultDataAccessException ex) {
+			}
+		}
+		
+		if (dataUsername != null) {
+			String query = querypart + "username = ?";
+			try {
+				CommunityContact c = jdbcTemplate.queryForObject(query, contactTypeMapper, dataUsername);
+				return updateCommunityContact(c, oauthId);
+			}catch (EmptyResultDataAccessException ex) {
+			}
+		}
+		
+		//no contact, lets create a new one		
+		String insert = "INSERT INTO " + COMMUNITY_CONTACT_TABLE + "(username, oauth_id) VALUES (?, ?) RETURNING user_id, username, oauth_id";
+		CommunityContact c = jdbcTemplate.queryForObject(insert, contactTypeMapper, dataUsername != null ? dataUsername : oauthEmail, oauthId);
+		
 		return c;
+	}
+	
+	private CommunityContact updateCommunityContact(CommunityContact c, String oauthId) {
+		String insert = "UPDATE " + COMMUNITY_CONTACT_TABLE + " set oauth_id = ? where user_id = ? RETURNING user_id, username, oauth_id";
+		return jdbcTemplate.queryForObject(insert, contactTypeMapper, oauthId, c.getId());
+		
 	}
 
 	/**
@@ -217,7 +242,7 @@ public class CommunityDataDao {
 	public CommunityData getCommunityDataRaw(UUID id) {
 		
 		StringBuilder sb = new StringBuilder();
-		sb.append("SELECT id, uploaded_datetime, status, status_message, warnings FROM ");
+		sb.append("SELECT id, uploaded_datetime, status, status_message, warnings, oauth_id, oauth_email FROM ");
 		sb.append(COMMUNITY_DATA_TABLE);
 		sb.append(" WHERE id = ? ");
 		

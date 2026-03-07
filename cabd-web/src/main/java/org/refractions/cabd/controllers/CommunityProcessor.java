@@ -169,7 +169,7 @@ public class CommunityProcessor {
 			
 			//parse user name
 			try {
-				feature.setCommunityContact(parseUser(feature.getUsername()));
+				feature.setCommunityContact(parseUser(data.getOAuthId(), data.getOAuthEmail(), feature.getUsername()));
 			}catch (Exception ex) {
 				logger.error(ex.getMessage(), ex);
 				data.getWarnings().add(MessageFormat.format("Feature {0}: Could not create community user for feature. username: {1} error: {2}. Community data not processed.", feature.getIndex(), feature.getUsername(), ex.toString()));
@@ -254,8 +254,8 @@ public class CommunityProcessor {
 		
 	}
 	
-	private CommunityContact parseUser(String username) {
-		return communityDao.getOrCreateCommunityContact(username);
+	private CommunityContact parseUser(String oauthId, String oauthEmail, String username) {
+		return communityDao.getOrCreateCommunityContact(oauthId, oauthEmail, username);
 	}
 	
 	private static Pair<List<CommunityFeature>, List<String>> parseJon(String json) {

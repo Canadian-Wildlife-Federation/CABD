@@ -6,6 +6,20 @@ spring:
     resources:
       add-mappings: true
 
+# Auth0 
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: https://canfishpass.ca.auth0.com/
+          # Alternative if your tenant does not expose OIDC discovery:
+          # jwk-set-uri: https://YOUR_DOMAIN.auth0.com/.well-known/jwks.json
+auth0:
+  audience: https://canfishpass.ca.auth0.com/api/v2/
+
+#auth0:
+#audience: https://your-api-identifier
+
 # ----------------------------------------
 # Swagger / OpenAPI (springdoc)
 # ----------------------------------------
@@ -38,10 +52,3 @@ cabd:
     storageaccounturl: https://cabdstorage.blob.core.windows.net/
     containername: cabd-community-data
 
-# ----------------------------------------
-# Auth0/Okta example (commented)
-# ----------------------------------------
-# okta:
-#   oauth2:
-#     issuer: https://{yourDomain}/
-#     audience: {yourApiIdentifier}
