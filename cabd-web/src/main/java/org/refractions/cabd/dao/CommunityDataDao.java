@@ -18,6 +18,7 @@ package org.refractions.cabd.dao;
 import java.sql.Array;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -80,12 +81,12 @@ public class CommunityDataDao {
 				rs.getString("oauth_email"));
 
 	 
-	private RowMapper<CommunityData> communityDataMapperNoData = (rs, rownum)-> 
+	private RowMapper<CommunityData> communityDataMapperNoData = (rs, rownum)->
 		new CommunityData((UUID)rs.getObject("id"), 
 				rs.getTimestamp("uploaded_datetime").toInstant(),
 				rs.getString("status"),
 				rs.getString("status_message"),
-				(String[])((Array)rs.getObject("warnings")).getArray(),
+				rs.getObject("warnings") == null ? new String[] {} : (String[])((Array)rs.getObject("warnings")).getArray(),
 				rs.getString("oauth_id"),
 				rs.getString("oauth_email"));	  
 		
@@ -124,6 +125,26 @@ public class CommunityDataDao {
 		UUID id = jdbcTemplate.queryForObject(sb.toString(),UUID.class, Timestamp.from( data.getUploadeddatetime() ), data.getData(), data.getOAuthId(), data.getOAuthEmail());
 		data.setId(id);
 	}
+	
+	/**
+	 * finds the contact associated with the given aouthid or null if not found
+	 * @param oauthId
+	 * @return
+	 */
+	public CommunityContact findCommunityContact(String oauthId) {
+		if (oauthId == null) return null;
+		
+		StringBuilder sb = new StringBuilder();
+		sb.append("SELECT * FROM ");
+		sb.append(COMMUNITY_CONTACT_TABLE);
+		sb.append(" WHERE oauth_id = ?");
+		try {
+			return jdbcTemplate.queryForObject(sb.toString(), contactTypeMapper, oauthId);
+		}catch (EmptyResultDataAccessException ex) {				
+		}
+		return null;		
+	}
+	
 	
 	/**
 	 * Finds the community contact with the username. If no contact is found
@@ -287,11 +308,12 @@ public class CommunityDataDao {
 	}
 	
 	
-	public SimpleFeatureList getGhostFeatures(Collection<FeatureType> fTypes){
+	public SimpleFeatureList getGhostFeatures(Collection<FeatureType> fTypes, UUID userId){
 		
 		
 		boolean hasCd = false;
 		StringBuilder sb = new StringBuilder();
+		List<UUID> params = new ArrayList<>();
 		for (FeatureType fType : fTypes) {
 			if (fType.getCommunityDataTable() == null || fType.getCommunityDataTable().isBlank()) continue;
 			
@@ -302,15 +324,16 @@ public class CommunityDataDao {
 			sb.append(" SELECT '" + fType.getType() + "', cabd_id, st_asewkb(st_geomfromgeojson(data->'geometry'))");
 			sb.append(" FROM ");
 			sb.append(fType.getCommunityDataTable());
-			sb.append(" f WHERE status = 'NEW' AND NOT EXISTS (SELECT 1 FROM ");
+			sb.append(" f WHERE user_id = ? AND status = 'NEW' AND NOT EXISTS (SELECT 1 FROM ");
 			sb.append( FeatureViewMetadata.getAllFeaturesView() );
-			sb.append(" a WHERE a.cabd_id = f.cabd_id )");			
+			sb.append(" a WHERE a.cabd_id = f.cabd_id )");
+			params.add(userId);
 		}
 		sb.append(" LIMIT 5000" );
 		
 		if (!hasCd) return new SimpleFeatureList(Collections.emptyList());
 		
-		return new SimpleFeatureList(jdbcTemplate.query(sb.toString(), ghostFeatureMapper));
+		return new SimpleFeatureList(jdbcTemplate.query(sb.toString(), ghostFeatureMapper, params.toArray(new Object[0])));
 		
 	}
 }

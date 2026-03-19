@@ -1,32 +1,37 @@
 {"properties": [
-{
-  "name": "cabd.maxresults",
-  "type": "java.lang.Integer",
-  "description": "The maximum number of results returned for any barrier search"
-},
-{
-  "name": "cabd.vectorcachesize",
-  "type": "java.lang.Long",
-  "description": "The maximum size of the vector tile cache before items are evicted"
-},
-{
-  "name": "cabd.cachefree",
-  "type": "java.lang.Long",
-  "description": "The amount of free space to aim for when evicting items from the cache"
-},
-{
-  "name": "cabd.cachecleanupdelay",
-  "type": "java.lang.Long",
-  "description": "The amount of time in seconds between vector tile cache clearing"
-},
-{
-  "name": "cabd.azure.storageaccounturl",
-  "type": "java.lang.String",
-  "description": "The url of the azure storage account"
-},
-{
-  "name": "cabd.azure.containername",
-  "type": "java.lang.String",
-  "description": "The azure storage acount name"
-}
+  {
+    "name": "cabd.maxresults",
+    "type": "java.lang.Integer",
+    "description": "The maximum number of results returned for any barrier search"
+  },
+  {
+    "name": "cabd.vectorcachesize",
+    "type": "java.lang.Long",
+    "description": "The maximum size of the vector tile cache before items are evicted"
+  },
+  {
+    "name": "cabd.cachefree",
+    "type": "java.lang.Long",
+    "description": "The amount of free space to aim for when evicting items from the cache"
+  },
+  {
+    "name": "cabd.cachecleanupdelay",
+    "type": "java.lang.Long",
+    "description": "The amount of time in seconds between vector tile cache clearing"
+  },
+  {
+    "name": "cabd.azure.storageaccounturl",
+    "type": "java.lang.String",
+    "description": "The url of the azure storage account"
+  },
+  {
+    "name": "cabd.azure.containername",
+    "type": "java.lang.String",
+    "description": "The azure storage acount name"
+  },
+  {
+    "name": "auth0.audience",
+    "type": "java.lang.String",
+    "description": "The auth0 token audience"
+  }
 ]}

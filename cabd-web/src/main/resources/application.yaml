@@ -14,18 +14,23 @@ spring:
           issuer-uri: https://canfishpass.ca.auth0.com/
           # Alternative if your tenant does not expose OIDC discovery:
           # jwk-set-uri: https://YOUR_DOMAIN.auth0.com/.well-known/jwks.json
+
+
+# to ensure token is used for the api it was issued for
 auth0:
   audience: https://canfishpass.ca.auth0.com/api/v2/
 
-#auth0:
-#audience: https://your-api-identifier
+# security logging
+# logging:
+#  level:
+#    org.springframework.security: DEBUG
 
 # ----------------------------------------
 # Swagger / OpenAPI (springdoc)
 # ----------------------------------------
 springdoc:
   swagger-ui:
-    path: /swagger-ui.html
+    path: /swagger-ui/index.html
 
 # ----------------------------------------
 # Server compression
