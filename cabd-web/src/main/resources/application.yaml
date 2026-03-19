@@ -18,10 +18,10 @@ spring:
 
 # to ensure token is used for the api it was issued for
 auth0:
-  audience: https://canfishpass.ca.auth0.com/api/v2/
+  audience: https://cabd-web.azurewebsites.net/cabd-api
 
 # security logging
-# logging:
+#logging:
 #  level:
 #    org.springframework.security: DEBUG
 

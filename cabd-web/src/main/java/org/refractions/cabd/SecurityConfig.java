@@ -72,4 +72,13 @@ public class SecurityConfig {
 	    return decoder;
 	}
 
+	
+	public static String getEmail(Jwt token) {
+		return token.getClaimAsString("https://cabd-api.azurewebsites.net/email");
+	}
+	
+	public static String getOauthId(Jwt token) {
+		return token.getClaim("sub");
+		
+	}
 }

@@ -174,7 +174,10 @@ public class CommunityDataDao {
 			String query = querypart + "username = ?";
 			try {
 				CommunityContact c = jdbcTemplate.queryForObject(query, contactTypeMapper, oauthEmail);
-				return updateCommunityContact(c, oauthId);
+				if (c.getOauthId() == null) {
+					//if we already have a oauthid then we want to create a new contact even if the emails are the same
+					return updateCommunityContact(c, oauthId);
+				}
 			}catch (EmptyResultDataAccessException ex) {
 			}
 		}
@@ -183,7 +186,10 @@ public class CommunityDataDao {
 			String query = querypart + "username = ?";
 			try {
 				CommunityContact c = jdbcTemplate.queryForObject(query, contactTypeMapper, dataUsername);
-				return updateCommunityContact(c, oauthId);
+				if (c.getOauthId() == null) {
+					//if we already have a oauthid then we want to create a new contact even if the emails are the same
+					return updateCommunityContact(c, oauthId);
+				}
 			}catch (EmptyResultDataAccessException ex) {
 			}
 		}

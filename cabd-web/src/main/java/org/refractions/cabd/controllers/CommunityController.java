@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import org.refractions.cabd.SecurityConfig;
 import org.refractions.cabd.dao.CommunityDataDao;
 import org.refractions.cabd.dao.FeatureTypeManager;
 import org.refractions.cabd.exceptions.NotFoundException;
@@ -88,8 +89,8 @@ public class CommunityController {
 			HttpServletRequest request,
 			@AuthenticationPrincipal Jwt jwt) {
 		
-		String userId = getOauthId(jwt);
-		String email = jwt.getClaim("email");     // if available
+		String userId = SecurityConfig.getOauthId(jwt);
+		String email = SecurityConfig.getEmail(jwt);     // if available
 	    
 		//save data and return; data is parsed as a part of a separate job
 		CommunityData data = new CommunityData(featuresJson, Instant.now(), userId, email);
@@ -117,7 +118,7 @@ public class CommunityController {
 			@PathVariable UUID id,
 			HttpServletRequest request, @AuthenticationPrincipal Jwt jwt) {
 		
-		String userId = getOauthId(jwt);
+		String userId = SecurityConfig.getOauthId(jwt);
 
 		CommunityData data = communityDao.getCommunityDataRaw(id);
 		if (data == null) throw new NotFoundException(MessageFormat.format("Community data with id {0} not found. Either this item never existed or it has been processed into feature tables without errors.", id));
@@ -166,7 +167,7 @@ public class CommunityController {
 			@PathVariable("type") String type,
 			@AuthenticationPrincipal Jwt jwt) {
 		
-		CommunityContact user = communityDao.findCommunityContact(getOauthId(jwt));
+		CommunityContact user = communityDao.findCommunityContact(SecurityConfig.getOauthId(jwt));
 		List<FeatureType> types = new ArrayList<>();
 		if (type == null || type.isBlank()) {
 			types.addAll(typeManager.getFeatureTypes());
@@ -185,9 +186,5 @@ public class CommunityController {
 	private void saveCommunityData(CommunityData cd) {
 		communityDao.saveRawData(cd);
 	}
-	
-	private String getOauthId(Jwt jwt) {
-		return jwt.getClaim("sub");
-		
-	}
+
 }
