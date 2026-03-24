@@ -18,8 +18,8 @@ jobs:
       - name: Set up Java version
         uses: actions/setup-java@v4
         with:
-          java-version: '11'
-          distribution: 'microsoft'
+          java-version: "21"
+          distribution: "microsoft"
 
       - name: Build with Maven
         run: mvn clean install
@@ -28,26 +28,26 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: java-app
-          path: '${{ github.workspace }}/cabd-web/target/*.war'
+          path: "${{ github.workspace }}/cabd-web/target/*.war"
 
   deploy:
     runs-on: ubuntu-latest
     needs: build
     environment:
-      name: 'Dev'
+      name: "Dev"
       url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
-    
+
     steps:
       - name: Download artifact from build job
         uses: actions/download-artifact@v4
         with:
           name: java-app
-      
+
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'cabd-web-dev'
-          slot-name: 'Production'
-          package: '*.war'
+          app-name: "cabd-web-dev"
+          slot-name: "Production"
+          package: "*.war"
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_4F7131AB738943BC98BB865A91135C67 }}
