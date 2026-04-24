@@ -26,7 +26,7 @@ jobs:
 
       #configure the azure storage account for the dev env
       - name: Update application.yaml for DEV environment
-        run: "sed -i 's/containername: cabd-community-data$/containername: cabd-community-data-dev/' application.yaml"
+        run: "sed -i 's/containername: cabd-community-data$/containername: cabd-community-data-dev/' src/main/resources/application.yaml"
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
