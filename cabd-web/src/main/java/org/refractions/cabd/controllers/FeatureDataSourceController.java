@@ -77,8 +77,8 @@ public class FeatureDataSourceController {
 					 	description = "feature not found", 
 			 			content = {
 						@Content(mediaType = "application/json", schema = @Schema(implementation = ApiError.class))})})
-	@GetMapping(value = "/{id:[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}}",
-			produces = {CabdApplication.CSV_MEDIA_TYPE_STR,  MediaType.APPLICATION_JSON_VALUE})
+	@GetMapping(value = "/{id:[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}}",	
+			produces = {MediaType.APPLICATION_JSON_VALUE, CabdApplication.CSV_MEDIA_TYPE_STR})
 
 	public ResponseEntity<FeatureSourceDetails> getFeatureSourceDetails(
 			@Parameter(description = "unique feature identifier") 

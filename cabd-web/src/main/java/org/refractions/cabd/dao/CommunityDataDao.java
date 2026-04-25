@@ -29,6 +29,7 @@ import java.util.stream.Stream;
 import org.locationtech.jts.geom.Point;
 import org.locationtech.jts.io.WKBReader;
 import org.refractions.cabd.CabdConfigurationProperties;
+import org.refractions.cabd.exceptions.NotFoundException;
 import org.refractions.cabd.model.CommunityContact;
 import org.refractions.cabd.model.CommunityData;
 import org.refractions.cabd.model.CommunityFeature;
@@ -55,9 +56,14 @@ public class CommunityDataDao {
     
     private static final String COMMUNITY_CONTACT_TABLE = "cabd.community_contact";
     
+    private static final String IS_OWNER_FIELD = "is_owner";
+
+    
 	@Autowired
 	private JdbcTemplate jdbcTemplate;
 	
+	@Autowired
+	FeatureTypeManager typeManager;
 	
 	@Autowired
 	CabdConfigurationProperties properties;
@@ -94,12 +100,17 @@ public class CommunityDataDao {
 
 	private RowMapper<Feature> ghostFeatureMapper = (rs, rownum)-> 
 	{
-		UUID cabdId = (UUID) rs.getObject(2);
-		String fType = rs.getString(1);
+		UUID id = (UUID)rs.getObject(1);
+		String fType = rs.getString(2);
+		UUID cabdId = (UUID) rs.getObject(3);		
+		Boolean isOwner = rs.getBoolean(4);
+		
 		Feature gFeature = new Feature(cabdId, fType);
+		gFeature.addAttribute(IS_OWNER_FIELD, isOwner);
+		gFeature.addAttribute("id", id);
 		
 		try {
-			Point pnt = (Point) reader.read(rs.getBytes(3));
+			Point pnt = (Point) reader.read(rs.getBytes(5));
 			gFeature.setGeometry(pnt);
 		}catch (Exception ex) {
 			throw new SQLException(ex);
@@ -315,8 +326,6 @@ public class CommunityDataDao {
 	
 	
 	public SimpleFeatureList getGhostFeatures(Collection<FeatureType> fTypes, UUID userId){
-		
-		
 		boolean hasCd = false;
 		StringBuilder sb = new StringBuilder();
 		List<UUID> params = new ArrayList<>();
@@ -327,10 +336,11 @@ public class CommunityDataDao {
 				sb.append(" UNION ");
 			}
 			hasCd = true;
-			sb.append(" SELECT '" + fType.getType() + "', cabd_id, st_asewkb(st_geomfromgeojson(data->'geometry'))");
+			sb.append(" SELECT id, '" + fType.getType() + "', cabd_id, user_id = ? as is_owner, st_asewkb(st_geomfromgeojson(data->'geometry'))" );
 			sb.append(" FROM ");
 			sb.append(fType.getCommunityDataTable());
-			sb.append(" f WHERE user_id = ? AND status = 'NEW' AND NOT EXISTS (SELECT 1 FROM ");
+			//TODO: remove this filter and replace it with a date filter
+			sb.append(" f WHERE status = 'NEW' AND NOT EXISTS (SELECT 1 FROM ");
 			sb.append( FeatureViewMetadata.getAllFeaturesView() );
 			sb.append(" a WHERE a.cabd_id = f.cabd_id )");
 			params.add(userId);
@@ -340,6 +350,32 @@ public class CommunityDataDao {
 		if (!hasCd) return new SimpleFeatureList(Collections.emptyList());
 		
 		return new SimpleFeatureList(jdbcTemplate.query(sb.toString(), ghostFeatureMapper, params.toArray(new Object[0])));
+		
+	}
+	
+	public String getGhostFeature(UUID communityId){
+		
+		for (FeatureType fType : typeManager.getFeatureTypes()) {
+			
+			if (fType.getCommunityDataTable() == null || fType.getCommunityDataTable().isBlank()) continue;
+			StringBuilder sb = new StringBuilder();
+
+			sb.append(" SELECT data #- '{properties,user_email}' as data " );
+			sb.append(" FROM ");
+			sb.append(fType.getCommunityDataTable());
+			sb.append(" WHERE id = ? ");
+			
+			List<String> features = jdbcTemplate.query(sb.toString(), (rs, rowNum) -> {
+				return rs.getString("data");
+			}, communityId);
+			
+			if (!features.isEmpty()) {
+				return features.get(0);
+			}
+			
+		}
+		
+		throw new NotFoundException("Community feature not found");
 		
 	}
 }

@@ -121,7 +121,8 @@ public class FeatureController {
 	@Operation(summary = "Stores feature updates suggested by UI users.")
 	@ApiResponses(value = { 
 			@ApiResponse(responseCode = "200")})						
-	@PutMapping(value = "/{id:[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}}")
+	@PutMapping(value = "/{id:[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}}",
+			consumes = MediaType.APPLICATION_JSON_VALUE )
 	public ResponseEntity<Object> putFeature(
 			@Parameter(description = "unique feature identifier") 
 			@PathVariable("id") UUID id,

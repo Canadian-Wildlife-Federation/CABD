@@ -76,7 +76,7 @@ public class AssessmentController {
 	 */
 	@Operation(summary = "Gets a feature by id.")
 	@GetMapping(value = "/{id:[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}}",
-			produces = {MediaType.APPLICATION_JSON_VALUE, "application/json"})
+			produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<JsonNode> getAssessment(
 			@Parameter(description = "unique feature identifier") 
 			@PathVariable("id") UUID id,
@@ -99,7 +99,7 @@ public class AssessmentController {
 	 */
 	@Operation(summary = "Gets a feature by type and id.")
 	@GetMapping(value = "/cabd/{cabdid:[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}}",
-			produces = {MediaType.APPLICATION_JSON_VALUE, "application/json"})
+			produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<JsonNode> getAssessmentsByCabdId(
 			@Parameter(description = "unique feature identifier") 
 			@PathVariable("cabdid") UUID cabdid,
@@ -121,7 +121,7 @@ public class AssessmentController {
 	 */
 	@Operation(summary = "Gets the assessment types.")
 	@GetMapping(value = "/types/",
-			produces = {MediaType.APPLICATION_JSON_VALUE, "application/json"})
+			produces = MediaType.APPLICATION_JSON_VALUE)
 	public String getTypes(HttpServletRequest request) {	
 		
 		List<AssessmentType> types = typeManager.getAssessmentTypes();

@@ -6,7 +6,7 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>3.5.11</version>
+		<version>3.5.14</version>
 		<relativePath /> <!-- lookup parent from repository -->
 	</parent>
 
@@ -77,6 +77,10 @@
 			<artifactId>jackson-dataformat-csv</artifactId>
 		</dependency>
 		<dependency>
+			<groupId>com.fasterxml.jackson.dataformat</groupId>
+			<artifactId>jackson-dataformat-xml</artifactId>
+		</dependency>
+		<dependency>
   			<groupId>org.springdoc</groupId>
   			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
   			<version>${springdoc.version}</version>
@@ -139,15 +143,7 @@
     		<groupId>com.azure</groupId>
 			<artifactId>azure-storage-blob</artifactId>
 			<version>12.26.0</version>
-			<exclusions>
-				<!--  if we don't exclude this then all responses (feature types etc) default to xml -->
-				<!--  unless you add accept headers -->
-				<!--  https://github.com/Azure/azure-sdk-for-java/issues/7694 -->
-                <exclusion>
-                    <groupId>com.fasterxml.jackson.dataformat</groupId>
-                    <artifactId>jackson-dataformat-xml</artifactId>
-                </exclusion>
-            </exclusions>
+			
 		</dependency>
     	 
 	</dependencies>

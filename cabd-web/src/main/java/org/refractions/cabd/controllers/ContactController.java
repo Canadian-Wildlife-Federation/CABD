@@ -55,7 +55,8 @@ public class ContactController {
 	 * @return
 	 */
 	//requires content-type = application/json in request
-	@PutMapping
+	@PutMapping(consumes = MediaType.APPLICATION_JSON_VALUE, 
+			produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<Contact> putContact( 
 			@RequestBody Contact contact,
 			HttpServletRequest request) {

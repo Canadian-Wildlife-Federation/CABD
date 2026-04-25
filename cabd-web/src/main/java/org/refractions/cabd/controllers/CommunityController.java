@@ -84,7 +84,7 @@ public class CommunityController {
 	@Operation(summary = "Uploads json data from community app.")
 	@ApiResponses(value = { 
 			@ApiResponse(responseCode = "204")})
-	@PostMapping(produces = {MediaType.APPLICATION_JSON_VALUE} )
+	@PostMapping(produces = MediaType.APPLICATION_JSON_VALUE )
 	public String postData(@RequestBody String featuresJson,
 			HttpServletRequest request,
 			@AuthenticationPrincipal Jwt jwt) {
@@ -146,8 +146,7 @@ public class CommunityController {
 	 */
 	@SecurityRequirement(name = "bearerAuth")
 	@Operation(summary = "Gets community data ghost features")
-	@GetMapping(value = "/ghost",
-			produces = {MediaType.APPLICATION_JSON_VALUE, "application/geo+json"})
+	@GetMapping(value = "/ghost", produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<SimpleFeatureList> getAllGhostFeatures(HttpServletRequest request,
 			@AuthenticationPrincipal Jwt jwt) {
 		return getAllGhostFeatures(request, null, jwt);
@@ -161,8 +160,7 @@ public class CommunityController {
 	 */
 	@SecurityRequirement(name = "bearerAuth")
 	@Operation(summary = "Gets community data ghost features of specific type")
-	@GetMapping(value = "/ghost/{type:[a-zA-Z0-9_]+}",
-			produces = {MediaType.APPLICATION_JSON_VALUE, "application/geo+json"})
+	@GetMapping(value = "/ghost/{type:[a-zA-Z0-9_]+}", produces = MediaType.APPLICATION_JSON_VALUE)			
 	public ResponseEntity<SimpleFeatureList> getAllGhostFeatures(HttpServletRequest request,
 			@PathVariable("type") String type,
 			@AuthenticationPrincipal Jwt jwt) {
@@ -179,6 +177,25 @@ public class CommunityController {
 			types.add(ftype);
 		}
 		return ResponseEntity.ok(communityDao.getGhostFeatures(types, user.getId()));
+		
+	}
+	
+	/**
+	 * Return all ghost features for a given feature type
+	 * @param request
+	 * @param type
+	 * @return
+	 */
+	@SecurityRequirement(name = "bearerAuth")
+	@Operation(summary = "Get all details (except images) of a ghost feature")
+	@GetMapping(value = "/ghost/{id:[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}}",
+			produces = MediaType.APPLICATION_JSON_VALUE)		
+	public ResponseEntity<String> getGhostFeatures(HttpServletRequest request,
+			@PathVariable("id") UUID id,
+			@AuthenticationPrincipal Jwt jwt) {
+		
+		//CommunityContact user = communityDao.findCommunityContact(SecurityConfig.getOauthId(jwt));
+		return ResponseEntity.ok(communityDao.getGhostFeature(id));
 		
 	}
 	

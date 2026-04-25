@@ -28,6 +28,7 @@ import org.refractions.cabd.model.FeatureTypeWithDataMetadata;
 import org.refractions.cabd.model.FeatureViewMetadataField;
 import org.refractions.cabd.model.FeatureViewMetadataFieldData;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -67,8 +68,8 @@ public class FeatureTypeController {
 	 */
 	@Operation(summary = "Lists all feature types.")
 	@ApiResponses(value = { @ApiResponse(responseCode = "200", content = {
-			@Content(mediaType = "application/json", array = @ArraySchema(schema = @Schema(implementation = FeatureType.class))) }) }) 
-	@GetMapping(value = "/")
+			@Content(mediaType = MediaType.APPLICATION_JSON_VALUE, array = @ArraySchema(schema = @Schema(implementation = FeatureType.class))) }) }) 
+	@GetMapping(value = "/", produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<FeatureTypeList> getFeatureTypes(HttpServletRequest request) {
 		
 		List<FeatureType> types = typeManager.getFeatureTypes();
@@ -98,8 +99,8 @@ public class FeatureTypeController {
 			 @ApiResponse(responseCode = "404",
 					 	description = "type not found", 
 			 			content = {
-						@Content(mediaType = "application/json", schema = @Schema(implementation = ApiError.class))})})
-	@GetMapping(value = "/{type:[a-zA-Z0-9_]+}")
+						@Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ApiError.class))})})
+	@GetMapping(value = "/{type:[a-zA-Z0-9_]+}", produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<FeatureTypeWithDataMetadata> getFeatureSchema(
 			@Parameter(description = "feature type") 
 			@PathVariable("type") String type,
