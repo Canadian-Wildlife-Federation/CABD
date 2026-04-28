@@ -406,4 +406,14 @@ public class CommunityDataDao {
 		throw new NotFoundException("Community feature not found");
 	}
 	
+	public boolean validateGeoJson(String geoJson) {		
+		String sql = "SELECT st_geomfromgeojson(?)";
+	    try {
+	        jdbcTemplate.queryForObject(sql, String.class, geoJson);
+	        return true;
+	    } catch (Exception e) {
+	        return false;
+	    }		
+	}
+	
 }

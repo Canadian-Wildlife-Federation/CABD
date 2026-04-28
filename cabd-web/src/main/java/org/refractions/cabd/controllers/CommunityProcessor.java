@@ -258,7 +258,7 @@ public class CommunityProcessor {
 		return communityDao.getOrCreateCommunityContact(oauthId, oauthEmail, username);
 	}
 	
-	private static Pair<List<CommunityFeature>, List<String>> parseJon(String json) {
+	private Pair<List<CommunityFeature>, List<String>> parseJon(String json) {
 		JsonElement root = JsonParser.parseString(json);
 		
 		List<CommunityFeature> features = new ArrayList<>();
@@ -287,7 +287,7 @@ public class CommunityProcessor {
 		return Pair.of(features, warnings);
 	}
 	
-	private static CommunityFeature processFeature(JsonElement feature) throws Exception {
+	private CommunityFeature processFeature(JsonElement feature) throws Exception {
 		if (!feature.isJsonObject()) {
 			throw new Exception("Not a json object");
 		}
@@ -308,6 +308,10 @@ public class CommunityProcessor {
 		JsonObject ggeom = geom.getAsJsonObject();
 		checkAttributes(ggeom, "type", "coordinates");
 
+		if (!communityDao.validateGeoJson(ggeom.toString())) {
+			throw new Exception("Invalid GeoJson - geometry not valid geojson");
+		}
+		
 		//Geometry g = parseGeometry(ggeom.get("type").getAsString(), ggeom.get("coordinates"));
 		
 		JsonElement properties = j.get("properties");
@@ -332,6 +336,8 @@ public class CommunityProcessor {
 		return new CommunityFeature(cabdId, featureType, useremail, j);
 		
 	}
+	
+	
 	
 //	private static Geometry parseGeometry(String type, JsonElement coordinates) {
 //		GeometryFactory gf = new GeometryFactory();
