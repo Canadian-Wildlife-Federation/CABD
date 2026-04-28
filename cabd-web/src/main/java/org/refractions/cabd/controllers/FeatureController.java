@@ -60,9 +60,7 @@ import jakarta.servlet.http.HttpServletRequest;
 public class FeatureController {
 
 	public static final String PATH = "features";
-	
-	public static final int MAX_RESULTS = 1000;
-	
+		
 	@Autowired
 	CabdConfigurationProperties properties;
 	

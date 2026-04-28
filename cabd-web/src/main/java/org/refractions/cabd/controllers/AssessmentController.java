@@ -55,10 +55,7 @@ import jakarta.servlet.http.HttpServletRequest;
 public class AssessmentController {
 
 	public static final String PATH = "assessments";
-	
-	public static final int MAX_RESULTS = 1000;
-	
-	
+		
 	@Autowired
 	CabdConfigurationProperties properties;
 	

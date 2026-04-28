@@ -302,7 +302,7 @@ public class FeatureDao {
 		
 		StringBuilder limit = new StringBuilder();
 		limit.append(" LIMIT ");
-		limit.append(getMaxResults(requestparams.getMaxResults()));
+		limit.append(properties.findMaxResults(requestparams.getMaxResults()));
 		
 		StringBuilder getCount = new StringBuilder();
 		getCount.append(selectcountSql);
@@ -329,15 +329,7 @@ public class FeatureDao {
 		
 		return featurelist;
 	}
-	
-	private int getMaxResults(Integer maxresults) {
-		int mr = properties.getMaxresults() + 1;
-		if (maxresults != null) {
-			mr = Math.min(maxresults, properties.getMaxresults() + 1);
-		}
-		return mr;
-	}
-	
+
 	/**
 	 * Searches based on the n-nearest features from a point.
 	 * 
@@ -449,7 +441,7 @@ public class FeatureDao {
 		}
 		
 		orderbylimitSql.append(" LIMIT " );
-		orderbylimitSql.append(getMaxResults(requestparams.getMaxResults()));
+		orderbylimitSql.append(properties.findMaxResults(requestparams.getMaxResults()));
 
 		
 		StringBuilder getCount = new StringBuilder();

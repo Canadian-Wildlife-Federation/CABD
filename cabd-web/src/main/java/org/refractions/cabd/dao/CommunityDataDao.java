@@ -18,6 +18,7 @@ package org.refractions.cabd.dao;
 import java.sql.Array;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -29,13 +30,13 @@ import java.util.stream.Stream;
 import org.locationtech.jts.geom.Point;
 import org.locationtech.jts.io.WKBReader;
 import org.refractions.cabd.CabdConfigurationProperties;
+import org.refractions.cabd.controllers.CommunityRequestParameters;
 import org.refractions.cabd.exceptions.NotFoundException;
 import org.refractions.cabd.model.CommunityContact;
 import org.refractions.cabd.model.CommunityData;
 import org.refractions.cabd.model.CommunityFeature;
 import org.refractions.cabd.model.Feature;
 import org.refractions.cabd.model.FeatureType;
-import org.refractions.cabd.model.FeatureViewMetadata;
 import org.refractions.cabd.model.SimpleFeatureList;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -57,6 +58,7 @@ public class CommunityDataDao {
     private static final String COMMUNITY_CONTACT_TABLE = "cabd.community_contact";
     
     private static final String IS_OWNER_FIELD = "is_owner";
+    private static final String UPLOADED_DT_FIELD = "uploaded_datetime";
 
     
 	@Autowired
@@ -104,13 +106,15 @@ public class CommunityDataDao {
 		String fType = rs.getString(2);
 		UUID cabdId = (UUID) rs.getObject(3);		
 		Boolean isOwner = rs.getBoolean(4);
+		OffsetDateTime uploadedDatetime = rs.getObject(5, OffsetDateTime.class);
 		
 		Feature gFeature = new Feature(cabdId, fType);
 		gFeature.addAttribute(IS_OWNER_FIELD, isOwner);
+		gFeature.addAttribute(UPLOADED_DT_FIELD, uploadedDatetime.toString());
 		gFeature.addAttribute("id", id);
 		
 		try {
-			Point pnt = (Point) reader.read(rs.getBytes(5));
+			Point pnt = (Point) reader.read(rs.getBytes(6));
 			gFeature.setGeometry(pnt);
 		}catch (Exception ex) {
 			throw new SQLException(ex);
@@ -325,10 +329,28 @@ public class CommunityDataDao {
 	}
 	
 	
-	public SimpleFeatureList getGhostFeatures(Collection<FeatureType> fTypes, UUID userId){
+	public SimpleFeatureList getCommunityFeatures(Collection<FeatureType> fTypes, UUID userId, CommunityRequestParameters params){
 		boolean hasCd = false;
-		StringBuilder sb = new StringBuilder();
-		List<UUID> params = new ArrayList<>();
+		
+		StringBuilder dateFilter =null;
+		if (params.getFromDate() != null || params.getToDate() != null) {
+			dateFilter = new StringBuilder();
+			
+			dateFilter.append(" WHERE ");
+			if (params.getFromDate() != null) {
+				dateFilter.append(" uploaded_datetime > ? ");
+				
+				if (params.getToDate() != null) {
+					dateFilter.append(" AND ");
+				}
+			}
+			if (params.getToDate() != null) {
+				dateFilter.append(" uploaded_datetime < ? ");			
+			}
+		}
+		
+		StringBuilder sb = new StringBuilder();		
+		List<Object> qparams = new ArrayList<>();
 		for (FeatureType fType : fTypes) {
 			if (fType.getCommunityDataTable() == null || fType.getCommunityDataTable().isBlank()) continue;
 			
@@ -336,31 +358,37 @@ public class CommunityDataDao {
 				sb.append(" UNION ");
 			}
 			hasCd = true;
-			sb.append(" SELECT id, '" + fType.getType() + "', cabd_id, user_id = ? as is_owner, st_asewkb(st_geomfromgeojson(data->'geometry'))" );
+			sb.append(" SELECT id, '" + fType.getType() + "', cabd_id, user_id = ? as is_owner, uploaded_datetime, st_asewkb(st_geomfromgeojson(data->'geometry'))" );
 			sb.append(" FROM ");
 			sb.append(fType.getCommunityDataTable());
-			//TODO: remove this filter and replace it with a date filter
-			sb.append(" f WHERE status = 'NEW' AND NOT EXISTS (SELECT 1 FROM ");
-			sb.append( FeatureViewMetadata.getAllFeaturesView() );
-			sb.append(" a WHERE a.cabd_id = f.cabd_id )");
-			params.add(userId);
+			
+			qparams.add(userId);
+			
+			if (dateFilter != null) sb.append(dateFilter);
+			if (params.getFromDate() != null) qparams.add(params.getFromDate());
+			if (params.getToDate() != null) qparams.add(params.getToDate());			
+			
+			
 		}
-		sb.append(" LIMIT 5000" );
+		sb.insert(0, "SELECT * FROM (");
+		sb.append(") ORDER BY uploaded_datetime desc LIMIT ");
+		sb.append(properties.findMaxResults(params.getMaxresults()));
+		
 		
 		if (!hasCd) return new SimpleFeatureList(Collections.emptyList());
 		
-		return new SimpleFeatureList(jdbcTemplate.query(sb.toString(), ghostFeatureMapper, params.toArray(new Object[0])));
+		return new SimpleFeatureList(jdbcTemplate.query(sb.toString(), ghostFeatureMapper, qparams.toArray(new Object[0])));
 		
 	}
 	
-	public String getGhostFeature(UUID communityId){
+	public String getCommunityFeature(UUID communityId){
 		
 		for (FeatureType fType : typeManager.getFeatureTypes()) {
 			
 			if (fType.getCommunityDataTable() == null || fType.getCommunityDataTable().isBlank()) continue;
 			StringBuilder sb = new StringBuilder();
 
-			sb.append(" SELECT data #- '{properties,user_email}' as data " );
+			sb.append(" SELECT jsonb_set(data, '{properties}', (data->'properties') - 'user_email'::text || jsonb_build_object('status', status, 'id', id, '" + UPLOADED_DT_FIELD + "', uploaded_datetime)) as data " );
 			sb.append(" FROM ");
 			sb.append(fType.getCommunityDataTable());
 			sb.append(" WHERE id = ? ");
@@ -376,6 +404,6 @@ public class CommunityDataDao {
 		}
 		
 		throw new NotFoundException("Community feature not found");
-		
 	}
+	
 }

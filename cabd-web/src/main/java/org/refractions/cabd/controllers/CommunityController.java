@@ -30,6 +30,7 @@ import org.refractions.cabd.model.CommunityContact;
 import org.refractions.cabd.model.CommunityData;
 import org.refractions.cabd.model.FeatureType;
 import org.refractions.cabd.model.SimpleFeatureList;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -146,10 +147,11 @@ public class CommunityController {
 	 */
 	@SecurityRequirement(name = "bearerAuth")
 	@Operation(summary = "Gets community data ghost features")
-	@GetMapping(value = "/ghost", produces = MediaType.APPLICATION_JSON_VALUE)
-	public ResponseEntity<SimpleFeatureList> getAllGhostFeatures(HttpServletRequest request,
-			@AuthenticationPrincipal Jwt jwt) {
-		return getAllGhostFeatures(request, null, jwt);
+	@GetMapping(value = "/data", produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<SimpleFeatureList> getCommunityFeatures(HttpServletRequest request,
+			@AuthenticationPrincipal Jwt jwt,
+			@ParameterObject CommunityRequestParameters params) {
+		return getAllCommunityFeatures(request, null, jwt, params);
 	}
 	
 	/**
@@ -160,10 +162,11 @@ public class CommunityController {
 	 */
 	@SecurityRequirement(name = "bearerAuth")
 	@Operation(summary = "Gets community data ghost features of specific type")
-	@GetMapping(value = "/ghost/{type:[a-zA-Z0-9_]+}", produces = MediaType.APPLICATION_JSON_VALUE)			
-	public ResponseEntity<SimpleFeatureList> getAllGhostFeatures(HttpServletRequest request,
-			@PathVariable("type") String type,
-			@AuthenticationPrincipal Jwt jwt) {
+	@GetMapping(value = "/data/{type:[a-zA-Z0-9_]+}", produces = MediaType.APPLICATION_JSON_VALUE)			
+	public ResponseEntity<SimpleFeatureList> getAllCommunityFeatures(HttpServletRequest request,
+			@PathVariable("type") String type,			
+			@AuthenticationPrincipal Jwt jwt,
+			@ParameterObject CommunityRequestParameters params) {
 		
 		CommunityContact user = communityDao.findCommunityContact(SecurityConfig.getOauthId(jwt));
 		List<FeatureType> types = new ArrayList<>();
@@ -176,7 +179,7 @@ public class CommunityController {
 			}
 			types.add(ftype);
 		}
-		return ResponseEntity.ok(communityDao.getGhostFeatures(types, user.getId()));
+		return ResponseEntity.ok(communityDao.getCommunityFeatures(types, user.getId(), params));
 		
 	}
 	
@@ -188,14 +191,14 @@ public class CommunityController {
 	 */
 	@SecurityRequirement(name = "bearerAuth")
 	@Operation(summary = "Get all details (except images) of a ghost feature")
-	@GetMapping(value = "/ghost/{id:[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}}",
+	@GetMapping(value = "/data/{id:[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}}",
 			produces = MediaType.APPLICATION_JSON_VALUE)		
-	public ResponseEntity<String> getGhostFeatures(HttpServletRequest request,
+	public ResponseEntity<String> getCommunityFeature(HttpServletRequest request,
 			@PathVariable("id") UUID id,
 			@AuthenticationPrincipal Jwt jwt) {
 		
 		//CommunityContact user = communityDao.findCommunityContact(SecurityConfig.getOauthId(jwt));
-		return ResponseEntity.ok(communityDao.getGhostFeature(id));
+		return ResponseEntity.ok(communityDao.getCommunityFeature(id));
 		
 	}
 	
