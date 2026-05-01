@@ -167,12 +167,18 @@ public class CommunityProcessor {
 				continue;
 			}
 			
-			//parse user name
+			//find community contact from user details
 			try {
-				feature.setCommunityContact(parseUser(data.getOAuthId(), data.getOAuthEmail(), feature.getUsername()));
+				String jsonuser = null;
+				JsonObject prop = feature.getJson().get("properties").getAsJsonObject();
+				if (prop.has(CommunityDataDao.USER_EMAIL_JSON_FIELD)){
+					jsonuser = prop.get(CommunityDataDao.USER_EMAIL_JSON_FIELD).getAsString();
+				}
+				feature.setCommunityContact(parseUser(data.getOAuthId(), data.getOAuthEmail(), jsonuser));
+				
 			}catch (Exception ex) {
 				logger.error(ex.getMessage(), ex);
-				data.getWarnings().add(MessageFormat.format("Feature {0}: Could not create community user for feature. username: {1} error: {2}. Community data not processed.", feature.getIndex(), feature.getUsername(), ex.toString()));
+				data.getWarnings().add(MessageFormat.format("Feature {0}: Could not create community user for feature. error: {1}. Community data not processed.", feature.getIndex(), ex.toString()));
 				continue;
 			}
 			
@@ -318,13 +324,15 @@ public class CommunityProcessor {
 		if (!properties.isJsonObject()) {
 			throw new Exception("Invalid GeoJson - properties attribute is invalid.");
 		}
-		checkAttributes(properties.getAsJsonObject(), "feature_type", "user_email");
 		
-		String featureType = properties.getAsJsonObject().get("feature_type").getAsString();
-		String useremail = properties.getAsJsonObject().get("user_email").getAsString();
+		JsonObject propertyObj = properties.getAsJsonObject();
+		checkAttributes(propertyObj, "feature_type");
+		
+		String featureType = propertyObj.get("feature_type").getAsString();
+		
 		UUID cabdId = null;
-		if (properties.getAsJsonObject().has("cabd_id")) {
-			String cid = properties.getAsJsonObject().get("cabd_id").getAsString();
+		if (propertyObj.has("cabd_id")) {
+			String cid = propertyObj.get("cabd_id").getAsString();
 			if (!cid.trim().isBlank()) {
 				try {
 					cabdId = UUID.fromString(cid);
@@ -333,24 +341,10 @@ public class CommunityProcessor {
 				}
 			}
 		}
-		return new CommunityFeature(cabdId, featureType, useremail, j);
+		return new CommunityFeature(cabdId, featureType, j);
 		
 	}
-	
-	
-	
-//	private static Geometry parseGeometry(String type, JsonElement coordinates) {
-//		GeometryFactory gf = new GeometryFactory();
-//		
-//		if (type.equalsIgnoreCase("POINT")) {
-//			JsonArray c = coordinates.getAsJsonArray();
-//			Point pnt = gf.createPoint(new Coordinate(c.get(0).getAsDouble(), c.get(1).getAsDouble()));
-//			return pnt;
-//		}
-//		System.out.println("feature type not supported");
-//		return null;
-//		
-//	}
+
 	
 	private static void checkAttributes(JsonObject o, String...attributes) throws Exception {
 		for (String r : attributes) {

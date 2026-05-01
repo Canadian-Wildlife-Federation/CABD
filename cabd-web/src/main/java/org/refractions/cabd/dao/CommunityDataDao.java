@@ -60,6 +60,7 @@ public class CommunityDataDao {
     private static final String IS_OWNER_FIELD = "is_owner";
     private static final String UPLOADED_DT_FIELD = "uploaded_datetime";
 
+    public static final String USER_EMAIL_JSON_FIELD = "user_email";
     
 	@Autowired
 	private JdbcTemplate jdbcTemplate;
@@ -388,7 +389,7 @@ public class CommunityDataDao {
 			if (fType.getCommunityDataTable() == null || fType.getCommunityDataTable().isBlank()) continue;
 			StringBuilder sb = new StringBuilder();
 
-			sb.append(" SELECT jsonb_set(data, '{properties}', (data->'properties') - 'user_email'::text || jsonb_build_object('status', status, 'id', id, '" + UPLOADED_DT_FIELD + "', uploaded_datetime)) as data " );
+			sb.append(" SELECT jsonb_set(data, '{properties}', (data->'properties') - '" + USER_EMAIL_JSON_FIELD + "'::text || jsonb_build_object('status', status, 'id', id, '" + UPLOADED_DT_FIELD + "', uploaded_datetime)) as data " );
 			sb.append(" FROM ");
 			sb.append(fType.getCommunityDataTable());
 			sb.append(" WHERE id = ? ");
