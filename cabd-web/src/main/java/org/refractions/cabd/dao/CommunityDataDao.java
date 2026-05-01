@@ -18,6 +18,8 @@ package org.refractions.cabd.dao;
 import java.sql.Array;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -28,12 +30,13 @@ import java.util.stream.Stream;
 import org.locationtech.jts.geom.Point;
 import org.locationtech.jts.io.WKBReader;
 import org.refractions.cabd.CabdConfigurationProperties;
+import org.refractions.cabd.controllers.CommunityRequestParameters;
+import org.refractions.cabd.exceptions.NotFoundException;
 import org.refractions.cabd.model.CommunityContact;
 import org.refractions.cabd.model.CommunityData;
 import org.refractions.cabd.model.CommunityFeature;
 import org.refractions.cabd.model.Feature;
 import org.refractions.cabd.model.FeatureType;
-import org.refractions.cabd.model.FeatureViewMetadata;
 import org.refractions.cabd.model.SimpleFeatureList;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -54,9 +57,16 @@ public class CommunityDataDao {
     
     private static final String COMMUNITY_CONTACT_TABLE = "cabd.community_contact";
     
+    private static final String IS_OWNER_FIELD = "is_owner";
+    private static final String UPLOADED_DT_FIELD = "uploaded_datetime";
+
+    public static final String USER_EMAIL_JSON_FIELD = "user_email";
+    
 	@Autowired
 	private JdbcTemplate jdbcTemplate;
 	
+	@Autowired
+	FeatureTypeManager typeManager;
 	
 	@Autowired
 	CabdConfigurationProperties properties;
@@ -65,7 +75,7 @@ public class CommunityDataDao {
 	 * Mapper for contact  
 	 */
 	private RowMapper<CommunityContact> contactTypeMapper = (rs, rownum)-> 
-		new CommunityContact((UUID)rs.getObject("user_id"), rs.getString("username")); 
+		new CommunityContact((UUID)rs.getObject("user_id"), rs.getString("username"), rs.getString("oauth_id")); 
 	
 	/**
 	 * Mapper for community data - only maps id, data, uploaded_datetime, and status 
@@ -75,26 +85,37 @@ public class CommunityDataDao {
 		new CommunityData((UUID)rs.getObject("id"), 
 				rs.getString("data"),
 				rs.getTimestamp("uploaded_datetime").toInstant(),
-				rs.getString("status"));
+				rs.getString("status"),
+				rs.getString("oauth_id"),
+				rs.getString("oauth_email"));
 
 	 
-	private RowMapper<CommunityData> communityDataMapperNoData = (rs, rownum)-> 
+	private RowMapper<CommunityData> communityDataMapperNoData = (rs, rownum)->
 		new CommunityData((UUID)rs.getObject("id"), 
 				rs.getTimestamp("uploaded_datetime").toInstant(),
 				rs.getString("status"),
 				rs.getString("status_message"),
-				(String[])((Array)rs.getObject("warnings")).getArray());	  
+				rs.getObject("warnings") == null ? new String[] {} : (String[])((Array)rs.getObject("warnings")).getArray(),
+				rs.getString("oauth_id"),
+				rs.getString("oauth_email"));	  
 		
 	private WKBReader reader = new WKBReader();
 
 	private RowMapper<Feature> ghostFeatureMapper = (rs, rownum)-> 
 	{
-		UUID cabdId = (UUID) rs.getObject(2);
-		String fType = rs.getString(1);
+		UUID id = (UUID)rs.getObject(1);
+		String fType = rs.getString(2);
+		UUID cabdId = (UUID) rs.getObject(3);		
+		Boolean isOwner = rs.getBoolean(4);
+		OffsetDateTime uploadedDatetime = rs.getObject(5, OffsetDateTime.class);
+		
 		Feature gFeature = new Feature(cabdId, fType);
+		gFeature.addAttribute(IS_OWNER_FIELD, isOwner);
+		gFeature.addAttribute(UPLOADED_DT_FIELD, uploadedDatetime.toString());
+		gFeature.addAttribute("id", id);
 		
 		try {
-			Point pnt = (Point) reader.read(rs.getBytes(3));
+			Point pnt = (Point) reader.read(rs.getBytes(6));
 			gFeature.setGeometry(pnt);
 		}catch (Exception ex) {
 			throw new SQLException(ex);
@@ -112,29 +133,34 @@ public class CommunityDataDao {
 		StringBuilder sb = new StringBuilder();
 		sb.append("INSERT INTO ");
 		sb.append(COMMUNITY_DATA_TABLE);
-		sb.append(" (uploaded_datetime, data)");
-		sb.append(" VALUES (?, ?) ");
+		sb.append(" (uploaded_datetime, data, oauth_id, oauth_email)");
+		sb.append(" VALUES (?, ?, ?, ?) ");
 		sb.append(" RETURNING id ");
 
 		
-		UUID id = jdbcTemplate.queryForObject(sb.toString(),UUID.class, Timestamp.from( data.getUploadeddatetime() ), data.getData());
+		UUID id = jdbcTemplate.queryForObject(sb.toString(),UUID.class, Timestamp.from( data.getUploadeddatetime() ), data.getData(), data.getOAuthId(), data.getOAuthEmail());
 		data.setId(id);
 	}
 	
-	
 	/**
-	 * Find a contact with the given email address or return null if none found
-	 * @param email
+	 * finds the contact associated with the given aouthid or null if not found
+	 * @param oauthId
 	 * @return
 	 */
-	public CommunityContact getCommunityContact(String username) {
+	public CommunityContact findCommunityContact(String oauthId) {
+		if (oauthId == null) return null;
+		
+		StringBuilder sb = new StringBuilder();
+		sb.append("SELECT * FROM ");
+		sb.append(COMMUNITY_CONTACT_TABLE);
+		sb.append(" WHERE oauth_id = ?");
 		try {
-			String query = "SELECT user_id, username FROM  " + COMMUNITY_CONTACT_TABLE + " WHERE username = ? ";
-			return jdbcTemplate.queryForObject(query, contactTypeMapper, username.toLowerCase());
-		}catch(EmptyResultDataAccessException ex) {
-			return null;
+			return jdbcTemplate.queryForObject(sb.toString(), contactTypeMapper, oauthId);
+		}catch (EmptyResultDataAccessException ex) {				
 		}
+		return null;		
 	}
+	
 	
 	/**
 	 * Finds the community contact with the username. If no contact is found
@@ -145,14 +171,56 @@ public class CommunityDataDao {
 	 * @param organization
 	 * @return
 	 */
-	public CommunityContact getOrCreateCommunityContact(String username) {
-		CommunityContact c = getCommunityContact(username);
-		if (c == null) {
-			String insert = "INSERT INTO " + COMMUNITY_CONTACT_TABLE + "(username) VALUES (?)";
-			jdbcTemplate.update(insert, username.toLowerCase());
-			c = getCommunityContact(username);
+	public CommunityContact getOrCreateCommunityContact(String oauthId, String oauthEmail, String dataUsername) {
+		//1. find user with same oauthid		
+		//2. find user with the same oauth email - make assumptions that this is the same user		
+		//3. find user with username 		
+		//4. create new user
+		String querypart = "SELECT user_id, username, oauth_id FROM  " + COMMUNITY_CONTACT_TABLE + " WHERE ";
+		
+		if (oauthId != null) {
+			String query = querypart + "oauth_id = ?";
+			try {
+				return jdbcTemplate.queryForObject(query, contactTypeMapper, oauthId);
+			}catch (EmptyResultDataAccessException ex) {				
+			}
 		}
+		
+		if (oauthEmail != null) {
+			String query = querypart + "username = ?";
+			try {
+				CommunityContact c = jdbcTemplate.queryForObject(query, contactTypeMapper, oauthEmail);
+				if (c.getOauthId() == null) {
+					//if we already have a oauthid then we want to create a new contact even if the emails are the same
+					return updateCommunityContact(c, oauthId);
+				}
+			}catch (EmptyResultDataAccessException ex) {
+			}
+		}
+		
+		if (dataUsername != null) {
+			String query = querypart + "username = ?";
+			try {
+				CommunityContact c = jdbcTemplate.queryForObject(query, contactTypeMapper, dataUsername);
+				if (c.getOauthId() == null) {
+					//if we already have a oauthid then we want to create a new contact even if the emails are the same
+					return updateCommunityContact(c, oauthId);
+				}
+			}catch (EmptyResultDataAccessException ex) {
+			}
+		}
+		
+		//no contact, lets create a new one		
+		String insert = "INSERT INTO " + COMMUNITY_CONTACT_TABLE + "(username, oauth_id) VALUES (?, ?) RETURNING user_id, username, oauth_id";
+		CommunityContact c = jdbcTemplate.queryForObject(insert, contactTypeMapper, dataUsername != null ? dataUsername : oauthEmail, oauthId);
+		
 		return c;
+	}
+	
+	private CommunityContact updateCommunityContact(CommunityContact c, String oauthId) {
+		String insert = "UPDATE " + COMMUNITY_CONTACT_TABLE + " set oauth_id = ? where user_id = ? RETURNING user_id, username, oauth_id";
+		return jdbcTemplate.queryForObject(insert, contactTypeMapper, oauthId, c.getId());
+		
 	}
 
 	/**
@@ -217,7 +285,7 @@ public class CommunityDataDao {
 	public CommunityData getCommunityDataRaw(UUID id) {
 		
 		StringBuilder sb = new StringBuilder();
-		sb.append("SELECT id, uploaded_datetime, status, status_message, warnings FROM ");
+		sb.append("SELECT id, uploaded_datetime, status, status_message, warnings, oauth_id, oauth_email FROM ");
 		sb.append(COMMUNITY_DATA_TABLE);
 		sb.append(" WHERE id = ? ");
 		
@@ -262,11 +330,28 @@ public class CommunityDataDao {
 	}
 	
 	
-	public SimpleFeatureList getGhostFeatures(Collection<FeatureType> fTypes){
-		
-		
+	public SimpleFeatureList getCommunityFeatures(Collection<FeatureType> fTypes, UUID userId, CommunityRequestParameters params){
 		boolean hasCd = false;
-		StringBuilder sb = new StringBuilder();
+		
+		StringBuilder dateFilter =null;
+		if (params.getFromDate() != null || params.getToDate() != null) {
+			dateFilter = new StringBuilder();
+			
+			dateFilter.append(" WHERE ");
+			if (params.getFromDate() != null) {
+				dateFilter.append(" uploaded_datetime > ? ");
+				
+				if (params.getToDate() != null) {
+					dateFilter.append(" AND ");
+				}
+			}
+			if (params.getToDate() != null) {
+				dateFilter.append(" uploaded_datetime < ? ");			
+			}
+		}
+		
+		StringBuilder sb = new StringBuilder();		
+		List<Object> qparams = new ArrayList<>();
 		for (FeatureType fType : fTypes) {
 			if (fType.getCommunityDataTable() == null || fType.getCommunityDataTable().isBlank()) continue;
 			
@@ -274,18 +359,62 @@ public class CommunityDataDao {
 				sb.append(" UNION ");
 			}
 			hasCd = true;
-			sb.append(" SELECT '" + fType.getType() + "', cabd_id, st_asewkb(st_geomfromgeojson(data->'geometry'))");
+			sb.append(" SELECT id, '" + fType.getType() + "', cabd_id, user_id = ? as is_owner, uploaded_datetime, st_asewkb(st_geomfromgeojson(data->'geometry'))" );
 			sb.append(" FROM ");
 			sb.append(fType.getCommunityDataTable());
-			sb.append(" f WHERE status = 'NEW' AND NOT EXISTS (SELECT 1 FROM ");
-			sb.append( FeatureViewMetadata.getAllFeaturesView() );
-			sb.append(" a WHERE a.cabd_id = f.cabd_id )");			
+			
+			qparams.add(userId);
+			
+			if (dateFilter != null) sb.append(dateFilter);
+			if (params.getFromDate() != null) qparams.add(params.getFromDate());
+			if (params.getToDate() != null) qparams.add(params.getToDate());			
+			
+			
 		}
-		sb.append(" LIMIT 5000" );
+		sb.insert(0, "SELECT * FROM (");
+		sb.append(") ORDER BY uploaded_datetime desc LIMIT ");
+		sb.append(properties.findMaxResults(params.getMaxresults()));
+		
 		
 		if (!hasCd) return new SimpleFeatureList(Collections.emptyList());
 		
-		return new SimpleFeatureList(jdbcTemplate.query(sb.toString(), ghostFeatureMapper));
+		return new SimpleFeatureList(jdbcTemplate.query(sb.toString(), ghostFeatureMapper, qparams.toArray(new Object[0])));
 		
 	}
+	
+	public String getCommunityFeature(UUID communityId){
+		
+		for (FeatureType fType : typeManager.getFeatureTypes()) {
+			
+			if (fType.getCommunityDataTable() == null || fType.getCommunityDataTable().isBlank()) continue;
+			StringBuilder sb = new StringBuilder();
+
+			sb.append(" SELECT jsonb_set(data, '{properties}', (data->'properties') - '" + USER_EMAIL_JSON_FIELD + "'::text || jsonb_build_object('id', id, '" + UPLOADED_DT_FIELD + "', uploaded_datetime)) as data " );
+			sb.append(" FROM ");
+			sb.append(fType.getCommunityDataTable());
+			sb.append(" WHERE id = ? ");
+			
+			List<String> features = jdbcTemplate.query(sb.toString(), (rs, rowNum) -> {
+				return rs.getString("data");
+			}, communityId);
+			
+			if (!features.isEmpty()) {
+				return features.get(0);
+			}
+			
+		}
+		
+		throw new NotFoundException("Community feature not found");
+	}
+	
+	public boolean validateGeoJson(String geoJson) {		
+		String sql = "SELECT st_geomfromgeojson(?)";
+	    try {
+	        jdbcTemplate.queryForObject(sql, String.class, geoJson);
+	        return true;
+	    } catch (Exception e) {
+	        return false;
+	    }		
+	}
+	
 }

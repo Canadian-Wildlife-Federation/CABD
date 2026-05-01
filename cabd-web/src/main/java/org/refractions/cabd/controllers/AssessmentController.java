@@ -19,8 +19,6 @@ import java.text.MessageFormat;
 import java.util.List;
 import java.util.UUID;
 
-import javax.servlet.http.HttpServletRequest;
-
 import org.refractions.cabd.CabdConfigurationProperties;
 import org.refractions.cabd.dao.AssessmentDao;
 import org.refractions.cabd.dao.AssessmentTypeManager;
@@ -44,6 +42,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * REST api for assessment data
@@ -56,10 +55,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 public class AssessmentController {
 
 	public static final String PATH = "assessments";
-	
-	public static final int MAX_RESULTS = 1000;
-	
-	
+		
 	@Autowired
 	CabdConfigurationProperties properties;
 	
@@ -77,7 +73,7 @@ public class AssessmentController {
 	 */
 	@Operation(summary = "Gets a feature by id.")
 	@GetMapping(value = "/{id:[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}}",
-			produces = {MediaType.APPLICATION_JSON_VALUE, "application/json"})
+			produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<JsonNode> getAssessment(
 			@Parameter(description = "unique feature identifier") 
 			@PathVariable("id") UUID id,
@@ -100,7 +96,7 @@ public class AssessmentController {
 	 */
 	@Operation(summary = "Gets a feature by type and id.")
 	@GetMapping(value = "/cabd/{cabdid:[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}}",
-			produces = {MediaType.APPLICATION_JSON_VALUE, "application/json"})
+			produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<JsonNode> getAssessmentsByCabdId(
 			@Parameter(description = "unique feature identifier") 
 			@PathVariable("cabdid") UUID cabdid,
@@ -122,7 +118,7 @@ public class AssessmentController {
 	 */
 	@Operation(summary = "Gets the assessment types.")
 	@GetMapping(value = "/types/",
-			produces = {MediaType.APPLICATION_JSON_VALUE, "application/json"})
+			produces = MediaType.APPLICATION_JSON_VALUE)
 	public String getTypes(HttpServletRequest request) {	
 		
 		List<AssessmentType> types = typeManager.getAssessmentTypes();

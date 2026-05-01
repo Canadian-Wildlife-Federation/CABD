@@ -20,12 +20,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-import javax.servlet.http.HttpServletRequest;
-
 import org.refractions.cabd.CabdApplication;
 import org.refractions.cabd.dao.AssessmentDao;
 import org.refractions.cabd.dao.FeatureDao;
-import org.refractions.cabd.dao.FeatureTypeManager;
 import org.refractions.cabd.exceptions.ApiError;
 import org.refractions.cabd.exceptions.NotFoundException;
 import org.refractions.cabd.model.Assessment;
@@ -33,7 +30,7 @@ import org.refractions.cabd.model.DataSource;
 import org.refractions.cabd.model.Feature;
 import org.refractions.cabd.model.FeatureSourceDetails;
 import org.refractions.cabd.model.FeatureType;
-import org.springdoc.api.annotations.ParameterObject;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -50,6 +47,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * Controller for feature attribute source details 
@@ -79,8 +77,8 @@ public class FeatureDataSourceController {
 					 	description = "feature not found", 
 			 			content = {
 						@Content(mediaType = "application/json", schema = @Schema(implementation = ApiError.class))})})
-	@GetMapping(value = "/{id:[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}}",
-			produces = {CabdApplication.CSV_MEDIA_TYPE_STR,  MediaType.APPLICATION_JSON_VALUE})
+	@GetMapping(value = "/{id:[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}}",	
+			produces = {MediaType.APPLICATION_JSON_VALUE, CabdApplication.CSV_MEDIA_TYPE_STR})
 
 	public ResponseEntity<FeatureSourceDetails> getFeatureSourceDetails(
 			@Parameter(description = "unique feature identifier") 

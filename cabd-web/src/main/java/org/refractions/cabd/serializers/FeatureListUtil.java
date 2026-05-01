@@ -28,12 +28,12 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.ImmutableTriple;
-import org.geotools.data.FeatureWriter;
+import org.geotools.api.data.FeatureWriter;
+import org.geotools.api.feature.simple.SimpleFeature;
+import org.geotools.api.feature.simple.SimpleFeatureType;
 import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
 import org.locationtech.jts.geom.Envelope;
 import org.locationtech.jts.geom.Point;
-import org.opengis.feature.simple.SimpleFeature;
-import org.opengis.feature.simple.SimpleFeatureType;
 import org.refractions.cabd.controllers.AttributeSet;
 import org.refractions.cabd.dao.FeatureTypeManager;
 import org.refractions.cabd.model.Feature;
@@ -180,9 +180,11 @@ public class FeatureListUtil {
 		//create features
 		String rooturl = ServletUriComponentsBuilder.fromCurrentContextPath().path("/").build().toUriString();
 
+		int fid = 0;
 		Collection<FeatureViewMetadataField> fields = metadata.getFields(features.getAttributeSet());
 		for (Feature f : features.getItems()) {
 			SimpleFeature sfeature = writer.next();
+			sfeature.getUserData().put("fid", String.valueOf(fid++));
 			for (FeatureViewMetadataField field : fields) {
 				if (field.isGeometry()) {
 					sfeature.setDefaultGeometry(f.getGeometry());

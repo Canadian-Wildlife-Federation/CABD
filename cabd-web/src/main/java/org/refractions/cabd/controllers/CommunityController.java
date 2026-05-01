@@ -22,17 +22,21 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-import javax.servlet.http.HttpServletRequest;
-
+import org.refractions.cabd.SecurityConfig;
 import org.refractions.cabd.dao.CommunityDataDao;
 import org.refractions.cabd.dao.FeatureTypeManager;
 import org.refractions.cabd.exceptions.NotFoundException;
+import org.refractions.cabd.model.CommunityContact;
 import org.refractions.cabd.model.CommunityData;
 import org.refractions.cabd.model.FeatureType;
 import org.refractions.cabd.model.SimpleFeatureList;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -40,6 +44,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -49,6 +54,8 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import jakarta.servlet.http.HttpServletRequest;
 
 
 /**
@@ -74,15 +81,20 @@ public class CommunityController {
 	FeatureTypeManager typeManager;
 	
 	//requires content-type = application/json in request
+	@SecurityRequirement(name = "bearerAuth")
 	@Operation(summary = "Uploads json data from community app.")
 	@ApiResponses(value = { 
 			@ApiResponse(responseCode = "204")})
-	@PostMapping(produces = {MediaType.APPLICATION_JSON_VALUE} )
+	@PostMapping(produces = MediaType.APPLICATION_JSON_VALUE )
 	public String postData(@RequestBody String featuresJson,
-			HttpServletRequest request) {
+			HttpServletRequest request,
+			@AuthenticationPrincipal Jwt jwt) {
 		
+		String userId = SecurityConfig.getOauthId(jwt);
+		String email = SecurityConfig.getEmail(jwt);     // if available
+	    
 		//save data and return; data is parsed as a part of a separate job
-		CommunityData data = new CommunityData(featuresJson, Instant.now());
+		CommunityData data = new CommunityData(featuresJson, Instant.now(), userId, email);
 		saveCommunityData(data);
 		communityProcessor.start();
 		
@@ -98,22 +110,26 @@ public class CommunityController {
 	 * @param id
 	 * @return
 	 */
+	@SecurityRequirement(name = "bearerAuth")
 	@Operation(summary = "Gets community data status")
 	@GetMapping(value = "/status/{id:[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}}",
 			produces = {MediaType.APPLICATION_JSON_VALUE})
 	public String getRawCommunityDataStatus(
 			@Parameter(description = "unique community data identifier") 
-			@PathVariable("id") UUID id,
-			HttpServletRequest request) {
+			@PathVariable UUID id,
+			HttpServletRequest request, @AuthenticationPrincipal Jwt jwt) {
 		
+		String userId = SecurityConfig.getOauthId(jwt);
+
 		CommunityData data = communityDao.getCommunityDataRaw(id);
 		if (data == null) throw new NotFoundException(MessageFormat.format("Community data with id {0} not found. Either this item never existed or it has been processed into feature tables without errors.", id));
-
+		if (userId == null || data.getOAuthId() == null || !data.getOAuthId().equals(userId)) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid user");
+		
 		JsonObject result = new JsonObject();
 		result.add("id", new JsonPrimitive(data.getId().toString()));
 		result.add("uploaded_datetime", new JsonPrimitive(data.getUploadeddatetime().atOffset(ZoneOffset.UTC).toString()));
 		result.add("status", new JsonPrimitive(data.getStatus().name()));
-		result.add("status_message", new JsonPrimitive(data.getStatusMessage()));
+		result.add("status_message", data.getStatusMessage() == null ? null : new JsonPrimitive(data.getStatusMessage()));
 		JsonArray warnings = new JsonArray(data.getWarningsArray().length);
 		for (String w : data.getWarningsArray()) warnings.add(w);;
 		result.add("warnings", warnings);
@@ -129,11 +145,13 @@ public class CommunityController {
 	 * @return list of ghost features with id and type
 	 * 
 	 */
+	@SecurityRequirement(name = "bearerAuth")
 	@Operation(summary = "Gets community data ghost features")
-	@GetMapping(value = "/ghost",
-			produces = {MediaType.APPLICATION_JSON_VALUE, "application/geo+json"})
-	public ResponseEntity<SimpleFeatureList> getAllGhostFeatures(HttpServletRequest request) {
-		return getAllGhostFeatures(request, null);
+	@GetMapping(value = "/data", produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<SimpleFeatureList> getCommunityFeatures(HttpServletRequest request,
+			@AuthenticationPrincipal Jwt jwt,
+			@ParameterObject CommunityRequestParameters params) {
+		return getAllCommunityFeatures(request, null, jwt, params);
 	}
 	
 	/**
@@ -142,12 +160,15 @@ public class CommunityController {
 	 * @param type
 	 * @return
 	 */
+	@SecurityRequirement(name = "bearerAuth")
 	@Operation(summary = "Gets community data ghost features of specific type")
-	@GetMapping(value = "/ghost/{type:[a-zA-Z0-9_]+}",
-			produces = {MediaType.APPLICATION_JSON_VALUE, "application/geo+json"})
-	public ResponseEntity<SimpleFeatureList> getAllGhostFeatures(HttpServletRequest request,
-			@PathVariable("type") String type) {
+	@GetMapping(value = "/data/{type:[a-zA-Z0-9_]+}", produces = MediaType.APPLICATION_JSON_VALUE)			
+	public ResponseEntity<SimpleFeatureList> getAllCommunityFeatures(HttpServletRequest request,
+			@PathVariable("type") String type,			
+			@AuthenticationPrincipal Jwt jwt,
+			@ParameterObject CommunityRequestParameters params) {
 		
+		CommunityContact user = communityDao.findCommunityContact(SecurityConfig.getOauthId(jwt));
 		List<FeatureType> types = new ArrayList<>();
 		if (type == null || type.isBlank()) {
 			types.addAll(typeManager.getFeatureTypes());
@@ -158,7 +179,26 @@ public class CommunityController {
 			}
 			types.add(ftype);
 		}
-		return ResponseEntity.ok(communityDao.getGhostFeatures(types));
+		return ResponseEntity.ok(communityDao.getCommunityFeatures(types, user.getId(), params));
+		
+	}
+	
+	/**
+	 * Return all ghost features for a given feature type
+	 * @param request
+	 * @param type
+	 * @return
+	 */
+	@SecurityRequirement(name = "bearerAuth")
+	@Operation(summary = "Get all details (except images) of a ghost feature")
+	@GetMapping(value = "/data/{id:[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}}",
+			produces = MediaType.APPLICATION_JSON_VALUE)		
+	public ResponseEntity<String> getCommunityFeature(HttpServletRequest request,
+			@PathVariable("id") UUID id,
+			@AuthenticationPrincipal Jwt jwt) {
+		
+		//CommunityContact user = communityDao.findCommunityContact(SecurityConfig.getOauthId(jwt));
+		return ResponseEntity.ok(communityDao.getCommunityFeature(id));
 		
 	}
 	
@@ -166,5 +206,5 @@ public class CommunityController {
 	private void saveCommunityData(CommunityData cd) {
 		communityDao.saveRawData(cd);
 	}
-	
+
 }
