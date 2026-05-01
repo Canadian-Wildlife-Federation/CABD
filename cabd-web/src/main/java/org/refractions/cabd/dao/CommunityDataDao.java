@@ -389,7 +389,7 @@ public class CommunityDataDao {
 			if (fType.getCommunityDataTable() == null || fType.getCommunityDataTable().isBlank()) continue;
 			StringBuilder sb = new StringBuilder();
 
-			sb.append(" SELECT jsonb_set(data, '{properties}', (data->'properties') - '" + USER_EMAIL_JSON_FIELD + "'::text || jsonb_build_object('status', status, 'id', id, '" + UPLOADED_DT_FIELD + "', uploaded_datetime)) as data " );
+			sb.append(" SELECT jsonb_set(data, '{properties}', (data->'properties') - '" + USER_EMAIL_JSON_FIELD + "'::text || jsonb_build_object('id', id, '" + UPLOADED_DT_FIELD + "', uploaded_datetime)) as data " );
 			sb.append(" FROM ");
 			sb.append(fType.getCommunityDataTable());
 			sb.append(" WHERE id = ? ");
