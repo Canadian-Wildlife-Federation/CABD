@@ -22,7 +22,7 @@ BEGIN
 
     if (NEW.feature_type_code is null or NEW.feature_type_code != 1 or NEW.to_feature_type_code is null or NEW.to_feature_type_code not in (1, 3, 4)) then
         --feature_type_code 1 = stream_crossing
-        --to_feature_type_code 1 = stream_crossing, 2 = nostructure, 3 = noaccess
+        --to_feature_type_code 1 = stream_crossing, 3 = nostructure, 4 = noaccess
         return NEW;
     end if;
     
