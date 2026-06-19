@@ -146,7 +146,7 @@ public class CommunityController {
 	 * 
 	 */
 	@SecurityRequirement(name = "bearerAuth")
-	@Operation(summary = "Gets community data ghost features")
+	@Operation(summary = "Gets all community data features with limited attribution")
 	@GetMapping(value = "/data", produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<SimpleFeatureList> getCommunityFeatures(HttpServletRequest request,
 			@AuthenticationPrincipal Jwt jwt,
@@ -161,7 +161,7 @@ public class CommunityController {
 	 * @return
 	 */
 	@SecurityRequirement(name = "bearerAuth")
-	@Operation(summary = "Gets community data ghost features of specific type")
+	@Operation(summary = "Gets all community data features of specific type with limited attribution")
 	@GetMapping(value = "/data/{type:[a-zA-Z0-9_]+}", produces = MediaType.APPLICATION_JSON_VALUE)			
 	public ResponseEntity<SimpleFeatureList> getAllCommunityFeatures(HttpServletRequest request,
 			@PathVariable("type") String type,			
@@ -190,7 +190,7 @@ public class CommunityController {
 	 * @return
 	 */
 	@SecurityRequirement(name = "bearerAuth")
-	@Operation(summary = "Get all details (except images) of a ghost feature")
+	@Operation(summary = "Get all details (except images) of a community feature")
 	@GetMapping(value = "/data/{id:[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}}",
 			produces = MediaType.APPLICATION_JSON_VALUE)		
 	public ResponseEntity<String> getCommunityFeature(HttpServletRequest request,

@@ -21,7 +21,6 @@ import java.sql.Timestamp;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -54,6 +53,8 @@ import org.springframework.stereotype.Component;
 public class CommunityDataDao {
 
     private static final String COMMUNITY_DATA_TABLE = "cabd.community_data_raw";
+    
+    private static final String COMMUNITY_DATA_STAGING_VIEW = "cabd.community_data_staging_view";
     
     private static final String COMMUNITY_CONTACT_TABLE = "cabd.community_contact";
     
@@ -101,21 +102,25 @@ public class CommunityDataDao {
 		
 	private WKBReader reader = new WKBReader();
 
-	private RowMapper<Feature> ghostFeatureMapper = (rs, rownum)-> 
+	private RowMapper<Feature> communityStagingFeatureMapper = (rs, rownum)-> 
 	{
-		UUID id = (UUID)rs.getObject(1);
-		String fType = rs.getString(2);
-		UUID cabdId = (UUID) rs.getObject(3);		
-		Boolean isOwner = rs.getBoolean(4);
-		OffsetDateTime uploadedDatetime = rs.getObject(5, OffsetDateTime.class);
+
+		UUID id = (UUID)rs.getObject("id");
+		UUID cabdId = (UUID) rs.getObject("cabd_id");			
+		OffsetDateTime uploadedDatetime = rs.getObject("uploaded_datetime", OffsetDateTime.class);
+		String fType = rs.getString("feature_type");
+		String status = rs.getString("status");
+		Boolean isOwner = rs.getBoolean("is_owner");
+		
 		
 		Feature gFeature = new Feature(cabdId, fType);
 		gFeature.addAttribute(IS_OWNER_FIELD, isOwner);
 		gFeature.addAttribute(UPLOADED_DT_FIELD, uploadedDatetime.toString());
 		gFeature.addAttribute("id", id);
+		gFeature.addAttribute("status", status);
 		
 		try {
-			Point pnt = (Point) reader.read(rs.getBytes(6));
+			Point pnt = (Point) reader.read(rs.getBytes("geometry"));
 			gFeature.setGeometry(pnt);
 		}catch (Exception ex) {
 			throw new SQLException(ex);
@@ -330,80 +335,67 @@ public class CommunityDataDao {
 	}
 	
 	
-	public SimpleFeatureList getCommunityFeatures(Collection<FeatureType> fTypes, UUID userId, CommunityRequestParameters params){
-		boolean hasCd = false;
-		
-		StringBuilder dateFilter =null;
+	public SimpleFeatureList getCommunityFeatures(Collection<FeatureType> fTypes, UUID userId,
+			CommunityRequestParameters params) {
+
+		StringBuilder dateFilter = null;
 		if (params.getFromDate() != null || params.getToDate() != null) {
 			dateFilter = new StringBuilder();
-			
+
 			dateFilter.append(" WHERE ");
 			if (params.getFromDate() != null) {
 				dateFilter.append(" uploaded_datetime > ? ");
-				
+
 				if (params.getToDate() != null) {
 					dateFilter.append(" AND ");
 				}
 			}
 			if (params.getToDate() != null) {
-				dateFilter.append(" uploaded_datetime < ? ");			
+				dateFilter.append(" uploaded_datetime < ? ");
 			}
 		}
-		
-		StringBuilder sb = new StringBuilder();		
+
+		StringBuilder sb = new StringBuilder();
 		List<Object> qparams = new ArrayList<>();
-		for (FeatureType fType : fTypes) {
-			if (fType.getCommunityDataTable() == null || fType.getCommunityDataTable().isBlank()) continue;
-			
-			if (sb.length() > 0) {
-				sb.append(" UNION ");
-			}
-			hasCd = true;
-			sb.append(" SELECT id, '" + fType.getType() + "', cabd_id, user_id = ? as is_owner, uploaded_datetime, st_asewkb(st_geomfromgeojson(data->'geometry'))" );
-			sb.append(" FROM ");
-			sb.append(fType.getCommunityDataTable());
-			
-			qparams.add(userId);
-			
-			if (dateFilter != null) sb.append(dateFilter);
-			if (params.getFromDate() != null) qparams.add(params.getFromDate());
-			if (params.getToDate() != null) qparams.add(params.getToDate());			
-			
-			
-		}
-		sb.insert(0, "SELECT * FROM (");
-		sb.append(") ORDER BY uploaded_datetime desc LIMIT ");
+		sb.append(" SELECT id, feature_type, status, cabd_id, user_id = ? as is_owner, ");
+		sb.append("uploaded_datetime, st_asewkb(st_geomfromgeojson(data->'geometry')) as geometry");
+		sb.append(" FROM ");
+		sb.append(COMMUNITY_DATA_STAGING_VIEW);
+		
+		qparams.add(userId);
+
+		if (dateFilter != null)
+			sb.append(dateFilter);
+		if (params.getFromDate() != null)
+			qparams.add(params.getFromDate());
+		if (params.getToDate() != null)
+			qparams.add(params.getToDate());
+		sb.append(" ORDER BY uploaded_datetime desc LIMIT ");
 		sb.append(properties.findMaxResults(params.getMaxresults()));
-		
-		
-		if (!hasCd) return new SimpleFeatureList(Collections.emptyList());
-		
-		return new SimpleFeatureList(jdbcTemplate.query(sb.toString(), ghostFeatureMapper, qparams.toArray(new Object[0])));
-		
+		return new SimpleFeatureList(
+				jdbcTemplate.query(sb.toString(), communityStagingFeatureMapper, qparams.toArray(new Object[0])));
+
 	}
 	
 	public String getCommunityFeature(UUID communityId){
 		
-		for (FeatureType fType : typeManager.getFeatureTypes()) {
-			
-			if (fType.getCommunityDataTable() == null || fType.getCommunityDataTable().isBlank()) continue;
-			StringBuilder sb = new StringBuilder();
+		StringBuilder sb = new StringBuilder();
+		sb.append(" SELECT jsonb_set(data, '{properties}', (data->'properties') - '");
+		sb.append( USER_EMAIL_JSON_FIELD + "'::text || ");
+		sb.append(" jsonb_build_object('id', id, '" + UPLOADED_DT_FIELD + "', uploaded_datetime, 'status', status ) ");
+		sb.append(") as data ");
+		sb.append(" FROM ");
+		sb.append(COMMUNITY_DATA_STAGING_VIEW);
+		sb.append(" WHERE id = ? ");
 
-			sb.append(" SELECT jsonb_set(data, '{properties}', (data->'properties') - '" + USER_EMAIL_JSON_FIELD + "'::text || jsonb_build_object('id', id, '" + UPLOADED_DT_FIELD + "', uploaded_datetime)) as data " );
-			sb.append(" FROM ");
-			sb.append(fType.getCommunityDataTable());
-			sb.append(" WHERE id = ? ");
-			
-			List<String> features = jdbcTemplate.query(sb.toString(), (rs, rowNum) -> {
-				return rs.getString("data");
-			}, communityId);
-			
-			if (!features.isEmpty()) {
-				return features.get(0);
-			}
-			
+		List<String> features = jdbcTemplate.query(sb.toString(), (rs, rowNum) -> {
+			return rs.getString("data");
+		}, communityId);
+
+		if (!features.isEmpty()) {
+			return features.get(0);
 		}
-		
+
 		throw new NotFoundException("Community feature not found");
 	}
 	
