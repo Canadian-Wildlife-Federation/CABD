@@ -110,6 +110,7 @@ public class CommunityDataDao {
 		OffsetDateTime uploadedDatetime = rs.getObject("uploaded_datetime", OffsetDateTime.class);
 		String fType = rs.getString("feature_type");
 		String status = rs.getString("status");
+		Integer passabilityStatus = rs.getInt("passability_status_code");
 		Boolean isOwner = rs.getBoolean("is_owner");
 		
 		
@@ -118,6 +119,7 @@ public class CommunityDataDao {
 		gFeature.addAttribute(UPLOADED_DT_FIELD, uploadedDatetime.toString());
 		gFeature.addAttribute("id", id);
 		gFeature.addAttribute("status", status);
+		gFeature.addAttribute("passability_status_code", passabilityStatus);
 		
 		try {
 			Point pnt = (Point) reader.read(rs.getBytes("geometry"));
@@ -357,7 +359,7 @@ public class CommunityDataDao {
 
 		StringBuilder sb = new StringBuilder();
 		List<Object> qparams = new ArrayList<>();
-		sb.append(" SELECT id, feature_type, status, cabd_id, user_id = ? as is_owner, ");
+		sb.append(" SELECT id, feature_type, status, cabd_id, user_id = ? as is_owner, passability_status_code, ");
 		sb.append("uploaded_datetime, st_asewkb(st_geomfromgeojson(data->'geometry')) as geometry");
 		sb.append(" FROM ");
 		sb.append(COMMUNITY_DATA_STAGING_VIEW);
@@ -382,7 +384,7 @@ public class CommunityDataDao {
 		StringBuilder sb = new StringBuilder();
 		sb.append(" SELECT jsonb_set(data, '{properties}', (data->'properties') - '");
 		sb.append( USER_EMAIL_JSON_FIELD + "'::text || ");
-		sb.append(" jsonb_build_object('id', id, '" + UPLOADED_DT_FIELD + "', uploaded_datetime, 'status', status ) ");
+		sb.append(" jsonb_build_object('id', id, '" + UPLOADED_DT_FIELD + "', uploaded_datetime, 'status', status, 'passability_status_code', passability_status_code ) ");
 		sb.append(") as data ");
 		sb.append(" FROM ");
 		sb.append(COMMUNITY_DATA_STAGING_VIEW);

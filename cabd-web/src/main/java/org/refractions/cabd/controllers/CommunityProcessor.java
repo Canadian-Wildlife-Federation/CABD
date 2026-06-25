@@ -187,31 +187,33 @@ public class CommunityProcessor {
 			String fileIdPrefix = feature.getId().toString().replaceAll("-", "");
 			//parse photos
 			try {
-			for (String field : featuretype.getCommunityPhotoFields()) {
-				JsonElement photodata = properties.get(field);
-				if (photodata == null) continue;
-				if (photodata.getAsString() == null || photodata.getAsString().isBlank()) continue;
-
-				//find the photo field in the json properties
-				String fileId = fileIdPrefix + "_" + field + ".jpeg";
-				try {
-					
-					String base64 = properties.get(field).getAsString();
-					byte[] imagedata = Base64.getDecoder().decode(base64);
-					
-					writeToAzure(fileId, imagedata);
-					
-					properties.remove(field);
-					properties.add(field, new JsonPrimitive(fileId));
-					
-				}catch (Exception ex) {
-					logger.error(ex.getMessage(), ex);
-					data.getWarnings().add(MessageFormat.format("Feature {0}: Could not write image data for photo field {1} to azure: {2}. Community data not processed.", feature.getIndex(), field, ex.toString()));	
-					throw ex;
+				if (featuretype.getCommunityPhotoFields() != null) {
+					for (String field : featuretype.getCommunityPhotoFields()) {
+						JsonElement photodata = properties.get(field);
+						if (photodata == null) continue;
+						if (photodata.getAsString() == null || photodata.getAsString().isBlank()) continue;
+		
+						//find the photo field in the json properties
+						String fileId = fileIdPrefix + "_" + field + ".jpeg";
+						try {
+							
+							String base64 = properties.get(field).getAsString();
+							byte[] imagedata = Base64.getDecoder().decode(base64);
+							
+							writeToAzure(fileId, imagedata);
+							
+							properties.remove(field);
+							properties.add(field, new JsonPrimitive(fileId));
+							
+						}catch (Exception ex) {
+							logger.error(ex.getMessage(), ex);
+							data.getWarnings().add(MessageFormat.format("Feature {0}: Could not write image data for photo field {1} to azure: {2}. Community data not processed.", feature.getIndex(), field, ex.toString()));	
+							throw ex;
+						}		
+					}
 				}
-				
-			}
 			}catch (Exception ex) {
+				logger.error(ex.getMessage(), ex);
 				continue;
 			}
 			
