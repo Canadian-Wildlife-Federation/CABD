@@ -1,8 +1,8 @@
 --fix to move this into appropriate schema
 ALTER  FUNCTION public.stream_crossing_community_staging_insert_trigger set schema stream_crossings;
 
+-- added passability status based on stream_crossings.community_passability_status function
 -- DROP FUNCTION stream_crossings.stream_crossings_community_holding_data_trg();
-
 CREATE OR REPLACE FUNCTION stream_crossings.stream_crossings_community_holding_data_trg()
  RETURNS trigger
  LANGUAGE plpgsql
@@ -12,6 +12,7 @@ DECLARE
   structureid uuid;
   distance double precision;
   doupdate boolean;
+  _new_passability_status int;
   newpoint geometry;
   STREAM_SNAP_TOLERANCE integer := 500; --for snapping points to stream network chyf and nhn
   CABD_FEATURE_DISANCE_MATCH_TOLDERANCE integer:= 100; --maximum matching distance in meters
@@ -251,6 +252,28 @@ BEGIN
 
         end if;
 	    
+        -- update passability status from community data
+        -- only if computed value is not "not passible" and the existing
+        -- value is coming from modelled crossings, satelitte review, or community data and this is newer than previous community update
+        _new_passability_status := stream_crossings.community_passability_status(NEW);
+
+        if (_new_passability_status != 4) then
+            select case 
+				when passability_status_code_src is null then true
+				when (passability_status_code_src in ('m', 's') or (passability_status_code_src = 'c' and b.uploaded_datetime < NEW.uploaded_datetime)) then true 
+				else false end  into doupdate
+			from stream_crossings.structures_attribute_source a 
+				left join stream_crossings.stream_crossings_community_holding b on b.id = a.passability_status_code_dsid
+            where a.structure_id in (select structure_id from stream_crossings.structures where site_id = cabdid);
+            if (doupdate) then
+                update stream_crossings.structures set passability_status_code = _new_passability_status  
+                where site_id = cabdid;
+                update stream_crossings.structures_attribute_source 
+                    set passability_status_code_src = 'c', passability_status_code_dsid = NEW.id 
+                    where structure_id in (select structure_id from stream_crossings.structures where site_id = cabdid);
+            end if;
+        end if;
+
         update stream_crossings.stream_crossings_community_holding set status = 'PROCESSED' where id = NEW.id;
 
     else
@@ -314,11 +337,13 @@ BEGIN
         );
 
         -- insert into structures
+        _new_passability_status := stream_crossings.community_passability_status(NEW);
+
         structureid := gen_random_uuid();
         insert into stream_crossings.structures(structure_id, site_id, physical_blockages_code,	primary_structure, structure_number, passability_status_code)
 	    values (structureid, NEW.cabd_id,  
             case when NEW.upstream_physical_blockages_code is null and NEW.downstream_physical_blockages_code is null then null when NEW.upstream_physical_blockages_code is null and NEW.downstream_physical_blockages_code is not null then NEW.downstream_physical_blockages_code when NEW.upstream_physical_blockages_code is not null and NEW.downstream_physical_blockages_code is null then NEW.upstream_physical_blockages_code else ARRAY(SELECT DISTINCT UNNEST(NEW.upstream_physical_blockages_code || NEW.downstream_physical_blockages_code)) end,
-            true, 1, 4);
+            true, 1, stream_crossings.community_passability_status(NEW));
         
 	    insert into stream_crossings.structures_attribute_source(structure_id, 
 		    physical_blockages_code_src, physical_blockages_code_dsid, 
