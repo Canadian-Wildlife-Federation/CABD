@@ -1,3 +1,5 @@
+set role cabd;
+
 --create a function to determine passability status from stream crossing community data
 create or replace function stream_crossings.community_passability_status(c stream_crossings.stream_crossings_community_holding)
 returns integer
@@ -89,7 +91,7 @@ create or replace view cabd.community_data_staging_view as
 select a.id, a.cabd_id, a.user_id, a.uploaded_datetime, a.data, 
 'stream_crossings' as feature_type, 
 case when b.status is null then 'NEW' else b.status::varchar end as status,
-case when b.id is not null then stream_crossings.community_passability_status(b) else 4 end as passability_status_code,
+case when b.id is not null then stream_crossings.community_passability_status(b) else 4 end as passability_status_code
 from stream_crossings.stream_crossings_community_staging a left join
 stream_crossings.stream_crossings_community_holding b on a.id = b.id 
 union

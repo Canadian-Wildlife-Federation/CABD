@@ -1,3 +1,5 @@
+set role cabd;
+
 --fix to move this into appropriate schema
 ALTER  FUNCTION public.stream_crossing_community_staging_insert_trigger set schema stream_crossings;
 

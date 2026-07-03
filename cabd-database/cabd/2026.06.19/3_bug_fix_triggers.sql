@@ -1,3 +1,5 @@
+set role cabd;
+
 -- DROP FUNCTION cabd.audit_structure_id_delete();
 
 CREATE OR REPLACE FUNCTION cabd.audit_structure_id_nosite_delete()
