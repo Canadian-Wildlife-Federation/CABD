@@ -310,7 +310,7 @@ ALTER TABLE dams.dams_attribute_source DROP CONSTRAINT dams_medium_large_attribu
 -- function to move data from dams community staging to dams community holding
 -- DROP FUNCTION dams.dams_community_staging_insert_trigger();
 
-CREATE OR REPLACE FUNCTION dams.dams_community_staging_insert_trigger()
+CREATE OR REPLACE FUNCTION dams.dams_community_staging_insert_trg()
  RETURNS trigger
  LANGUAGE plpgsql
 AS $function$
@@ -354,13 +354,13 @@ BEGIN
 END;
 $function$
 ;
-alter function dams.dams_community_staging_insert_trigger owner to cabd;
+alter function dams.dams_community_staging_insert_trg owner to cabd;
 --associated trigger
 
 create trigger dams_community_staging_trigger after
 insert
     on
-    dams.dams_community_staging for each row execute function dams.dams_community_staging_insert_trigger();
+    dams.dams_community_staging for each row execute function dams.dams_community_staging_insert_trg();
 
 
 -- migrate updates from community holding to core dams table
@@ -555,3 +555,6 @@ update
     dams.dams_community_holding for each row
     when ((new.status = 'REVIEWED'::cabd.community_holding_status_type)) execute function dams.dams_community_holding_data_trg();
     
+
+--name cleanup
+ALTER function stream_crossings.stream_crossing_community_staging_insert_trigger RENAME TO stream_crossing_community_staging_insert_trg;
