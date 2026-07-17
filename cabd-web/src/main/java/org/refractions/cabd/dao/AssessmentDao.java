@@ -183,7 +183,7 @@ public class AssessmentDao {
 		if (!ftype.isAssessmentSite()) {
 			throw new RuntimeException("Assessment feature source details are only available for feature types defined as assessment feature types");
 		}
-		
+
 		//for the main assessment data
 		StringBuilder sb = new StringBuilder();
 		sb.append("SELECT substring(column_name, 0, length(column_name) - length('_dsid') + 1)");
@@ -233,7 +233,7 @@ public class AssessmentDao {
 					AssessmentType.RawAssessmentType type = AssessmentType.RawAssessmentType.findType(srctype);
 					if (type == RawAssessmentType.MODELLED_CROSSINGS || type == RawAssessmentType.SATELLITE) {
 						columnData.add(new String[] {field, type.getDataSourceName(), ""});					
-					}else {
+					}else if (type != RawAssessmentType.DATA_SOURCE) {
 						//community or assessment
 						if (dsuuid != null) {
 							columnData.add(new String[] {field, dsuuid.toString(), type.getDataSourceName()});
