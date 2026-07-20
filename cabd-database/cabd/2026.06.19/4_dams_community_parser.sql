@@ -9,6 +9,8 @@ alter type cabd."status_type" rename to "community_holding_status_type";
 alter table dams.dams_community_staging drop CONSTRAINT status_value_ch;
 alter table dams.dams_community_staging add CONSTRAINT status_value_ch CHECK (((status)::text = ANY (ARRAY[('NEW'::character varying)::text, ('PROCESSED'::character varying)::text])));
 
+alter table dams.dams_community_staging add primary key (id);
+
 -- DROP TABLE dams.dams_community_holding;
 CREATE TABLE dams.dams_community_holding (
 	id uuid NOT NULL,
@@ -558,3 +560,95 @@ update
 
 --name cleanup
 ALTER function stream_crossings.stream_crossing_community_staging_insert_trigger RENAME TO stream_crossing_community_staging_insert_trg;
+
+
+
+
+
+--------- code below is for the data sources ----------------
+
+-- we need a assessment type for dams for community data sources
+-- similar to rapid assessment for stream crossings 
+CREATE OR REPLACE VIEW dams.assessment_rapid_en
+AS SELECT a.id AS assessment_id,
+    'rapid_dam'::text AS cabd_assessment_type,
+    a.cabd_id,
+    a.uploaded_datetime AS assessment_date,
+    a.latitude,
+    a.longitude,
+    a.dam_name_en as dam_name_en,    
+    a.addressed_status_code,
+    adrc.name_en AS addressed_status,
+    a.assessment_type_code,
+    astc.name_en AS assessment_type,
+    a.size_class_code,
+    dsc.name_en AS size_class,
+    a.up_passage_type_code,
+    pc.name_en as up_passage_type,
+    a.passability_status_code,
+    psc.name_en as passability_status
+   FROM dams.dams_community_holding a
+     LEFT JOIN cabd.addressed_status_codes adrc ON adrc.code = a.addressed_status_code
+     LEFT JOIN cabd.assessment_type_codes astc ON astc.code = a.assessment_type_code
+     LEFT JOIN dams.size_codes dsc ON dsc.code = a.size_class_code
+     left join cabd.upstream_passage_type_codes pc on pc.code = a.up_passage_type_code
+     left join cabd.passability_status_codes psc on psc.code = a.passability_status_code
+  WHERE a.status = 'PROCESSED'::cabd.community_holding_status_type;
+
+
+CREATE OR REPLACE VIEW dams.assessment_rapid_fr
+AS SELECT a.id AS assessment_id,
+    'rapid_dam'::text AS cabd_assessment_type,
+    a.cabd_id,
+    a.uploaded_datetime AS assessment_date,
+    a.latitude,
+    a.longitude,
+    a.dam_name_en as dam_name_en,    
+    a.addressed_status_code,
+    adrc.name_fr AS addressed_status,
+    a.assessment_type_code,
+    astc.name_fr AS assessment_type,
+    a.size_class_code,
+    dsc.name_fr AS size_class,
+    a.up_passage_type_code,
+    pc.name_fr as up_passage_type,
+    a.passability_status_code,
+    psc.name_fr as passability_status
+   FROM dams.dams_community_holding a
+     LEFT JOIN cabd.addressed_status_codes adrc ON adrc.code = a.addressed_status_code
+     LEFT JOIN cabd.assessment_type_codes astc ON astc.code = a.assessment_type_code
+     LEFT JOIN dams.size_codes dsc ON dsc.code = a.size_class_code
+     left join cabd.upstream_passage_type_codes pc on pc.code = a.up_passage_type_code
+     left join cabd.passability_status_codes psc on psc.code = a.passability_status_code
+  WHERE a.status = 'PROCESSED'::cabd.community_holding_status_type;
+
+alter view dams.assessment_rapid_en owner to cabd;
+alter view dams.assessment_rapid_fr owner to cabd;
+
+-- create this new type and configure it
+insert into cabd.assessment_types (type, data_view, name_en, name_fr) values ('rapid_dam', 'dams.assessment_rapid', 'Rapid Assessment', 'Rapid Assessment');
+insert into cabd.assessment_type_metadata(type, field_name, name_en, name_fr,description_en,description_fr,data_type) 
+values
+('rapid_dam','assessment_id','Assessment ID','Assessment ID', null, null, 'uuid'),
+('rapid_dam','cabd_id','CABD Feature Id','CABD Feature Id', null, null, 'uuid'),
+('rapid_dam','assessment_date','DateTime','DateTime', null, null, 'timestamp'),
+('rapid_dam','latitude','Latitude','Latitude', null, null, 'numeric'),
+('rapid_dam','longitude','Longitude','Longitude', null, null, 'numeric'),
+('rapid_dam','dam_name_en','Dam Name - English','Dam Name - English', null, null, 'varchar'),
+('rapid_dam','addressed_status_code','Addressed Status Code','Addressed Status Code', null, null, 'integer'),
+('rapid_dam','addressed_status','Addressed Status','Addressed Status', null, null, 'varchar'),
+('rapid_dam','assessment_type_code','Assessment Type Code','Assessment Type Code', null, null, 'integer'),
+('rapid_dam','assessment_type','Assessment Type','Assessment Type', null, null, 'varchar'),
+('rapid_dam','size_class_code','Size Class Code','Size Class Code', null, null, 'integer'),
+('rapid_dam','size_class','Size Class','Size Class', null, null, 'varchar'),
+('rapid_dam','up_passage_type_code','Upstream Passage Type Code','Upstream Passage Type Code', null, null, 'integer'),
+('rapid_dam','up_passage_type','Upstream Passage Type','Upstream Passage Type', null, null, 'varchar'),
+('rapid_dam','passability_status_code','Passability Status Code','Passability Status Code', null, null, 'integer'),
+('rapid_dam','passability_status','Passability Status','Passability Status', null, null, 'varchar');
+
+-- this tells the s/w to other get assessments as part of the data sources
+update cabd.feature_types set is_assessment = true where type = 'dams'
+
+
+alter table cabd.addressed_status_codes owner to cabd;
+alter table cabd.assessment_type_codes owner to cabd;

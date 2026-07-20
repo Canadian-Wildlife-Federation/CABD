@@ -87,8 +87,11 @@ public class FeatureDataSourceController {
 			HttpServletRequest request) {
 		
 		FeatureType ftype = featureDao.getFeatureType(id);
-		if (ftype == null || ftype.getAttributeSourceTable() == null) {
+		if (ftype == null) {
 			throw new NotFoundException(MessageFormat.format("No feature ''{0}'' found.", id.toString()));
+		}
+		if (ftype.getAttributeSourceTable() == null) {
+			throw new NotFoundException(MessageFormat.format("Feature type {0} has no attribute source table configured", ftype.getType()));
 		}
 		boolean includeall = false;
 		if (params.getFields() != null && params.getFields().equalsIgnoreCase("all")) {
@@ -106,27 +109,27 @@ public class FeatureDataSourceController {
 		}
 		
 		if (ftype.isAssessmentSite()) {
-			//we have to do something special for sites/structures
-			buildSitesStructureData(feature.getId(), ftype, details, request);
-		} else {
-			//data sources by type
-			List<DataSource> sources = featureDao.getDataSources(id, ftype);
-			List<DataSource> dsspatial = new ArrayList<>();
-			List<DataSource> dsnon = new ArrayList<>();
-			for (DataSource s : sources) {
-				if (s.getType().equalsIgnoreCase("spatial")) {
-					dsspatial.add(s);
-				}else {
-					dsnon.add(s);
-				}
+			//we have to do something special for community data assessments and other assessments
+			buildAssessmentDataSources(feature.getId(), ftype, details, request);
+		} 
+		
+		//add other data sources (by type)
+		List<DataSource> sources = featureDao.getDataSources(id, ftype);
+		List<DataSource> dsspatial = new ArrayList<>();
+		List<DataSource> dsnon = new ArrayList<>();
+		for (DataSource s : sources) {
+			if (s.getType().equalsIgnoreCase("spatial")) {
+				dsspatial.add(s);
+			}else {
+				dsnon.add(s);
 			}
-			details.setSpatialDataSources(dsspatial);
-			details.setNonSpatialDataSources(dsnon);
-			
-			//attribute sources
-			List<String[]> fields = featureDao.getFeatureSourceDetails(id, ftype);
-			details.setAttributeDataSources(fields);
 		}
+		details.setSpatialDataSources(dsspatial);
+		details.setNonSpatialDataSources(dsnon);
+			
+		//attribute sources
+		List<String[]> fields = featureDao.getFeatureSourceDetails(id, ftype, ftype.isAssessmentSite());
+		details.setAttributeDataSources(fields);  //this will merge them if already set
 		
 		return ResponseEntity.ok(details);		
 	}
@@ -134,7 +137,7 @@ public class FeatureDataSourceController {
 	/*
 	 * build datasource details for sites/structures data
 	 */
-	private void buildSitesStructureData(UUID cabdid, FeatureType ftype, FeatureSourceDetails details, HttpServletRequest request) {
+	private void buildAssessmentDataSources(UUID cabdid, FeatureType ftype, FeatureSourceDetails details, HttpServletRequest request) {
 		
 		UriComponents metadataurl = ServletUriComponentsBuilder.fromContextPath(request)
 		        .path("/" + AssessmentController.PATH).build();

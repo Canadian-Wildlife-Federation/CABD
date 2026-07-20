@@ -572,6 +572,8 @@ public class FeatureDao {
 	 */
 	public List<DataSource> getDataSources(UUID featureId, FeatureType ftype){
 		
+		if (ftype.getFeatureSourceTable() == null) return Collections.emptyList();
+		
 		StringBuilder sb = new StringBuilder();
 		sb.append("SELECT distinct a.id as ds_id, a.name as ds_name, a.source_type as ds_type, ");
 		sb.append("a.version_date, a.version_number, b.datasource_feature_id as fid");
@@ -608,7 +610,7 @@ public class FeatureDao {
 	 * @param ftype the feature type
 	 * @return
 	 */
-	public List<String[]> getFeatureSourceDetails(UUID featureId, FeatureType ftype) {
+	public List<String[]> getFeatureSourceDetails(UUID featureId, FeatureType ftype, boolean hassrc) {
 		
 		//get data source names
 		HashMap<UUID, String> dataSourceNames = new HashMap<>();
@@ -630,10 +632,14 @@ public class FeatureDao {
 				jdbcTemplate.query(sb.toString(), dsRowMapper);
 		dss.forEach(p->dataSourceNames.put(p.getLeft(), p.getRight()));
 		
+		String prefix = "_ds";
+		if (hassrc) {
+			prefix = "_dsid";
+		}
 		sb = new StringBuilder();
-		sb.append("SELECT substring(column_name, 0, length(column_name) - length('_ds') + 1)");
+		sb.append("SELECT substring(column_name, 0, length(column_name) - length('" + prefix + "') + 1)");
 		sb.append(" FROM information_schema.columns ");
-		sb.append("WHERE table_schema = ? and table_name = ? and column_name like '%_ds'");
+		sb.append("WHERE table_schema = ? and table_name = ? and column_name like '%" + prefix + "'");
 		String[] parts = ftype.getAttributeSourceTable().split("\\.");
 		
 		String sname = parts[0];
@@ -650,13 +656,14 @@ public class FeatureDao {
 		sb = new StringBuilder();
 		sb.append("SELECT ");
 		for (String field : columns) {
-			sb.append(field + "_ds,");
+			sb.append(field + prefix + ",");
 		}
 		sb.deleteCharAt(sb.length() - 1);
 		sb.append(" FROM ");
 		sb.append(ftype.getAttributeSourceTable());
 		sb.append(" WHERE cabd_id = ?");
 	
+		final String fprefix = prefix;
 		List<List<String[]>> fieldData = jdbcTemplate.query(sb.toString(),
 				new Object[] {featureId}, new int[] {SqlTypeValue.TYPE_UNKNOWN}, 
 				new RowMapper<List<String[]>>() {
@@ -666,7 +673,7 @@ public class FeatureDao {
 				List<String[]> columnData = new ArrayList<>();
 				
 				for (String field:columns) {
-					UUID dsuuid = (UUID) rs.getObject(field + "_ds");
+					UUID dsuuid = (UUID) rs.getObject(field + fprefix);
 					if (dsuuid != null) {
 						columnData.add(new String[] {field, dataSourceNames.get(dsuuid)});
 					}else {
