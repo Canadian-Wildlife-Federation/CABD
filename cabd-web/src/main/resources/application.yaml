@@ -1,0 +1,59 @@
+# ----------------------------------------
+# Resource handling
+# ----------------------------------------
+spring:
+  web:
+    resources:
+      add-mappings: true
+
+# Auth0 
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: https://canfishpass.ca.auth0.com/
+          # Alternative if your tenant does not expose OIDC discovery:
+          # jwk-set-uri: https://YOUR_DOMAIN.auth0.com/.well-known/jwks.json
+
+
+# to ensure token is used for the api it was issued for
+auth0:
+  audience: https://cabd-web.azurewebsites.net/cabd-api
+
+# security logging
+#logging:
+#  level:
+#    org.springframework.security: DEBUG
+
+# ----------------------------------------
+# Swagger / OpenAPI (springdoc)
+# ----------------------------------------
+springdoc:
+  swagger-ui:
+    path: /swagger-ui/index.html
+
+# ----------------------------------------
+# Server compression
+# ----------------------------------------
+server:
+  compression:
+    enabled: false
+    min-response-size: 5000MB
+    mime-types: application/json, application/geo+json
+
+# ----------------------------------------
+# CABD custom settings
+# ----------------------------------------
+cabd:
+  maxresults: 55000
+
+  # Vector cache settings
+  vectorcachesize: 1000
+  cachefree: 200
+  cachecleanupdelay: 3600
+
+  # Azure blob storage
+  azure:
+    storageaccounturl: https://cabdstorage.blob.core.windows.net/
+    containername: cabd-community-data
+

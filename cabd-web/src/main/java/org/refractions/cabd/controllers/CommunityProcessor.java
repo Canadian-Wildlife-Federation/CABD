@@ -4,6 +4,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -25,7 +26,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.Base64Utils;
 
 import com.azure.identity.DefaultAzureCredential;
 import com.azure.identity.DefaultAzureCredentialBuilder;
@@ -167,12 +167,18 @@ public class CommunityProcessor {
 				continue;
 			}
 			
-			//parse user name
+			//find community contact from user details
 			try {
-				feature.setCommunityContact(parseUser(feature.getUsername()));
+				String jsonuser = null;
+				JsonObject prop = feature.getJson().get("properties").getAsJsonObject();
+				if (prop.has(CommunityDataDao.USER_EMAIL_JSON_FIELD)){
+					jsonuser = prop.get(CommunityDataDao.USER_EMAIL_JSON_FIELD).getAsString();
+				}
+				feature.setCommunityContact(parseUser(data.getOAuthId(), data.getOAuthEmail(), jsonuser));
+				
 			}catch (Exception ex) {
 				logger.error(ex.getMessage(), ex);
-				data.getWarnings().add(MessageFormat.format("Feature {0}: Could not create community user for feature. username: {1} error: {2}. Community data not processed.", feature.getIndex(), feature.getUsername(), ex.toString()));
+				data.getWarnings().add(MessageFormat.format("Feature {0}: Could not create community user for feature. error: {1}. Community data not processed.", feature.getIndex(), ex.toString()));
 				continue;
 			}
 			
@@ -181,31 +187,33 @@ public class CommunityProcessor {
 			String fileIdPrefix = feature.getId().toString().replaceAll("-", "");
 			//parse photos
 			try {
-			for (String field : featuretype.getCommunityPhotoFields()) {
-				JsonElement photodata = properties.get(field);
-				if (photodata == null) continue;
-				if (photodata.getAsString() == null || photodata.getAsString().isBlank()) continue;
-
-				//find the photo field in the json properties
-				String fileId = fileIdPrefix + "_" + field + ".jpeg";
-				try {
-					
-					String base64 = properties.get(field).getAsString();
-					byte[] imagedata = Base64Utils.decodeFromString(base64);
-					
-					writeToAzure(fileId, imagedata);
-					
-					properties.remove(field);
-					properties.add(field, new JsonPrimitive(fileId));
-					
-				}catch (Exception ex) {
-					logger.error(ex.getMessage(), ex);
-					data.getWarnings().add(MessageFormat.format("Feature {0}: Could not write image data for photo field {1} to azure: {2}. Community data not processed.", feature.getIndex(), field, ex.toString()));	
-					throw ex;
+				if (featuretype.getCommunityPhotoFields() != null) {
+					for (String field : featuretype.getCommunityPhotoFields()) {
+						JsonElement photodata = properties.get(field);
+						if (photodata == null) continue;
+						if (photodata.getAsString() == null || photodata.getAsString().isBlank()) continue;
+		
+						//find the photo field in the json properties
+						String fileId = fileIdPrefix + "_" + field + ".jpeg";
+						try {
+							
+							String base64 = properties.get(field).getAsString();
+							byte[] imagedata = Base64.getDecoder().decode(base64);
+							
+							writeToAzure(fileId, imagedata);
+							
+							properties.remove(field);
+							properties.add(field, new JsonPrimitive(fileId));
+							
+						}catch (Exception ex) {
+							logger.error(ex.getMessage(), ex);
+							data.getWarnings().add(MessageFormat.format("Feature {0}: Could not write image data for photo field {1} to azure: {2}. Community data not processed.", feature.getIndex(), field, ex.toString()));	
+							throw ex;
+						}		
+					}
 				}
-				
-			}
 			}catch (Exception ex) {
+				logger.error(ex.getMessage(), ex);
 				continue;
 			}
 			
@@ -254,11 +262,11 @@ public class CommunityProcessor {
 		
 	}
 	
-	private CommunityContact parseUser(String username) {
-		return communityDao.getOrCreateCommunityContact(username);
+	private CommunityContact parseUser(String oauthId, String oauthEmail, String username) {
+		return communityDao.getOrCreateCommunityContact(oauthId, oauthEmail, username);
 	}
 	
-	private static Pair<List<CommunityFeature>, List<String>> parseJon(String json) {
+	private Pair<List<CommunityFeature>, List<String>> parseJon(String json) {
 		JsonElement root = JsonParser.parseString(json);
 		
 		List<CommunityFeature> features = new ArrayList<>();
@@ -287,7 +295,7 @@ public class CommunityProcessor {
 		return Pair.of(features, warnings);
 	}
 	
-	private static CommunityFeature processFeature(JsonElement feature) throws Exception {
+	private CommunityFeature processFeature(JsonElement feature) throws Exception {
 		if (!feature.isJsonObject()) {
 			throw new Exception("Not a json object");
 		}
@@ -308,19 +316,25 @@ public class CommunityProcessor {
 		JsonObject ggeom = geom.getAsJsonObject();
 		checkAttributes(ggeom, "type", "coordinates");
 
+		if (!communityDao.validateGeoJson(ggeom.toString())) {
+			throw new Exception("Invalid GeoJson - geometry not valid geojson");
+		}
+		
 		//Geometry g = parseGeometry(ggeom.get("type").getAsString(), ggeom.get("coordinates"));
 		
 		JsonElement properties = j.get("properties");
 		if (!properties.isJsonObject()) {
 			throw new Exception("Invalid GeoJson - properties attribute is invalid.");
 		}
-		checkAttributes(properties.getAsJsonObject(), "feature_type", "user_email");
 		
-		String featureType = properties.getAsJsonObject().get("feature_type").getAsString();
-		String useremail = properties.getAsJsonObject().get("user_email").getAsString();
+		JsonObject propertyObj = properties.getAsJsonObject();
+		checkAttributes(propertyObj, "feature_type");
+		
+		String featureType = propertyObj.get("feature_type").getAsString();
+		
 		UUID cabdId = null;
-		if (properties.getAsJsonObject().has("cabd_id")) {
-			String cid = properties.getAsJsonObject().get("cabd_id").getAsString();
+		if (propertyObj.has("cabd_id")) {
+			String cid = propertyObj.get("cabd_id").getAsString();
 			if (!cid.trim().isBlank()) {
 				try {
 					cabdId = UUID.fromString(cid);
@@ -329,22 +343,10 @@ public class CommunityProcessor {
 				}
 			}
 		}
-		return new CommunityFeature(cabdId, featureType, useremail, j);
+		return new CommunityFeature(cabdId, featureType, j);
 		
 	}
-	
-//	private static Geometry parseGeometry(String type, JsonElement coordinates) {
-//		GeometryFactory gf = new GeometryFactory();
-//		
-//		if (type.equalsIgnoreCase("POINT")) {
-//			JsonArray c = coordinates.getAsJsonArray();
-//			Point pnt = gf.createPoint(new Coordinate(c.get(0).getAsDouble(), c.get(1).getAsDouble()));
-//			return pnt;
-//		}
-//		System.out.println("feature type not supported");
-//		return null;
-//		
-//	}
+
 	
 	private static void checkAttributes(JsonObject o, String...attributes) throws Exception {
 		for (String r : attributes) {

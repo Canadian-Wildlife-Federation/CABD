@@ -24,8 +24,6 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import javax.servlet.http.HttpServletRequest;
-
 import org.refractions.cabd.CabdConfigurationProperties;
 import org.refractions.cabd.dao.DataSourceDao;
 import org.refractions.cabd.dao.FeatureTypeManager;
@@ -39,6 +37,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * REST api for Databaes Features

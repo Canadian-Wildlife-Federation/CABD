@@ -17,8 +17,6 @@ package org.refractions.cabd.controllers;
 
 import java.security.InvalidParameterException;
 
-import javax.servlet.http.HttpServletRequest;
-
 import org.refractions.cabd.dao.ContactDao;
 import org.refractions.cabd.model.Contact;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,6 +28,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * REST api for Contacts
@@ -55,15 +55,14 @@ public class ContactController {
 	 * @return
 	 */
 	//requires content-type = application/json in request
-	@PutMapping
+	@PutMapping(consumes = MediaType.APPLICATION_JSON_VALUE, 
+			produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<Contact> putContact( 
 			@RequestBody Contact contact,
 			HttpServletRequest request) {
 		
 		String error = Contact.validateEmail(contact.getEmail());
 		if (error != null) throw new InvalidParameterException(error);
-		
-		if (contact.getName() == null || contact.getName().isBlank()) throw new InvalidParameterException("Name is required for contacts.");
 		
 		Contact c = contactDao.getUpdateOrCreateContact(contact.getEmail(), 
 				contact.getName(), contact.getOrganization(), contact.getMailinglist());

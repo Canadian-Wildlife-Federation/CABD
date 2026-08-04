@@ -29,13 +29,13 @@ import javax.xml.transform.sax.TransformerHandler;
 import javax.xml.transform.stream.StreamResult;
 
 import org.apache.commons.lang3.tuple.ImmutableTriple;
+import org.geotools.api.feature.simple.SimpleFeature;
+import org.geotools.api.feature.simple.SimpleFeatureType;
 import org.geotools.data.collection.ListFeatureCollection;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.geotools.kml.v22.KML;
 import org.geotools.xsd.Encoder;
 import org.locationtech.jts.geom.Envelope;
-import org.opengis.feature.simple.SimpleFeature;
-import org.opengis.feature.simple.SimpleFeatureType;
 import org.refractions.cabd.CabdApplication;
 import org.refractions.cabd.dao.FeatureTypeManager;
 import org.refractions.cabd.model.Feature;
@@ -114,7 +114,7 @@ public class FeatureListKmlSerializer extends AbstractFeatureListSerializer{
 		}
 
 		outputMessage.getHeaders().set(HttpHeaders.CONTENT_DISPOSITION, FeatureListUtil.getContentDispositionHeader(metadataitems.getLeft(), "kml"));
-		outputMessage.getHeaders().set(HttpHeaders.CONTENT_TYPE, CabdApplication.KML_MEDIA_TYPE.getType());
+		outputMessage.getHeaders().setContentType(CabdApplication.KML_MEDIA_TYPE);
 
 		Map<String, String> metadataItems = new HashMap<>();
 		metadataItems.put(FeatureListUtil.DATA_LICENSE_KEY, CabdApplication.DATA_LICENCE_URL);

@@ -15,7 +15,10 @@
  */
 package org.refractions.cabd.model;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -84,6 +87,19 @@ public class FeatureSourceDetails {
 	}
 	
 	public void setAttributeDataSources(List<String[]> attributeDataSources) {
-		this.attributeDataSources = attributeDataSources;
+		if (this.attributeDataSources == null) {
+			this.attributeDataSources = attributeDataSources;
+		}
+		//merge the two based on the field name 
+		Map<String, String[]> merged = new LinkedHashMap<>();
+		for (String[] oldValues : this.attributeDataSources) {
+		    merged.put(oldValues[0], oldValues);
+		}
+		for (String[] newValues : attributeDataSources) {
+			if (newValues[1] != null && !newValues[1].isEmpty()) {
+				merged.put(newValues[0], newValues); // overwrites if key exists, inserts if not
+			}
+		}
+		this.attributeDataSources = new ArrayList<>(merged.values());	
 	}
 }

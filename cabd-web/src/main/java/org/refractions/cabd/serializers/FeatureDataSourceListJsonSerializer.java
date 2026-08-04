@@ -17,7 +17,6 @@ package org.refractions.cabd.serializers;
 
 import java.io.IOException;
 
-import org.apache.commons.lang3.tuple.Pair;
 import org.refractions.cabd.model.Assessment;
 import org.refractions.cabd.model.DataSource;
 import org.refractions.cabd.model.FeatureSourceDetails;

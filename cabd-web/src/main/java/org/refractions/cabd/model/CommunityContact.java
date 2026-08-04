@@ -7,9 +7,12 @@ public class CommunityContact {
 	private UUID id;
 	private String username;
 	
-	public CommunityContact(UUID id, String username) {
+	private String oauthId;
+	
+	public CommunityContact(UUID id, String username, String oauthId) {
 		this.id = id;
 		this.username = username;
+		this.oauthId = oauthId;
 	}
 	
 	public UUID getId() {
@@ -28,5 +31,12 @@ public class CommunityContact {
 		this.username = username;
 	}
 
+	public String getOauthId() {
+		return this.oauthId;
+	}
+	
+	public void setOauthId(String oauthId) {
+		this.oauthId = oauthId;
+	}
 	
 }

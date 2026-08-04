@@ -61,9 +61,25 @@ public class CabdConfigurationProperties {
 		return this.maxresults;
 	}
 	
+	
 	public void setMaxresults(int maxresults) {
 		this.maxresults = maxresults;
 	}
+	
+	
+	/**
+	 * returns the smaller of the max results provided of the system maximum results 
+	 * @param maxresults
+	 * @return
+	 */
+	public int findMaxResults(Integer maxresults) {
+		int mr = this.getMaxresults() + 1;
+		if (maxresults != null) {
+			mr = Math.min(maxresults, this.getMaxresults() + 1);
+		}
+		return mr;
+	}
+	
 	
 	/**
 	 * The maximum size of vector tiles in the cache table

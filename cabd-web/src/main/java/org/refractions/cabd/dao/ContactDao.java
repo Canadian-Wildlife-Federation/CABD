@@ -15,6 +15,7 @@
  */
 package org.refractions.cabd.dao;
 
+import java.security.InvalidParameterException;
 import java.util.UUID;
 
 import org.refractions.cabd.model.Contact;
@@ -65,9 +66,14 @@ public class ContactDao {
 	 * @param organization
 	 * @return
 	 */
+	//if name/organization are null they are not updated
+	//if name is blank and error is thrown
+	//if organization is blank then the organization is set to null
 	public Contact getUpdateOrCreateContact(String email, String name, String organization, Boolean isMailingList) {
 		Contact c = getContact(email);
 		if (c == null) {
+			if (name == null || name.isBlank()) throw new InvalidParameterException("Name is required for new contacts.");
+
 			c = new Contact(email, name, organization, isMailingList);
 			//save
 			if (c.getMailinglist() != null) {
@@ -79,21 +85,24 @@ public class ContactDao {
 			}
 			c = getContact(email);
 		}else {
-			if (!nullequals(c.getName(), name) 
-					|| !nullequals(c.getOrganization(), organization) ||
-					(isMailingList != null && !isMailingList.equals(c.getMailinglist()))
-					) {
-				//update
-				c.setName(name);
-				c.setOrganization(organization);
-				if (isMailingList != null) {
-					//only update mailing list if value is provided
-					c.setMailinglist(isMailingList);
-				}
-				//save
-				String update = "UPDATE " + TABLE + " SET name = ?, organization = ?, mailing_list = ? WHERE id = ? ";
-				jdbcTemplate.update(update, c.getName(), c.getOrganization(), c.getMailinglist(), c.getId());
+			if (name != null && !nullequals(c.getName(), name)) {
+				if (name.isBlank()) throw new InvalidParameterException("Name is required for contacts.");
+				c.setName(name);				
 			}
+			if (organization != null && !nullequals(c.getOrganization(), organization)){
+				if (organization.isBlank()) organization = null;
+				c.setOrganization(organization);
+			}
+					
+			if (isMailingList != null && !isMailingList.equals(c.getMailinglist())) {
+				//only update mailing list if value is provided
+				c.setMailinglist(isMailingList);
+			}
+			
+			//save
+			String update = "UPDATE " + TABLE + " SET name = ?, organization = ?, mailing_list = ? WHERE id = ? ";
+			jdbcTemplate.update(update, c.getName(), c.getOrganization(), c.getMailinglist(), c.getId());
+			
 		}
 		return c;
 	}

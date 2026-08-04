@@ -20,12 +20,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-import javax.servlet.http.HttpServletRequest;
-
 import org.refractions.cabd.CabdApplication;
 import org.refractions.cabd.dao.AssessmentDao;
 import org.refractions.cabd.dao.FeatureDao;
-import org.refractions.cabd.dao.FeatureTypeManager;
 import org.refractions.cabd.exceptions.ApiError;
 import org.refractions.cabd.exceptions.NotFoundException;
 import org.refractions.cabd.model.Assessment;
@@ -33,7 +30,7 @@ import org.refractions.cabd.model.DataSource;
 import org.refractions.cabd.model.Feature;
 import org.refractions.cabd.model.FeatureSourceDetails;
 import org.refractions.cabd.model.FeatureType;
-import org.springdoc.api.annotations.ParameterObject;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -50,6 +47,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * Controller for feature attribute source details 
@@ -79,8 +77,8 @@ public class FeatureDataSourceController {
 					 	description = "feature not found", 
 			 			content = {
 						@Content(mediaType = "application/json", schema = @Schema(implementation = ApiError.class))})})
-	@GetMapping(value = "/{id:[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}}",
-			produces = {CabdApplication.CSV_MEDIA_TYPE_STR,  MediaType.APPLICATION_JSON_VALUE})
+	@GetMapping(value = "/{id:[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}}",	
+			produces = {MediaType.APPLICATION_JSON_VALUE, CabdApplication.CSV_MEDIA_TYPE_STR})
 
 	public ResponseEntity<FeatureSourceDetails> getFeatureSourceDetails(
 			@Parameter(description = "unique feature identifier") 
@@ -89,8 +87,11 @@ public class FeatureDataSourceController {
 			HttpServletRequest request) {
 		
 		FeatureType ftype = featureDao.getFeatureType(id);
-		if (ftype == null || ftype.getAttributeSourceTable() == null) {
+		if (ftype == null) {
 			throw new NotFoundException(MessageFormat.format("No feature ''{0}'' found.", id.toString()));
+		}
+		if (ftype.getAttributeSourceTable() == null) {
+			throw new NotFoundException(MessageFormat.format("Feature type {0} has no attribute source table configured", ftype.getType()));
 		}
 		boolean includeall = false;
 		if (params.getFields() != null && params.getFields().equalsIgnoreCase("all")) {
@@ -108,27 +109,27 @@ public class FeatureDataSourceController {
 		}
 		
 		if (ftype.isAssessmentSite()) {
-			//we have to do something special for sites/structures
-			buildSitesStructureData(feature.getId(), ftype, details, request);
-		} else {
-			//data sources by type
-			List<DataSource> sources = featureDao.getDataSources(id, ftype);
-			List<DataSource> dsspatial = new ArrayList<>();
-			List<DataSource> dsnon = new ArrayList<>();
-			for (DataSource s : sources) {
-				if (s.getType().equalsIgnoreCase("spatial")) {
-					dsspatial.add(s);
-				}else {
-					dsnon.add(s);
-				}
+			//we have to do something special for community data assessments and other assessments
+			buildAssessmentDataSources(feature.getId(), ftype, details, request);
+		} 
+		
+		//add other data sources (by type)
+		List<DataSource> sources = featureDao.getDataSources(id, ftype);
+		List<DataSource> dsspatial = new ArrayList<>();
+		List<DataSource> dsnon = new ArrayList<>();
+		for (DataSource s : sources) {
+			if (s.getType().equalsIgnoreCase("spatial")) {
+				dsspatial.add(s);
+			}else {
+				dsnon.add(s);
 			}
-			details.setSpatialDataSources(dsspatial);
-			details.setNonSpatialDataSources(dsnon);
-			
-			//attribute sources
-			List<String[]> fields = featureDao.getFeatureSourceDetails(id, ftype);
-			details.setAttributeDataSources(fields);
 		}
+		details.setSpatialDataSources(dsspatial);
+		details.setNonSpatialDataSources(dsnon);
+			
+		//attribute sources
+		List<String[]> fields = featureDao.getFeatureSourceDetails(id, ftype, ftype.isAssessmentSite());
+		details.setAttributeDataSources(fields);  //this will merge them if already set
 		
 		return ResponseEntity.ok(details);		
 	}
@@ -136,7 +137,7 @@ public class FeatureDataSourceController {
 	/*
 	 * build datasource details for sites/structures data
 	 */
-	private void buildSitesStructureData(UUID cabdid, FeatureType ftype, FeatureSourceDetails details, HttpServletRequest request) {
+	private void buildAssessmentDataSources(UUID cabdid, FeatureType ftype, FeatureSourceDetails details, HttpServletRequest request) {
 		
 		UriComponents metadataurl = ServletUriComponentsBuilder.fromContextPath(request)
 		        .path("/" + AssessmentController.PATH).build();

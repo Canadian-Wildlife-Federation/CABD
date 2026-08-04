@@ -21,8 +21,11 @@ import java.nio.file.Path;
 import java.util.Set;
 
 import org.apache.commons.lang3.tuple.ImmutableTriple;
+import org.geotools.api.data.FeatureWriter;
+import org.geotools.api.feature.simple.SimpleFeature;
+import org.geotools.api.feature.simple.SimpleFeatureType;
+import org.geotools.api.filter.Filter;
 import org.geotools.data.DefaultTransaction;
-import org.geotools.data.FeatureWriter;
 import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
 import org.geotools.geometry.jts.ReferencedEnvelope;
 import org.geotools.geopkg.Entry.DataType;
@@ -30,9 +33,6 @@ import org.geotools.geopkg.FeatureEntry;
 import org.geotools.geopkg.GeoPackage;
 import org.locationtech.jts.geom.Envelope;
 import org.locationtech.jts.geom.Geometry;
-import org.opengis.feature.simple.SimpleFeature;
-import org.opengis.feature.simple.SimpleFeatureType;
-import org.opengis.filter.Filter;
 import org.refractions.cabd.CabdApplication;
 import org.refractions.cabd.dao.FeatureTypeManager;
 import org.refractions.cabd.model.FeatureList;
@@ -107,6 +107,7 @@ public class FeatureListGeoPkgSerializer extends AbstractFeatureListSerializer{
 			entry.setDataType(DataType.Feature);
 			geopkg.create(entry, type);
 			
+			int fid = 1;
 			try(DefaultTransaction tx = new DefaultTransaction()){
 
 				//populate metadata table
@@ -114,11 +115,13 @@ public class FeatureListGeoPkgSerializer extends AbstractFeatureListSerializer{
 					SimpleFeature feature = mwriter.next();
 					feature.setAttribute("key", FeatureListUtil.DATA_LICENSE_KEY);
 					feature.setAttribute("value", CabdApplication.DATA_LICENCE_URL);
+					feature.getUserData().put("fid", String.valueOf(fid++));
 					mwriter.write();
 					
 					feature = mwriter.next();
 					feature.setAttribute("key", FeatureListUtil.DOWNLOAD_DATETIME_KEY);
 					feature.setAttribute("value", FeatureListUtil.getNowAsString());
+					feature.getUserData().put("fid", String.valueOf(fid++));
 					mwriter.write();
 					
 					Set<String> ftypes = FeatureListUtil.getFeatureTypes(features);
@@ -127,6 +130,7 @@ public class FeatureListGeoPkgSerializer extends AbstractFeatureListSerializer{
 						feature = mwriter.next();
 						feature.setAttribute("key", t.getType() + "_" + FeatureListUtil.DATA_VERSION_KEY);
 						feature.setAttribute("value", t.getDataVersion() );
+						feature.getUserData().put("fid", String.valueOf(fid++));
 						mwriter.write();
 					}
 					

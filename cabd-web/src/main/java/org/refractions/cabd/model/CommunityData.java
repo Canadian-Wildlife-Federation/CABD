@@ -16,6 +16,9 @@ public class CommunityData {
 	private String data;
 	private Instant uploadeddatetime; 
 	
+	private String oauthId;
+	private String oauthEmail;
+	
 	private Status status;
 	private String statusMessage;
 	private List<String> warnings;
@@ -27,30 +30,31 @@ public class CommunityData {
 		DONE_WARN
 	}
 	
-	public CommunityData(String data, Instant datetime) {
-		this(null, data, datetime);
+	public CommunityData(String data, Instant datetime, String oauthId, String oauthEmail) {
+		this(null, data, datetime, oauthId, oauthEmail);
 	}
 	
-	public CommunityData(UUID id, String data, Instant datetime) {
+	public CommunityData(UUID id, String data, Instant datetime, String oauthId, String oauthEmail) {
+		this(id, data, datetime, null, oauthId, oauthEmail);
+	}
+	
+	public CommunityData(UUID id, String data, Instant datetime, String status, String oauthId, String oauthEmail) {
 		this.id = id;
 		this.data = data;
 		this.uploadeddatetime = datetime;
-		
+		if (status != null) this.status = Status.valueOf(status);
+		this.oauthEmail = oauthEmail;
+		this.oauthId = oauthId;
 	}
 	
-	public CommunityData(UUID id, String data, Instant datetime, String status) {
-		this.id = id;
-		this.data = data;
-		this.uploadeddatetime = datetime;
-		this.status = Status.valueOf(status);
-	}
-	
-	public CommunityData(UUID id, Instant datetime, String status, String statusMessage, String[] warnings) {
+	public CommunityData(UUID id, Instant datetime, String status, String statusMessage, String[] warnings, String oauthId, String oauthEmail) {
 		this.id = id;
 		this.uploadeddatetime = datetime;
 		this.status = Status.valueOf(status);
 		this.statusMessage = statusMessage;
 		this.warnings = List.of(warnings);
+		this.oauthEmail = oauthEmail;
+		this.oauthId = oauthId;
 	}
 	
 	public void setStatus(Status s) {
@@ -98,6 +102,12 @@ public class CommunityData {
 	public void setData(String data) {
 		this.data = data;
 	}
+
+	public String getOAuthId() {
+		return this.oauthId;
+	}
 	
-	
+	public String getOAuthEmail() {
+		return this.oauthEmail;
+	}
 }

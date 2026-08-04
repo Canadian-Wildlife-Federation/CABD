@@ -41,7 +41,8 @@ public class AssessmentType extends NamedItem{
 		MODELLED_CROSSINGS("m", "modelled-crossings"),
 		SATELLITE("s", "satellite-review"),
 		COMMUNITY("c", "rapid"),
-		ASSESSMENT("a", "long-form");
+		ASSESSMENT("a", "long-form"),
+		DATA_SOURCE("ds", "datasource");
 		
 		private String dbkey;
 		private String datasourcename;

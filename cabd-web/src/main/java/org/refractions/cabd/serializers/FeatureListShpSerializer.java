@@ -28,12 +28,12 @@ import java.util.zip.ZipOutputStream;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.ImmutableTriple;
+import org.geotools.api.data.FeatureWriter;
+import org.geotools.api.feature.simple.SimpleFeature;
+import org.geotools.api.feature.simple.SimpleFeatureType;
 import org.geotools.data.DefaultTransaction;
-import org.geotools.data.FeatureWriter;
 import org.geotools.data.shapefile.ShapefileDataStore;
 import org.locationtech.jts.geom.Envelope;
-import org.opengis.feature.simple.SimpleFeature;
-import org.opengis.feature.simple.SimpleFeatureType;
 import org.refractions.cabd.CabdApplication;
 import org.refractions.cabd.dao.FeatureTypeManager;
 import org.refractions.cabd.model.FeatureList;
@@ -137,7 +137,7 @@ public class FeatureListShpSerializer extends AbstractFeatureListSerializer{
 		String rootExportName = "cabd-" + metadataitems.getLeft();
 		
 		outputMessage.getHeaders().set(HttpHeaders.CONTENT_DISPOSITION, FeatureListUtil.getContentDispositionHeader(metadataitems.getLeft(), "zip"));
-		outputMessage.getHeaders().set(HttpHeaders.CONTENT_TYPE, CabdApplication.SHP_MEDIA_TYPE.getType());
+		outputMessage.getHeaders().setContentType(CabdApplication.SHP_MEDIA_TYPE);
 
 		//zip file
 		try(ZipOutputStream out = new ZipOutputStream(outputMessage.getBody())){
