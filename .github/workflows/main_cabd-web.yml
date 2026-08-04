@@ -32,4 +32,4 @@ jobs:
         slot-name: 'production'
         publish-profile: ${{ secrets.AzureAppService_PublishProfile_ea098b9ab23a4a8aa37c0fc647e2d55b }}
         package: '${{ github.workspace }}/cabd-web/target/*.war'
-        target-path: '/home/site/wwwroot/webapps/cabd-api.war'
+        target-path: '/home/site/wwwroot/webapps/cabd-api'
