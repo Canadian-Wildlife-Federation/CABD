@@ -1,0 +1,25 @@
+[project]
+name = "cabd-updates"
+version = "0.0.0"
+description = "CABD nonspatial updates refactor scaffold"
+requires-python = ">=3.10"
+dependencies = [
+  "psycopg2-binary>=2.9.9",
+  "PyYAML>=6.0.1",
+  "pandas>=2.2.2",
+]
+
+[project.scripts]
+cabd-updates = "cabd_updates.cli:main"
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+include-package-data = false
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["cabd_updates*"]
+exclude = ["sql*"]

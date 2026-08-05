@@ -1,0 +1,236 @@
+-- Minimal v1 publish: resolves datasource IDs, applies delete/new/modify geometry basics,
+-- and marks rows done. Extend column-by-column mapping incrementally.
+
+-- Publish fishways from a staging table into live tables.
+-- Keeps unresolved rows missing data_source in staging for later reprocessing.
+-- Blocks rows that reference a missing dam (dam_id not present in dams.dams),
+-- leaving them in staging (not deleted).
+
+CREATE OR REPLACE FUNCTION cabd.publish_fishway_updates(staging_table regclass)
+RETURNS integer
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  deleted_from_staging integer := 0;
+BEGIN
+  -- Ensure required columns exist
+  EXECUTE format('ALTER TABLE %s ADD COLUMN IF NOT EXISTS data_source uuid', staging_table);
+  EXECUTE format('ALTER TABLE %s ADD COLUMN IF NOT EXISTS blocked_reason text', staging_table);
+  EXECUTE format('ALTER TABLE %s ADD COLUMN IF NOT EXISTS blocked_at timestamptz', staging_table);
+
+  -- Snapshot ready rows at start
+  CREATE TEMP TABLE _fish_ready (id integer PRIMARY KEY) ON COMMIT DROP;
+  EXECUTE format($q$
+    INSERT INTO _fish_ready (id)
+    SELECT id
+    FROM %s
+    WHERE update_status = 'ready'
+  $q$, staging_table);
+
+  IF NOT EXISTS (SELECT 1 FROM _fish_ready) THEN
+    RETURN 0;
+  END IF;
+
+  -- Resolve data sources for this batch only
+  EXECUTE format($q$
+    UPDATE %s u
+    SET data_source = ds.id
+    FROM cabd.data_source ds
+    WHERE u.id IN (SELECT id FROM _fish_ready)
+      AND ds.name = u.data_source_short_name
+  $q$, staging_table);
+
+  -- Best-effort normalize submitted_on
+  BEGIN
+    EXECUTE format('ALTER TABLE %s ALTER COLUMN submitted_on TYPE timestamptz USING submitted_on::timestamptz', staging_table);
+  EXCEPTION WHEN others THEN
+    NULL;
+  END;
+
+  ---------------------------------------------------------------------------
+  -- BLOCK rows that have a missing referenced dam_id
+  -- Only applies to rows that have data_source resolved (otherwise they are just "deferred").
+  ---------------------------------------------------------------------------
+  EXECUTE format($q$
+    UPDATE %s u
+    SET
+      update_status = 'blocked',
+      blocked_reason = 'missing referenced dam_id in dams.dams',
+      blocked_at = now()
+    WHERE u.id IN (SELECT id FROM _fish_ready)
+      AND u.update_status = 'ready'
+      AND u.data_source IS NOT NULL
+      AND u.entry_classification IN ('new feature','modify feature')
+      AND u.dam_id IS NOT NULL
+      AND NOT EXISTS (
+        SELECT 1 FROM dams.dams d WHERE d.cabd_id = u.dam_id
+      )
+  $q$, staging_table);
+
+  ---------------------------------------------------------------------------
+  -- Publishable = still ready AND data_source resolved
+  -- (blocked rows are no longer ready; missing-data_source rows have data_source IS NULL)
+  ---------------------------------------------------------------------------
+  CREATE TEMP TABLE _fish_publishable (id integer PRIMARY KEY) ON COMMIT DROP;
+  EXECUTE format($q$
+    INSERT INTO _fish_publishable (id)
+    SELECT u.id
+    FROM %s u
+    JOIN _fish_ready r ON r.id = u.id
+    WHERE u.update_status = 'ready'
+      AND u.data_source IS NOT NULL
+  $q$, staging_table);
+
+  IF NOT EXISTS (SELECT 1 FROM _fish_publishable) THEN
+    RETURN 0;
+  END IF;
+
+  ---------------------------------------------------------------------------
+  -- DELETE FEATURES (publishable only)
+  ---------------------------------------------------------------------------
+  EXECUTE format($q$
+    DELETE FROM fishways.species_mapping
+    WHERE fishway_id IN (
+      SELECT u.cabd_id
+      FROM %s u
+      JOIN _fish_publishable p ON p.id = u.id
+      WHERE u.entry_classification = 'delete feature'
+    )
+  $q$, staging_table);
+
+  EXECUTE format($q$
+    DELETE FROM fishways.fishways_attribute_source
+    WHERE cabd_id IN (
+      SELECT u.cabd_id
+      FROM %s u
+      JOIN _fish_publishable p ON p.id = u.id
+      WHERE u.entry_classification = 'delete feature'
+    )
+  $q$, staging_table);
+
+  EXECUTE format($q$
+    DELETE FROM fishways.fishways_feature_source
+    WHERE cabd_id IN (
+      SELECT u.cabd_id
+      FROM %s u
+      JOIN _fish_publishable p ON p.id = u.id
+      WHERE u.entry_classification = 'delete feature'
+    )
+  $q$, staging_table);
+
+  EXECUTE format($q$
+    DELETE FROM fishways.fishways
+    WHERE cabd_id IN (
+      SELECT u.cabd_id
+      FROM %s u
+      JOIN _fish_publishable p ON p.id = u.id
+      WHERE u.entry_classification = 'delete feature'
+    )
+  $q$, staging_table);
+
+  ---------------------------------------------------------------------------
+  -- INSERT NEW FEATURES (geometry only)
+  ---------------------------------------------------------------------------
+  EXECUTE format($q$
+    INSERT INTO fishways.fishways (cabd_id, province_territory_code, original_point)
+    SELECT
+      u.cabd_id,
+      u.province_territory_code,
+      ST_SetSRID(ST_MakePoint(u.longitude::float, u.latitude::float), 4617)
+    FROM %s u
+    JOIN _fish_publishable p ON p.id = u.id
+    WHERE u.entry_classification = 'new feature'
+      AND u.latitude IS NOT NULL
+      AND u.longitude IS NOT NULL
+    ON CONFLICT (cabd_id) DO NOTHING
+  $q$, staging_table);
+
+  ---------------------------------------------------------------------------
+  -- ENSURE SOURCE TRACKING ROWS EXIST
+  ---------------------------------------------------------------------------
+  EXECUTE format($q$
+    INSERT INTO fishways.fishways_attribute_source (cabd_id)
+    SELECT DISTINCT u.cabd_id
+    FROM %s u
+    JOIN _fish_publishable p ON p.id = u.id
+    WHERE u.entry_classification IN ('new feature','modify feature')
+    ON CONFLICT (cabd_id) DO NOTHING
+  $q$, staging_table);
+
+  EXECUTE format($q$
+    INSERT INTO fishways.fishways_feature_source (cabd_id, datasource_id)
+    SELECT DISTINCT u.cabd_id, u.data_source
+    FROM %s u
+    JOIN _fish_publishable p ON p.id = u.id
+    WHERE u.entry_classification IN ('new feature','modify feature')
+      AND u.data_source IS NOT NULL
+    ON CONFLICT DO NOTHING
+  $q$, staging_table);
+
+  ---------------------------------------------------------------------------
+  -- MODIFY FEATURES: MOVE GEOMETRY IF PROVIDED
+  ---------------------------------------------------------------------------
+  EXECUTE format($q$
+    UPDATE fishways.fishways f
+    SET original_point = ST_SetSRID(ST_MakePoint(u.longitude::float, u.latitude::float), 4617)
+    FROM %s u
+    JOIN _fish_publishable p ON p.id = u.id
+    WHERE u.entry_classification = 'modify feature'
+      AND u.latitude IS NOT NULL
+      AND u.longitude IS NOT NULL
+      AND f.cabd_id = u.cabd_id
+  $q$, staging_table);
+
+  ---------------------------------------------------------------------------
+  -- LINKAGE: SET dam_id when provided (publishable only; blocked already removed)
+  ---------------------------------------------------------------------------
+  EXECUTE format($q$
+    UPDATE fishways.fishways f
+    SET dam_id = u.dam_id
+    FROM %s u
+    JOIN _fish_publishable p ON p.id = u.id
+    WHERE u.entry_classification IN ('new feature','modify feature')
+      AND u.dam_id IS NOT NULL
+      AND f.cabd_id = u.cabd_id
+      AND (f.dam_id IS DISTINCT FROM u.dam_id)
+  $q$, staging_table);
+
+  ---------------------------------------------------------------------------
+  -- SPECIES MAPPING (publishable only; keeps current heuristic)
+  ---------------------------------------------------------------------------
+  EXECUTE format($q$
+    INSERT INTO fishways.species_mapping (fishway_id, species_id, known_to_use)
+    SELECT u.cabd_id, s.id, true
+    FROM %s u
+    JOIN _fish_publishable p ON p.id = u.id
+    JOIN cabd.fish_species s
+      ON u.known_use ILIKE '%%' || s.common_name || '%%'
+    ON CONFLICT DO NOTHING
+  $q$, staging_table);
+
+  EXECUTE format($q$
+    INSERT INTO fishways.species_mapping (fishway_id, species_id, known_to_use)
+    SELECT u.cabd_id, s.id, false
+    FROM %s u
+    JOIN _fish_publishable p ON p.id = u.id
+    JOIN cabd.fish_species s
+      ON u.known_notuse ILIKE '%%' || s.common_name || '%%'
+    ON CONFLICT DO NOTHING
+  $q$, staging_table);
+
+  ---------------------------------------------------------------------------
+  -- DELETE successfully published rows from staging (publishable only)
+  -- Leaves:
+  --   - rows with data_source missing (still ready, data_source NULL)
+  --   - rows blocked due to missing dam
+  ---------------------------------------------------------------------------
+  EXECUTE format($q$
+    DELETE FROM %s u
+    USING _fish_publishable p
+    WHERE u.id = p.id
+  $q$, staging_table);
+
+  GET DIAGNOSTICS deleted_from_staging = ROW_COUNT;
+  RETURN deleted_from_staging;
+END;
+$$;
