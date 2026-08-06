@@ -7,6 +7,12 @@ immutable
 as $$
 BEGIN
 RETURN CASE 
+WHEN (
+c.to_feature_type_code is not null
+and
+c.to_feature_type_code = 3
+)
+THEN 5
 WHEN
 (
 c.obs_constriction_code is not null 
