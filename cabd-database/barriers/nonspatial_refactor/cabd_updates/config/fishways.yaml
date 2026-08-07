@@ -1,2 +1,33 @@
 feature: fishways
 staging_table: cabd.fishway_updates
+
+required_columns:
+  - cabd_id
+  - latitude
+  - longitude
+  - province_territory_code
+  - entry_classification
+  - data_source_short_name
+  - status
+  - reviewer_comments
+  - submitted_on
+  - waterbody_name_en
+  - waterbody_name_fr
+  - fall_height_m
+  - comments
+  - use_analysis
+# coded value transforms will be later
+
+column_types:
+	cabd_id: uuid
+	dam_id: uuid
+	latitude: numeric
+	longitude: numeric
+  province_territory_code: varchar
+	submitted_on: TIMESTAMP WITH TIME ZONE
+	depth_m: numeric
+	designed_on_biology: boolean
+	estimate_of_attraction_pct: numeric
+	estimate_of_passage_success_pct: numeric
+	max_fishway_velocity_ms: numeric
+	modified: boolean

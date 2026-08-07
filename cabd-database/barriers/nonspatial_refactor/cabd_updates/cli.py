@@ -68,7 +68,16 @@ def main() -> None:
             cfg = load_config(args.feature)
             staging_table = args.staging_table or cfg["staging_table"]
             required_columns = cfg["required_columns"]
-            stage_updates_csv_to_table(conn, Path(args.updates), staging_table=staging_table, required_columns=required_columns)
+            # wire optional column_types from feature config into cast_map
+            column_types = cfg.get("column_types") or {}
+            cast_map = {k.lower(): v for k, v in column_types.items()} if column_types else None
+            stage_updates_csv_to_table(
+                conn,
+                Path(args.updates),
+                staging_table=staging_table,
+                required_columns=required_columns,
+                cast_map=cast_map,
+            )
             print(f"stage: loaded {args.feature} updates into {staging_table}")
             return
 

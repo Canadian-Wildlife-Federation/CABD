@@ -5,6 +5,7 @@ required_columns:
   - cabd_id
   - latitude
   - longitude
+  - province_territory_code
   - entry_classification
   - data_source_short_name
   - status
@@ -21,3 +22,12 @@ required_columns:
 #  - province_territory_code
 #  - passability_status_code
 #  - waterfall_type_code
+
+column_types:
+  cabd_id: uuid
+  latitude: numeric
+  longitude: numeric
+  province_territory_code: varchar
+  use_analysis: boolean
+  submitted_on: TIMESTAMP WITH TIME ZONE
+  fall_height_m: numeric

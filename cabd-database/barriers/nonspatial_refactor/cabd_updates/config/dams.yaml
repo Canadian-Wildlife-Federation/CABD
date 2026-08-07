@@ -1,2 +1,34 @@
 feature: dams
 staging_table: cabd.dam_updates
+
+required_columns:
+  - cabd_id
+  - latitude
+  - longitude
+  - province_territory_code
+  - entry_classification
+  - data_source_short_name
+  - status
+  - reviewer_comments
+  - submitted_on
+  - waterbody_name_en
+  - waterbody_name_fr
+  - fall_height_m
+  - comments
+  - use_analysis
+# coded value transforms will be later
+#  - passability_status_code
+
+column_types:
+	cabd_id: uuid
+	latitude: numeric
+	longitude: numeric
+  province_territory_code: varchar
+	submitted_on: TIMESTAMP WITH TIME ZONE
+	construction_year: integer
+	maintenance_last: date
+	maintenance_next: date
+	height_m: numeric
+	reservoir_area_skm: numeric
+	generating_capacity_mwh: numeric
+	use_analysis: boolean
