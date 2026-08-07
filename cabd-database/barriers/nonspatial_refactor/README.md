@@ -14,7 +14,7 @@ pip install -r requirements.txt
 ## Configure DB connection
 ```
 
-set CABD_DSN="host=... port=5432 dbname=cabd user=... password=..."
+set CABD_DSN=host=... port=5432 dbname=cabd user=... password=...
 
 ```
 

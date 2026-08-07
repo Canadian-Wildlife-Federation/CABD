@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 import csv
-from typing import Iterable
+import uuid
+from typing import Iterable, Sequence
 
 
 def stage_updates_csv_to_table(
@@ -10,117 +11,173 @@ def stage_updates_csv_to_table(
     csv_path: Path,
     staging_table: str,
     *,
-    # Generic normalization knobs (feature-agnostic)
+    required_columns: Sequence[str],
+    raw_schema: str | None = None,
+    raw_table_prefix: str = "updates_raw_",
+    normalize: bool = True,
     trim_columns: Iterable[str] = (
         "data_source_short_name",
         "reviewer_comments",
         "province_territory_code",
         "entry_classification",
-        "update_status",
+        "status",
         "update_type",
     ),
     lower_columns: Iterable[str] = ("province_territory_code",),
     set_status_from_reviewer_comments: bool = True,
-    default_update_type: str | None = "user",
+    default_update_type: str | None = "cwf",
     generate_cabd_id_for_new_feature: bool = True,
-    ) -> None:
+) -> dict:
     """
-    Load a CSV into a staging table using COPY, then apply a generic
-    normalization pass.
+    Generic, feature-agnostic staging loader:
 
-    This function is intentionally feature-agnostic:
-      - It only normalizes columns if they exist in the staging table.
-      - It does not do coded-value lookups.
-      - It does not assume a specific primary key column.
+    1) COPY the entire CSV into a raw table (all columns as TEXT)
+    2) INSERT only required_columns into the staging table (legacy moveQuery pattern)
+    3) (optional) apply generic normalization rules on the staging table
 
-    Normalization performed (if the relevant columns exist):
-      - Trim whitespace and convert '' -> NULL for configured trim_columns
-      - Lowercase configured lower_columns
-      - If update_status is NULL/blank: set to 'ready' if reviewer_comments
-        is NULL else 'needs review'
-      - If update_type is NULL/blank: set to default_update_type
-        (default 'user')
-      - If cabd_id is NULL and entry_classification='new feature':
-        set cabd_id = gen_random_uuid()
-
-    Assumptions:
-      - CSV header matches column names in staging_table
-        (at least a compatible subset).
-      - The staging table already exists with appropriate column types
-        (uuid, numeric, etc.).
-      - If cabd_id is uuid-typed, invalid UUID text in the CSV will fail COPY.
+    IMPORTANT:
+    - stage_updates.py stays feature-agnostic by taking required_columns as a list.
+    - Coded-value transforms are intentionally NOT performed here.
     """
+    if not required_columns:
+        raise ValueError("required_columns must be a non-empty list")
 
-    # ------------------------------------------------------------------
-    # 1) COPY from CSV
-    # ------------------------------------------------------------------
+    # -----------------------
+    # 1) Read CSV header
+    # -----------------------
     with csv_path.open("r", encoding="utf-8-sig", newline="") as f:
         reader = csv.reader(f)
         header = next(reader)
         header = [h.strip() for h in header]
+        header_lc = {h.lower(): h for h in header}  # lowercase->original
 
-    copy_sql = (
-        f"COPY {staging_table} ({', '.join([quote_ident(h) for h in header])}) "
-        f"FROM STDIN WITH (FORMAT csv, HEADER true)"
-    )
+    missing = [c for c in required_columns if c.lower() not in header_lc]
+    if missing:
+        raise ValueError(
+            f"{csv_path}: missing required columns for staging: {missing}"
+        )
 
-    with conn.cursor() as cur, csv_path.open("r", encoding="utf-8-sig") as f:
-        cur.copy_expert(copy_sql, f)
+    # -----------------------
+    # 2) Create raw table + COPY everything
+    # -----------------------
+    raw_table = f"temp_updates_{uuid.uuid4().hex[:12]}"
+    raw_table_qualified = raw_table
+    create_prefix = "CREATE TEMP TABLE"
+    drop_stmt = f"DROP TABLE IF EXISTS {raw_table};"
+
+    cols_sql = ", ".join([f"{quote_ident(h)} text" for h in header])
+
+    with conn.cursor() as cur:
+        cur.execute(drop_stmt)
+        cur.execute(f"{create_prefix} {raw_table_qualified} ({cols_sql});")
+
+        copy_sql = (
+            f"COPY {raw_table_qualified} "
+            f"({', '.join([quote_ident(h) for h in header])}) "
+            f"FROM STDIN WITH (FORMAT csv, HEADER true)"
+        )
+
+        with csv_path.open("r", encoding="utf-8-sig") as f2:
+            cur.copy_expert(copy_sql, f2)
+
+    # -----------------------
+    # 3) INSERT subset into staging table (moveQuery pattern)
+    # -----------------------
+    # NOTE: coded-value transforms intentionally not done here.
+    src_cols = [header_lc[c.lower()] for c in required_columns]
+
+    insert_cols_sql = ", ".join([quote_ident(c) for c in required_columns])
+    select_cols_sql = ", ".join([quote_ident(c) for c in src_cols])
 
     with conn.cursor() as cur:
         cur.execute(
             f"""
-            DELETE FROM {staging_table}
-            WHERE "status" IN ('complete', 'do not process', 'on hold')
+            INSERT INTO {staging_table} ({insert_cols_sql})
+            SELECT {select_cols_sql}
+            FROM {raw_table_qualified};
             """
         )
-    # ------------------------------------------------------------------
-    # 2) Normalization pass
-    # ------------------------------------------------------------------
+
+        inserted_rows = cur.rowcount
+
+    # -----------------------
+    # 4) Optional normalization on staging table (generic)
+    # -----------------------
+    if normalize:
+        _normalize_staging_table(
+            conn,
+            staging_table,
+            trim_columns=trim_columns,
+            lower_columns=lower_columns,
+            set_status_from_reviewer_comments=set_status_from_reviewer_comments,
+            default_update_type=default_update_type,
+            generate_cabd_id_for_new_feature=generate_cabd_id_for_new_feature,
+        )
+
+    return {
+        "raw_table": raw_table_qualified,
+        "inserted_rows": int(inserted_rows or 0),
+    }
+
+
+def _normalize_staging_table(
+    conn,
+    staging_table: str,
+    *,
+    trim_columns: Iterable[str],
+    lower_columns: Iterable[str],
+    set_status_from_reviewer_comments: bool,
+    default_update_type: str | None,
+    generate_cabd_id_for_new_feature: bool,
+) -> None:
     cols = _get_table_columns(conn, staging_table)
 
     with conn.cursor() as cur:
-
-        # 2a) trim + empty-string -> NULL
+        # trim + empty-string -> NULL
         for c in trim_columns:
-            if c in cols:
+            if c.lower() in cols:
                 cur.execute(
                     f"""
                     UPDATE {staging_table}
-                    SET {quote_ident(c)} = NULLIF(btrim({quote_ident(c)}), '')
+                    SET {quote_ident(c)} = NULLIF(btrim({quote_ident(c)}::text), '')
                     WHERE {quote_ident(c)} IS NOT NULL
                     """
                 )
 
-        # 2b) lowercase selected columns
+        # lowercase
         for c in lower_columns:
-            if c in cols:
+            if c.lower() in cols:
                 cur.execute(
                     f"""
                     UPDATE {staging_table}
-                    SET {quote_ident(c)} = lower({quote_ident(c)})
+                    SET {quote_ident(c)} = lower({quote_ident(c)}::text)
                     WHERE {quote_ident(c)} IS NOT NULL
                     """
                 )
 
-        # 2c) set update_status based on reviewer_comments
-        #     (only if update_status is missing)
+        # clean up status column
+        cur.execute(
+            f"""
+            DELETE FROM {staging_table}
+            WHERE status IN ('complete', 'do not process', 'on hold')
+            """
+        )
         if (
             set_status_from_reviewer_comments
-            and {"update_status", "reviewer_comments"}.issubset(cols)
+            and {"status", "reviewer_comments"}.issubset(cols)
         ):
             cur.execute(
                 f"""
                 UPDATE {staging_table}
-                SET update_status = CASE
+                SET status = CASE
                     WHEN reviewer_comments IS NULL THEN 'ready'
                     ELSE 'needs review'
                 END
-                WHERE update_status IS NULL
+                WHERE status IS NULL
                 """
             )
 
-        # 2d) default update_type
+        # default update_type
         if default_update_type is not None and "update_type" in cols:
             cur.execute(
                 f"""
@@ -131,7 +188,7 @@ def stage_updates_csv_to_table(
                 (default_update_type,),
             )
 
-        # 2e) generate cabd_id for new features missing it
+        # generate cabd_id for new features missing it
         if (
             generate_cabd_id_for_new_feature
             and {"cabd_id", "entry_classification"}.issubset(cols)
@@ -141,45 +198,38 @@ def stage_updates_csv_to_table(
                 UPDATE {staging_table}
                 SET cabd_id = gen_random_uuid()
                 WHERE entry_classification = 'new feature'
-                  AND cabd_id IS NULL
+                AND cabd_id IS NULL
                 """
             )
 
 
 def _get_table_columns(conn, table_name: str) -> set[str]:
-    """
-    Returns a lowercase set of column names for a schema-qualified table.
-    table_name must be 'schema.table' (or just 'table' for search_path resolution).
-    """
-
     if "." in table_name:
         schema, table = table_name.split(".", 1)
+        schema = schema.strip('"')
+        table = table.strip('"')
     else:
         schema, table = None, table_name
-
     with conn.cursor() as cur:
         if schema:
             cur.execute(
-                """
-                SELECT column_name
-                FROM information_schema.columns
-                WHERE table_schema = %s
-                  AND table_name = %s
-                """,
-                (schema, table),
+            """
+            SELECT column_name
+            FROM information_schema.columns
+            WHERE table_schema = %s AND table_name = %s
+            """,
+            (schema, table),
             )
         else:
-            # Falls back to current search_path; this is less deterministic.
             cur.execute(
-                """
-                SELECT column_name
-                FROM information_schema.columns
-                WHERE table_name = %s
-                """,
-                (table,),
+            """
+            SELECT column_name
+            FROM information_schema.columns
+            WHERE table_name = %s
+            """,
+            (table,),
             )
-
-        return {r[0].lower() for r in cur.fetchall()}
+            return {r[0].lower() for r in cur.fetchall()}
 
 
 def quote_ident(ident: str) -> str:

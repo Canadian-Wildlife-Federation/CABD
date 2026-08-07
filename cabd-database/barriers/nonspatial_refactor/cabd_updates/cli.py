@@ -67,7 +67,8 @@ def main() -> None:
         if args.cmd == "stage":
             cfg = load_config(args.feature)
             staging_table = args.staging_table or cfg["staging_table"]
-            stage_updates_csv_to_table(conn, Path(args.updates), staging_table=staging_table)
+            required_columns = cfg["required_columns"]
+            stage_updates_csv_to_table(conn, Path(args.updates), staging_table=staging_table, required_columns=required_columns)
             print(f"stage: loaded {args.feature} updates into {staging_table}")
             return
 
