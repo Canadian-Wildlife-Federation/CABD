@@ -1,5 +1,3 @@
-
--- TODO: update this function as per your requirements
 create or replace function stream_crossings.community_passability_status(c stream_crossings.stream_crossings_community_holding)
 returns integer
 language plpgsql 
