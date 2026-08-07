@@ -59,3 +59,5 @@ ALTER TABLE cabd.fishway_updates
 ALTER TABLE cabd.fishway_updates
   ADD CONSTRAINT updates_lon_range
   CHECK (longitude IS NULL OR (longitude BETWEEN -180 AND 180));
+
+ALTER TABLE cabd.fishway_updates rename column update_status to status;

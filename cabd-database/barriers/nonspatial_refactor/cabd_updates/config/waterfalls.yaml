@@ -1,33 +1,49 @@
 feature: waterfalls
 staging_table: cabd.waterfall_updates
 
+# waterfalls
 required_columns:
   - cabd_id
+  - fall_name_en
+  - fall_name_fr
+  - waterbody_name_en
+  - waterbody_name_fr
+  - province_territory_code
+  - fall_height_m
+  - comments
+  - use_analysis
   - latitude
   - longitude
-  - province_territory_code
   - entry_classification
   - data_source_short_name
   - status
   - reviewer_comments
   - submitted_on
-  - fall_name_en
-  - fall_name_fr
-  - waterbody_name_en
-  - waterbody_name_fr
-  - fall_height_m
-  - comments
-  - use_analysis
-# coded value transforms will be later
-#  - province_territory_code
-#  - passability_status_code
-#  - waterfall_type_code
+
+## coded value transforms will be later
+
+# - passability_status_code
+# - waterfall_type_code
 
 column_types:
   cabd_id: uuid
+  fall_name_en: varchar
+  fall_name_fr: varchar
+  waterbody_name_en: varchar
+  waterbody_name_fr: varchar
+  province_territory_code: varchar
+  fall_height_m: real
+  comments: text
+  use_analysis: boolean
   latitude: numeric
   longitude: numeric
-  province_territory_code: varchar
-  use_analysis: boolean
-  submitted_on: TIMESTAMP WITH TIME ZONE
-  fall_height_m: numeric
+  entry_classification: varchar
+  data_source_short_name: varchar
+  status: varchar
+  reviewer_comments: varchar
+  submitted_on: timestamp with time zone
+
+## coded value transforms will be later
+
+#  passability_status_code: smallint
+#  waterfall_type_code: smallint

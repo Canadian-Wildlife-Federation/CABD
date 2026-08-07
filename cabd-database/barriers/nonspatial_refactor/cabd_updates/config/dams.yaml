@@ -3,32 +3,140 @@ staging_table: cabd.dam_updates
 
 required_columns:
   - cabd_id
+  - dam_name_en
+  - waterbody_name_en
+  - waterbody_name_fr
+  - reservoir_name_en
+  - reservoir_name_fr
+  - province_territory_code
+  - owner
+  - provincial_compliance_status
+  - federal_compliance_status
+  - operating_notes
+  - construction_year
+  - removed_year
+  - assess_schedule
+  - expected_end_of_life
+  - maintenance_last
+  - maintenance_next
+  - height_m
+  - length_m
+  - spillway_capacity
+  - reservoir_present
+  - reservoir_area_skm
+  - reservoir_depth_m
+  - storage_capacity_mcm
+  - avg_rate_of_discharge_ls
+  - degree_of_regulation_pc
+  - provincial_flow_req
+  - federal_flow_req
+  - hydro_peaking_system
+  - generating_capacity_mwh
+  - turbine_number
+  - passability_status_note
+  - use_analysis
+  - facility_name_en
   - latitude
   - longitude
-  - province_territory_code
   - entry_classification
   - data_source_short_name
   - status
   - reviewer_comments
   - submitted_on
-  - waterbody_name_en
-  - waterbody_name_fr
-  - fall_height_m
-  - comments
-  - use_analysis
-# coded value transforms will be later
-#  - passability_status_code
+
+## coded value transforms will be later
+
+# - ownership_type_code
+# - operating_status_code
+# - use_code
+# - use_irrigation_code
+# - use_electricity_code
+# - use_supply_code
+# - use_floodcontrol_code
+# - use_recreation_code
+# - use_navigation_code
+# - use_fish_code
+# - use_pollution_code
+# - use_invasivespecies_code
+# - use_other_code
+# - lake_control_code
+# - function_code
+# - condition_code
+# - structure_type_code
+# - spillway_type_code
+# - turbine_type_code
+# - up_passage_type_code
+# - down_passage_route_code
+# - passability_status_code
+# - construction_material_code
+# - use_conservation_code
 
 column_types:
-	cabd_id: uuid
-	latitude: numeric
-	longitude: numeric
+  cabd_id: uuid
+  dam_name_en: varchar
+  waterbody_name_en: varchar
+  waterbody_name_fr: varchar
+  reservoir_name_en: varchar
+  reservoir_name_fr: varchar
   province_territory_code: varchar
-	submitted_on: TIMESTAMP WITH TIME ZONE
-	construction_year: integer
-	maintenance_last: date
-	maintenance_next: date
-	height_m: numeric
-	reservoir_area_skm: numeric
-	generating_capacity_mwh: numeric
-	use_analysis: boolean
+  owner: varchar
+  provincial_compliance_status: varchar
+  federal_compliance_status: varchar
+  operating_notes: text
+  construction_year: numeric
+  removed_year: numeric
+  assess_schedule: varchar
+  expected_end_of_life: smallint
+  maintenance_last: date
+  maintenance_next: date
+  height_m: real
+  length_m: real
+  spillway_capacity: double precision
+  reservoir_present: boolean
+  reservoir_area_skm: real
+  reservoir_depth_m: real
+  storage_capacity_mcm: double precision
+  avg_rate_of_discharge_ls: double precision
+  degree_of_regulation_pc: real
+  provincial_flow_req: double precision
+  federal_flow_req: double precision
+  hydro_peaking_system: boolean
+  generating_capacity_mwh: double precision
+  turbine_number: smallint
+  passability_status_note: text
+  use_analysis: boolean
+  facility_name_en: varchar
+  latitude: numeric
+  longitude: numeric
+  entry_classification: varchar
+  data_source_short_name: varchar
+  status: varchar
+  reviewer_comments: varchar
+  submitted_on: timestamp with time zone
+
+## coded value transforms will be later
+
+  # ownership_type_code: smallint
+  # operating_status_code: smallint
+  # use_code: smallint
+  # use_irrigation_code: smallint
+  # use_electricity_code: smallint
+  # use_supply_code: smallint
+  # use_floodcontrol_code: smallint
+  # use_recreation_code: smallint
+  # use_navigation_code: smallint
+  # use_fish_code: smallint
+  # use_pollution_code: smallint
+  # use_invasivespecies_code: smallint
+  # use_other_code: smallint
+  # lake_control_code: smallint
+  # function_code: smallint
+  # condition_code: smallint
+  # structure_type_code: smallint
+  # spillway_type_code: smallint
+  # turbine_type_code: smallint
+  # up_passage_type_code: smallint
+  # down_passage_route_code: smallint
+  # passability_status_code: smallint
+  # construction_material_code: smallint
+  # use_conservation_code: smallint

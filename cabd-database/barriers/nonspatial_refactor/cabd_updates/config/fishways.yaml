@@ -3,31 +3,103 @@ staging_table: cabd.fishway_updates
 
 required_columns:
   - cabd_id
+  - dam_id
+  - structure_name_en
+  - structure_name_fr
+  - waterbody_name_en
+  - waterbody_name_fr
+  - river_name_en
+  - river_name_fr
+  - province_territory_code
+  - monitoring_equipment
+  - architect
+  - contracted_by
+  - constructed_by
+  - plans_held_by
+  - purpose
+  - designed_on_biology
+  - length_m
+  - elevation_m
+  - gradient
+  - depth_m
+  - modified
+  - modification_year
+  - modification_purpose
+  - year_constructed
+  - operated_by
+  - operation_period
+  - has_evaluating_studies
+  - nature_of_evaluation_studies
+  - engineering_notes
+  - operating_notes
+  - mean_fishway_velocity_ms
+  - max_fishway_velocity_ms
+  - estimate_of_attraction_pct
+  - estimate_of_passage_success_pct
+  - fishway_reference_id
   - latitude
   - longitude
-  - province_territory_code
   - entry_classification
   - data_source_short_name
   - status
   - reviewer_comments
   - submitted_on
-  - waterbody_name_en
-  - waterbody_name_fr
-  - fall_height_m
-  - comments
-  - use_analysis
-# coded value transforms will be later
+  - known_notuse
+  - known_use
+  ## coded value transforms will be handled later
+
+  # - fishpass_type_code
+  # - entrance_location_code
+  # - entrance_position_code
+
 
 column_types:
-	cabd_id: uuid
-	dam_id: uuid
-	latitude: numeric
-	longitude: numeric
+  cabd_id: uuid
+  dam_id: uuid
+  structure_name_en: varchar
+  structure_name_fr: varchar
+  waterbody_name_en: varchar
+  waterbody_name_fr: varchar
+  river_name_en: varchar
+  river_name_fr: varchar
   province_territory_code: varchar
-	submitted_on: TIMESTAMP WITH TIME ZONE
-	depth_m: numeric
-	designed_on_biology: boolean
-	estimate_of_attraction_pct: numeric
-	estimate_of_passage_success_pct: numeric
-	max_fishway_velocity_ms: numeric
-	modified: boolean
+  monitoring_equipment: text
+  architect: text
+  contracted_by: text
+  constructed_by: text
+  plans_held_by: text
+  purpose: text
+  designed_on_biology: boolean
+  length_m: real
+  elevation_m: real
+  gradient: real
+  depth_m: real
+  modified: boolean
+  modification_year: smallint
+  modification_purpose: text
+  year_constructed: smallint
+  operated_by: text
+  operation_period: text
+  has_evaluating_studies: boolean
+  nature_of_evaluation_studies: text
+  engineering_notes: text
+  operating_notes: text
+  mean_fishway_velocity_ms: real
+  max_fishway_velocity_ms: real
+  estimate_of_attraction_pct: real
+  estimate_of_passage_success_pct: real
+  fishway_reference_id: varchar
+  latitude: numeric
+  longitude: numeric
+  entry_classification: varchar
+  data_source_short_name: varchar
+  status: varchar
+  reviewer_comments: varchar
+  submitted_on: timestamp with time zone
+  known_notuse: varchar
+  known_use: varchar
+
+  ## coded value transforms will be handled later
+  # fishpass_type_code: smallint
+  # entrance_location_code: smallint
+  # entrance_position_code: smallint

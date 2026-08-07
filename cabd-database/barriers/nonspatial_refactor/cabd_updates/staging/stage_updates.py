@@ -40,8 +40,8 @@ def stage_updates_csv_to_table(
     """
     Generic, feature-agnostic staging loader:
 
-    1) COPY the entire CSV into a raw table (all columns as TEXT)
-    2) INSERT only required_columns into the staging table (legacy moveQuery pattern)
+    1) COPY the entire CSV into a raw table 
+    2) INSERT only required_columns into the staging table
     3) (optional) apply generic normalization rules on the staging table
 
     IMPORTANT:
@@ -220,8 +220,7 @@ def _normalize_temp_table(
             )
 
         # Ensure a province_territory_code column exists on the raw table
-        # and, if possible, populate it from the authoritative province
-        # boundary table using PostGIS (transforming from WGS84->province SRID).
+        # and, if possible, populate it from the province boundary table using PostGIS (transforming from WGS84->province SRID).
         try:
             cur.execute(f"ALTER TABLE {temp_table} ADD COLUMN IF NOT EXISTS province_territory_code text;")
 
