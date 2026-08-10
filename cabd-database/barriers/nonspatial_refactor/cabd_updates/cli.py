@@ -7,7 +7,6 @@ from pathlib import Path
 from cabd_updates.config import load_config
 from cabd_updates.db.connect import connect
 from cabd_updates.ingest.validate import validate_updates_csv_basic
-from cabd_updates.ingest.dup_check import dup_check_csv
 from cabd_updates.staging.stage_updates import stage_updates_csv_to_table
 from cabd_updates.staging.stage_data_sources import stage_data_sources_csv_to_table
 from cabd_updates.publish.publish import publish_feature, publish_data_sources
@@ -67,16 +66,12 @@ def main() -> None:
         if args.cmd == "stage":
             cfg = load_config(args.feature)
             staging_table = args.staging_table or cfg["staging_table"]
-            required_columns = cfg["required_columns"]
-            # wire optional column_types from feature config into cast_map
             column_types = cfg.get("column_types") or {}
-            cast_map = {k.lower(): v for k, v in column_types.items()} if column_types else None
             stage_updates_csv_to_table(
                 conn,
                 Path(args.updates),
                 staging_table=staging_table,
-                required_columns=required_columns,
-                cast_map=cast_map,
+                column_types=column_types,
             )
             print(f"stage: loaded {args.feature} updates into {staging_table}")
             return

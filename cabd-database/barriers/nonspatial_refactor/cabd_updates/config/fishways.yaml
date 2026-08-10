@@ -1,58 +1,6 @@
 feature: fishways
 staging_table: cabd.fishway_updates
 
-required_columns:
-  - cabd_id
-  - dam_id
-  - structure_name_en
-  - structure_name_fr
-  - waterbody_name_en
-  - waterbody_name_fr
-  - river_name_en
-  - river_name_fr
-  - province_territory_code
-  - monitoring_equipment
-  - architect
-  - contracted_by
-  - constructed_by
-  - plans_held_by
-  - purpose
-  - designed_on_biology
-  - length_m
-  - elevation_m
-  - gradient
-  - depth_m
-  - modified
-  - modification_year
-  - modification_purpose
-  - year_constructed
-  - operated_by
-  - operation_period
-  - has_evaluating_studies
-  - nature_of_evaluation_studies
-  - engineering_notes
-  - operating_notes
-  - mean_fishway_velocity_ms
-  - max_fishway_velocity_ms
-  - estimate_of_attraction_pct
-  - estimate_of_passage_success_pct
-  - fishway_reference_id
-  - latitude
-  - longitude
-  - entry_classification
-  - data_source_short_name
-  - status
-  - reviewer_comments
-  - submitted_on
-  - known_notuse
-  - known_use
-  ## coded value transforms will be handled later
-
-  # - fishpass_type_code
-  # - entrance_location_code
-  # - entrance_position_code
-
-
 column_types:
   cabd_id: uuid
   dam_id: uuid

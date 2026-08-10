@@ -1,30 +1,6 @@
 feature: waterfalls
 staging_table: cabd.waterfall_updates
 
-# waterfalls
-required_columns:
-  - cabd_id
-  - fall_name_en
-  - fall_name_fr
-  - waterbody_name_en
-  - waterbody_name_fr
-  - province_territory_code
-  - fall_height_m
-  - comments
-  - use_analysis
-  - latitude
-  - longitude
-  - entry_classification
-  - data_source_short_name
-  - status
-  - reviewer_comments
-  - submitted_on
-
-## coded value transforms will be later
-
-# - passability_status_code
-# - waterfall_type_code
-
 column_types:
   cabd_id: uuid
   fall_name_en: varchar
