@@ -159,7 +159,7 @@ public class Filter {
 		Operator op = Operator.findOperator(filter.substring(first + 1, second));
 		String[] values = null;
 		if (op == Operator.IN || op == Operator.NOTIN) {
-			values = filter.substring(second+1).split(",");
+			values = filter.substring(second+1).split(";");
 		}else {
 			values = new String[] {filter.substring(second + 1)};
 		}
