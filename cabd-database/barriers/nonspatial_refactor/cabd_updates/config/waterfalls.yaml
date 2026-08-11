@@ -18,8 +18,13 @@ column_types:
   status: varchar
   reviewer_comments: varchar
   submitted_on: timestamp with time zone
+  passability_status_code: smallint
+  waterfall_type_code: smallint
 
-## coded value transforms will be later
-
-#  passability_status_code: smallint
-#  waterfall_type_code: smallint
+# Human-readable coded values are matched against name_en in each code table,
+# then replaced with the numeric code
+coded_values:
+  passability_status_code:
+    code_table: cabd.passability_status_codes
+  waterfall_type_code:
+    code_table: waterfalls.waterfall_type_codes

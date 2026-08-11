@@ -21,7 +21,6 @@ def build_parser() -> argparse.ArgumentParser:
     pv = sub.add_parser("validate", help="Validate an updates CSV and optionally run dup check.")
     pv.add_argument("--feature", required=True, choices=["dams", "fishways", "waterfalls"])
     pv.add_argument("--updates", required=True, help="Path to updates CSV")
-    pv.add_argument("--dup-check", action="store_true", help="Run duplicate/conflict check")
 
     # stage updates
     ps = sub.add_parser("stage", help="Stage updates CSV into configured staging table (COPY).")
@@ -56,9 +55,6 @@ def main() -> None:
 
     if args.cmd == "validate":
         validate_updates_csv_basic(Path(args.updates), feature=args.feature)
-        if args.dup_check:
-            out = dup_check_csv(Path(args.updates))
-            print(f"dup_check: wrote {out}")
         print("validate: OK")
         return
 
@@ -67,11 +63,13 @@ def main() -> None:
             cfg = load_config(args.feature)
             staging_table = args.staging_table or cfg["staging_table"]
             column_types = cfg.get("column_types") or {}
+            coded_values = cfg.get("coded_values") or {}
             stage_updates_csv_to_table(
                 conn,
                 Path(args.updates),
                 staging_table=staging_table,
                 column_types=column_types,
+                coded_values=coded_values,
             )
             print(f"stage: loaded {args.feature} updates into {staging_table}")
             return

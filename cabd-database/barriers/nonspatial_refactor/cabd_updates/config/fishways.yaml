@@ -46,8 +46,16 @@ column_types:
   submitted_on: timestamp with time zone
   known_notuse: varchar
   known_use: varchar
+  fishpass_type_code: smallint
+  entrance_location_code: smallint
+  entrance_position_code: smallint
 
-  ## coded value transforms will be handled later
-  # fishpass_type_code: smallint
-  # entrance_location_code: smallint
-  # entrance_position_code: smallint
+# Human-readable coded values are matched against name_en in each code table,
+# then replaced with the numeric code
+coded_values:
+  fishpass_type_code:
+    code_table: cabd.upstream_passage_type_codes
+  entrance_location_code:
+    code_table: fishways.entrance_location_codes
+  entrance_position_code:
+    code_table: fishways.entrance_position_codes

@@ -6,8 +6,14 @@ import re
 from io import StringIO
 from typing import Iterable, Sequence
 
+
 _NUMERIC_TYPE_HINTS = ("double precision", "numeric", "real", "int", "smallint", "bigint")
 _THOUSANDS_RE = re.compile(r"^-?\d{1,3}(,\d{3})+$")
+
+# Code translation tables share a consistent layout across all features:
+#   code, name_en, description_en, name_fr, description_fr
+_CODE_MATCH_COLUMN = "name_en"   # human-readable English name compared to the CSV
+_CODE_VALUE_COLUMN = "code"      # numeric code written back into the raw column
 
 
 def _thousands_clean_indices(header: list[str], column_types: dict | None) -> set[int]:
@@ -37,14 +43,18 @@ def _strip_thousands(value: str) -> str:
     return value
 
 
+def _canonical_sql(expr: str) -> str:
+    """SQL: lowercase + strip all non-alphanumeric characters (for matching)."""
+    return f"lower(regexp_replace({expr}, '[^a-zA-Z0-9]', '', 'g'))"
+
+
 def stage_updates_csv_to_table(
     conn,
     csv_path: Path,
     staging_table: str,
     *,
     column_types: dict | None = None,
-    raw_schema: str | None = None,
-    raw_table_prefix: str = "updates_raw_",
+    coded_values: dict | None = None,
     normalize: bool = True,
     trim_columns: Iterable[str] = (
         "cabd_id",
@@ -62,14 +72,22 @@ def stage_updates_csv_to_table(
     province_boundary_table: str | None = "cabd.province_territory_codes",
     province_code_column: str | None = "code",
     province_srid: int = 4617,
-    feature_name: str | None = None,
 ) -> dict:
     """Stage CSV updates into a persistent feature raw table and promote rows into staging."""
     if not column_types:
         raise ValueError("column_types must be a non-empty mapping")
-
     required_columns = list(column_types.keys())
     cast_map = {k.lower(): v for k, v in column_types.items() if v is not None and str(v).strip() != ""}
+
+    # Every coded-value field must also be declared in column_types so it is
+    # promoted and cast (to smallint) after translation.
+    if coded_values:
+        declared = {c.lower() for c in required_columns}
+        missing_types = [f for f in coded_values if f.lower() not in declared]
+        if missing_types:
+            raise ValueError(
+                f"coded_values fields not present in column_types: {missing_types}"
+            )
 
     with csv_path.open("r", encoding="utf-8-sig", newline="") as f:
         reader = csv.reader(f)
@@ -82,11 +100,23 @@ def stage_updates_csv_to_table(
         raise ValueError(f"{csv_path}: missing required columns for staging: {missing}")
 
     raw_table = _raw_table_name(staging_table)
-    header_lower = {h.lower() for h in header}
 
     with conn.cursor() as cur:
         _ensure_raw_table(conn, raw_table, header)
+        # Single active batch: drop already-loaded rows, and reset any prior
+        # errors back to pending so they are re-validated (auto-retry) this run.
         cur.execute(f"DELETE FROM {raw_table} WHERE load_status = 'loaded';")
+        cur.execute(
+            f"""
+            UPDATE {raw_table}
+            SET load_status = 'pending',
+                error_message = NULL,
+                error_column = NULL,
+                loaded_at = NULL,
+                updated_at = now()
+            WHERE load_status = 'error';
+            """
+        )
 
         clean_indices = _thousands_clean_indices(header, column_types)
         copy_header = [*header, "source_file", "csv_line_no"]
@@ -110,56 +140,8 @@ def stage_updates_csv_to_table(
             )
             cur.copy_expert(copy_sql, buffer)
 
-        if "status" in header_lower:
-            cur.execute(
-                f"""
-                DELETE FROM {raw_table}
-                WHERE status IN ('complete', 'do not process', 'on hold')
-                """
-            )
-
-        if set_status_from_reviewer_comments and {"status", "reviewer_comments"}.issubset(header_lower):
-            cur.execute(
-                f"""
-                UPDATE {raw_table}
-                SET status = CASE
-                    WHEN reviewer_comments IS NULL THEN 'ready'
-                    ELSE 'needs review'
-                END
-                WHERE status IS NULL
-                """
-            )
-
-        try:
-            cur.execute(f"ALTER TABLE {raw_table} ADD COLUMN IF NOT EXISTS province_territory_code text;")
-            if province_boundary_table:
-                schema_table = province_boundary_table
-                if "." in schema_table:
-                    _, table_name = schema_table.split(".", 1)
-                else:
-                    table_name = schema_table
-
-                geom_col = "geometry"
-                code_col = province_code_column or "code"
-                if geom_col and code_col:
-                    update_sql = f"""
-                    UPDATE {raw_table} rt
-                    SET province_territory_code = b.{quote_ident(code_col)}
-                    FROM {schema_table} b
-                    WHERE rt.province_territory_code IS NULL
-                    AND b.{quote_ident(geom_col)} IS NOT NULL
-                    AND ST_Intersects(
-                        b.{quote_ident(geom_col)},
-                        ST_Transform(
-                            ST_SetSRID(ST_Point(rt.longitude::double precision, rt.latitude::double precision), 4326),
-                            {province_srid}
-                        )
-                    )
-                    """
-                    cur.execute(update_sql)
-        except Exception:
-            pass
-
+    # Normalization (trim, lowercase, status cleanup, cabd_id generation, and the
+    # province_territory_code spatial lookup) lives entirely in _normalize_raw_table.
     if normalize:
         _normalize_raw_table(
             conn,
@@ -174,6 +156,13 @@ def stage_updates_csv_to_table(
             province_srid=province_srid,
         )
 
+    # Translate human-readable coded values into their numeric codes, then flag
+    # any unmatched (non-blank) coded values with a friendly, table-specific
+    # message so they route to the error log instead of failing the smallint cast.
+    if coded_values:
+        _translate_coded_values(conn, raw_table, coded_values)
+        _flag_unmatched_coded_values(conn, raw_table, coded_values)
+
     result = _promote_raw_rows_to_staging(
         conn=conn,
         raw_table=raw_table,
@@ -182,8 +171,89 @@ def stage_updates_csv_to_table(
         header_lc=header_lc,
         cast_map=cast_map,
     )
+
     result["raw_table"] = raw_table
     return result
+
+
+def _translate_coded_values(conn, raw_table: str, coded_values: dict) -> None:
+    """
+    Translate human-readable coded-value descriptions in the raw table into their
+    numeric codes, IN PLACE, using each field's code translation table.
+
+    Matching is case-insensitive and ignores all non-alphanumeric characters
+    (e.g. 'charity/non-profit' matches 'Charity/ Non-profit').
+
+    - Blank/NULL values are left untouched (they become NULL at promotion).
+    - Unmatched non-blank values are left as-is here; they are flagged separately
+      by _flag_unmatched_coded_values().
+    - Idempotent: once a value is '1', its canonical form no longer matches any
+      name_en, so re-runs leave it alone.
+    """
+    raw_cols = _get_table_columns(conn, raw_table)
+    match_ident = quote_ident(_CODE_MATCH_COLUMN)
+    value_ident = quote_ident(_CODE_VALUE_COLUMN)
+
+    with conn.cursor() as cur:
+        for field, cfg in coded_values.items():
+            if field.lower() not in raw_cols:
+                continue  # field not present in this CSV/raw table; skip
+            code_table = cfg["code_table"]
+            field_ident = quote_ident(field)
+            cur.execute(
+                f"""
+                UPDATE {raw_table} rt
+                SET {field_ident} = ct.{value_ident}::text,
+                    updated_at = now()
+                FROM {code_table} ct
+                WHERE rt.{field_ident} IS NOT NULL
+                  AND btrim(rt.{field_ident}) <> ''
+                  AND rt.load_status <> 'loaded'
+                  AND {_canonical_sql(f'rt.{field_ident}')}
+                      = {_canonical_sql(f'ct.{match_ident}')}
+                """
+            )
+
+
+def _flag_unmatched_coded_values(conn, raw_table: str, coded_values: dict) -> None:
+    """
+    Flag rows whose coded-value column still holds a non-blank value that is NOT a
+    valid code in its translation table (i.e. translation found no match).
+
+    Sets load_status = 'error' with a friendly, table-specific message so the
+    reviewer can see exactly which value / which code table failed. The first
+    unmatched coded column per row wins the message (the 'pending' guard prevents
+    a later column from overwriting it).
+    """
+    raw_cols = _get_table_columns(conn, raw_table)
+    value_ident = quote_ident(_CODE_VALUE_COLUMN)
+
+    with conn.cursor() as cur:
+        for field, cfg in coded_values.items():
+            if field.lower() not in raw_cols:
+                continue
+            code_table = cfg["code_table"]
+            field_ident = quote_ident(field)
+            cur.execute(
+                f"""
+                UPDATE {raw_table} rt
+                SET load_status = 'error',
+                    error_message = 'coded value '
+                        || quote_literal(btrim(rt.{field_ident}))
+                        || ' not found in {code_table} (column {field})',
+                    error_column = %s,
+                    loaded_at = NULL,
+                    updated_at = now()
+                WHERE rt.load_status = 'pending'
+                  AND rt.{field_ident} IS NOT NULL
+                  AND btrim(rt.{field_ident}) <> ''
+                  AND NOT EXISTS (
+                      SELECT 1 FROM {code_table} ct
+                      WHERE ct.{value_ident}::text = btrim(rt.{field_ident})
+                  )
+                """,
+                (field,),
+            )
 
 
 def _normalize_raw_table(
@@ -200,7 +270,6 @@ def _normalize_raw_table(
     province_srid: int = 4617,
 ) -> None:
     cols = _get_table_columns(conn, raw_table)
-
     with conn.cursor() as cur:
         for c in trim_columns:
             if c.lower() in cols:
@@ -211,7 +280,6 @@ def _normalize_raw_table(
                     WHERE {quote_ident(c)} IS NOT NULL
                     """
                 )
-
         for c in lower_columns:
             if c.lower() in cols:
                 cur.execute(
@@ -221,7 +289,6 @@ def _normalize_raw_table(
                     WHERE {quote_ident(c)} IS NOT NULL
                     """
                 )
-
         if default_update_type is not None and "update_type" in cols:
             cur.execute(
                 f"""
@@ -231,7 +298,6 @@ def _normalize_raw_table(
                 """,
                 (default_update_type,),
             )
-
         if generate_cabd_id_for_new_feature and {"cabd_id", "entry_classification"}.issubset(cols):
             cur.execute(
                 f"""
@@ -241,7 +307,6 @@ def _normalize_raw_table(
                 AND cabd_id IS NULL
                 """
             )
-
         cur.execute(
             f"""
             DELETE FROM {raw_table}
@@ -260,41 +325,31 @@ def _normalize_raw_table(
                 """
             )
 
+        # Populate province_territory_code from the authoritative boundary table
+        # via PostGIS. Non-fatal: a failure here (missing extension, bad geometry,
+        # etc.) is reported but does not block staging.
         try:
             cur.execute(f"ALTER TABLE {raw_table} ADD COLUMN IF NOT EXISTS province_territory_code text;")
             if province_boundary_table:
-                schema_table = province_boundary_table
-                if "." in schema_table:
-                    _, _ = schema_table.split(".", 1)
-                else:
-                    _ = schema_table
-
                 geom_col = "geometry"
                 code_col = province_code_column or "code"
-                if geom_col and code_col:
-                    update_sql = f"""
-                    UPDATE {raw_table} rt
-                    SET province_territory_code = b.{quote_ident(code_col)}
-                    FROM {schema_table} b
-                    WHERE rt.province_territory_code IS NULL
-                    AND b.{quote_ident(geom_col)} IS NOT NULL
-                    AND ST_Intersects(
-                        b.{quote_ident(geom_col)},
-                        ST_Transform(
-                            ST_SetSRID(ST_Point(rt.longitude::double precision, rt.latitude::double precision), 4326),
-                            {province_srid}
-                        )
+                update_sql = f"""
+                UPDATE {raw_table} rt
+                SET province_territory_code = b.{quote_ident(code_col)}
+                FROM {province_boundary_table} b
+                WHERE rt.province_territory_code IS NULL
+                AND b.{quote_ident(geom_col)} IS NOT NULL
+                AND ST_Intersects(
+                    b.{quote_ident(geom_col)},
+                    ST_Transform(
+                        ST_SetSRID(ST_Point(rt.longitude::double precision, rt.latitude::double precision), 4326),
+                        {province_srid}
                     )
-                    """
-                    cur.execute(update_sql)
-        except Exception:
-            pass
-
-
-def _sanitize_identifier(value: str) -> str:
-    value = re.sub(r"[^a-zA-Z0-9_]+", "_", value)
-    value = re.sub(r"__+", "_", value)
-    return value.strip("_").lower() or "unknown"
+                )
+                """
+                cur.execute(update_sql)
+        except Exception as exc:
+            print(f"warning: province_territory_code spatial lookup skipped: {exc}")
 
 
 def _raw_table_name(staging_table: str) -> str:
@@ -323,7 +378,6 @@ def _ensure_raw_table(conn, raw_table: str, header: list[str]) -> None:
             );
             """
         )
-
         control_columns = {
             "source_file": "text",
             "csv_line_no": "integer",
@@ -335,7 +389,6 @@ def _ensure_raw_table(conn, raw_table: str, header: list[str]) -> None:
         }
         for col_name, col_type in control_columns.items():
             cur.execute(f"ALTER TABLE {raw_table} ADD COLUMN IF NOT EXISTS {quote_ident(col_name)} {col_type};")
-
         for col_name in header:
             cur.execute(f"ALTER TABLE {raw_table} ADD COLUMN IF NOT EXISTS {quote_ident(col_name)} text;")
 
@@ -382,7 +435,6 @@ def _promote_raw_rows_to_staging(
         )
         for required_col in required_columns
     )
-
     insert_sql = (
         f"INSERT INTO {staging_table} ({insert_cols_sql}) "
         f"SELECT {insert_value_sql} FROM {raw_table} WHERE raw_id = %s;"
@@ -397,11 +449,13 @@ def _promote_raw_rows_to_staging(
         f"SET load_status = 'error', error_message = %s, error_column = NULL, loaded_at = NULL, updated_at = now() "
         f"WHERE raw_id = %s;"
     )
-
     inserted_rows = 0
     error_rows = 0
     with conn.cursor() as cur:
-        cur.execute(f"SELECT raw_id FROM {raw_table} WHERE load_status <> 'loaded' ORDER BY raw_id;")
+        # Only promote 'pending' rows. Rows already flagged 'error' (e.g. by the
+        # coded-value check) are skipped so their friendly message is preserved;
+        # they are reset to 'pending' and re-validated on the next run.
+        cur.execute(f"SELECT raw_id FROM {raw_table} WHERE load_status = 'pending' ORDER BY raw_id;")
         for (raw_id,) in cur.fetchall():
             cur.execute("SAVEPOINT promote_row")
             try:
@@ -414,7 +468,6 @@ def _promote_raw_rows_to_staging(
                 cur.execute("RELEASE SAVEPOINT promote_row")
                 cur.execute(error_update_sql, (str(exc), raw_id))
                 error_rows += 1
-
     return {
         "inserted_rows": int(inserted_rows),
         "error_rows": int(error_rows),
@@ -449,43 +502,6 @@ def _get_table_columns(conn, table_name: str) -> set[str]:
                 (table,),
             )
         return {r[0].lower() for r in cur.fetchall()}
-
-
-def _get_table_column_types(conn, table_name: str) -> dict[str, str]:
-    """Return a mapping of lowercase column_name -> SQL type (suitable for CREATE TABLE)."""
-    if "." in table_name:
-        schema, table = table_name.split(".", 1)
-        schema = schema.strip('"')
-        table = table.strip('"')
-    else:
-        schema, table = None, table_name
-
-    with conn.cursor() as cur:
-        if schema:
-            cur.execute(
-                """
-                SELECT a.attname, pg_catalog.format_type(a.atttypid, a.atttypmod) as type
-                FROM pg_catalog.pg_attribute a
-                JOIN pg_catalog.pg_class c ON a.attrelid = c.oid
-                JOIN pg_catalog.pg_namespace n ON c.relnamespace = n.oid
-                WHERE c.relname = %s AND n.nspname = %s
-                AND a.attnum > 0 AND NOT a.attisdropped
-                """,
-                (table, schema),
-            )
-        else:
-            cur.execute(
-                """
-                SELECT a.attname, pg_catalog.format_type(a.atttypid, a.atttypmod) as type
-                FROM pg_catalog.pg_attribute a
-                JOIN pg_catalog.pg_class c ON a.attrelid = c.oid
-                JOIN pg_catalog.pg_namespace n ON c.relnamespace = n.oid
-                WHERE c.relname = %s
-                AND a.attnum > 0 AND NOT a.attisdropped
-                """,
-                (table,),
-            )
-        return {r[0].lower(): r[1] for r in cur.fetchall()}
 
 
 def quote_ident(ident: str) -> str:

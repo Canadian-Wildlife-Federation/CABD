@@ -43,30 +43,79 @@ column_types:
   status: varchar
   reviewer_comments: varchar
   submitted_on: timestamp with time zone
+  ownership_type_code: smallint
+  operating_status_code: smallint
+  use_code: smallint
+  use_irrigation_code: smallint
+  use_electricity_code: smallint
+  use_supply_code: smallint
+  use_floodcontrol_code: smallint
+  use_recreation_code: smallint
+  use_navigation_code: smallint
+  use_fish_code: smallint
+  use_pollution_code: smallint
+  use_invasivespecies_code: smallint
+  use_other_code: smallint
+  use_conservation_code: smallint
+  lake_control_code: smallint
+  function_code: smallint
+  condition_code: smallint
+  structure_type_code: smallint
+  spillway_type_code: smallint
+  turbine_type_code: smallint
+  up_passage_type_code: smallint
+  down_passage_route_code: smallint
+  passability_status_code: smallint
+  construction_material_code: smallint
 
-## coded value transforms will be later
-
-  # ownership_type_code: smallint
-  # operating_status_code: smallint
-  # use_code: smallint
-  # use_irrigation_code: smallint
-  # use_electricity_code: smallint
-  # use_supply_code: smallint
-  # use_floodcontrol_code: smallint
-  # use_recreation_code: smallint
-  # use_navigation_code: smallint
-  # use_fish_code: smallint
-  # use_pollution_code: smallint
-  # use_invasivespecies_code: smallint
-  # use_other_code: smallint
-  # lake_control_code: smallint
-  # function_code: smallint
-  # condition_code: smallint
-  # structure_type_code: smallint
-  # spillway_type_code: smallint
-  # turbine_type_code: smallint
-  # up_passage_type_code: smallint
-  # down_passage_route_code: smallint
-  # passability_status_code: smallint
-  # construction_material_code: smallint
-  # use_conservation_code: smallint
+# Human-readable coded values are matched against name_en in each code table,
+# then replaced with the numeric code
+coded_values:
+  ownership_type_code:
+    code_table: cabd.barrier_ownership_type_codes
+  operating_status_code:
+    code_table: dams.operating_status_codes
+  use_code:
+    code_table: dams.dam_use_codes
+  use_irrigation_code:
+    code_table: dams.use_codes
+  use_electricity_code:
+    code_table: dams.use_codes
+  use_supply_code:
+    code_table: dams.use_codes
+  use_floodcontrol_code:
+    code_table: dams.use_codes
+  use_recreation_code:
+    code_table: dams.use_codes
+  use_navigation_code:
+    code_table: dams.use_codes
+  use_fish_code:
+    code_table: dams.use_codes
+  use_pollution_code:
+    code_table: dams.use_codes
+  use_invasivespecies_code:
+    code_table: dams.use_codes
+  use_other_code:
+    code_table: dams.use_codes
+  use_conservation_code:
+    code_table: dams.use_codes
+  lake_control_code:
+    code_table: dams.lake_control_codes
+  function_code:
+    code_table: dams.function_codes
+  condition_code:
+    code_table: dams.condition_codes
+  structure_type_code:
+    code_table: dams.structure_type_codes
+  spillway_type_code:
+    code_table: dams.spillway_type_codes
+  turbine_type_code:
+    code_table: dams.turbine_type_codes
+  up_passage_type_code:
+    code_table: cabd.upstream_passage_type_codes
+  down_passage_route_code:
+    code_table: dams.downstream_passage_route_codes
+  passability_status_code:
+    code_table: cabd.passability_status_codes
+  construction_material_code:
+    code_table: dams.construction_material_codes
