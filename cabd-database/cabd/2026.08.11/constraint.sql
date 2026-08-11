@@ -1,0 +1,1 @@
+alter table cabd.community_contact add constraint username_unq unique(username);

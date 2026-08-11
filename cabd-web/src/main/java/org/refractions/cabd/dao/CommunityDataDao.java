@@ -148,26 +148,7 @@ public class CommunityDataDao {
 		UUID id = jdbcTemplate.queryForObject(sb.toString(),UUID.class, Timestamp.from( data.getUploadeddatetime() ), data.getData(), data.getOAuthId(), data.getOAuthEmail());
 		data.setId(id);
 	}
-	
-	/**
-	 * finds the contact associated with the given aouthid or null if not found
-	 * @param oauthId
-	 * @return
-	 */
-	public CommunityContact findCommunityContact(String oauthId) {
-		if (oauthId == null) return null;
 		
-		StringBuilder sb = new StringBuilder();
-		sb.append("SELECT * FROM ");
-		sb.append(COMMUNITY_CONTACT_TABLE);
-		sb.append(" WHERE oauth_id = ?");
-		try {
-			return jdbcTemplate.queryForObject(sb.toString(), contactTypeMapper, oauthId);
-		}catch (EmptyResultDataAccessException ex) {				
-		}
-		return null;		
-	}
-	
 	
 	/**
 	 * Finds the community contact with the username. If no contact is found
@@ -181,7 +162,7 @@ public class CommunityDataDao {
 	public CommunityContact getOrCreateCommunityContact(String oauthId, String oauthEmail, String dataUsername) {
 		//1. find user with same oauthid		
 		//2. find user with the same oauth email - make assumptions that this is the same user		
-		//3. find user with username 		
+		//3. find user with username (if dataUsername provided) 		
 		//4. create new user
 		String querypart = "SELECT user_id, username, oauth_id FROM  " + COMMUNITY_CONTACT_TABLE + " WHERE ";
 		
