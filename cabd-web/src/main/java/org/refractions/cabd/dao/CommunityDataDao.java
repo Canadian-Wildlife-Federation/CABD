@@ -120,6 +120,8 @@ public class CommunityDataDao {
 		gFeature.addAttribute("id", id);
 		gFeature.addAttribute("status", status);
 		gFeature.addAttribute("passability_status_code", passabilityStatus);
+		gFeature.addAttribute("feature_latitude", rs.getDouble("feature_latitude"));
+		gFeature.addAttribute("feature_longitude", rs.getDouble("feature_longitude"));
 		
 		try {
 			Point pnt = (Point) reader.read(rs.getBytes("geometry"));
@@ -341,7 +343,7 @@ public class CommunityDataDao {
 		StringBuilder sb = new StringBuilder();
 		List<Object> qparams = new ArrayList<>();
 		sb.append(" SELECT id, feature_type, status, cabd_id, user_id = ? as is_owner, passability_status_code, ");
-		sb.append("uploaded_datetime, st_asewkb(st_geomfromgeojson(data->'geometry')) as geometry");
+		sb.append("uploaded_datetime, feature_latitude, feature_longitude, st_asewkb(st_geomfromgeojson(data->'geometry')) as geometry");
 		sb.append(" FROM ");
 		sb.append(COMMUNITY_DATA_STAGING_VIEW);
 		
