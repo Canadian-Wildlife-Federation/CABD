@@ -168,7 +168,10 @@ public class CommunityController {
 			@AuthenticationPrincipal Jwt jwt,
 			@ParameterObject CommunityRequestParameters params) {
 		
-		CommunityContact user = communityDao.findCommunityContact(SecurityConfig.getOauthId(jwt));
+		String userId = SecurityConfig.getOauthId(jwt);
+		String email = SecurityConfig.getEmail(jwt);     // if available
+		
+		CommunityContact user = communityDao.getOrCreateCommunityContact(userId, email, null);
 		List<FeatureType> types = new ArrayList<>();
 		if (type == null || type.isBlank()) {
 			types.addAll(typeManager.getFeatureTypes());
