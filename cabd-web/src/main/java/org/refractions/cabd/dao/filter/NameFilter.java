@@ -142,7 +142,7 @@ public class NameFilter {
 		Operator op = Operator.findOperator(filter.substring(0, first));
 		String[] values = null;
 		if (op == Operator.IN || op == Operator.NOTIN) {
-			values = filter.substring(first + 1).split(",");
+			values = filter.substring(first + 1).split(Filter.LIST_SEP);
 		}else {
 			values = new String[] {filter.substring(first + 1)};
 		}

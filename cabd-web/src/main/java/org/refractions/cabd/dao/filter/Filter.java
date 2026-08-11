@@ -31,6 +31,8 @@ import org.refractions.cabd.model.FeatureViewMetadataField;
  */
 public class Filter {
 
+	public static final String LIST_SEP = ";";
+	
 	//list of query parts
 	private List<FilterPart> filters;
 	
@@ -159,7 +161,7 @@ public class Filter {
 		Operator op = Operator.findOperator(filter.substring(first + 1, second));
 		String[] values = null;
 		if (op == Operator.IN || op == Operator.NOTIN) {
-			values = filter.substring(second+1).split(";");
+			values = filter.substring(second+1).split(LIST_SEP);
 		}else {
 			values = new String[] {filter.substring(second + 1)};
 		}
