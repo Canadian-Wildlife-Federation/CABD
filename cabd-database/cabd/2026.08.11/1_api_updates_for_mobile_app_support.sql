@@ -426,8 +426,9 @@ AS SELECT a.id,
             WHEN b.passability_status_code IS NULL THEN 4
             ELSE b.passability_status_code::integer
         END AS passability_status_code,
-        st_y(case when c.snapped_point is null then c.original_point else c.snapped_point end) as cabd_latitude,
-        st_x(case when c.snapped_point is null then c.original_point else c.snapped_point end) as cabd_longitude
+        
+        st_y(case when c.snapped_point is not null then c.snapped_point when c.original_point is not null then c.original_point else st_geomfromgeojson(data->'geometry') end) as feature_latitude,
+        st_x(case when c.snapped_point is not null then c.snapped_point when c.original_point is not null then c.original_point else st_geomfromgeojson(data->'geometry') end) as feature_longitude        
    FROM stream_crossings.stream_crossings_community_staging a
      LEFT JOIN cabd.community_holding b ON a.id = b.id
      left join stream_crossings.sites c on c.cabd_id = a.cabd_id
@@ -443,9 +444,8 @@ UNION
             WHEN b.passability_status_code IS NULL THEN 4
             ELSE b.passability_status_code::integer
         END AS passability_status_code,
-        st_y(c.snapped_point) as cabd_latitude,
-        st_x(c.snapped_point) as cabd_longitude
+        st_y(case when c.snapped_point is not null then c.snapped_point else st_geomfromgeojson(data->'geometry') end) as feature_latitude,
+        st_x(case when c.snapped_point is not null then c.snapped_point else st_geomfromgeojson(data->'geometry') end) as feature_longitude
    FROM dams.dams_community_staging a
      LEFT JOIN cabd.community_holding b ON a.id = b.id
      left join dams.dams c on c.cabd_id = a.cabd_id;
-
