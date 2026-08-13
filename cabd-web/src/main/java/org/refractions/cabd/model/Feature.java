@@ -39,18 +39,18 @@ public class Feature {
 	
 	//optional; but should be provided for single features that are
 	//being returned so they can be serialized with the crs information
-	private Integer srid;
+	private CrsInfo crsinfo;
 	
 	public Feature(UUID id, String featureType) {
 		this(id, featureType, null);		
 	}
 	
-	public Feature(UUID id, String featureType, Integer srid) {
+	public Feature(UUID id, String featureType, CrsInfo crsinfo) {
 		this.id = id;
 		attributes = new HashMap<>();
 		links = new HashMap<>();
 		this.featureType = featureType;
-		this.srid = srid;
+		this.crsinfo = crsinfo;
 	}
 	
 	public UUID getId() {
@@ -87,8 +87,8 @@ public class Feature {
 		return this.geom;
 	}
 	
-	public Integer getSrid() {
-		return this.srid;
+	public CrsInfo getCrsInfo() {
+		return this.crsinfo;
 	}
 
 }

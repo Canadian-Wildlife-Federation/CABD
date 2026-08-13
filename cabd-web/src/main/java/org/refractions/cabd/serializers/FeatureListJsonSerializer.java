@@ -64,6 +64,7 @@ public class FeatureListJsonSerializer extends AbstractFeatureListSerializer{
 		sb.append(formatString(FeatureListUtil.DATA_LICENSE_KEY) + ": "+ formatString(CabdApplication.DATA_LICENCE_URL) + ",");
 		
 		Set<String> ftypes = FeatureListUtil.getFeatureTypes(features);
+		String outcrs = features.getCrsInfo() != null ? features.getCrsInfo().getCrsString() : "EPSG:" + FeatureDao.DATABASE_SRID;
 		int srid = FeatureDao.DATABASE_SRID;
 		
 		if (!ftypes.isEmpty()) {
@@ -80,10 +81,10 @@ public class FeatureListJsonSerializer extends AbstractFeatureListSerializer{
 			sb.append("},");
 		}
 		
-		sb.append(formatString(FeatureListUtil.DATA_SRID) + ": "+ srid );
+		sb.append(formatString(FeatureListUtil.NATIVE_CRS) + ": " + formatString("EPSG:" + srid) );		
+		sb.append("}, ");		
+		sb.append(formatString(FeatureListUtil.OUTPUT_CRS) + ": "+ formatString(outcrs) );
 		sb.append(", ");
-		sb.append(formatString(FeatureListUtil.SRID) + ": "+ features.getResultsSrid() );
-		sb.append("}, ");
 		sb.append(formatString("features") + ":");
 		sb.append("[");
 		

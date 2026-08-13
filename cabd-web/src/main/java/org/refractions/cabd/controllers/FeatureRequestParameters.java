@@ -20,15 +20,16 @@ import java.text.MessageFormat;
 
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Envelope;
+import org.refractions.cabd.CabdApplication;
 import org.refractions.cabd.dao.FeatureDao;
 import org.refractions.cabd.dao.FeatureTypeManager;
 import org.refractions.cabd.dao.filter.Filter;
 import org.refractions.cabd.dao.filter.NameFilter;
 import org.refractions.cabd.exceptions.InvalidParameterException;
+import org.refractions.cabd.model.CrsInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import io.swagger.v3.oas.annotations.Parameter;
@@ -40,7 +41,7 @@ import io.swagger.v3.oas.annotations.Parameter;
  * @author Emily
  *
  */
-public class FeatureRequestParameters {
+public class FeatureRequestParameters extends CrsRequestParameters {
 
 	private Logger logger = LoggerFactory.getLogger(FeatureDao.class);
 	
@@ -62,10 +63,6 @@ public class FeatureRequestParameters {
 	@Parameter(name="attributes", required = false, description = "A flag to select which set of attributes are returned (all, limited, etc.).")
 	private String attributes;
 	
-	@Parameter(name="crs", required = false, description = "The CRS to return the results in in the form <Authority>:<Code> (ex. EPSG:4326), but default all values are return in EPSG:4617")
-	private String crs;
-	
-	
 	//this is the only way I could figure out
 	//how to provide names for query parameters and
 	//use a POJO to represent these parameters
@@ -77,22 +74,21 @@ public class FeatureRequestParameters {
 			String point, Integer maxResults, String[] filter, 
 			String[] namefilter, String attributes, String crs) {
 
+		super(crs);
 		this.bbox = bbox;
 		this.point = point;
 	    this.maxresults = maxResults;
 	    this.filter = filter;
 	    this.namefilter = namefilter;
 	    this.attributes = attributes;
-	    this.crs = crs;
 	}
-	
+
 	public String getBbox() { return this.bbox; }
 	public String getPoint() { return this.point; }
 	public Integer getMaxresults() { return maxresults;	}
 	public String[] getFilter() { return filter; }
 	public String[] getNameFilter() { return namefilter; }
 	public String getAttributeSet() { return this.attributes; }
-	public String getCrs() { return this.crs; }
 
 	
 	/**
@@ -101,7 +97,7 @@ public class FeatureRequestParameters {
 	 * 
 	 * @param typeManager
 	 */
-	public ParsedRequestParameters parseAndValidate(FeatureTypeManager typeManager, JdbcTemplate jdbcTemplate) {
+	public ParsedRequestParameters parseAndValidate(FeatureTypeManager typeManager, JdbcTemplate jdbcTemplate, MediaType outputFormat) {
 		Envelope env = null;
 		if (bbox != null) {
 			env = parseBbox();
@@ -143,10 +139,20 @@ public class FeatureRequestParameters {
 			}
 		}
 		
-		Integer srid = parseAndValidateCrsParameter(this.crs, jdbcTemplate);
+		CrsInfo crsinfo = validateAndGetSrid(jdbcTemplate);
+
+		if (CabdApplication.KML_MEDIA_TYPE.equalsTypeAndSubtype(outputFormat)) {
+		    if (crsinfo == null) {
+		        //KML is defined in WGS84; transform regardless of the native srid
+		        crsinfo = new CrsInfo("EPSG", 4326, 4326);
+		    } else if (crsinfo.getSrid() != 4326) {
+		        throw new InvalidParameterException(
+		            "The 'crs' parameter is not supported for KML output; KML coordinates must be EPSG:4326.");
+		    }
+		}
 		
 		return new ParsedRequestParameters(env, searchPoint, maxresults, parseFilter(filter), 
-				parseNameFilter(namefilter), set, srid);
+				parseNameFilter(namefilter), set, crsinfo);
 	}
 
 	private Envelope parseBbox() {
@@ -198,28 +204,5 @@ public class FeatureRequestParameters {
 	private NameFilter parseNameFilter(String[] filters) {
 		if (namefilter == null || namefilter.length == 0) return null;
 		return NameFilter.parseFilter(namefilter);
-	}
-	
-	public static Integer parseAndValidateCrsParameter(String crs, JdbcTemplate jdbcTemplate) {
-		if (crs == null || crs.trim().isBlank()) return null;
-		
-		String[] bits = crs.split(":");
-		if (bits.length != 2) {
-			throw new InvalidParameterException("This crs parameter is invalid. It must be of the form <Authority>:<Code>");
-		}
-		Integer code = null;
-		try {
-			code = Integer.parseInt(bits[1]);
-		}catch(Exception ex) {
-			throw new InvalidParameterException("This crs parameter is invalid. It must be of the form <Authority>:<Code>; where code is a valid integer");
-		}
-		
-		// validate that the crs exists
-		String sql = "SELECT srid FROM public.spatial_ref_sys WHERE auth_name = ? AND auth_srid = ?";
-		try {
-			return jdbcTemplate.queryForObject(sql, Integer.class, bits[0].toUpperCase(), code);
-		} catch (EmptyResultDataAccessException e) {
-			throw new InvalidParameterException(MessageFormat.format("The crs {0} is not supported.", crs));
-		}
 	}
 }

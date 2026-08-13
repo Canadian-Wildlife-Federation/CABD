@@ -77,7 +77,7 @@ public class FeatureListGeoPkgSerializer extends AbstractFeatureListSerializer{
 		
 		SimpleFeatureType type = FeatureListUtil.asFeatureType(metadataitems.getLeft(), 
 				features.getAttributeSet(), 
-				metadataitems.getMiddle(), features.getResultsSrid());
+				metadataitems.getMiddle(), features.getCrsInfo());
 		Envelope env = metadataitems.getRight();
 		Path temp = Files.createTempFile("cabdgeopkg", ".gpkg");
 		

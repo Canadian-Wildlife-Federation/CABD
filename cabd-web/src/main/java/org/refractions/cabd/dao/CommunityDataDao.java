@@ -34,6 +34,7 @@ import org.refractions.cabd.exceptions.NotFoundException;
 import org.refractions.cabd.model.CommunityContact;
 import org.refractions.cabd.model.CommunityData;
 import org.refractions.cabd.model.CommunityFeature;
+import org.refractions.cabd.model.CrsInfo;
 import org.refractions.cabd.model.Feature;
 import org.refractions.cabd.model.FeatureType;
 import org.refractions.cabd.model.SimpleFeatureList;
@@ -342,14 +343,14 @@ public class CommunityDataDao {
 			}
 		}
 
-		Integer srid = params.validAndGetSrid(jdbcTemplate);
+		CrsInfo crsinfo = params.validateAndGetSrid(jdbcTemplate);
 		
 		StringBuilder sb = new StringBuilder();
 		List<Object> qparams = new ArrayList<>();
 		sb.append(" SELECT id, feature_type, status, cabd_id, user_id = ? as is_owner, passability_status_code, ");
 		sb.append("uploaded_datetime, ");
-		if (srid != null){
-			sb.append(" st_asbinary(st_transform(feature_geometry, " + srid + "))");
+		if (crsinfo != null){
+			sb.append(" st_asbinary(st_transform(feature_geometry, " + crsinfo.getSrid() + "))");
 		}else {
 			sb.append(" st_asbinary(feature_geometry) ");
 		}
@@ -368,7 +369,7 @@ public class CommunityDataDao {
 		sb.append(" ORDER BY uploaded_datetime desc LIMIT ");
 		sb.append(properties.findMaxResults(params.getMaxresults()));
 		return new SimpleFeatureList(
-				jdbcTemplate.query(sb.toString(), communityStagingFeatureMapper, qparams.toArray(new Object[0])));
+				jdbcTemplate.query(sb.toString(), communityStagingFeatureMapper, qparams.toArray(new Object[0])), crsinfo);
 
 	}
 	

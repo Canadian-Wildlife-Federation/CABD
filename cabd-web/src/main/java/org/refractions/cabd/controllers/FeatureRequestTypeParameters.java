@@ -23,6 +23,7 @@ import java.util.List;
 import org.refractions.cabd.dao.FeatureTypeManager;
 import org.refractions.cabd.exceptions.InvalidParameterException;
 import org.refractions.cabd.model.FeatureType;
+import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import io.swagger.v3.oas.annotations.Parameter;
@@ -64,8 +65,8 @@ public class FeatureRequestTypeParameters extends FeatureRequestParameters{
 	 * @param typeManager
 	 */
 	//TODO: figure out how  we can autowrite type manager; 
-	public ParsedRequestParameters parseAndValidate(FeatureTypeManager typeManager, JdbcTemplate jdbcTemplate) {
-		ParsedRequestParameters bb = super.parseAndValidate(typeManager, jdbcTemplate);
+	public ParsedRequestParameters parseAndValidate(FeatureTypeManager typeManager, JdbcTemplate jdbcTemplate, MediaType outputFormat) {
+		ParsedRequestParameters bb = super.parseAndValidate(typeManager, jdbcTemplate, outputFormat);
 		if (this.types != null) {
 			String[] ttypes = this.types.split(",");
 			bb.setFeatureTypes( parseTypes(ttypes, typeManager));

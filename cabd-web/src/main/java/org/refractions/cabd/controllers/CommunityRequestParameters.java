@@ -21,8 +21,6 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeParseException;
 
-import org.springframework.jdbc.core.JdbcTemplate;
-
 import io.swagger.v3.oas.annotations.Parameter;
 
 /**
@@ -32,8 +30,8 @@ import io.swagger.v3.oas.annotations.Parameter;
  * @author Emily
  *
  */
-public class CommunityRequestParameters {
-	
+public class CommunityRequestParameters extends CrsRequestParameters {
+
 	@Parameter(name="fromdate", required = false, description = "Only returns records uploaded on or after this date. Expects  ISO 8601 date or datetime. Defaults to one year ago.")
 	private OffsetDateTime fromdate;
 	
@@ -43,9 +41,6 @@ public class CommunityRequestParameters {
 	@Parameter(name="max-results", required = false, description = "The maximum number of search results to return. If not provided a system defined maximum is used.")
 	private Integer maxresults;
 	
-	@Parameter(name="crs", required = false, description = "The CRS to return the results in in the form <Authority>:<Code> (ex. EPSG:4326), but default all values are return in EPSG:4617")
-	private String crs;
-	
 	//this is the only way I could figure out
 	//how to provide names for query parameters and
 	//use a POJO to represent these parameters
@@ -53,21 +48,16 @@ public class CommunityRequestParameters {
 	//https://stackoverflow.com/questions/56468760/how-to-collect-all-fields-annotated-with-requestparam-into-one-object
 	@ConstructorProperties({ "fromdate","todate","max-results", "crs"})
 	public CommunityRequestParameters(String fromdate, String todate,Integer maxResults, String crs) {
+		super(crs);
 		this.fromdate = parseDateTime(fromdate);
 		this.todate = parseDateTime(todate);
 		this.maxresults = maxResults;
-		this.crs = crs;
 	}
-	
+
 	public Integer getMaxresults() { return maxresults;	}
 	public OffsetDateTime getFromDate() { return fromdate; }
 	public OffsetDateTime getToDate() { return todate; }
-	public String getCrs() { return crs; }
-	
-	public Integer validAndGetSrid(JdbcTemplate jdbcTemplate) {
-		return FeatureRequestTypeParameters.parseAndValidateCrsParameter(crs, jdbcTemplate);
-	}
-	
+
 	/**
 	 * Parses parameters into data types and
 	 * validates values.

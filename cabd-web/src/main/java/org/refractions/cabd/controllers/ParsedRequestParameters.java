@@ -21,6 +21,7 @@ import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Envelope;
 import org.refractions.cabd.dao.filter.Filter;
 import org.refractions.cabd.dao.filter.NameFilter;
+import org.refractions.cabd.model.CrsInfo;
 import org.refractions.cabd.model.FeatureType;
 
 public class ParsedRequestParameters {
@@ -32,22 +33,22 @@ public class ParsedRequestParameters {
 	private Filter filter;
 	private NameFilter namefilter;
 	private AttributeSet attributes;
-	private Integer pgsrid;
+	private CrsInfo crsinfo;
 	
 	public ParsedRequestParameters(Envelope env, Coordinate searchPoint, 
 			Integer maxResults, Filter filter, NameFilter namefilter, 
-			AttributeSet attributes, Integer pgsrid) {
+			AttributeSet attributes, CrsInfo crsinfo) {
 		this.env  = env;
 		this.searchPoint = searchPoint;
 		this.maxResults = maxResults;
 		this.filter = filter;
 		this.attributes = attributes;
 		this.namefilter = namefilter;
-		this.pgsrid = pgsrid;
+		this.crsinfo = crsinfo;
 	}
 	
-	public Integer getSrid() {
-		return this.pgsrid;
+	public CrsInfo getCrsInfo() {
+		return this.crsinfo;
 	}
 	
 	public AttributeSet getAttributeSet() {

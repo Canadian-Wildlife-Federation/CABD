@@ -16,6 +16,7 @@
 package org.refractions.cabd.controllers;
 
 import java.text.MessageFormat;
+import java.util.List;
 import java.util.UUID;
 
 import org.refractions.cabd.CabdApplication;
@@ -35,12 +36,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.web.HttpMediaTypeNotAcceptableException;
+import org.springframework.web.accept.ContentNegotiationManager;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.context.request.ServletWebRequest;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -73,7 +77,21 @@ public class FeatureController {
 	FeatureTypeManager typeManager;
 	@Autowired
 	private JdbcTemplate jdbcTemplate;
-		
+
+	@Autowired
+	private ContentNegotiationManager contentNegotiationManager;
+
+	/*
+	 * Determine the output type
+	 */
+	private MediaType resolveOutputFormat(HttpServletRequest request) {
+		try {
+			List<MediaType> types = contentNegotiationManager.resolveMediaTypes(new ServletWebRequest(request));
+			return types.isEmpty() ? MediaType.ALL : types.get(0);
+		} catch (HttpMediaTypeNotAcceptableException ex) {
+			return MediaType.ALL;
+		}
+	}
 	/**
 	 * Gets an individual feature by identifier. Search the all_features
 	 * view for the feature type.
@@ -89,13 +107,10 @@ public class FeatureController {
 	public ResponseEntity<Feature> getFeature(
 			@Parameter(description = "unique feature identifier") 
 			@PathVariable("id") UUID id,
-			@ParameterObject FeatureRequestTypeParameters params, 
-
+			@ParameterObject CrsRequestParameters params,
 			HttpServletRequest request) {
-		
-		ParsedRequestParameters parameters = params.parseAndValidate(typeManager, jdbcTemplate);
 
-		Feature f = featureDao.getFeature(id, parameters);
+		Feature f = featureDao.getFeature(id, params.validateAndGetSrid(jdbcTemplate));
 		if (f == null) throw new NotFoundException(MessageFormat.format("No feature with id ''{0}'' found.", id));
 		return ResponseEntity.ok(f);
 	}
@@ -115,12 +130,10 @@ public class FeatureController {
 			@Parameter(description = "unique feature identifier") 
 			@PathVariable("type") String type,
 			@PathVariable("id") UUID id,
-			@ParameterObject FeatureRequestTypeParameters params, 
+			@ParameterObject CrsRequestParameters params,
 			HttpServletRequest request) {
-		
-		ParsedRequestParameters parameters = params.parseAndValidate(typeManager, jdbcTemplate);
-		
-		Feature f = featureDao.getFeature(type, id, parameters);
+
+		Feature f = featureDao.getFeature(type, id, params.validateAndGetSrid(jdbcTemplate));
 		if (f == null) throw new NotFoundException(MessageFormat.format("No feature with id ''{0}'' found.", id));
 		return ResponseEntity.ok(f);
 	}
@@ -180,7 +193,9 @@ public class FeatureController {
 			@Parameter(description = "the feature type to search") @PathVariable("type") String type,
 			@ParameterObject FeatureRequestParameters params, HttpServletRequest request) {
 		
-		ParsedRequestParameters parameters = params.parseAndValidate(typeManager, jdbcTemplate);
+		
+		
+		ParsedRequestParameters parameters = params.parseAndValidate(typeManager, jdbcTemplate, resolveOutputFormat(request));
 
 		FeatureType btype = typeManager.getFeatureType(type);
 		if (btype == null) throw new NotFoundException(MessageFormat.format("The feature type ''{0}'' is not supported.", type));
@@ -217,7 +232,7 @@ public class FeatureController {
 			@ParameterObject FeatureRequestTypeParameters params, 
 			HttpServletRequest request) {
 
-		ParsedRequestParameters parameters = params.parseAndValidate(typeManager, jdbcTemplate);
+		ParsedRequestParameters parameters = params.parseAndValidate(typeManager, jdbcTemplate, resolveOutputFormat(request));
 		return ResponseEntity.ok(featureDao.getFeatures(parameters.getFeatureTypes(), parameters));
 	}
 		

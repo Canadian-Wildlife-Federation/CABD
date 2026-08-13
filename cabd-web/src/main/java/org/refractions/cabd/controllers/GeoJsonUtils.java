@@ -33,6 +33,7 @@ import org.locationtech.jts.geom.Point;
 import org.locationtech.jts.geom.Polygon;
 import org.postgresql.jdbc.PgArray;
 import org.refractions.cabd.dao.FeatureDao;
+import org.refractions.cabd.model.CrsInfo;
 import org.refractions.cabd.model.Feature;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
@@ -46,6 +47,18 @@ public enum GeoJsonUtils {
 
 	INSTANCE;
 	
+	/**
+	 * Converts a feature to geo-json streaming results to output stream
+	 * including the SRID details
+	 * 
+	 * 
+	 * @param feature
+	 * @param stream
+	 * @throws IOException
+	 */
+	public void writeFeature(Feature feature, OutputStream stream) throws IOException {
+		writeFeature(feature, stream, null);
+	}
 	/*
 	 * 
 	 * This code does not use a json library - originally used jackson library
@@ -59,9 +72,11 @@ public enum GeoJsonUtils {
 	 * @param stream
 	 * @throws IOException
 	 */
-	public void writeFeature(Feature feature, OutputStream stream) throws IOException {
+	public void writeFeature(Feature feature, OutputStream stream, CrsInfo crsinfo) throws IOException {
 
 		writeString(stream, "{" + convertKey("type") + convertObject("Feature") + "," );
+	    if (crsinfo != null) writeString(stream, convertKey("crs") + convertObject(crsinfo.getCrsString()) + ",");
+
 		// geometry
 		if (feature.getGeometry() != null) writeGeometry(feature.getGeometry(), stream);
 
@@ -108,8 +123,7 @@ public enum GeoJsonUtils {
 		}catch (SQLException ex) {
 			throw new IOException(ex);
 		}
-		writeString(stream, "}}");
-		
+		writeString(stream, "}}");		
 	}
 
 	private String convertKey(String key) {

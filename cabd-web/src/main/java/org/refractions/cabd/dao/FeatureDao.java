@@ -36,6 +36,7 @@ import org.refractions.cabd.controllers.ParsedRequestParameters;
 import org.refractions.cabd.controllers.TooManyFeaturesException;
 import org.refractions.cabd.controllers.VectorTileController;
 import org.refractions.cabd.exceptions.InvalidDatabaseConfigException;
+import org.refractions.cabd.model.CrsInfo;
 import org.refractions.cabd.model.DataSource;
 import org.refractions.cabd.model.Feature;
 import org.refractions.cabd.model.FeatureList;
@@ -93,9 +94,11 @@ public class FeatureDao {
 	 * if no feature is found.
 	 * 
 	 * @param uuid
+	 * @param srid the srid to return the geometry in; if null the geometry is
+	 * returned in the native srid of the data
 	 * @return
 	 */
-	public Feature getFeature(UUID uuid, ParsedRequestParameters parameters) {
+	public Feature getFeature(UUID uuid, CrsInfo crsinfo) {
 		String type = null;
 		try {
 			String query = "SELECT " + FEATURE_TYPE_FIELD  + " FROM " + FeatureViewMetadata.getAllFeaturesView() + " WHERE " + ID_FIELD + " = ? ";
@@ -103,19 +106,21 @@ public class FeatureDao {
 		}catch(EmptyResultDataAccessException ex) {
 			return null;
 		}
-		
-		return getFeature(type, uuid, parameters);		
+
+		return getFeature(type, uuid, crsinfo);
 	}
-	
+
 	/**
 	 * Finds the feature with the given uuid.  Will return null
 	 * if no feature is found.
-	 * 
+	 *
 	 * @param uuid
+	 * @param srid the srid to return the geometry in; if null the geometry is
+	 * returned in the native srid of the data
 	 * @return
 	 */
-	public Feature getFeature(String type, UUID uuid, ParsedRequestParameters parameters) {
-		
+	public Feature getFeature(String type, UUID uuid, CrsInfo crsinfo) {
+
 		FeatureType btype = typeManager.getFeatureType(type);
 		if (btype == null) {
 			logger.error(MessageFormat.format("Database Error: No entry for feature type ''{0}'' in the feature_types database table.",type));
@@ -126,21 +131,16 @@ public class FeatureDao {
 		StringBuilder sb = new StringBuilder();
 		sb.append("SELECT ");
 		sb.append( ID_FIELD );
-		
-		final Integer[] srid = {null};
-		if(parameters != null) {
-			srid[0] = parameters.getSrid();
-		}
-		
+
 		btype.getViewMetadata().getFields().forEach(e->{
 			if (!e.isGeometry()) {
-				sb.append("," + e.getFieldName() ); 
+				sb.append("," + e.getFieldName() );
 			}else {
 				sb.append(", ");
-				if (srid[0] == null) {
+				if (crsinfo == null) {
 					sb.append("st_asbinary(" + e.getFieldName() + ")");
 				}else {
-					sb.append("st_asbinary(st_transform(" + e.getFieldName() + ", " + srid[0] + ")) ");
+					sb.append("st_asbinary(st_transform(" + e.getFieldName() + ", " + crsinfo.getSrid() + ")) ");
 				}
 				sb.append(" as " + e.getFieldName() );
 			}
@@ -154,7 +154,7 @@ public class FeatureDao {
 		try {
 			return jdbcTemplate.queryForObject(
 					sb.toString(), 
-					new FeatureRowMapper(btype.getViewMetadata(), null, srid[0]), uuid);
+					new FeatureRowMapper(btype.getViewMetadata(), null, crsinfo), uuid);
 		}catch (EmptyResultDataAccessException ex) {
 			return null;
 		}
@@ -226,8 +226,8 @@ public class FeatureDao {
 			}else {
 				geomField = field;						
 				selectallSql.append(", ");
-				if (requestparams.getSrid() != null) {
-					selectallSql.append("st_asbinary(st_transform(" + field.getFieldName() + "," + requestparams.getSrid() + "))");	
+				if (requestparams.getCrsInfo() != null) {
+					selectallSql.append("st_asbinary(st_transform(" + field.getFieldName() + "," + requestparams.getCrsInfo().getSrid() + "))");	
 				}else {
 					selectallSql.append("st_asbinary(" + field.getFieldName() + ")");
 				}
@@ -339,7 +339,7 @@ public class FeatureDao {
 			throw new TooManyFeaturesException();
 		}
 		
-		FeatureList featurelist = new FeatureList(features, requestparams.getAttributeSet(), requestparams.getSrid());
+		FeatureList featurelist = new FeatureList(features, requestparams.getAttributeSet(), requestparams.getCrsInfo());
 		
 		//add total count 
 		long total = jdbcTemplate.queryForObject(getCount.toString(), Long.class, params.toArray());
@@ -388,8 +388,8 @@ public class FeatureDao {
 			}else {
 				geomField = field;
 				selectallSql.append(",");
-				if (requestparams.getSrid() != null) {
-					selectallSql.append("st_asbinary(st_transform(" + field.getFieldName() + "," + requestparams.getSrid() + "))");	
+				if (requestparams.getCrsInfo() != null) {
+					selectallSql.append("st_asbinary(st_transform(" + field.getFieldName() + "," + requestparams.getCrsInfo().getSrid() + "))");	
 				}else {
 					selectallSql.append("st_asbinary(" + field.getFieldName() + ")");
 				}
@@ -485,7 +485,7 @@ public class FeatureDao {
 			throw new TooManyFeaturesException();
 		}
 		
-		FeatureList featurelist = new FeatureList(features, requestparams.getAttributeSet(), requestparams.getSrid());
+		FeatureList featurelist = new FeatureList(features, requestparams.getAttributeSet(), requestparams.getCrsInfo());
 		
 		//add total count 
 		long total = jdbcTemplate.queryForObject(getCount.toString(), Long.class, params.toArray());
