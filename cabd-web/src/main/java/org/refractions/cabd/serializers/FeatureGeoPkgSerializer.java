@@ -60,7 +60,7 @@ public class FeatureGeoPkgSerializer extends AbstractHttpMessageConverter<Featur
 	protected void writeInternal(Feature feature, HttpOutputMessage outputMessage)
 			throws IOException, HttpMessageNotWritableException {
 	
-		FeatureList fl = new FeatureList(Collections.singletonList(feature), null);
+		FeatureList fl = new FeatureList(Collections.singletonList(feature), null, feature.getCrsInfo());
 		listSerializer.writeInternal(fl, outputMessage);
 	}
 	

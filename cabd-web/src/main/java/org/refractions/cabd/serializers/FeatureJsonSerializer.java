@@ -19,6 +19,8 @@ import java.io.IOException;
 
 import org.refractions.cabd.CabdApplication;
 import org.refractions.cabd.controllers.GeoJsonUtils;
+import org.refractions.cabd.dao.FeatureDao;
+import org.refractions.cabd.model.CrsInfo;
 import org.refractions.cabd.model.Feature;
 import org.springframework.http.HttpInputMessage;
 import org.springframework.http.HttpOutputMessage;
@@ -36,7 +38,6 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class FeatureJsonSerializer extends AbstractHttpMessageConverter<Feature>{
-
 
 	public FeatureJsonSerializer() {
 		super(CabdApplication.GEOJSON_MEDIA_TYPE,MediaType.APPLICATION_JSON);
@@ -57,7 +58,9 @@ public class FeatureJsonSerializer extends AbstractHttpMessageConverter<Feature>
 	protected void writeInternal(Feature feature, HttpOutputMessage outputMessage)
 			throws IOException, HttpMessageNotWritableException {
 	
-		GeoJsonUtils.INSTANCE.writeFeature(feature, outputMessage.getBody());
+		CrsInfo info = feature.getCrsInfo();
+		info = info != null ? info : new CrsInfo("EPSG", FeatureDao.DATABASE_SRID, FeatureDao.DATABASE_SRID);
+		GeoJsonUtils.INSTANCE.writeFeature(feature, outputMessage.getBody(), info);
 	}
 	
 	

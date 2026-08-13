@@ -29,14 +29,20 @@ import java.util.List;
 public class SimpleFeatureList extends ItemList<Feature>{
 
 	private long totalResults = 0;
+	private CrsInfo crsinfo = null;
 	
-	public SimpleFeatureList(List<Feature> features) {
+	public SimpleFeatureList(List<Feature> features, CrsInfo crsinfo) {
 		super(features);
 		this.totalResults = features.size();
+		this.crsinfo = crsinfo;
 	}
 	
 	public long getTotalResults() {
 		return this.totalResults;
+	}
+	
+	public CrsInfo getCrsInfo() {
+		return this.crsinfo;		
 	}
 
 }

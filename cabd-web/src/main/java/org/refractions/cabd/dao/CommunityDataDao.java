@@ -34,6 +34,7 @@ import org.refractions.cabd.exceptions.NotFoundException;
 import org.refractions.cabd.model.CommunityContact;
 import org.refractions.cabd.model.CommunityData;
 import org.refractions.cabd.model.CommunityFeature;
+import org.refractions.cabd.model.CrsInfo;
 import org.refractions.cabd.model.Feature;
 import org.refractions.cabd.model.FeatureType;
 import org.refractions.cabd.model.SimpleFeatureList;
@@ -120,12 +121,14 @@ public class CommunityDataDao {
 		gFeature.addAttribute("id", id);
 		gFeature.addAttribute("status", status);
 		gFeature.addAttribute("passability_status_code", passabilityStatus);
-		gFeature.addAttribute("feature_latitude", rs.getDouble("feature_latitude"));
-		gFeature.addAttribute("feature_longitude", rs.getDouble("feature_longitude"));
+		
 		
 		try {
 			Point pnt = (Point) reader.read(rs.getBytes("geometry"));
 			gFeature.setGeometry(pnt);
+			
+			gFeature.addAttribute("x", pnt.getX());
+			gFeature.addAttribute("y", pnt.getY());
 		}catch (Exception ex) {
 			throw new SQLException(ex);
 		}
@@ -340,10 +343,18 @@ public class CommunityDataDao {
 			}
 		}
 
+		CrsInfo crsinfo = params.validateAndGetSrid(jdbcTemplate);
+		
 		StringBuilder sb = new StringBuilder();
 		List<Object> qparams = new ArrayList<>();
 		sb.append(" SELECT id, feature_type, status, cabd_id, user_id = ? as is_owner, passability_status_code, ");
-		sb.append("uploaded_datetime, feature_latitude, feature_longitude, st_asewkb(st_geomfromgeojson(data->'geometry')) as geometry");
+		sb.append("uploaded_datetime, ");
+		if (crsinfo != null){
+			sb.append(" st_asbinary(st_transform(feature_geometry, " + crsinfo.getSrid() + "))");
+		}else {
+			sb.append(" st_asbinary(feature_geometry) ");
+		}
+		sb.append(" as  geometry");
 		sb.append(" FROM ");
 		sb.append(COMMUNITY_DATA_STAGING_VIEW);
 		
@@ -358,7 +369,7 @@ public class CommunityDataDao {
 		sb.append(" ORDER BY uploaded_datetime desc LIMIT ");
 		sb.append(properties.findMaxResults(params.getMaxresults()));
 		return new SimpleFeatureList(
-				jdbcTemplate.query(sb.toString(), communityStagingFeatureMapper, qparams.toArray(new Object[0])));
+				jdbcTemplate.query(sb.toString(), communityStagingFeatureMapper, qparams.toArray(new Object[0])), crsinfo);
 
 	}
 	

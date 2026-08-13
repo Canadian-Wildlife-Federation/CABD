@@ -30,8 +30,8 @@ import io.swagger.v3.oas.annotations.Parameter;
  * @author Emily
  *
  */
-public class CommunityRequestParameters {
-	
+public class CommunityRequestParameters extends CrsRequestParameters {
+
 	@Parameter(name="fromdate", required = false, description = "Only returns records uploaded on or after this date. Expects  ISO 8601 date or datetime. Defaults to one year ago.")
 	private OffsetDateTime fromdate;
 	
@@ -46,18 +46,18 @@ public class CommunityRequestParameters {
 	//use a POJO to represent these parameters
 	//I needed custom name for max-results
 	//https://stackoverflow.com/questions/56468760/how-to-collect-all-fields-annotated-with-requestparam-into-one-object
-	@ConstructorProperties({ "fromdate","todate","max-results"})
-	public CommunityRequestParameters(String fromdate, String todate,Integer maxResults) {
+	@ConstructorProperties({ "fromdate","todate","max-results", "crs"})
+	public CommunityRequestParameters(String fromdate, String todate,Integer maxResults, String crs) {
+		super(crs);
 		this.fromdate = parseDateTime(fromdate);
 		this.todate = parseDateTime(todate);
 		this.maxresults = maxResults;
 	}
-	
+
 	public Integer getMaxresults() { return maxresults;	}
 	public OffsetDateTime getFromDate() { return fromdate; }
 	public OffsetDateTime getToDate() { return todate; }
-	
-	
+
 	/**
 	 * Parses parameters into data types and
 	 * validates values.

@@ -20,13 +20,17 @@ import java.text.MessageFormat;
 
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Envelope;
+import org.refractions.cabd.CabdApplication;
 import org.refractions.cabd.dao.FeatureDao;
 import org.refractions.cabd.dao.FeatureTypeManager;
 import org.refractions.cabd.dao.filter.Filter;
 import org.refractions.cabd.dao.filter.NameFilter;
 import org.refractions.cabd.exceptions.InvalidParameterException;
+import org.refractions.cabd.model.CrsInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 import io.swagger.v3.oas.annotations.Parameter;
 
@@ -37,7 +41,7 @@ import io.swagger.v3.oas.annotations.Parameter;
  * @author Emily
  *
  */
-public class FeatureRequestParameters {
+public class FeatureRequestParameters extends CrsRequestParameters {
 
 	private Logger logger = LoggerFactory.getLogger(FeatureDao.class);
 	
@@ -64,12 +68,13 @@ public class FeatureRequestParameters {
 	//use a POJO to represent these parameters
 	//I needed custom name for max-results
 	//https://stackoverflow.com/questions/56468760/how-to-collect-all-fields-annotated-with-requestparam-into-one-object
-	@ConstructorProperties({"bbox", "point","max-results", "filter", "namefilter", "attributes"})
+	@ConstructorProperties({"bbox", "point","max-results", "filter", "namefilter", "attributes", "crs"})
 	public FeatureRequestParameters(
 			String bbox, 
 			String point, Integer maxResults, String[] filter, 
-			String[] namefilter, String attributes) {
+			String[] namefilter, String attributes, String crs) {
 
+		super(crs);
 		this.bbox = bbox;
 		this.point = point;
 	    this.maxresults = maxResults;
@@ -77,7 +82,7 @@ public class FeatureRequestParameters {
 	    this.namefilter = namefilter;
 	    this.attributes = attributes;
 	}
-	
+
 	public String getBbox() { return this.bbox; }
 	public String getPoint() { return this.point; }
 	public Integer getMaxresults() { return maxresults;	}
@@ -92,7 +97,7 @@ public class FeatureRequestParameters {
 	 * 
 	 * @param typeManager
 	 */
-	public ParsedRequestParameters parseAndValidate(FeatureTypeManager typeManager) {
+	public ParsedRequestParameters parseAndValidate(FeatureTypeManager typeManager, JdbcTemplate jdbcTemplate, MediaType outputFormat) {
 		Envelope env = null;
 		if (bbox != null) {
 			env = parseBbox();
@@ -133,8 +138,21 @@ public class FeatureRequestParameters {
 				throw new InvalidParameterException("The 'attributes' parameter '" + this.attributes + "' is not supported.");
 			}
 		}
+		
+		CrsInfo crsinfo = validateAndGetSrid(jdbcTemplate);
+
+		if (CabdApplication.KML_MEDIA_TYPE.equalsTypeAndSubtype(outputFormat)) {
+		    if (crsinfo == null) {
+		        //KML is defined in WGS84; transform regardless of the native srid
+		        crsinfo = new CrsInfo("EPSG", 4326, 4326);
+		    } else if (crsinfo.getSrid() != 4326) {
+		        throw new InvalidParameterException(
+		            "The 'crs' parameter is not supported for KML output; KML coordinates must be EPSG:4326.");
+		    }
+		}
+		
 		return new ParsedRequestParameters(env, searchPoint, maxresults, parseFilter(filter), 
-				parseNameFilter(namefilter), set);
+				parseNameFilter(namefilter), set, crsinfo);
 	}
 
 	private Envelope parseBbox() {

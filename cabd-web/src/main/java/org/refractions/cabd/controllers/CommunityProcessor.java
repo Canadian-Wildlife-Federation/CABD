@@ -148,7 +148,7 @@ public class CommunityProcessor {
 				feature.setCabdId(UUID.randomUUID());
 			}else {
 				//validate feature exists in feature type
-				Feature f = featureDao.getFeature(feature.getCabdId());
+				Feature f = featureDao.getFeature(feature.getCabdId(), null);
 				if (f == null) {
 					//feature doesn't exist; not sure where uuid came from but I guess it doesn't matter
 					//let's generate a new id & a warning
