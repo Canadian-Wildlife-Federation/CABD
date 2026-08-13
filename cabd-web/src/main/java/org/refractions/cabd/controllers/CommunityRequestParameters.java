@@ -21,6 +21,8 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeParseException;
 
+import org.springframework.jdbc.core.JdbcTemplate;
+
 import io.swagger.v3.oas.annotations.Parameter;
 
 /**
@@ -41,22 +43,30 @@ public class CommunityRequestParameters {
 	@Parameter(name="max-results", required = false, description = "The maximum number of search results to return. If not provided a system defined maximum is used.")
 	private Integer maxresults;
 	
+	@Parameter(name="crs", required = false, description = "The CRS to return the results in in the form <Authority>:<Code> (ex. EPSG:4326), but default all values are return in EPSG:4617")
+	private String crs;
+	
 	//this is the only way I could figure out
 	//how to provide names for query parameters and
 	//use a POJO to represent these parameters
 	//I needed custom name for max-results
 	//https://stackoverflow.com/questions/56468760/how-to-collect-all-fields-annotated-with-requestparam-into-one-object
-	@ConstructorProperties({ "fromdate","todate","max-results"})
-	public CommunityRequestParameters(String fromdate, String todate,Integer maxResults) {
+	@ConstructorProperties({ "fromdate","todate","max-results", "crs"})
+	public CommunityRequestParameters(String fromdate, String todate,Integer maxResults, String crs) {
 		this.fromdate = parseDateTime(fromdate);
 		this.todate = parseDateTime(todate);
 		this.maxresults = maxResults;
+		this.crs = crs;
 	}
 	
 	public Integer getMaxresults() { return maxresults;	}
 	public OffsetDateTime getFromDate() { return fromdate; }
 	public OffsetDateTime getToDate() { return todate; }
+	public String getCrs() { return crs; }
 	
+	public Integer validAndGetSrid(JdbcTemplate jdbcTemplate) {
+		return FeatureRequestTypeParameters.parseAndValidateCrsParameter(crs, jdbcTemplate);
+	}
 	
 	/**
 	 * Parses parameters into data types and

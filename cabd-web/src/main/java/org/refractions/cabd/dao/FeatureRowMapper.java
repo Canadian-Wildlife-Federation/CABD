@@ -41,8 +41,23 @@ public class FeatureRowMapper implements RowMapper<Feature> {
 	
 	private WKBReader reader = new WKBReader();
 	
-	public FeatureRowMapper(FeatureViewMetadata metadata, AttributeSet attributes) {
+	private Integer outSrid = null;
+	
+	/**
+	 * Use this constructor if you need to track the srid of an individual feature;
+	 * If the feature is a part of a collection and you don't need to track the srid use other
+	 * constructor
+	 * @param metadata
+	 * @param attributes
+	 * @param outSrid
+	 */
+	public FeatureRowMapper(FeatureViewMetadata metadata, AttributeSet attributes, Integer outSrid) {
 		this.fields = metadata.getFields(attributes);
+		this.outSrid = outSrid;
+	}
+	
+	public FeatureRowMapper(FeatureViewMetadata metadata, AttributeSet attributes) {
+		this(metadata, attributes, null);
 	}
 	
 	@Override
@@ -50,7 +65,7 @@ public class FeatureRowMapper implements RowMapper<Feature> {
 		UUID buuid = (UUID) rs.getObject(FeatureDao.ID_FIELD);
 		String featureType = (String)rs.getString(FeatureDao.FEATURE_TYPE_FIELD);
 		
-		Feature feature = new Feature(buuid, featureType);
+		Feature feature = new Feature(buuid, featureType, outSrid);
 		
 		for (FeatureViewMetadataField field : fields) {
 			if (field.isGeometry()) {
@@ -73,6 +88,7 @@ public class FeatureRowMapper implements RowMapper<Feature> {
 				}
 			}
 		};
+		
 		return feature;
 	}
 

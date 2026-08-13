@@ -57,7 +57,8 @@ public class FeatureListUtil {
 	public static final String METADATA_KEY = "metadata";
 	public static final String DATA_LICENSE_KEY = "data_licence";
 	public static final String DATA_VERSION_KEY = "data_version";
-	public static final String DATA_SRID = "data_srid";
+	public static final String DATA_SRID = "native_srid";
+	public static final String SRID = "output_srid";
 	public static final String DOWNLOAD_DATETIME_KEY = "download_datetime";
 	
 	/**
@@ -88,6 +89,7 @@ public class FeatureListUtil {
 		Envelope env = null;
 		for (Feature feature : features.getItems()) {
 			ftypes.add(feature.getFeatureType());
+			if (feature.getGeometry() == null) continue;
 			if (env == null) {
 				env = feature.getGeometry().getEnvelopeInternal();
 			}else {
@@ -117,13 +119,13 @@ public class FeatureListUtil {
 	}
 	
 	public static SimpleFeatureType asFeatureType(String featureType, 
-			AttributeSet set, FeatureViewMetadata metadata) throws IOException{
-		return asFeatureType(featureType, set, metadata, false).getLeft();
+			AttributeSet set, FeatureViewMetadata metadata, Integer outputSrid) throws IOException{
+		return asFeatureType(featureType, set, metadata, outputSrid, false).getLeft();
 	}
 	
 	public static ImmutablePair<SimpleFeatureType, Map<String,String>> asFeatureType(String featureType,
 			AttributeSet set,
-			FeatureViewMetadata metadata, boolean forshape) throws IOException{
+			FeatureViewMetadata metadata, Integer outputSrid, boolean forshape) throws IOException{
 		
 		SimpleFeatureTypeBuilder builder = new SimpleFeatureTypeBuilder();
 		Set<String> names = new HashSet<>();
@@ -140,7 +142,7 @@ public class FeatureListUtil {
 				names.add(fieldName);
 			}
 			if (field.isGeometry()) {
-				builder.add(fieldName, Point.class, field.getSRID());
+				builder.add(fieldName, Point.class, outputSrid != null ? outputSrid : field.getSRID());
 				builder.setDefaultGeometry(fieldName);
 			}else {
 				builder.add(fieldName, field.getDataTypeAsClass());

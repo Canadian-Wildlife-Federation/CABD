@@ -23,6 +23,7 @@ import java.util.List;
 import org.refractions.cabd.dao.FeatureTypeManager;
 import org.refractions.cabd.exceptions.InvalidParameterException;
 import org.refractions.cabd.model.FeatureType;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 import io.swagger.v3.oas.annotations.Parameter;
 
@@ -45,11 +46,11 @@ public class FeatureRequestTypeParameters extends FeatureRequestParameters{
 	//use a POJO to represent these parameters
 	//I needed custom name for max-results
 	//https://stackoverflow.com/questions/56468760/how-to-collect-all-fields-annotated-with-requestparam-into-one-object
-	@ConstructorProperties({"types","bbox", "point","max-results", "filter", "namefilter", "attributes"})
+	@ConstructorProperties({"types","bbox", "point","max-results", "filter", "namefilter", "attributes", "crs"})
 	public FeatureRequestTypeParameters(
 			String types, String bbox, 
-			String point, Integer maxResults, String[] filter, String[] namefilter, String attributes) {
-		super(bbox, point, maxResults, filter, namefilter, attributes);
+			String point, Integer maxResults, String[] filter, String[] namefilter, String attributes, String crs) {
+		super(bbox, point, maxResults, filter, namefilter, attributes, crs);
 		this.types = types;
 	}
 		
@@ -63,8 +64,8 @@ public class FeatureRequestTypeParameters extends FeatureRequestParameters{
 	 * @param typeManager
 	 */
 	//TODO: figure out how  we can autowrite type manager; 
-	public ParsedRequestParameters parseAndValidate(FeatureTypeManager typeManager) {
-		ParsedRequestParameters bb = super.parseAndValidate(typeManager);
+	public ParsedRequestParameters parseAndValidate(FeatureTypeManager typeManager, JdbcTemplate jdbcTemplate) {
+		ParsedRequestParameters bb = super.parseAndValidate(typeManager, jdbcTemplate);
 		if (this.types != null) {
 			String[] ttypes = this.types.split(",");
 			bb.setFeatureTypes( parseTypes(ttypes, typeManager));

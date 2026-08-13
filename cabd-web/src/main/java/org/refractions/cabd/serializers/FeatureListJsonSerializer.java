@@ -81,6 +81,8 @@ public class FeatureListJsonSerializer extends AbstractFeatureListSerializer{
 		}
 		
 		sb.append(formatString(FeatureListUtil.DATA_SRID) + ": "+ srid );
+		sb.append(", ");
+		sb.append(formatString(FeatureListUtil.SRID) + ": "+ features.getResultsSrid() );
 		sb.append("}, ");
 		sb.append(formatString("features") + ":");
 		sb.append("[");

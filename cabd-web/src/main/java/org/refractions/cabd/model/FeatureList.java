@@ -34,10 +34,12 @@ public class FeatureList extends ItemList<Feature>{
 
 	private long totalResults = 0;
 	private AttributeSet attributeSet = null;
+	private Integer resultsSrid = null;
 	
-	public FeatureList(List<Feature> features, AttributeSet attributeSet) {
+	public FeatureList(List<Feature> features, AttributeSet attributeSet, Integer resultsSrid) {
 		super(features);
 		this.attributeSet = attributeSet;
+		this.resultsSrid = resultsSrid;
 		
 		//add url attribute to link to individual feature
 		String rooturl = ServletUriComponentsBuilder.fromCurrentContextPath().path("/").path(FeatureController.PATH).build().toUriString();		
@@ -56,6 +58,10 @@ public class FeatureList extends ItemList<Feature>{
 	
 	public long getTotalResults() {
 		return this.totalResults;
+	}
+	
+	public Integer getResultsSrid() {
+		return this.resultsSrid;
 	}
 
 }

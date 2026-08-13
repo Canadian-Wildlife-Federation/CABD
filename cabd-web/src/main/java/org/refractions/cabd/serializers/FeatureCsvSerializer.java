@@ -60,7 +60,7 @@ public class FeatureCsvSerializer extends AbstractHttpMessageConverter<Feature>{
 	protected void writeInternal(Feature feature, HttpOutputMessage outputMessage)
 			throws IOException, HttpMessageNotWritableException {
 	
-		FeatureList fl = new FeatureList(Collections.singletonList(feature), null);
+		FeatureList fl = new FeatureList(Collections.singletonList(feature), null, feature.getSrid());
 		listSerializer.writeInternal(fl, outputMessage);
 	}
 	

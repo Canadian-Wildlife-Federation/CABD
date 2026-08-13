@@ -27,6 +27,9 @@ import org.refractions.cabd.dao.filter.NameFilter;
 import org.refractions.cabd.exceptions.InvalidParameterException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 import io.swagger.v3.oas.annotations.Parameter;
 
@@ -59,16 +62,20 @@ public class FeatureRequestParameters {
 	@Parameter(name="attributes", required = false, description = "A flag to select which set of attributes are returned (all, limited, etc.).")
 	private String attributes;
 	
+	@Parameter(name="crs", required = false, description = "The CRS to return the results in in the form <Authority>:<Code> (ex. EPSG:4326), but default all values are return in EPSG:4617")
+	private String crs;
+	
+	
 	//this is the only way I could figure out
 	//how to provide names for query parameters and
 	//use a POJO to represent these parameters
 	//I needed custom name for max-results
 	//https://stackoverflow.com/questions/56468760/how-to-collect-all-fields-annotated-with-requestparam-into-one-object
-	@ConstructorProperties({"bbox", "point","max-results", "filter", "namefilter", "attributes"})
+	@ConstructorProperties({"bbox", "point","max-results", "filter", "namefilter", "attributes", "crs"})
 	public FeatureRequestParameters(
 			String bbox, 
 			String point, Integer maxResults, String[] filter, 
-			String[] namefilter, String attributes) {
+			String[] namefilter, String attributes, String crs) {
 
 		this.bbox = bbox;
 		this.point = point;
@@ -76,6 +83,7 @@ public class FeatureRequestParameters {
 	    this.filter = filter;
 	    this.namefilter = namefilter;
 	    this.attributes = attributes;
+	    this.crs = crs;
 	}
 	
 	public String getBbox() { return this.bbox; }
@@ -84,6 +92,7 @@ public class FeatureRequestParameters {
 	public String[] getFilter() { return filter; }
 	public String[] getNameFilter() { return namefilter; }
 	public String getAttributeSet() { return this.attributes; }
+	public String getCrs() { return this.crs; }
 
 	
 	/**
@@ -92,7 +101,7 @@ public class FeatureRequestParameters {
 	 * 
 	 * @param typeManager
 	 */
-	public ParsedRequestParameters parseAndValidate(FeatureTypeManager typeManager) {
+	public ParsedRequestParameters parseAndValidate(FeatureTypeManager typeManager, JdbcTemplate jdbcTemplate) {
 		Envelope env = null;
 		if (bbox != null) {
 			env = parseBbox();
@@ -133,8 +142,11 @@ public class FeatureRequestParameters {
 				throw new InvalidParameterException("The 'attributes' parameter '" + this.attributes + "' is not supported.");
 			}
 		}
+		
+		Integer srid = parseAndValidateCrsParameter(this.crs, jdbcTemplate);
+		
 		return new ParsedRequestParameters(env, searchPoint, maxresults, parseFilter(filter), 
-				parseNameFilter(namefilter), set);
+				parseNameFilter(namefilter), set, srid);
 	}
 
 	private Envelope parseBbox() {
@@ -186,5 +198,28 @@ public class FeatureRequestParameters {
 	private NameFilter parseNameFilter(String[] filters) {
 		if (namefilter == null || namefilter.length == 0) return null;
 		return NameFilter.parseFilter(namefilter);
+	}
+	
+	public static Integer parseAndValidateCrsParameter(String crs, JdbcTemplate jdbcTemplate) {
+		if (crs == null || crs.trim().isBlank()) return null;
+		
+		String[] bits = crs.split(":");
+		if (bits.length != 2) {
+			throw new InvalidParameterException("This crs parameter is invalid. It must be of the form <Authority>:<Code>");
+		}
+		Integer code = null;
+		try {
+			code = Integer.parseInt(bits[1]);
+		}catch(Exception ex) {
+			throw new InvalidParameterException("This crs parameter is invalid. It must be of the form <Authority>:<Code>; where code is a valid integer");
+		}
+		
+		// validate that the crs exists
+		String sql = "SELECT srid FROM public.spatial_ref_sys WHERE auth_name = ? AND auth_srid = ?";
+		try {
+			return jdbcTemplate.queryForObject(sql, Integer.class, bits[0].toUpperCase(), code);
+		} catch (EmptyResultDataAccessException e) {
+			throw new InvalidParameterException(MessageFormat.format("The crs {0} is not supported.", crs));
+		}
 	}
 }

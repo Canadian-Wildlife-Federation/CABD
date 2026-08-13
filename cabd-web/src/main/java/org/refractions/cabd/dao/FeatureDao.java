@@ -76,7 +76,7 @@ public class FeatureDao {
 	 * Feature type column name for features
 	 */
 	public static final String FEATURE_TYPE_FIELD = "feature_type";
-
+	
     private Logger logger = LoggerFactory.getLogger(FeatureDao.class);
     
 	@Autowired
@@ -95,7 +95,7 @@ public class FeatureDao {
 	 * @param uuid
 	 * @return
 	 */
-	public Feature getFeature(UUID uuid) {
+	public Feature getFeature(UUID uuid, ParsedRequestParameters parameters) {
 		String type = null;
 		try {
 			String query = "SELECT " + FEATURE_TYPE_FIELD  + " FROM " + FeatureViewMetadata.getAllFeaturesView() + " WHERE " + ID_FIELD + " = ? ";
@@ -104,7 +104,7 @@ public class FeatureDao {
 			return null;
 		}
 		
-		return getFeature(type, uuid);		
+		return getFeature(type, uuid, parameters);		
 	}
 	
 	/**
@@ -114,7 +114,7 @@ public class FeatureDao {
 	 * @param uuid
 	 * @return
 	 */
-	public Feature getFeature(String type, UUID uuid) {
+	public Feature getFeature(String type, UUID uuid, ParsedRequestParameters parameters) {
 		
 		FeatureType btype = typeManager.getFeatureType(type);
 		if (btype == null) {
@@ -126,11 +126,23 @@ public class FeatureDao {
 		StringBuilder sb = new StringBuilder();
 		sb.append("SELECT ");
 		sb.append( ID_FIELD );
+		
+		final Integer[] srid = {null};
+		if(parameters != null) {
+			srid[0] = parameters.getSrid();
+		}
+		
 		btype.getViewMetadata().getFields().forEach(e->{
 			if (!e.isGeometry()) {
 				sb.append("," + e.getFieldName() ); 
 			}else {
-				sb.append(", st_asbinary(" + e.getFieldName() + ") as " + e.getFieldName() );
+				sb.append(", ");
+				if (srid[0] == null) {
+					sb.append("st_asbinary(" + e.getFieldName() + ")");
+				}else {
+					sb.append("st_asbinary(st_transform(" + e.getFieldName() + ", " + srid[0] + ")) ");
+				}
+				sb.append(" as " + e.getFieldName() );
 			}
 		} );
 		sb.append(" FROM " );
@@ -142,7 +154,7 @@ public class FeatureDao {
 		try {
 			return jdbcTemplate.queryForObject(
 					sb.toString(), 
-					new FeatureRowMapper(btype.getViewMetadata(), null), uuid);
+					new FeatureRowMapper(btype.getViewMetadata(), null, srid[0]), uuid);
 		}catch (EmptyResultDataAccessException ex) {
 			return null;
 		}
@@ -212,8 +224,14 @@ public class FeatureDao {
 				selectallSql.append("," + field.getFieldName() );
 				if (field.getFieldName().equals(FEATURE_TYPE_FIELD)) hasftype = true;
 			}else {
-				geomField = field;
-				selectallSql.append(", st_asbinary(" + field.getFieldName() + ") as " + field.getFieldName() );
+				geomField = field;						
+				selectallSql.append(", ");
+				if (requestparams.getSrid() != null) {
+					selectallSql.append("st_asbinary(st_transform(" + field.getFieldName() + "," + requestparams.getSrid() + "))");	
+				}else {
+					selectallSql.append("st_asbinary(" + field.getFieldName() + ")");
+				}
+				selectallSql.append(" as " + field.getFieldName() );				
 			}
 		}
 		//feature type is required
@@ -321,7 +339,7 @@ public class FeatureDao {
 			throw new TooManyFeaturesException();
 		}
 		
-		FeatureList featurelist = new FeatureList(features, requestparams.getAttributeSet());
+		FeatureList featurelist = new FeatureList(features, requestparams.getAttributeSet(), requestparams.getSrid());
 		
 		//add total count 
 		long total = jdbcTemplate.queryForObject(getCount.toString(), Long.class, params.toArray());
@@ -369,7 +387,13 @@ public class FeatureDao {
 				if (field.getFieldName().equals(FEATURE_TYPE_FIELD)) hasftype = true;
 			}else {
 				geomField = field;
-				selectallSql.append(", st_asbinary(" + field.getFieldName() + ") as " + field.getFieldName() );
+				selectallSql.append(",");
+				if (requestparams.getSrid() != null) {
+					selectallSql.append("st_asbinary(st_transform(" + field.getFieldName() + "," + requestparams.getSrid() + "))");	
+				}else {
+					selectallSql.append("st_asbinary(" + field.getFieldName() + ")");
+				}
+				selectallSql.append(" as " + field.getFieldName() );
 			}
 		}
 		//feature type is required
@@ -461,7 +485,7 @@ public class FeatureDao {
 			throw new TooManyFeaturesException();
 		}
 		
-		FeatureList featurelist = new FeatureList(features, requestparams.getAttributeSet());
+		FeatureList featurelist = new FeatureList(features, requestparams.getAttributeSet(), requestparams.getSrid());
 		
 		//add total count 
 		long total = jdbcTemplate.queryForObject(getCount.toString(), Long.class, params.toArray());

@@ -40,7 +40,7 @@ public class UserFeatureUpdateDao {
 	@Transactional
 	public void newFeatureUpdate(UUID cabdId, FeatureChangeRequest changeRequest) {
 
-		Feature cabdFeature = featureDao.getFeature(cabdId);
+		Feature cabdFeature = featureDao.getFeature(cabdId, null);
 		if (cabdFeature == null)
 			throw new NotFoundException("Feature not found");
 

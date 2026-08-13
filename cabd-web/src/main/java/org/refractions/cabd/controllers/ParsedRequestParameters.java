@@ -32,16 +32,22 @@ public class ParsedRequestParameters {
 	private Filter filter;
 	private NameFilter namefilter;
 	private AttributeSet attributes;
+	private Integer pgsrid;
 	
 	public ParsedRequestParameters(Envelope env, Coordinate searchPoint, 
 			Integer maxResults, Filter filter, NameFilter namefilter, 
-			AttributeSet attributes) {
+			AttributeSet attributes, Integer pgsrid) {
 		this.env  = env;
 		this.searchPoint = searchPoint;
 		this.maxResults = maxResults;
 		this.filter = filter;
 		this.attributes = attributes;
 		this.namefilter = namefilter;
+		this.pgsrid = pgsrid;
+	}
+	
+	public Integer getSrid() {
+		return this.pgsrid;
 	}
 	
 	public AttributeSet getAttributeSet() {

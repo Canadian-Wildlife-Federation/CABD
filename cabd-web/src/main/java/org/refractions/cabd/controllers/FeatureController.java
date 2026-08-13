@@ -34,6 +34,7 @@ import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -70,6 +71,8 @@ public class FeatureController {
 	UserFeatureUpdateDao featureUpdateDao;
 	@Autowired
 	FeatureTypeManager typeManager;
+	@Autowired
+	private JdbcTemplate jdbcTemplate;
 		
 	/**
 	 * Gets an individual feature by identifier. Search the all_features
@@ -86,9 +89,13 @@ public class FeatureController {
 	public ResponseEntity<Feature> getFeature(
 			@Parameter(description = "unique feature identifier") 
 			@PathVariable("id") UUID id,
+			@ParameterObject FeatureRequestTypeParameters params, 
+
 			HttpServletRequest request) {
 		
-		Feature f = featureDao.getFeature(id);
+		ParsedRequestParameters parameters = params.parseAndValidate(typeManager, jdbcTemplate);
+
+		Feature f = featureDao.getFeature(id, parameters);
 		if (f == null) throw new NotFoundException(MessageFormat.format("No feature with id ''{0}'' found.", id));
 		return ResponseEntity.ok(f);
 	}
@@ -108,9 +115,12 @@ public class FeatureController {
 			@Parameter(description = "unique feature identifier") 
 			@PathVariable("type") String type,
 			@PathVariable("id") UUID id,
+			@ParameterObject FeatureRequestTypeParameters params, 
 			HttpServletRequest request) {
 		
-		Feature f = featureDao.getFeature(type, id);
+		ParsedRequestParameters parameters = params.parseAndValidate(typeManager, jdbcTemplate);
+		
+		Feature f = featureDao.getFeature(type, id, parameters);
 		if (f == null) throw new NotFoundException(MessageFormat.format("No feature with id ''{0}'' found.", id));
 		return ResponseEntity.ok(f);
 	}
@@ -170,7 +180,7 @@ public class FeatureController {
 			@Parameter(description = "the feature type to search") @PathVariable("type") String type,
 			@ParameterObject FeatureRequestParameters params, HttpServletRequest request) {
 		
-		ParsedRequestParameters parameters = params.parseAndValidate(typeManager);
+		ParsedRequestParameters parameters = params.parseAndValidate(typeManager, jdbcTemplate);
 
 		FeatureType btype = typeManager.getFeatureType(type);
 		if (btype == null) throw new NotFoundException(MessageFormat.format("The feature type ''{0}'' is not supported.", type));
@@ -207,7 +217,7 @@ public class FeatureController {
 			@ParameterObject FeatureRequestTypeParameters params, 
 			HttpServletRequest request) {
 
-		ParsedRequestParameters parameters = params.parseAndValidate(typeManager);
+		ParsedRequestParameters parameters = params.parseAndValidate(typeManager, jdbcTemplate);
 		return ResponseEntity.ok(featureDao.getFeatures(parameters.getFeatureTypes(), parameters));
 	}
 		
