@@ -1,23 +1,13 @@
 -- ensure latitude/longitude attributes are included in the mobile attribute
 -- set for all features types
 
-with max_order as (
-	select view_name, max(vw_mobile_order) as nextorder from cabd.feature_type_metadata ftm group by view_name
-)
 update cabd.feature_type_metadata 
-set vw_mobile_order = case when b.nextorder is null then 0 else b.nextorder end +1 from 
-max_order b where cabd.feature_type_metadata.view_name = b.view_name and field_name = 'latitude' and vw_mobile_order is null
-
-with max_order as (
-	select view_name, max(vw_mobile_order) as nextorder from cabd.feature_type_metadata ftm group by view_name
-)
-update cabd.feature_type_metadata 
-set vw_mobile_order = case when b.nextorder is null then 0 else b.nextorder end +1 from 
-max_order b where cabd.feature_type_metadata.view_name = b.view_name and field_name = 'longitude' and vw_mobile_order is null
+set vw_mobile_order = null
+where  view_name in ('cabd.dams_view', 'cabd.stream_crossings_sites_structures_view') and field_name in ('longitude', 'latitude');
 
 -- ensure latitude/longitude attributes are included in the vector tiles for 
 -- dams and stream crossings
-update cabd.feature_type_metadata set include_vector_tile  = true where field_name = 'latitude' or field_name = 'longitude'
+update cabd.feature_type_metadata set include_vector_tile = false where field_name = 'latitude' or field_name = 'longitude'
 and view_name in ('cabd.dams_view', 'cabd.stream_crossings_sites_structures_view');
 
 delete from cabd.vector_tile_cache where key ilike 'dams%' or key ilike 'stream_crossings%';
