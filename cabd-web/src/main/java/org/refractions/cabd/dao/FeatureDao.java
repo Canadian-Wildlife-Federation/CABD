@@ -531,6 +531,9 @@ public class FeatureDao {
 		
 		if (ftype != null) {
 			sb.append("	SELECT ST_AsMVTGeom(ST_Transform(t.geometry, " + srid + "), bounds.b2d) AS geom,");
+
+			sb.append("st_x(st_transform(t.geometry, 4326)) as longitude_4326, ");
+			sb.append("st_y(st_transform(t.geometry, 4326)) as latitude_4326, ");
 			
 			AttributeSet vectorSet = typeManager.findAttributeSet(AttributeSet.VECTOR_TILE);
 			for (FeatureViewMetadataField field : ftype.getViewMetadata().getFields(vectorSet)) {
@@ -552,8 +555,10 @@ public class FeatureDao {
 				if (ft.getAttributeSourceTable() == null) continue;
 				
 				sb.append("	SELECT ST_AsMVTGeom(ST_Transform(t.geometry, " + srid + "), bounds.b2d) AS geom,");
-				sb.append(" jsonb_build_object(");
 				
+				sb.append(" jsonb_build_object(");
+				sb.append("'longitude_4326', st_x(st_transform(t.geometry, 4326)), ");
+				sb.append("'latitude_4326', st_y(st_transform(t.geometry, 4326)), ");
 				AttributeSet vectorSet = typeManager.findAttributeSet(AttributeSet.VECTOR_TILE);
 				for (FeatureViewMetadataField field : ft.getViewMetadata().getFields(vectorSet)) {
 					sb.append("'" + field.getFieldName() + "'");
