@@ -38,6 +38,7 @@ import org.geotools.xsd.Encoder;
 import org.locationtech.jts.geom.Envelope;
 import org.refractions.cabd.CabdApplication;
 import org.refractions.cabd.dao.FeatureTypeManager;
+import org.refractions.cabd.model.CrsInfo;
 import org.refractions.cabd.model.Feature;
 import org.refractions.cabd.model.FeatureList;
 import org.refractions.cabd.model.FeatureType;
@@ -74,6 +75,12 @@ public class FeatureListKmlSerializer extends AbstractFeatureListSerializer{
 	protected void writeInternal(FeatureList features, HttpOutputMessage outputMessage)
 			throws IOException, HttpMessageNotWritableException {
 
+		CrsInfo crs = features.getCrsInfo();
+		if (crs == null || crs.getSrid() != 4326) {
+		    throw new HttpMessageNotWritableException("KML output requires EPSG:4326 features but got "
+		        + (crs == null ? "the native srid" : crs.getCrsString()));
+		}
+		
 		super.writeInternal(features, outputMessage);
 
 		if (features.getItems().isEmpty())
@@ -85,7 +92,7 @@ public class FeatureListKmlSerializer extends AbstractFeatureListSerializer{
 		FeatureViewMetadata metadata = metadataitems.getMiddle();
 
 		SimpleFeatureType type = FeatureListUtil.asFeatureType(metadataitems.getLeft(), 
-				features.getAttributeSet(), metadata);
+				features.getAttributeSet(), metadata, features.getCrsInfo());
 
 		ListFeatureCollection cfeatures = new ListFeatureCollection(type);
 

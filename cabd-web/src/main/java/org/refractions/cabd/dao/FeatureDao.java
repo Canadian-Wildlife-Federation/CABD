@@ -36,6 +36,7 @@ import org.refractions.cabd.controllers.ParsedRequestParameters;
 import org.refractions.cabd.controllers.TooManyFeaturesException;
 import org.refractions.cabd.controllers.VectorTileController;
 import org.refractions.cabd.exceptions.InvalidDatabaseConfigException;
+import org.refractions.cabd.model.CrsInfo;
 import org.refractions.cabd.model.DataSource;
 import org.refractions.cabd.model.Feature;
 import org.refractions.cabd.model.FeatureList;
@@ -76,7 +77,7 @@ public class FeatureDao {
 	 * Feature type column name for features
 	 */
 	public static final String FEATURE_TYPE_FIELD = "feature_type";
-
+	
     private Logger logger = LoggerFactory.getLogger(FeatureDao.class);
     
 	@Autowired
@@ -93,9 +94,11 @@ public class FeatureDao {
 	 * if no feature is found.
 	 * 
 	 * @param uuid
+	 * @param srid the srid to return the geometry in; if null the geometry is
+	 * returned in the native srid of the data
 	 * @return
 	 */
-	public Feature getFeature(UUID uuid) {
+	public Feature getFeature(UUID uuid, CrsInfo crsinfo) {
 		String type = null;
 		try {
 			String query = "SELECT " + FEATURE_TYPE_FIELD  + " FROM " + FeatureViewMetadata.getAllFeaturesView() + " WHERE " + ID_FIELD + " = ? ";
@@ -103,19 +106,21 @@ public class FeatureDao {
 		}catch(EmptyResultDataAccessException ex) {
 			return null;
 		}
-		
-		return getFeature(type, uuid);		
+
+		return getFeature(type, uuid, crsinfo);
 	}
-	
+
 	/**
 	 * Finds the feature with the given uuid.  Will return null
 	 * if no feature is found.
-	 * 
+	 *
 	 * @param uuid
+	 * @param srid the srid to return the geometry in; if null the geometry is
+	 * returned in the native srid of the data
 	 * @return
 	 */
-	public Feature getFeature(String type, UUID uuid) {
-		
+	public Feature getFeature(String type, UUID uuid, CrsInfo crsinfo) {
+
 		FeatureType btype = typeManager.getFeatureType(type);
 		if (btype == null) {
 			logger.error(MessageFormat.format("Database Error: No entry for feature type ''{0}'' in the feature_types database table.",type));
@@ -126,11 +131,18 @@ public class FeatureDao {
 		StringBuilder sb = new StringBuilder();
 		sb.append("SELECT ");
 		sb.append( ID_FIELD );
+
 		btype.getViewMetadata().getFields().forEach(e->{
 			if (!e.isGeometry()) {
-				sb.append("," + e.getFieldName() ); 
+				sb.append("," + e.getFieldName() );
 			}else {
-				sb.append(", st_asbinary(" + e.getFieldName() + ") as " + e.getFieldName() );
+				sb.append(", ");
+				if (crsinfo == null) {
+					sb.append("st_asbinary(" + e.getFieldName() + ")");
+				}else {
+					sb.append("st_asbinary(st_transform(" + e.getFieldName() + ", " + crsinfo.getSrid() + ")) ");
+				}
+				sb.append(" as " + e.getFieldName() );
 			}
 		} );
 		sb.append(" FROM " );
@@ -142,7 +154,7 @@ public class FeatureDao {
 		try {
 			return jdbcTemplate.queryForObject(
 					sb.toString(), 
-					new FeatureRowMapper(btype.getViewMetadata(), null), uuid);
+					new FeatureRowMapper(btype.getViewMetadata(), null, crsinfo), uuid);
 		}catch (EmptyResultDataAccessException ex) {
 			return null;
 		}
@@ -212,8 +224,14 @@ public class FeatureDao {
 				selectallSql.append("," + field.getFieldName() );
 				if (field.getFieldName().equals(FEATURE_TYPE_FIELD)) hasftype = true;
 			}else {
-				geomField = field;
-				selectallSql.append(", st_asbinary(" + field.getFieldName() + ") as " + field.getFieldName() );
+				geomField = field;						
+				selectallSql.append(", ");
+				if (requestparams.getCrsInfo() != null) {
+					selectallSql.append("st_asbinary(st_transform(" + field.getFieldName() + "," + requestparams.getCrsInfo().getSrid() + "))");	
+				}else {
+					selectallSql.append("st_asbinary(" + field.getFieldName() + ")");
+				}
+				selectallSql.append(" as " + field.getFieldName() );				
 			}
 		}
 		//feature type is required
@@ -321,7 +339,7 @@ public class FeatureDao {
 			throw new TooManyFeaturesException();
 		}
 		
-		FeatureList featurelist = new FeatureList(features, requestparams.getAttributeSet());
+		FeatureList featurelist = new FeatureList(features, requestparams.getAttributeSet(), requestparams.getCrsInfo());
 		
 		//add total count 
 		long total = jdbcTemplate.queryForObject(getCount.toString(), Long.class, params.toArray());
@@ -369,7 +387,13 @@ public class FeatureDao {
 				if (field.getFieldName().equals(FEATURE_TYPE_FIELD)) hasftype = true;
 			}else {
 				geomField = field;
-				selectallSql.append(", st_asbinary(" + field.getFieldName() + ") as " + field.getFieldName() );
+				selectallSql.append(",");
+				if (requestparams.getCrsInfo() != null) {
+					selectallSql.append("st_asbinary(st_transform(" + field.getFieldName() + "," + requestparams.getCrsInfo().getSrid() + "))");	
+				}else {
+					selectallSql.append("st_asbinary(" + field.getFieldName() + ")");
+				}
+				selectallSql.append(" as " + field.getFieldName() );
 			}
 		}
 		//feature type is required
@@ -461,7 +485,7 @@ public class FeatureDao {
 			throw new TooManyFeaturesException();
 		}
 		
-		FeatureList featurelist = new FeatureList(features, requestparams.getAttributeSet());
+		FeatureList featurelist = new FeatureList(features, requestparams.getAttributeSet(), requestparams.getCrsInfo());
 		
 		//add total count 
 		long total = jdbcTemplate.queryForObject(getCount.toString(), Long.class, params.toArray());
@@ -507,6 +531,9 @@ public class FeatureDao {
 		
 		if (ftype != null) {
 			sb.append("	SELECT ST_AsMVTGeom(ST_Transform(t.geometry, " + srid + "), bounds.b2d) AS geom,");
+
+			sb.append("st_x(st_transform(t.geometry, 4326)) as longitude_4326, ");
+			sb.append("st_y(st_transform(t.geometry, 4326)) as latitude_4326, ");
 			
 			AttributeSet vectorSet = typeManager.findAttributeSet(AttributeSet.VECTOR_TILE);
 			for (FeatureViewMetadataField field : ftype.getViewMetadata().getFields(vectorSet)) {
@@ -528,8 +555,10 @@ public class FeatureDao {
 				if (ft.getAttributeSourceTable() == null) continue;
 				
 				sb.append("	SELECT ST_AsMVTGeom(ST_Transform(t.geometry, " + srid + "), bounds.b2d) AS geom,");
-				sb.append(" jsonb_build_object(");
 				
+				sb.append(" jsonb_build_object(");
+				sb.append("'longitude_4326', st_x(st_transform(t.geometry, 4326)), ");
+				sb.append("'latitude_4326', st_y(st_transform(t.geometry, 4326)), ");
 				AttributeSet vectorSet = typeManager.findAttributeSet(AttributeSet.VECTOR_TILE);
 				for (FeatureViewMetadataField field : ft.getViewMetadata().getFields(vectorSet)) {
 					sb.append("'" + field.getFieldName() + "'");

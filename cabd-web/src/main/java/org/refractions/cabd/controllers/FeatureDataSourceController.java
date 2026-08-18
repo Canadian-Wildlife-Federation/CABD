@@ -98,7 +98,7 @@ public class FeatureDataSourceController {
 			includeall = true;
 		}
 		
-		Feature feature = featureDao.getFeature(id);
+		Feature feature = featureDao.getFeature(id, null);
 		if (feature == null) throw new NotFoundException(MessageFormat.format("No feature with id ''{0}'' found.", id));
 		
 		FeatureSourceDetails details = new FeatureSourceDetails(id, includeall);

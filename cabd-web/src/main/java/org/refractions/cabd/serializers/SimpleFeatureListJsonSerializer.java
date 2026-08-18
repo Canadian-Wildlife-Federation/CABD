@@ -61,10 +61,8 @@ public class SimpleFeatureListJsonSerializer extends AbstractHttpMessageConverte
 		sb.append("{");
 		sb.append(formatString("type") + ":" + formatString("FeatureCollection") + ",");
 		
-	
-		int srid = FeatureDao.DATABASE_SRID;
-		
-		sb.append(formatString("crs") + ": "+ formatString("EPSG:"+ srid) + ",");
+		String crs = features.getCrsInfo() != null ? features.getCrsInfo().getCrsString() : "EPSG:" + FeatureDao.DATABASE_SRID;
+		sb.append(formatString("crs") + ": "+ formatString(crs) + ",");
 
 		sb.append(formatString("features") + ":");
 		sb.append("[");

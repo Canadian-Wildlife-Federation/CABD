@@ -23,6 +23,7 @@ import java.util.UUID;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.io.WKBReader;
 import org.refractions.cabd.controllers.AttributeSet;
+import org.refractions.cabd.model.CrsInfo;
 import org.refractions.cabd.model.Feature;
 import org.refractions.cabd.model.FeatureViewMetadata;
 import org.refractions.cabd.model.FeatureViewMetadataField;
@@ -41,8 +42,23 @@ public class FeatureRowMapper implements RowMapper<Feature> {
 	
 	private WKBReader reader = new WKBReader();
 	
-	public FeatureRowMapper(FeatureViewMetadata metadata, AttributeSet attributes) {
+	private CrsInfo crsinfo = null;
+	
+	/**
+	 * Use this constructor if you need to track the srid of an individual feature;
+	 * If the feature is a part of a collection and you don't need to track the crsinfo (send
+	 * null or use the other constructor)
+	 * @param metadata
+	 * @param attributes
+	 * @param crsinfo
+	 */
+	public FeatureRowMapper(FeatureViewMetadata metadata, AttributeSet attributes, CrsInfo crsinfo) {
 		this.fields = metadata.getFields(attributes);
+		this.crsinfo = crsinfo;
+	}
+	
+	public FeatureRowMapper(FeatureViewMetadata metadata, AttributeSet attributes) {
+		this(metadata, attributes, null);
 	}
 	
 	@Override
@@ -50,7 +66,7 @@ public class FeatureRowMapper implements RowMapper<Feature> {
 		UUID buuid = (UUID) rs.getObject(FeatureDao.ID_FIELD);
 		String featureType = (String)rs.getString(FeatureDao.FEATURE_TYPE_FIELD);
 		
-		Feature feature = new Feature(buuid, featureType);
+		Feature feature = new Feature(buuid, featureType, crsinfo);
 		
 		for (FeatureViewMetadataField field : fields) {
 			if (field.isGeometry()) {
@@ -73,6 +89,7 @@ public class FeatureRowMapper implements RowMapper<Feature> {
 				}
 			}
 		};
+		
 		return feature;
 	}
 
