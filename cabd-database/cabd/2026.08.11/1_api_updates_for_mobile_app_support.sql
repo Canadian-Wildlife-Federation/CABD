@@ -7,8 +7,9 @@ where  view_name in ('cabd.dams_view', 'cabd.stream_crossings_sites_structures_v
 
 -- ensure latitude/longitude attributes are included in the vector tiles for 
 -- dams and stream crossings
-update cabd.feature_type_metadata set include_vector_tile = false where field_name = 'latitude' or field_name = 'longitude'
+update cabd.feature_type_metadata set include_vector_tile = false where field_name in ('longitude', 'latitude')
 and view_name in ('cabd.dams_view', 'cabd.stream_crossings_sites_structures_view');
+
 
 delete from cabd.vector_tile_cache where key ilike 'dams%' or key ilike 'stream_crossings%';
 
