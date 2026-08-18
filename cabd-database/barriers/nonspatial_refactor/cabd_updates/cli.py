@@ -18,7 +18,7 @@ def build_parser() -> argparse.ArgumentParser:
     sub = p.add_subparsers(dest="cmd", required=True)
 
     # validate
-    pv = sub.add_parser("validate", help="Validate an updates CSV and optionally run dup check.")
+    pv = sub.add_parser("validate", help="Validate an updates CSV.")
     pv.add_argument("--feature", required=True, choices=["dams", "fishways", "waterfalls"])
     pv.add_argument("--updates", required=True, help="Path to updates CSV")
 

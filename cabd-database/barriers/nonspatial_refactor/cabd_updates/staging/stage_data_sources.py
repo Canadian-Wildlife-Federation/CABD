@@ -64,6 +64,7 @@ _VERSION_DATE_FORMATS = (
     "%b %Y",          # Oct 1993        -> 1st of month
 )
 
+
 def _is_no_date(value: str) -> bool:
     """Return True for n.d. / n/a / no date / none / unknown variants."""
     letters = re.sub(r"[^a-z]", "", value.lower())
@@ -96,7 +97,7 @@ def _parse_version_date(value: str) -> str | None:
         return f"{v}-01-01"
 
     # Year + month only (YYYY-MM or YYYY/MM) -> 1st of that month
-    ym = re.fullmatch(r"(\d{4})\d{1,2}", v)
+    ym = re.fullmatch(r"(\d{4})[-/](\d{1,2})", v)
     if ym:
         year, month = ym.group(1), int(ym.group(2))
         if 1 <= month <= 12:
@@ -171,10 +172,10 @@ def stage_data_sources_csv_to_table(
 ) -> dict:
     """
     Stage data sources into cabd.data_source_updates using COPY, then perform a
-    small amount of normalization in SQL.
+    small amount of normalization/deduplication in SQL.
 
     Expected CSV columns (recommended):
-        - data_source_short_name  (renamed to name on import)
+        - data_source_short_name  (renamed to name on import; forced lowercase)
         - last_updated            (renamed to version_date on import)
         - reference               (renamed to source on import)
         - source_type
@@ -187,23 +188,21 @@ def stage_data_sources_csv_to_table(
 
     Notes:
         - The original CSV 'name' column is ignored (see IGNORE_SOURCE_COLUMNS);
-          the staging 'name' comes from data_source_short_name.
+          the staging 'name' comes from data_source_short_name and is forced to
+          lowercase.
         - Rows whose status (update_status) is in DROP_STATUSES are dropped in
           Python BEFORE COPY.
         - Only columns listed in STAGING_COLUMNS (post-rename) are copied into
           the staging table; all other CSV columns are ignored.
-        - De-duplication happens in Python BEFORE COPY: one row per name,
-          preferring the FIRST submitted record (earliest submitted_on, NULLs
-          last), with CSV order as a deterministic tie-breaker.
-        - version_date values are parsed/normalized before COPY:
-          year-only -> Jan 1; year-month -> 1st of month; n.d. variants -> NULL.
+        - De-duplication happens in Python BEFORE COPY: one row per name.
+          Winner: prefer a row with a populated `source` (fallback), then the
+          earliest submitted_on (NULLs last), then CSV order.
+        - version_date values are parsed/normalized before COPY.
         - submitted_on is parsed to ISO before COPY; the session TimeZone is set
           to America/Toronto so naive values are interpreted correctly.
-        - Values that are neither a valid date nor an intended-NULL are set to
-          NULL and printed to the console so new/unexpected formats can be caught.
-        - This function intentionally does NOT restrict to sources referenced by
-          staged updates. That restriction is enforced inside
-          cabd.upsert_data_sources().
+        - After staging, any data source whose name already exists in
+          cabd.data_source (case-insensitive) is removed so only new sources
+          remain to be published.
         - This function does NOT publish; it only stages.
     """
 
@@ -278,6 +277,7 @@ def stage_data_sources_csv_to_table(
 
     # Locate the relevant columns in the FILTERED header
     name_idx = copy_header.index("name") if "name" in copy_header else None
+    source_idx = copy_header.index("source") if "source" in copy_header else None
     version_date_idx = (
         copy_header.index("version_date") if "version_date" in copy_header else None
     )
@@ -325,18 +325,30 @@ def stage_data_sources_csv_to_table(
 
             cleaned_rows.append((line_no, row))
 
-    # ---- De-dupe BEFORE COPY: one row per name, earliest submitted_on wins ----
+    # ---- De-dupe BEFORE COPY: one row per name -------------------------------
+    # Winner selection per name, in priority order:
+    #   1) prefer a row whose `source` is populated. This is the fallback rule:
+    #      if the earliest submitted_on row has a NULL/blank source, a
+    #      populated-source row is kept instead.
+    #   2) then earliest submitted_on (NULLs last)
+    #   3) then original CSV order, as a deterministic tie-break
+    # Names are compared case-insensitively (grouped on the lowercased name) to
+    # match the forced-lowercase name normalization applied after COPY.
     best_by_name: dict[str, tuple[tuple, int, list[str]]] = {}
     passthrough: list[tuple[int, list[str]]] = []
     for line_no, row in cleaned_rows:
-        name_key = row[name_idx].strip() if name_idx is not None else ""
+        name_key = row[name_idx].strip().lower() if name_idx is not None else ""
         if name_key == "":
             passthrough.append((line_no, row))
             continue
+        source_val = row[source_idx].strip() if source_idx is not None else ""
         submitted_val = row[submitted_on_idx] if submitted_on_idx is not None else ""
-        # NULLS LAST via the leading flag; ISO strings sort chronologically;
-        # line_no gives the deterministic tie-break (mirrors the old ctid ASC).
-        sort_key = (0 if submitted_val else 1, submitted_val, line_no)
+        sort_key = (
+            0 if source_val else 1,       # prefer populated source (fallback rule)
+            0 if submitted_val else 1,    # NULLS LAST for submitted_on
+            submitted_val,                # earliest submitted_on wins
+            line_no,                      # deterministic tie-break
+        )
         existing = best_by_name.get(name_key)
         if existing is None or sort_key < existing[0]:
             best_by_name[name_key] = (sort_key, line_no, row)
@@ -363,7 +375,7 @@ def stage_data_sources_csv_to_table(
             cur.execute("SET TIME ZONE 'America/Toronto';")
             cur.copy_expert(copy_sql, buffer)
 
-    # Normalize inside the staging table (dedupe already handled in Python)
+    # Normalize + dedupe inside the staging table
     with conn.cursor() as cur:
         # Ensure id column exists (it does in cabd.data_source LIKE),
         # but keep it safe
@@ -372,12 +384,12 @@ def stage_data_sources_csv_to_table(
             f'ADD COLUMN IF NOT EXISTS "id" uuid'
         )
 
-        # Normalize
+        # Normalize: force name to lowercase; default source_type
         cur.execute(
             f"""
             UPDATE {staging_table}
             SET
-                name = NULLIF(btrim(name), ''),
+                name = lower(NULLIF(btrim(name), '')),
                 source_type = COALESCE(
                     NULLIF(btrim(source_type), ''),
                     'non-spatial'
@@ -399,6 +411,24 @@ def stage_data_sources_csv_to_table(
             f"DELETE FROM {staging_table} WHERE name IS NULL"
         )
 
+    # Remove data sources that already exist in cabd.data_source (match on name,
+    # case-insensitive). Count DISTINCT names removed for reporting, then delete.
+    already_existing_names = call_scalar(
+        conn,
+        f"""
+        SELECT COUNT(DISTINCT name)
+        FROM {staging_table}
+        WHERE lower(name) IN (SELECT lower(name) FROM cabd.data_source)
+        """,
+    )
+    with conn.cursor() as cur:
+        cur.execute(
+            f"""
+            DELETE FROM {staging_table}
+            WHERE lower(name) IN (SELECT lower(name) FROM cabd.data_source)
+            """
+        )
+
     row_count = call_scalar(
         conn,
         "SELECT COUNT(*) FROM " + staging_table,
@@ -409,6 +439,13 @@ def stage_data_sources_csv_to_table(
         print(
             f"{csv_path}: dropped {dropped_status_count} row(s) with "
             f"status in {sorted(DROP_STATUSES)} before COPY"
+        )
+
+    already_existing_count = int(already_existing_names or 0)
+    if already_existing_count:
+        print(
+            f"{csv_path}: skipped {already_existing_count} data source(s) "
+            f"already present in cabd.data_source (by unique name)"
         )
 
     if unparsed_dates:
@@ -431,6 +468,7 @@ def stage_data_sources_csv_to_table(
         "staging_table": staging_table,
         "row_count": int(row_count or 0),
         "dropped_status_rows": dropped_status_count,
+        "already_existing_removed": already_existing_count,
         "unparsed_version_dates": unparsed_dates,
         "unparsed_submitted_on": unparsed_submitted,
     }

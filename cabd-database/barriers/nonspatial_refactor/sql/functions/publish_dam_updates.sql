@@ -1,17 +1,31 @@
--- Minimal v1 publish: resolves datasource IDs, applies delete/new/modify geometry basics,
--- and marks rows done. Extend column-by-column mapping incrementally.
-
-
 -- Publish dams from a staging table into live tables.
+--
+-- To be called using the publish.py script rather than directly from SQL.
+--
+-- Column-driven publish: the mapped attribute list (attr_columns) and the
+-- provenance list (ds_columns) are derived from the dams YAML column_types in
+-- Python and passed in as text[]. The function assembles the dynamic
+-- attribute UPDATE and the dams_attribute_source (_ds) provenance UPDATE from
+-- those arrays.
+--
+--   attr_columns : all publishable attribute columns (INCLUDES use_analysis)
+--   ds_columns   : attr_columns minus use_analysis (team-determined, no _ds)
+--
 -- Deletes ONLY successfully published rows from staging.
--- Keeps unresolved rows (e.g., missing data_source) in staging for later reprocessing.
+-- Keeps unresolved rows (e.g., missing data_source -> blocked) in staging.
 
-CREATE OR REPLACE FUNCTION cabd.publish_dam_updates(staging_table regclass)
+CREATE OR REPLACE FUNCTION cabd.publish_dam_updates(
+  staging_table  regclass,
+  attr_columns   text[],
+  ds_columns     text[]
+)
 RETURNS integer
 LANGUAGE plpgsql
 AS $$
 DECLARE
   deleted_from_staging integer := 0;
+  attr_set_clause      text;
+  ds_set_clause        text;
 BEGIN
   -- Ensure required columns exist
   EXECUTE format('ALTER TABLE %s ADD COLUMN IF NOT EXISTS data_source uuid', staging_table);
@@ -47,19 +61,37 @@ BEGIN
     NULL;
   END;
 
+  ---------------------------------------------------------------------------
+  -- PROCESS 1: one update at a time per feature.
+  -- Where multiple ready 'modify feature' rows exist for the same cabd_id,
+  -- keep only the earliest (by submitted_on); defer the rest to 'wait' so the
+  -- attribute UPDATE join stays unambiguous. Deferred rows are excluded from
+  -- _dam_publishable and restored to 'ready' at the end of the run.
+  ---------------------------------------------------------------------------
+  EXECUTE format($q$
+    WITH cte AS (
+      SELECT id,
+             row_number() OVER (PARTITION BY cabd_id ORDER BY submitted_on ASC) AS rn
+      FROM %s
+      WHERE update_status = 'ready'
+        AND entry_classification = 'modify feature'
+    )
+    UPDATE %s
+    SET update_status = 'wait'
+    WHERE id IN (SELECT id FROM cte WHERE rn > 1)
+  $q$, staging_table, staging_table);
+
   -- BLOCK rows that have a missing referenced data source
-  BEGIN
   EXECUTE format($q$
     UPDATE %s
     SET
       update_status = 'blocked',
       blocked_reason = 'missing data source in cabd.data_source',
       blocked_at = now()
-    WHERE data_source is null
+    WHERE data_source IS NULL
   $q$, staging_table);
-  END;
-  
-  -- Publishable = ready AND data_source resolved
+
+  -- Publishable = ready AND data_source resolved (deferred 'wait' rows excluded)
   CREATE TEMP TABLE _dam_publishable (id integer PRIMARY KEY) ON COMMIT DROP;
   EXECUTE format($q$
     INSERT INTO _dam_publishable (id)
@@ -71,6 +103,10 @@ BEGIN
   $q$, staging_table);
 
   IF NOT EXISTS (SELECT 1 FROM _dam_publishable) THEN
+    -- Nothing publishable; still restore any rows deferred above.
+    EXECUTE format($q$
+      UPDATE %s SET update_status = 'ready' WHERE update_status = 'wait'
+    $q$, staging_table);
     RETURN 0;
   END IF;
 
@@ -176,6 +212,67 @@ BEGIN
   $q$, staging_table);
 
   ---------------------------------------------------------------------------
+  -- PROCESS 2: attribute-source provenance (_ds columns).
+  -- MUST run BEFORE the live attribute overwrite (Process 3): each <col>_ds is
+  -- decided by comparing the incoming value to the CURRENT (old) live value.
+  -- Iterates ds_columns (excludes use_analysis). Populates the bare
+  -- dams_attribute_source rows created above.
+  ---------------------------------------------------------------------------
+  SELECT string_agg(
+           format(
+             '%I = CASE WHEN (u.%I IS NOT NULL AND u.%I IS DISTINCT FROM d.%I) THEN u.data_source ELSE s.%I END',
+             col || '_ds', col, col, col, col || '_ds'
+           ),
+           ', '
+         )
+  INTO ds_set_clause
+  FROM unnest(ds_columns) AS col;
+
+  IF ds_set_clause IS NOT NULL THEN
+    EXECUTE format($q$
+      UPDATE dams.dams_attribute_source AS s
+      SET %s
+      FROM dams.dams AS d, %s AS u
+      WHERE s.cabd_id = u.cabd_id
+        AND d.cabd_id = s.cabd_id
+        AND u.entry_classification IN ('new feature', 'modify feature')
+        AND u.update_status = 'ready'
+        AND u.data_source IS NOT NULL
+        AND u.id IN (SELECT id FROM _dam_publishable)
+    $q$, ds_set_clause, staging_table);
+  END IF;
+
+  ---------------------------------------------------------------------------
+  -- PROCESS 3: live attribute mapping.
+  -- Iterates attr_columns (INCLUDES use_analysis). For each column, write the
+  -- incoming value only when it is non-null AND differs from the live value;
+  -- otherwise keep the live value. Applies to new + modify (new-feature rows
+  -- were inserted geometry-only above and get their attributes here).
+  ---------------------------------------------------------------------------
+  SELECT string_agg(
+           format(
+             '%I = CASE WHEN (u.%I IS NOT NULL AND u.%I IS DISTINCT FROM d.%I) THEN u.%I ELSE d.%I END',
+             col, col, col, col, col, col
+           ),
+           ', '
+         )
+  INTO attr_set_clause
+  FROM unnest(attr_columns) AS col;
+
+  IF attr_set_clause IS NOT NULL THEN
+    EXECUTE format($q$
+      UPDATE dams.dams AS d
+      SET %s
+      FROM %s AS u
+      WHERE d.cabd_id = u.cabd_id
+        AND u.entry_classification IN ('new feature', 'modify feature')
+        AND u.update_status = 'ready'
+        AND u.data_source IS NOT NULL
+        AND u.id IN (SELECT id FROM _dam_publishable)
+    $q$, attr_set_clause, staging_table);
+  END IF;
+
+  ---------------------------------------------------------------------------
   -- DELETE successfully published rows from staging (publishable only)
   ---------------------------------------------------------------------------
   EXECUTE format($q$
@@ -183,8 +280,15 @@ BEGIN
     USING _dam_publishable p
     WHERE u.id = p.id
   $q$, staging_table);
-
   GET DIAGNOSTICS deleted_from_staging = ROW_COUNT;
+
+  ---------------------------------------------------------------------------
+  -- PROCESS 4: reset deferred rows so the next update per feature is picked up.
+  ---------------------------------------------------------------------------
+  EXECUTE format($q$
+    UPDATE %s SET update_status = 'ready' WHERE update_status = 'wait'
+  $q$, staging_table);
+
   RETURN deleted_from_staging;
 END;
 $$;

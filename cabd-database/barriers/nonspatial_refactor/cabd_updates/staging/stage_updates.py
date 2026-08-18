@@ -65,7 +65,7 @@ def stage_updates_csv_to_table(
         "status",
         "update_type",
     ),
-    lower_columns: Iterable[str] = ("province_territory_code",),
+    lower_columns: Iterable[str] = ("province_territory_code","data_source_short_name",),
     set_status_from_reviewer_comments: bool = True,
     default_update_type: str | None = "cwf",
     generate_cabd_id_for_new_feature: bool = True,

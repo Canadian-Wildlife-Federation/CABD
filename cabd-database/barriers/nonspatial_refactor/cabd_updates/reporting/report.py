@@ -6,12 +6,12 @@ def report_feature(conn, feature: str, staging_table: str) -> None:
     rows = call_rows(
         conn,
         f"""
-        SELECT update_status, COUNT(*) AS n
+        SELECT status, COUNT(*) AS n
         FROM {staging_table}
-        GROUP BY update_status
-        ORDER BY update_status NULLS FIRST
+        GROUP BY status
+        ORDER BY status NULLS FIRST
         """
     )
     print(f"Report for {feature} ({staging_table}):")
     for r in rows:
-        print(f"  {r['update_status']}: {r['n']}")
+        print(f"  {r['status']}: {r['n']}")
