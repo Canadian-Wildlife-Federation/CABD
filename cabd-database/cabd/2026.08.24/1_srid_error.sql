@@ -210,7 +210,7 @@ BEGIN
                 original_point = newpoint,
                 province_territory_code = cabd.find_province_territory_code(newpoint),
                 nhn_watershed_id = cabd.find_nhn_watershed_id(newpoint),
-                snapped_point = cabd.snap_point_to_chyf_network(newpoint, STREAM_SNAP_TOLERANCE),
+                snapped_point = st_force2d(cabd.snap_point_to_chyf_network(newpoint, STREAM_SNAP_TOLERANCE)),
 		snapped_ncc = st_transform(cabd.snap_point_to_nhn_network(newpoint, STREAM_SNAP_TOLERANCE), 3979)
             where cabd_id = cabdid;
 
@@ -300,7 +300,7 @@ BEGIN
             NEW.road_type_code, NEW.crossing_type_code,
             NEW.structure_count, NEW.structure_inlet_image, NEW.structure_outlet_image, NEW.upstream_direction_image,
             NEW.downstream_direction_image, NEW.notes, newpoint,
-            cabd.snap_point_to_chyf_network( newpoint, STREAM_SNAP_TOLERANCE),
+            st_force2d(cabd.snap_point_to_chyf_network( newpoint, STREAM_SNAP_TOLERANCE)),
             st_transform(cabd.snap_point_to_nhn_network(newpoint, STREAM_SNAP_TOLERANCE), 3979),
             cabd.find_province_territory_code(newpoint),
             cabd.find_nhn_watershed_id(newpoint),            		
@@ -548,7 +548,7 @@ BEGIN
             NEW.assessment_type_code, NEW.dam_size_code, 
             NEW.up_passage_type_code, NEW.passability_status_code,
             newpoint,
-            cabd.snap_point_to_chyf_network( newpoint, STREAM_SNAP_TOLERANCE),
+            st_force2d(cabd.snap_point_to_chyf_network( newpoint, STREAM_SNAP_TOLERANCE)),
             st_transform(cabd.snap_point_to_nhn_network( newpoint, STREAM_SNAP_TOLERANCE),3979),
             cabd.find_province_territory_code(newpoint),
             cabd.find_nhn_watershed_id(newpoint));
