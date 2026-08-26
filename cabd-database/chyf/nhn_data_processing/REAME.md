@@ -36,7 +36,7 @@ This copies the data into the `fpinput` schema where (if running) the CHyF proce
 
 **Step 5: Repeat 1-4 for Next Work Unit**
 
-**Step 6: Flowpath Processing - Running **
+**Step 6: Flowpath Processing - Running**
 
 In Step4 the AOI should be automatically setup for processing. To review the results look at the `fpoutput.aoi` table status column. Further details are in the reference document.
 
