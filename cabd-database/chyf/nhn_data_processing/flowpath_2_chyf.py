@@ -251,7 +251,7 @@ def populate_names(conn):
         with allnames as (
             select distinct a.name_id as nameid, a.name as name, a.geodbname as geodbname
             from {schema}.feature_names a join {schema}.aoi b on a.aoi_id = b.id
-            where b.status = '{readystatus}' and a.name_id not in (select geodb_id from chyf2.names)
+            where b.status = '{readystatus}' and a.name_id not in (select geodb_id from {chyfschema}.names)
         )
         --add any new names to the names table that aren't there
         insert into {chyfschema}.names (name_id, name_en, name_fr, geodb_id, geodbname)
@@ -326,21 +326,21 @@ def copy_to_production(conn):
     
     queries = [ 
         
-        "alter table chyf2.nexus drop constraint nexus_bank_ecatchment_id_fkey;",
-        "alter table chyf2.eflowpath drop constraint eflowpath_ecatchment_id_fkey;",
-        "alter table chyf2.ecatchment_attributes drop constraint ecatchment_attributes_id_fkey;",
-        "alter table chyf2.eflowpath_attributes drop constraint eflowpath_attributes_id_fkey;",
+        f"alter table {chyfschema}.nexus drop constraint nexus_bank_ecatchment_id_fkey;",
+        f"alter table {chyfschema}.eflowpath drop constraint eflowpath_ecatchment_id_fkey;",
+        f"alter table {chyfschema}.ecatchment_attributes drop constraint ecatchment_attributes_id_fkey;",
+        f"alter table {chyfschema}.eflowpath_attributes drop constraint eflowpath_attributes_id_fkey;",
         
-        "alter table chyf2.eflowpath drop constraint eflowpath_from_nexus_id_fkey;",
-        "alter table chyf2.eflowpath drop constraint eflowpath_to_nexus_id_fkey;",
-        "alter table chyf2.eflowpath drop constraint eflowpath_rivernameid1_fkey;",
-        "alter table chyf2.eflowpath drop constraint eflowpath_rivernameid2_fkey;",
-        "alter table chyf2.ecatchment drop constraint ecatchment_rivernameid1_fkey;",
-        "alter table chyf2.ecatchment drop constraint ecatchment_rivernameid2_fkey;",
-        "alter table chyf2.ecatchment drop constraint ecatchment_lakenameid1_fkey;",
-        "alter table chyf2.ecatchment drop constraint ecatchment_lakenameid2_fkey;",
-        "alter table chyf2.terminal_point drop constraint terminal_point_rivernameid1_fkey;",
-        "alter table chyf2.terminal_point drop constraint terminal_point_rivernameid2_fkey;",
+        f"alter table {chyfschema}.eflowpath drop constraint eflowpath_from_nexus_id_fkey;",
+        f"alter table {chyfschema}.eflowpath drop constraint eflowpath_to_nexus_id_fkey;",
+        f"alter table {chyfschema}.eflowpath drop constraint eflowpath_rivernameid1_fkey;",
+        f"alter table {chyfschema}.eflowpath drop constraint eflowpath_rivernameid2_fkey;",
+        f"alter table {chyfschema}.ecatchment drop constraint ecatchment_rivernameid1_fkey;",
+        f"alter table {chyfschema}.ecatchment drop constraint ecatchment_rivernameid2_fkey;",
+        f"alter table {chyfschema}.ecatchment drop constraint ecatchment_lakenameid1_fkey;",
+        f"alter table {chyfschema}.ecatchment drop constraint ecatchment_lakenameid2_fkey;",
+        f"alter table {chyfschema}.terminal_point drop constraint terminal_point_rivernameid1_fkey;",
+        f"alter table {chyfschema}.terminal_point drop constraint terminal_point_rivernameid2_fkey;",
         
         f"""
         INSERT into {chyfschema}.aoi (id, short_name, geometry)
@@ -366,9 +366,9 @@ def copy_to_production(conn):
         WHERE b.status = '{readystatus}';
         """,
         
-        "drop index chyf2.ecatchment_geometry_idx;",
-        "drop index chyf2.ecatchment_aoi_id_idx;",
-        "alter table chyf2.ecatchment drop constraint ecatchment_pkey;",
+        f"drop index {chyfschema}.ecatchment_geometry_idx;",
+        f"drop index {chyfschema}.ecatchment_aoi_id_idx;",
+        f"alter table {chyfschema}.ecatchment drop constraint ecatchment_pkey;",
         
         f"""
         INSERT into {chyfschema}.ecatchment(id, nid, ec_type, ec_subtype, area, aoi_id, rivernameid1, rivernameid2, lakenameid1, lakenameid2, geometry)
@@ -377,28 +377,28 @@ def copy_to_production(conn):
         WHERE b.status = '{readystatus}';
         """, 
         
-        "alter table chyf2.ecatchment add constraint ecatchment_pkey primary key (id);",
-        "create index ecatchment_aoi_id_idx on chyf2.ecatchment(aoi_id);",
-        "create index ecatchment_geometry_idx on chyf2.ecatchment using gist(geometry);",
+        f"alter table {chyfschema}.ecatchment add constraint ecatchment_pkey primary key (id);",
+        f"create index ecatchment_aoi_id_idx on {chyfschema}.ecatchment(aoi_id);",
+        f"create index ecatchment_geometry_idx on {chyfschema}.ecatchment using gist(geometry);",
         f"UPDATE {chyfschema}.nexus set nexus_type = a.nexus_type FROM {schema}.nexus a where a.id = {chyfschema}.nexus.id;", 
     
-        f"delete from {schema}.nexus where id in (select id from chyf2.nexus)",
+        f"delete from {schema}.nexus where id in (select id from {chyfschema}.nexus)",
 
-        "drop index chyf2.nexus_geometry_idx;",
-        "alter table chyf2.nexus drop constraint nexus_pkey;",
+        f"drop index {chyfschema}.nexus_geometry_idx;",
+        f"alter table {chyfschema}.nexus drop constraint nexus_pkey;",
         f"""    
         INSERT into {chyfschema}.nexus(id, nexus_type, bank_ecatchment_id, geometry)
         SELECT a.id, a.nexus_type, a.bank_ecatchment_id, st_transform(a.geometry, 4617)
         FROM {schema}.nexus a ;
         """, 
-        "alter table chyf2.nexus add constraint nexus_pkey primary key(id);",
-        "create index nexus_geometry_idx on chyf2.nexus using gist(geometry);",
+        f"alter table {chyfschema}.nexus add constraint nexus_pkey primary key(id);",
+        f"create index nexus_geometry_idx on {chyfschema}.nexus using gist(geometry);",
     
-        "alter table chyf2.eflowpath drop constraint eflowpath_pkey;",
-        "drop index chyf2.eflowpath_geometry_idx;",
-        "drop index chyf2.eflowpath_from_nexus_id_idx;",
-        "drop index chyf2.eflowpath_aoi_id_idx;",
-        "drop index chyf2.eflowpath_to_nexus_id_idx;",
+        f"alter table {chyfschema}.eflowpath drop constraint eflowpath_pkey;",
+        f"drop index {chyfschema}.eflowpath_geometry_idx;",
+        f"drop index {chyfschema}.eflowpath_from_nexus_id_idx;",
+        f"drop index {chyfschema}.eflowpath_aoi_id_idx;",
+        f"drop index {chyfschema}.eflowpath_to_nexus_id_idx;",
         f"""
         INSERT into {chyfschema}.eflowpath(id, nid, ef_type, ef_subtype, rank, length, 
           rivernameid1, rivernameid2, aoi_id, ecatchment_id, from_nexus_id, to_nexus_id, geometry)
@@ -409,11 +409,11 @@ def copy_to_production(conn):
         WHERE b.status = '{readystatus}';
         """, 
         
-        "alter table chyf2.eflowpath add constraint eflowpath_pkey primary key (id);",
-        "create index eflowpath_geometry_idx on chyf2.eflowpath  using gist(geometry);",
-        "create index eflowpath_from_nexus_id_idx on chyf2.eflowpath (from_nexus_id);",
-        "create index eflowpath_aoi_id_idx on chyf2.eflowpath (aoi_id);",
-        "create index eflowpath_to_nexus_id_idx on chyf2.eflowpath (to_nexus_id);",
+        f"alter table {chyfschema}.eflowpath add constraint eflowpath_pkey primary key (id);",
+        f"create index eflowpath_geometry_idx on {chyfschema}.eflowpath  using gist(geometry);",
+        f"create index eflowpath_from_nexus_id_idx on {chyfschema}.eflowpath (from_nexus_id);",
+        f"create index eflowpath_aoi_id_idx on {chyfschema}.eflowpath (aoi_id);",
+        f"create index eflowpath_to_nexus_id_idx on {chyfschema}.eflowpath (to_nexus_id);",
         
         f"UPDATE {schema}.aoi SET status = '{donestatus}' where status = '{readystatus}';",
         
@@ -423,20 +423,20 @@ def copy_to_production(conn):
         f"drop table if exists {schema}.nexus;",
         f"drop table if exists {schema}.nexus_edge;",
     
-        "alter table chyf2.nexus add constraint nexus_bank_ecatchment_id_fkey foreign key (bank_ecatchment_id) references chyf2.ecatchment(id);",
-        "alter table chyf2.eflowpath add constraint eflowpath_ecatchment_id_fkey foreign key (ecatchment_id) references chyf2.ecatchment(id);",
-        "alter table chyf2.ecatchment_attributes add constraint ecatchment_attributes_id_fkey foreign key (id) references chyf2.ecatchment(id);",
-        "alter table chyf2.eflowpath_attributes add constraint eflowpath_attributes_id_fkey foreign key (id) references chyf2.eflowpath(id);",
-        "alter table chyf2.eflowpath add constraint eflowpath_from_nexus_id_fkey foreign key (from_nexus_id) references chyf2.nexus(id);",
-        "alter table chyf2.eflowpath add constraint eflowpath_to_nexus_id_fkey foreign key (from_nexus_id) references chyf2.nexus(id);",
-        "alter table chyf2.eflowpath add constraint eflowpath_rivernameid1_fkey foreign key (rivernameid1) references chyf2.names(name_id);",
-        "alter table chyf2.eflowpath add constraint eflowpath_rivernameid2_fkey foreign key (rivernameid2) references chyf2.names(name_id);",
-        "alter table chyf2.ecatchment add constraint ecatchment_rivernameid1_fkey foreign key (rivernameid1) references chyf2.names(name_id);",
-        "alter table chyf2.ecatchment add constraint ecatchment_rivernameid2_fkey foreign key (rivernameid2) references chyf2.names(name_id);",
-        "alter table chyf2.ecatchment add constraint ecatchment_lakenameid1_fkey foreign key (lakenameid1) references chyf2.names(name_id);",
-        "alter table chyf2.ecatchment add constraint ecatchment_lakenameid2_fkey foreign key (lakenameid2) references chyf2.names(name_id);",
-        "alter table chyf2.terminal_point add constraint terminal_point_rivernameid1_fkey foreign key (rivernameid1) references chyf2.names(name_id);",
-        "alter table chyf2.terminal_point add constraint terminal_point_rivernameid2_fkey foreign key (rivernameid2) references chyf2.names(name_id);",
+        f"alter table {chyfschema}.nexus add constraint nexus_bank_ecatchment_id_fkey foreign key (bank_ecatchment_id) references {chyfschema}.ecatchment(id);",
+        f"alter table {chyfschema}.eflowpath add constraint eflowpath_ecatchment_id_fkey foreign key (ecatchment_id) references {chyfschema}.ecatchment(id);",
+        f"alter table {chyfschema}.ecatchment_attributes add constraint ecatchment_attributes_id_fkey foreign key (id) references {chyfschema}.ecatchment(id);",
+        f"alter table {chyfschema}.eflowpath_attributes add constraint eflowpath_attributes_id_fkey foreign key (id) references {chyfschema}.eflowpath(id);",
+        f"alter table {chyfschema}.eflowpath add constraint eflowpath_from_nexus_id_fkey foreign key (from_nexus_id) references {chyfschema}.nexus(id);",
+        f"alter table {chyfschema}.eflowpath add constraint eflowpath_to_nexus_id_fkey foreign key (from_nexus_id) references {chyfschema}.nexus(id);",
+        f"alter table {chyfschema}.eflowpath add constraint eflowpath_rivernameid1_fkey foreign key (rivernameid1) references {chyfschema}.names(name_id);",
+        f"alter table {chyfschema}.eflowpath add constraint eflowpath_rivernameid2_fkey foreign key (rivernameid2) references {chyfschema}.names(name_id);",
+        f"alter table {chyfschema}.ecatchment add constraint ecatchment_rivernameid1_fkey foreign key (rivernameid1) references {chyfschema}.names(name_id);",
+        f"alter table {chyfschema}.ecatchment add constraint ecatchment_rivernameid2_fkey foreign key (rivernameid2) references {chyfschema}.names(name_id);",
+        f"alter table {chyfschema}.ecatchment add constraint ecatchment_lakenameid1_fkey foreign key (lakenameid1) references {chyfschema}.names(name_id);",
+        f"alter table {chyfschema}.ecatchment add constraint ecatchment_lakenameid2_fkey foreign key (lakenameid2) references {chyfschema}.names(name_id);",
+        f"alter table {chyfschema}.terminal_point add constraint terminal_point_rivernameid1_fkey foreign key (rivernameid1) references {chyfschema}.names(name_id);",
+        f"alter table {chyfschema}.terminal_point add constraint terminal_point_rivernameid2_fkey foreign key (rivernameid2) references {chyfschema}.names(name_id);",
     ]
     
     for query in queries:
@@ -459,21 +459,40 @@ def delete_current(connt):
     print(f"deleting existing data from {chyfschema}")
     
     queries = [ 
+    
+    	#because flowpaths will now contain partial 2d and 4d geometries we need to make them
+    	#basic geometry columns (with no types or srid contraints)
+    	#after mainsteams/elevation/smoothing is run on the new dataset then we can add back these constraints
+    	#since this column is used by a number of views those have to be dropped first
+    	
+    	f"drop view {chyfschema}.eflowpath_properties_vw ",
+    	f"drop view {chyfschema}.nexus_vw ",
+    	f"drop view {chyfschema}.eflowpath_vw ",
+    	
+    	f"alter table {chyfschema}.eflowpath alter column geometry type geometry",
+
+    	f"CREATE OR REPLACE VIEW {chyfschema}.eflowpath_properties_vw AS SELECT a.id,a.ef_type,a.ef_subtype,a.rank,a.length,a.rivernameid1,a.rivernameid2,a.aoi_id,a.from_nexus_id,a.to_nexus_id,a.ecatchment_id,a.nid,c.strahler_order,c.graph_id,c.mainstem_id,c.max_uplength,c.hack_order,c.horton_order,c.mainstem_seq,c.shreve_order,a.geometry FROM {chyfschema}.eflowpath a JOIN {chyfschema}.aoi b ON a.aoi_id = b.id LEFT JOIN {chyfschema}.eflowpath_properties c ON c.id = a.id",
+        f"CREATE OR REPLACE VIEW {chyfschema}.eflowpath_vw AS SELECT a.id,a.ef_type,a.ef_subtype,a.rank,a.length,a.rivernameid1,a.rivernameid2,a.aoi_id,a.from_nexus_id, a.to_nexus_id, a.ecatchment_id, a.nid, a.geometry FROM {chyfschema}.eflowpath a JOIN {chyfschema}.aoi b ON a.aoi_id = b.id WHERE b.display_status = 1",
+        f"CREATE OR REPLACE VIEW {chyfschema}.nexus_vw AS SELECT id, nexus_type, bank_ecatchment_id, geometry FROM {chyfschema}.nexus a WHERE (id IN ( SELECT eflowpath_vw.from_nexus_id FROM {chyfschema}.eflowpath_vw UNION SELECT eflowpath_vw.to_nexus_id FROM {chyfschema}.eflowpath_vw))",
+    	f"alter view {chyfschema}.nexus_vw owner to chyf",
+    	f"alter view {chyfschema}.eflowpath_vw owner to chyf",
+    	f"alter view {chyfschema}.eflowpath_properties_vw owner to chyf",
+    	    
         #drop and re-create constraints for performance reasons
-        "alter table chyf2.nexus drop constraint if exists nexus_bank_ecatchment_id_fkey",
-        "alter table chyf2.eflowpath drop constraint if exists eflowpath_ecatchment_id_fkey",
-        "alter table chyf2.ecatchment_attributes drop constraint if exists ecatchment_attributes_id_fkey",
-        "alter table chyf2.eflowpath_attributes drop constraint if exists eflowpath_attributes_id_fkey",
-        "alter table chyf2.eflowpath drop constraint if exists eflowpath_from_nexus_id_fkey",
-        "alter table chyf2.eflowpath drop constraint if exists eflowpath_to_nexus_id_fkey",
-        "alter table chyf2.eflowpath drop constraint if exists eflowpath_rivernameid1_fkey",
-        "alter table chyf2.eflowpath drop constraint if exists eflowpath_rivernameid2_fkey",
-        "alter table chyf2.ecatchment drop constraint if exists ecatchment_rivernameid1_fkey",
-        "alter table chyf2.ecatchment drop constraint if exists ecatchment_rivernameid2_fkey",
-        "alter table chyf2.ecatchment drop constraint if exists ecatchment_lakenameid1_fkey",
-        "alter table chyf2.ecatchment drop constraint if exists ecatchment_lakenameid2_fkey",
-        "alter table chyf2.terminal_point drop constraint if exists terminal_point_rivernameid1_fkey",
-        "alter table chyf2.terminal_point drop constraint if exists terminal_point_rivernameid2_fkey",
+        f"alter table {chyfschema}.nexus drop constraint if exists nexus_bank_ecatchment_id_fkey",
+        f"alter table {chyfschema}.eflowpath drop constraint if exists eflowpath_ecatchment_id_fkey",
+        f"alter table {chyfschema}.ecatchment_attributes drop constraint if exists ecatchment_attributes_id_fkey",
+        f"alter table {chyfschema}.eflowpath_attributes drop constraint if exists eflowpath_attributes_id_fkey",
+        f"alter table {chyfschema}.eflowpath drop constraint if exists eflowpath_from_nexus_id_fkey",
+        f"alter table {chyfschema}.eflowpath drop constraint if exists eflowpath_to_nexus_id_fkey",
+        f"alter table {chyfschema}.eflowpath drop constraint if exists eflowpath_rivernameid1_fkey",
+        f"alter table {chyfschema}.eflowpath drop constraint if exists eflowpath_rivernameid2_fkey",
+        f"alter table {chyfschema}.ecatchment drop constraint if exists ecatchment_rivernameid1_fkey",
+        f"alter table {chyfschema}.ecatchment drop constraint if exists ecatchment_rivernameid2_fkey",
+        f"alter table {chyfschema}.ecatchment drop constraint if exists ecatchment_lakenameid1_fkey",
+        f"alter table {chyfschema}.ecatchment drop constraint if exists ecatchment_lakenameid2_fkey",
+        f"alter table {chyfschema}.terminal_point drop constraint if exists terminal_point_rivernameid1_fkey",
+        f"alter table {chyfschema}.terminal_point drop constraint if exists terminal_point_rivernameid2_fkey",
         
         #--delete any existing data for aoi
         f"delete from {chyfschema}.eflowpath where aoi_id in (select a.id from {chyfschema}.aoi a, {schema}.aoi b where a.short_name = b.name and b.status = '{readystatus}');",
@@ -489,20 +508,20 @@ def delete_current(connt):
           select to_nexus_id from {chyfschema}.eflowpath
         ));""",
         
-        "alter table chyf2.nexus add constraint nexus_bank_ecatchment_id_fkey foreign key (bank_ecatchment_id) references chyf2.ecatchment(id);",
-        "alter table chyf2.eflowpath add constraint eflowpath_ecatchment_id_fkey foreign key (ecatchment_id) references chyf2.ecatchment(id);",
-        "alter table chyf2.ecatchment_attributes add constraint ecatchment_attributes_id_fkey foreign key (id) references chyf2.ecatchment(id);",
-        "alter table chyf2.eflowpath_attributes add constraint eflowpath_attributes_id_fkey foreign key (id) references chyf2.eflowpath(id);",
-        "alter table chyf2.eflowpath add constraint eflowpath_from_nexus_id_fkey foreign key (from_nexus_id) references chyf2.nexus(id);",
-        "alter table chyf2.eflowpath add constraint eflowpath_to_nexus_id_fkey foreign key (from_nexus_id) references chyf2.nexus(id);",
-        "alter table chyf2.eflowpath add constraint eflowpath_rivernameid1_fkey foreign key (rivernameid1) references chyf2.names(name_id);",
-        "alter table chyf2.eflowpath add constraint eflowpath_rivernameid2_fkey foreign key (rivernameid2) references chyf2.names(name_id);",
-        "alter table chyf2.ecatchment add constraint ecatchment_rivernameid1_fkey foreign key (rivernameid1) references chyf2.names(name_id);",
-        "alter table chyf2.ecatchment add constraint ecatchment_rivernameid2_fkey foreign key (rivernameid2) references chyf2.names(name_id);",
-        "alter table chyf2.ecatchment add constraint ecatchment_lakenameid1_fkey foreign key (lakenameid1) references chyf2.names(name_id);",
-        "alter table chyf2.ecatchment add constraint ecatchment_lakenameid2_fkey foreign key (lakenameid2) references chyf2.names(name_id);",
-        "alter table chyf2.terminal_point add constraint terminal_point_rivernameid1_fkey foreign key (rivernameid1) references chyf2.names(name_id);",
-        "alter table chyf2.terminal_point add constraint terminal_point_rivernameid2_fkey foreign key (rivernameid2) references chyf2.names(name_id);",
+        f"alter table {chyfschema}.nexus add constraint nexus_bank_ecatchment_id_fkey foreign key (bank_ecatchment_id) references {chyfschema}.ecatchment(id);",
+        f"alter table {chyfschema}.eflowpath add constraint eflowpath_ecatchment_id_fkey foreign key (ecatchment_id) references {chyfschema}.ecatchment(id);",
+        f"alter table {chyfschema}.ecatchment_attributes add constraint ecatchment_attributes_id_fkey foreign key (id) references {chyfschema}.ecatchment(id);",
+        f"alter table {chyfschema}.eflowpath_attributes add constraint eflowpath_attributes_id_fkey foreign key (id) references {chyfschema}.eflowpath(id);",
+        f"alter table {chyfschema}.eflowpath add constraint eflowpath_from_nexus_id_fkey foreign key (from_nexus_id) references {chyfschema}.nexus(id);",
+        f"alter table {chyfschema}.eflowpath add constraint eflowpath_to_nexus_id_fkey foreign key (from_nexus_id) references {chyfschema}.nexus(id);",
+        f"alter table {chyfschema}.eflowpath add constraint eflowpath_rivernameid1_fkey foreign key (rivernameid1) references {chyfschema}.names(name_id);",
+        f"alter table {chyfschema}.eflowpath add constraint eflowpath_rivernameid2_fkey foreign key (rivernameid2) references {chyfschema}.names(name_id);",
+        f"alter table {chyfschema}.ecatchment add constraint ecatchment_rivernameid1_fkey foreign key (rivernameid1) references {chyfschema}.names(name_id);",
+        f"alter table {chyfschema}.ecatchment add constraint ecatchment_rivernameid2_fkey foreign key (rivernameid2) references {chyfschema}.names(name_id);",
+        f"alter table {chyfschema}.ecatchment add constraint ecatchment_lakenameid1_fkey foreign key (lakenameid1) references {chyfschema}.names(name_id);",
+        f"alter table {chyfschema}.ecatchment add constraint ecatchment_lakenameid2_fkey foreign key (lakenameid2) references {chyfschema}.names(name_id);",
+        f"alter table {chyfschema}.terminal_point add constraint terminal_point_rivernameid1_fkey foreign key (rivernameid1) references {chyfschema}.names(name_id);",
+        f"alter table {chyfschema}.terminal_point add constraint terminal_point_rivernameid2_fkey foreign key (rivernameid2) references {chyfschema}.names(name_id);",
         
         f"drop table if exists {schema}.eflowpath_extra;",
         f"drop table if exists {schema}.ecatchment_extra;",
@@ -527,12 +546,12 @@ def qa_results(connection):
     query = f"""
         with primary_count as (
             select from_nexus_id
-            from chyf2.eflowpath
+            from {chyfschema}.eflowpath
             where rank = 1
             group by from_nexus_id
             having count(*) > 1
         )
-        select a.id, st_astext(a.geometry) from chyf2.nexus a join primary_count c on a.id = c.from_nexus_id;
+        select a.id, st_astext(a.geometry) from {chyfschema}.nexus a join primary_count c on a.id = c.from_nexus_id;
         
     """    
        
