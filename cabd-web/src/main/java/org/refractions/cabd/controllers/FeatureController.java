@@ -103,7 +103,9 @@ public class FeatureController {
 	@GetMapping(value = "/{id:[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}}",
 			produces = {MediaType.APPLICATION_JSON_VALUE, "application/geo+json",
 					CabdApplication.CSV_MEDIA_TYPE_STR,
-					CabdApplication.GEOPKG_MEDIA_TYPE_STR})
+					CabdApplication.GEOPKG_MEDIA_TYPE_STR,
+					CabdApplication.SHP_MEDIA_TYPE_STR,
+					CabdApplication.KML_MEDIA_TYPE_STR})
 	public ResponseEntity<Feature> getFeature(
 			@Parameter(description = "unique feature identifier") 
 			@PathVariable("id") UUID id,
@@ -125,7 +127,9 @@ public class FeatureController {
 	@GetMapping(value = "/{type:[a-zA-Z0-9_]+}/{id:[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}}",
 			produces = {MediaType.APPLICATION_JSON_VALUE, "application/geo+json",
 					CabdApplication.CSV_MEDIA_TYPE_STR,
-					CabdApplication.GEOPKG_MEDIA_TYPE_STR})
+					CabdApplication.GEOPKG_MEDIA_TYPE_STR,
+					CabdApplication.SHP_MEDIA_TYPE_STR,
+					CabdApplication.KML_MEDIA_TYPE_STR})
 	public ResponseEntity<Feature> getFeatureByTypeAndId(
 			@Parameter(description = "unique feature identifier") 
 			@PathVariable("type") String type,
