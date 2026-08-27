@@ -118,7 +118,11 @@ public class FeatureListCsvSerializer extends AbstractFeatureListSerializer{
 						data[i] = x.toString();
 					}
 				}
-				data[orderedAttributes.size()] = wktwriter.write(b.getGeometry());
+				if (b.getGeometry() != null) {
+					data[orderedAttributes.size()] = wktwriter.write(b.getGeometry());
+				}else {
+					data[orderedAttributes.size()] = "";
+				}
 				
 				csvWriter.writeNext(data);
 			}
