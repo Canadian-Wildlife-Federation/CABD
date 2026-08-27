@@ -78,10 +78,13 @@ public enum GeoJsonUtils {
 	    if (crsinfo != null) writeString(stream, convertKey("crs") + convertObject(crsinfo.getCrsString()) + ",");
 
 		// geometry
-		if (feature.getGeometry() != null) writeGeometry(feature.getGeometry(), stream);
+		if (feature.getGeometry() != null) {
+			writeGeometry(feature.getGeometry(), stream);
+			writeString(stream, ",");			
+		}
 
 		// properties
-		writeString(stream, ", " + convertKey("properties") + "{");
+		writeString(stream, convertKey("properties") + "{");
 		writeString(stream, convertKey(FeatureDao.ID_FIELD) + convertObject(feature.getId().toString()));
 		
 		try {
