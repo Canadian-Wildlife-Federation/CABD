@@ -53,11 +53,11 @@ Review the flowpath processing results and ensure no issues need to be dealt wit
 
  **Step 9 – Copy Processed WorkUnit to CHyF Model**
 
-This should generally be run after a number of workunits are completed and ready for processing. This will copy the data from the `fpinput` schema into the `chyf2` schema. Only AOI's with a status of `CHYF_READY` will be copied.
+This should generally be run after a number of workunits are completed and ready for processing. This will copy the data from the `fpoutput` schema into the `chyf2` schema. Only AOI's with a status of `CHYF_READY` will be copied.
 
 flowpath_2_chyf.py
 
-`flowpath_2_chyf.py <host> <port> <dbname> <dbuser> <dbpassword> fpinput`
+`flowpath_2_chyf.py <host> <port> <dbname> <dbuser> <dbpassword> fpoutput`
 
  **Step 10 – Run the Mainsteam Tools**
 
