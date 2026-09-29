@@ -153,7 +153,7 @@ The `elevation.properties` file controls various settings for the elevation proc
 
  This computes and adds the smoothed elevation for the network (setting the M value in the linestrings).
 
- Scope: This needs to be run for the entire database.
+ Scope: This can be run for only the updated AOIs (as long as all the existing AOI's have had smoothed elevation).  To limit the scope to specific AOI's edit the `elevation.properties` file and at the bottom configure the AOI_FILTER property (comma delimited list of workunit short names).  This will updated all flowpaths that are connected to the AOI, so it may update AOI's outside this filter. It finds all the connected groups with at least one edge in the AOI then re-processes these.  
 
  Runtime: 2-4 days
 
