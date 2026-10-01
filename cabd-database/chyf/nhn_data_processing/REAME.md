@@ -145,7 +145,7 @@ On CHyF Processing Server 2:
     java -cp lib/*:lib-chyf/chyf-elevation-1.0.4.jar net.refractions.chyf.elevation.raw.ElevationEngine -d "host=<HOST>;port=5432;db=chyf;user=<USER>;password=<PASSWORD>" elevation.properties > log.txt
 
 
-Processing is done in blocks, controlled by the `public.elevation_processing` table. If processing dies for any reason you can restart it by modifying the values in that table and using the `-docontinue` parameter: `java -... ElevationEngine -d ... -docontinue elevation.properties ...`
+Processing is done in blocks, controlled by the `public.elevation_processing` table. If processing dies for any reason you can restart it by modifying the values in that table and using the `-docontinue` parameter: `java -... ElevationEngine -d ... -docontinue elevation.properties ...`. Value values include: ready, processing, and done.
 
 The `elevation.properties` file controls various settings for the elevation processing. You can modify these if necessary.
 
@@ -174,7 +174,7 @@ On CHyF Processing Server 2:
     java -cp lib/*:lib-chyf/chyf-elevation-1.0.4.jar net.refractions.chyf.elevation.smooth.ZSmoothingEngine -d "host=<HOST>;port=5432;db=chyf;user=<USER>;password=<PASSWORD>" elevation.properties > log.txt
 
 
-Processing is done in blocks, controlled by the `public.elevation_smoothing` table. If processing dies for any reason you can restart it by modifying the values in that table and using the `-docontinue` parameter: `java -... ZSmoothingEngine -d ... -docontinue elevation.properties ...`
+Processing is done in blocks, controlled by the `public.elevation_smoothing` table. If processing dies for any reason you can restart it by modifying the values in that table and using the `-docontinue` parameter: `java -... ZSmoothingEngine -d ... -docontinue elevation.properties ...`. Value values include: ready, processing, and done.
 
 The `elevation.properties` file controls various settings for the elevation processing. You can modify these if necessary.
 
