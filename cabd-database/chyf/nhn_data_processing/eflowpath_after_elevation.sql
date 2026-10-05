@@ -3,6 +3,11 @@
 -- on the chyf2 schema
 -- it reconfigures the geometry column to have a type and srid
 
+SET role chyf;
+
+SET lock_timeout = '10s';
+SET maintenance_work_mem = '2GB';
+SET max_parallel_maintenance_workers = 4;
 
 drop view chyf2.eflowpath_properties_vw;
 drop view chyf2.nexus_vw;
