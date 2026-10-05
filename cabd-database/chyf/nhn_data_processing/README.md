@@ -85,7 +85,7 @@ In the following commands you need to change the database host, user, and passwo
 After the stream order tools finish running, run the following commands to recreate the chyf2.eflowpath_properties view and reassign the owner of the chyf2.eflowpath_properties table (by default it will be set to whoever has run the stream order tools):
 
 ```
-DROP VIEW chyf2.eflowpath_properties_vw;
+DROP VIEW IF EXISTS chyf2.eflowpath_properties_vw;
 
 ALTER TABLE IF EXISTS chyf2.eflowpath_properties OWNER to chyf;
 
