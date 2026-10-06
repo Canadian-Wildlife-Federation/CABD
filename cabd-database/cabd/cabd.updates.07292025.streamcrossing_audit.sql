@@ -18,7 +18,7 @@ CREATE OR REPLACE FUNCTION cabd.audit_structure_id_insert()
  LANGUAGE plpgsql
 AS $function$
 BEGIN
-  INSERT INTO cabd.audit_log(action, schemaname, tablename, cabd_id, id_pk, newvalues) VALUES('INSERT', TG_TABLE_SCHEMA::text, TG_TABLE_NAME::text, NEW.site_id, NEW.structure_id, to_jsonb(NEW)::jsonb);
+  INSERT INTO cabd.audit_log(action, schemaname, tablename, id_pk, newvalues) VALUES('INSERT', TG_TABLE_SCHEMA::text, TG_TABLE_NAME::text, NEW.structure_id, to_jsonb(NEW)::jsonb);
   RETURN NEW;
 END;
 $function$
@@ -29,7 +29,7 @@ CREATE OR REPLACE FUNCTION cabd.audit_structure_id_delete()
  LANGUAGE plpgsql
 AS $function$
 BEGIN
-  INSERT INTO cabd.audit_log(action, schemaname, tablename, cabd_id, id_pk, oldvalues) VALUES('DELETE', TG_TABLE_SCHEMA::text, TG_TABLE_NAME::text, OLD.site_id, OLD.structure_id, to_jsonb(OLD)::jsonb);
+  INSERT INTO cabd.audit_log(action, schemaname, tablename, id_pk, oldvalues) VALUES('DELETE', TG_TABLE_SCHEMA::text, TG_TABLE_NAME::text, OLD.structure_id, to_jsonb(OLD)::jsonb);
   RETURN NEW;
 END;
 $function$
