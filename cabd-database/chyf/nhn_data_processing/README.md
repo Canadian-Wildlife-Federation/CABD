@@ -58,6 +58,19 @@ flowpath_2_chyf.py
 
 `flowpath_2_chyf.py <host> <port> <dbname> <dbuser> <dbpassword> fpoutput`
 
+ **Step 9B – Assign province_territory_codes**
+
+ The province_territory_code field in the chyf2.aoi table should be populated for all AOI's (except ones in the US).  You can either populate these manually or modify the script in the fishpass repo: https://github.com/Canadian-Wildlife-Federation/fishpass/blob/main/init/database/chyf_province_territory_code.sql
+
+This is currently only used by the fishpass modelling tools so this step can be skipped or done at a later time.
+
+To find all rows which need aoi configured:
+```
+select id, short_name, province_territory_code from chyf2.aoi where province_territory_code is null
+```
+The short_name 'MACK001' can be null as it is not associated with any provinces.
+
+
  **Step 10 – Run the Mainstem Tools**
 
 This adds the graph_id, mainstems and other properties to the network.
