@@ -15,7 +15,8 @@ column_types:
   longitude: numeric
   entry_classification: varchar
   data_source_short_name: varchar
-  status: varchar
+  sharepoint_status: varchar
+  processing_status: varchar
   reviewer_comments: varchar
   submitted_on: timestamp with time zone
   passability_status_code: smallint

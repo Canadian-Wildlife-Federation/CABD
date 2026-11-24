@@ -1,11 +1,21 @@
+import csv
+import io
+import tempfile
 import unittest
+from pathlib import Path
+from unittest.mock import patch
 
-from cabd_updates.staging.csv_utils import is_blank_csv_row
+from cabd_updates.staging.csv_utils import (
+    has_sharepoint_status,
+    is_blank_csv_row,
+)
+from cabd_updates.staging.stage_data_sources import stage_data_sources_csv_to_table
 from cabd_updates.staging.stage_updates import (
     _build_promotion_insert_sql,
     _new_feature_fingerprint,
     _promote_raw_rows_to_staging,
 )
+from cabd_updates.publish.publish import _derive_publish_columns
 
 
 class BlankCsvRowTests(unittest.TestCase):
@@ -13,6 +23,88 @@ class BlankCsvRowTests(unittest.TestCase):
         self.assertTrue(is_blank_csv_row([]))
         self.assertTrue(is_blank_csv_row(["", "  ", "\t"]))
         self.assertFalse(is_blank_csv_row(["", " dam "]))
+
+
+class SharePointStatusTests(unittest.TestCase):
+    def test_any_nonblank_status_is_skipped(self):
+        for value in ("complete", "on_hold", "anything", "in progress"):
+            with self.subTest(value=value):
+                self.assertTrue(has_sharepoint_status(value))
+
+        for value in (None, "", "  ", "\t "):
+            with self.subTest(value=value):
+                self.assertFalse(has_sharepoint_status(value))
+
+    def test_data_source_csv_separates_status_and_skips_nonblank_rows(self):
+        class CopyCursor:
+            def __init__(self, connection):
+                self.connection = connection
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_):
+                return False
+
+            def execute(self, query, params=None):
+                self.connection.executed.append((query, params))
+                return None
+
+            def copy_expert(self, sql, buffer):
+                self.connection.copy_sql = sql
+                self.connection.copy_csv = buffer.getvalue()
+
+        class CopyConnection:
+            def __init__(self):
+                self.copy_sql = ""
+                self.copy_csv = ""
+                self.executed = []
+
+            def cursor(self):
+                return CopyCursor(self)
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            csv_path = Path(temp_dir) / "sources.csv"
+            csv_path.write_text(
+                "data_source_short_name,status,source\n"
+                "source-a,active,https://example.test/a\n"
+                "source-b,on_hold,https://example.test/b\n"
+                "source-c,completed,https://example.test/c\n"
+                "source-d,,https://example.test/d\n"
+                "source-e,   ,https://example.test/e\n",
+                encoding="utf-8",
+            )
+            connection = CopyConnection()
+            with patch(
+                "cabd_updates.staging.stage_data_sources.call_scalar",
+                side_effect=[0, 1],
+            ):
+                result = stage_data_sources_csv_to_table(connection, csv_path)
+
+        copied_rows = list(csv.DictReader(io.StringIO(connection.copy_csv)))
+        self.assertIn('"sharepoint_status"', connection.copy_sql)
+        self.assertIn('"processing_status"', connection.copy_sql)
+        self.assertEqual(result["dropped_sharepoint_status_rows"], 3)
+        self.assertEqual(len(copied_rows), 2)
+        self.assertTrue(
+            all(not row["sharepoint_status"].strip() for row in copied_rows)
+        )
+        self.assertEqual(
+            {row["processing_status"] for row in copied_rows},
+            {"ready"},
+        )
+
+    def test_status_columns_are_not_published_as_feature_attributes(self):
+        attributes, provenance = _derive_publish_columns(
+            {
+                "dam_name_en": "varchar",
+                "sharepoint_status": "varchar",
+                "processing_status": "varchar",
+            },
+            {"dam_name_en", "sharepoint_status", "processing_status"},
+        )
+        self.assertEqual(attributes, ["dam_name_en"])
+        self.assertEqual(provenance, ["dam_name_en"])
 
 
 class NewFeatureDeduplicationSqlTests(unittest.TestCase):
@@ -54,7 +146,8 @@ class NewFeatureDeduplicationSqlTests(unittest.TestCase):
             "data_source_short_name",
             "dam_name_en",
             "reviewer_comments",
-            "status",
+            "sharepoint_status",
+            "processing_status",
             "submitted_on",
         ]
         sql = _build_promotion_insert_sql(
@@ -79,7 +172,8 @@ class NewFeatureDeduplicationSqlTests(unittest.TestCase):
             sql,
         )
         self.assertNotIn('existing."cabd_id"', sql)
-        self.assertNotIn('existing."status"', sql)
+        self.assertIn('existing."sharepoint_status"', sql)
+        self.assertNotIn('existing."processing_status"', sql)
 
     def test_new_feature_deduplication_requires_coordinates(self):
         columns = ["entry_classification", "latitude"]

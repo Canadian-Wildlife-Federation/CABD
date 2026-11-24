@@ -19,7 +19,30 @@ set CABD_DSN=host=... port=5432 dbname=cabd user=... password=...
 ```
 
 ## Run migrations
-Apply SQL files in `sql/` using psql (order is up to you, but constraints then functions is typical).
+Before using the updated staging or publishing scripts, run
+`sql/migrations/separate_update_status_columns.sql` against **both dev and
+production**. It is an idempotent, transactional migration: it creates
+`sharepoint_status` and `processing_status`. For feature updates it maps known
+workflow values to `processing_status` and preserves other legacy values as
+`sharepoint_status`. Because data-source `update_status` may contain original
+SharePoint values, it treats those values as `sharepoint_status`; a legacy
+`blocked` value with a nonblank `blocked_reason` is instead restored as an
+internal `blocked` state. It removes
+rows with nonblank SharePoint statuses, which the importers skip, and drops the
+ambiguous legacy `status` / `update_status` columns. Back up the staging tables
+first and review the migration output for notices or errors.
+
+Then apply the relevant files in `sql/constraints/`, followed by the functions
+in `sql/functions/`. Do not run the updated CLI against a database until the
+migration and updated constraints/functions have been applied.
+
+`sharepoint_status` is the original status supplied by SharePoint. `processing_status`
+is the CABD workflow state (`needs review`, `ready`, `wait`, `blocked`, and, for
+data-source updates, `done`). Incoming `status` CSV columns are loaded into
+`sharepoint_status`; the staging process sets `processing_status` itself. Any
+nonblank `sharepoint_status` value is skipped because the SharePoint values are
+not controlled or validated; blank and whitespace-only values remain eligible
+for processing.
 
 ## CLI
 ```
@@ -47,7 +70,8 @@ The staging tables are independent; staging fishways first won’t break anythin
 Repeated new-feature rows are skipped when the same source and submitted feature
 details (including coordinates) have already been imported, even after the
 original update has been published. Blank rows in updates and data-source CSV
-files are skipped. The per-feature `*_import_fingerprints` table retains these
+files are skipped. Rows with nonblank SharePoint statuses are skipped and counted.
+The per-feature `*_import_fingerprints` table retains these
 keys; remove a row from it only when intentionally re-importing that exact
 feature update.
 2) Publish order (staging → live tables)

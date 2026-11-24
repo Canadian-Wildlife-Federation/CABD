@@ -77,6 +77,12 @@ def main() -> None:
                 print(f"stage: skipped {result['duplicate_rows']} repeated new-feature row(s)")
             if result["skipped_blank_rows"]:
                 print(f"stage: skipped {result['skipped_blank_rows']} blank CSV row(s)")
+            if result["dropped_sharepoint_status_rows"]:
+                print(
+                    "stage: skipped "
+                    f"{result['dropped_sharepoint_status_rows']} row(s) with nonblank "
+                    "SharePoint status"
+                )
             return
 
         if args.cmd == "stage-data-sources":
@@ -90,6 +96,12 @@ def main() -> None:
                 print(
                     f"stage-data-sources: skipped "
                     f"{result['skipped_blank_rows']} blank CSV row(s)"
+                )
+            if result["dropped_sharepoint_status_rows"]:
+                print(
+                    "stage-data-sources: skipped "
+                    f"{result['dropped_sharepoint_status_rows']} row(s) with nonblank "
+                    "SharePoint status"
                 )
             return
 

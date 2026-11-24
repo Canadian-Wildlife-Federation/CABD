@@ -15,7 +15,8 @@ _EXCLUDED_COLUMNS = {
     "province_territory_code",
     "entry_classification",
     "data_source_short_name",
-    "status",
+    "sharepoint_status",
+    "processing_status",
     "reviewer_comments",
     "submitted_on",
     "update_type",
@@ -116,5 +117,5 @@ def publish_feature(conn, feature: str, staging_table: str) -> None:
         raise ValueError(f"Unknown feature: {feature}")
 
 
-# TO DO: need to update SharePoint lists with status = 'complete' when all of this
+# TO DO: update SharePoint lists with sharepoint_status = 'complete' when all of this
 # is published so we don't re-ingest the updates

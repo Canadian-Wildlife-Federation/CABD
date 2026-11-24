@@ -42,20 +42,20 @@ BEGIN
   -- Retry rows blocked only because their data source was previously missing.
   EXECUTE format($q$
     UPDATE %s
-    SET update_status = 'ready',
+    SET processing_status = 'ready',
         blocked_reason = NULL,
         blocked_at = NULL
-    WHERE update_status = 'blocked'
+    WHERE processing_status = 'blocked'
       AND blocked_reason = 'missing data source in cabd.data_source'
   $q$, staging_table);
 
   -- Retry timestamp blocks after a missing submitted_on value is corrected.
   EXECUTE format($q$
     UPDATE %s
-    SET update_status = 'ready',
+    SET processing_status = 'ready',
         blocked_reason = NULL,
         blocked_at = NULL
-    WHERE update_status = 'blocked'
+    WHERE processing_status = 'blocked'
       AND blocked_reason = 'submitted_on is required to determine update ordering.'
       AND submitted_on IS NOT NULL
   $q$, staging_table);
@@ -63,10 +63,10 @@ BEGIN
   -- A missing timestamp prevents safe ordering; also block its paired action.
   EXECUTE format($q$
     UPDATE %1$s u
-    SET update_status = 'blocked',
+    SET processing_status = 'blocked',
         blocked_reason = 'submitted_on is required to determine update ordering.',
         blocked_at = now()
-    WHERE u.update_status IS DISTINCT FROM 'blocked'
+    WHERE u.processing_status IS DISTINCT FROM 'blocked'
       AND (
         u.submitted_on IS NULL
         OR (
@@ -95,10 +95,10 @@ BEGIN
   -- A later modification makes both the delete and modification unsafe to publish.
   EXECUTE format($q$
     UPDATE %1$s u
-    SET update_status = 'blocked',
+    SET processing_status = 'blocked',
         blocked_reason = 'A feature is marked for deletion but has been modified by a subsequent update.',
         blocked_at = now()
-    WHERE u.update_status IS DISTINCT FROM 'blocked'
+    WHERE u.processing_status IS DISTINCT FROM 'blocked'
       AND (
         (
           u.entry_classification = 'delete feature'
@@ -128,7 +128,7 @@ BEGIN
     INSERT INTO _dam_ready (id)
     SELECT id
     FROM %s
-    WHERE update_status = 'ready'
+    WHERE processing_status = 'ready'
   $q$, staging_table);
 
   IF NOT EXISTS (SELECT 1 FROM _dam_ready) THEN
@@ -155,11 +155,11 @@ BEGIN
       SELECT id,
              row_number() OVER (PARTITION BY cabd_id ORDER BY submitted_on ASC) AS rn
       FROM %s
-      WHERE update_status = 'ready'
+      WHERE processing_status = 'ready'
         AND entry_classification IN ('modify feature', 'delete feature')
     )
     UPDATE %s
-    SET update_status = 'wait'
+    SET processing_status = 'wait'
     WHERE id IN (SELECT id FROM cte WHERE rn > 1)
   $q$, staging_table, staging_table);
 
@@ -167,11 +167,11 @@ BEGIN
   EXECUTE format($q$
     UPDATE %s
     SET
-      update_status = 'blocked',
+      processing_status = 'blocked',
       blocked_reason = 'missing data source in cabd.data_source',
       blocked_at = now()
     WHERE id IN (SELECT id FROM _dam_ready)
-      AND update_status = 'ready'
+      AND processing_status = 'ready'
       AND data_source IS NULL
   $q$, staging_table);
 
@@ -182,14 +182,14 @@ BEGIN
     SELECT u.id
     FROM %s u
     JOIN _dam_ready r ON r.id = u.id
-    WHERE u.update_status = 'ready'
+    WHERE u.processing_status = 'ready'
       AND u.data_source IS NOT NULL
   $q$, staging_table);
 
   IF NOT EXISTS (SELECT 1 FROM _dam_publishable) THEN
     -- Nothing publishable; still restore any rows deferred above.
     EXECUTE format($q$
-      UPDATE %s SET update_status = 'ready' WHERE update_status = 'wait'
+      UPDATE %s SET processing_status = 'ready' WHERE processing_status = 'wait'
     $q$, staging_table);
     RETURN 0;
   END IF;
@@ -320,7 +320,7 @@ BEGIN
       WHERE s.cabd_id = u.cabd_id
         AND d.cabd_id = s.cabd_id
         AND u.entry_classification IN ('new feature', 'modify feature')
-        AND u.update_status = 'ready'
+        AND u.processing_status = 'ready'
         AND u.data_source IS NOT NULL
         AND u.id IN (SELECT id FROM _dam_publishable)
     $q$, ds_set_clause, staging_table);
@@ -350,7 +350,7 @@ BEGIN
       FROM %s AS u
       WHERE d.cabd_id = u.cabd_id
         AND u.entry_classification IN ('new feature', 'modify feature')
-        AND u.update_status = 'ready'
+        AND u.processing_status = 'ready'
         AND u.data_source IS NOT NULL
         AND u.id IN (SELECT id FROM _dam_publishable)
     $q$, attr_set_clause, staging_table);
@@ -370,7 +370,7 @@ BEGIN
   -- PROCESS 4: reset deferred rows so the next update per feature is picked up.
   ---------------------------------------------------------------------------
   EXECUTE format($q$
-    UPDATE %s SET update_status = 'ready' WHERE update_status = 'wait'
+    UPDATE %s SET processing_status = 'ready' WHERE processing_status = 'wait'
   $q$, staging_table);
 
   RETURN deleted_from_staging;

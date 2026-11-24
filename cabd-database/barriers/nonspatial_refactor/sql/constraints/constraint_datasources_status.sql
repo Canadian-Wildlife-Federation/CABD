@@ -1,5 +1,15 @@
 ALTER TABLE IF EXISTS cabd.data_source_updates
-    ADD COLUMN update_status character varying COLLATE pg_catalog."default";
+    ADD COLUMN IF NOT EXISTS sharepoint_status text;
 
 ALTER TABLE IF EXISTS cabd.data_source_updates
-    ADD CONSTRAINT status_check CHECK (update_status::text = ANY (ARRAY['needs review'::character varying::text, 'ready'::character varying::text, 'wait'::character varying::text, 'blocked'::character varying::text, 'done'::character varying::text]));
+    ADD COLUMN IF NOT EXISTS processing_status text;
+
+ALTER TABLE IF EXISTS cabd.data_source_updates
+    DROP CONSTRAINT IF EXISTS status_check;
+
+ALTER TABLE IF EXISTS cabd.data_source_updates
+    DROP CONSTRAINT IF EXISTS data_source_updates_processing_status_check;
+
+ALTER TABLE IF EXISTS cabd.data_source_updates
+    ADD CONSTRAINT data_source_updates_processing_status_check
+    CHECK (processing_status IN ('needs review', 'ready', 'wait', 'blocked', 'done'));

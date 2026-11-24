@@ -81,7 +81,7 @@ BEGIN
     )
     UPDATE %s
     SET
-      update_status = 'blocked',
+      processing_status = 'blocked',
       blocked_reason = 'data source not used for publishable features',
       blocked_at = now()
     WHERE lower(name) NOT IN (SELECT lower(n) FROM needed)

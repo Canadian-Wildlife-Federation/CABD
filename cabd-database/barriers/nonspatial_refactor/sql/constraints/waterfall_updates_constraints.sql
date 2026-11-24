@@ -10,13 +10,22 @@ ALTER TABLE cabd.waterfall_updates
   ADD CONSTRAINT waterfall_updates_entry_classification_check
   CHECK (entry_classification IN ('new feature', 'modify feature', 'delete feature'));
 
--- update_status domain (your new desired set)
+-- Separate source-list status from CABD's processing state.
+ALTER TABLE cabd.waterfall_updates
+  ADD COLUMN IF NOT EXISTS sharepoint_status text;
+
+ALTER TABLE cabd.waterfall_updates
+  ADD COLUMN IF NOT EXISTS processing_status text;
+
 ALTER TABLE cabd.waterfall_updates
   DROP CONSTRAINT IF EXISTS status_check;
 
 ALTER TABLE cabd.waterfall_updates
-  ADD CONSTRAINT status_check
-  CHECK (update_status IN ('needs review', 'ready', 'wait', 'blocked'));
+  DROP CONSTRAINT IF EXISTS waterfall_updates_processing_status_check;
+
+ALTER TABLE cabd.waterfall_updates
+  ADD CONSTRAINT waterfall_updates_processing_status_check
+  CHECK (processing_status IN ('needs review', 'ready', 'wait', 'blocked'));
 
 -- update_type domain (keep if you still use it)
 ALTER TABLE cabd.waterfall_updates
@@ -59,5 +68,3 @@ ALTER TABLE cabd.waterfall_updates
 ALTER TABLE cabd.waterfall_updates
   ADD CONSTRAINT updates_lon_range
   CHECK (longitude IS NULL OR (longitude BETWEEN -180 AND 180));
-
-ALTER TABLE cabd.waterfall_updates rename column update_status to status;

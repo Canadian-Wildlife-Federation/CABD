@@ -6,7 +6,7 @@
 --
 -- Assumptions about staging table:
 --   - Has integer PK column named "id" (as per your current cabd.waterfall_updates loader)
---   - Has cabd_id (uuid), entry_classification, update_status, latitude/longitude, data_source_short_name, etc.
+--   - Has cabd_id (uuid), entry_classification, processing_status, latitude/longitude, data_source_short_name, etc.
 --
 -- NOTE: This is a "minimal mapping" publish (geometry + source tables + deletes).
 --       Extend it with attribute/provenance mapping as you port over logic from map_waterfall_updates.py.
@@ -33,20 +33,20 @@ BEGIN
   -- Retry rows blocked only because their data source was previously missing.
   EXECUTE format($q$
     UPDATE %s
-    SET update_status = 'ready',
+    SET processing_status = 'ready',
         blocked_reason = NULL,
         blocked_at = NULL
-    WHERE update_status = 'blocked'
+    WHERE processing_status = 'blocked'
       AND blocked_reason = 'missing data source in cabd.data_source'
   $q$, staging_table);
 
   -- Retry timestamp blocks after a missing submitted_on value is corrected.
   EXECUTE format($q$
     UPDATE %s
-    SET update_status = 'ready',
+    SET processing_status = 'ready',
         blocked_reason = NULL,
         blocked_at = NULL
-    WHERE update_status = 'blocked'
+    WHERE processing_status = 'blocked'
       AND blocked_reason = 'submitted_on is required to determine update ordering.'
       AND submitted_on IS NOT NULL
   $q$, staging_table);
@@ -54,10 +54,10 @@ BEGIN
   -- A missing timestamp prevents safe ordering; also block its paired action.
   EXECUTE format($q$
     UPDATE %1$s u
-    SET update_status = 'blocked',
+    SET processing_status = 'blocked',
         blocked_reason = 'submitted_on is required to determine update ordering.',
         blocked_at = now()
-    WHERE u.update_status IS DISTINCT FROM 'blocked'
+    WHERE u.processing_status IS DISTINCT FROM 'blocked'
       AND (
         u.submitted_on IS NULL
         OR (
@@ -86,10 +86,10 @@ BEGIN
   -- A later modification makes both the delete and modification unsafe to publish.
   EXECUTE format($q$
     UPDATE %1$s u
-    SET update_status = 'blocked',
+    SET processing_status = 'blocked',
         blocked_reason = 'A feature is marked for deletion but has been modified by a subsequent update.',
         blocked_at = now()
-    WHERE u.update_status IS DISTINCT FROM 'blocked'
+    WHERE u.processing_status IS DISTINCT FROM 'blocked'
       AND (
         (
           u.entry_classification = 'delete feature'
@@ -119,7 +119,7 @@ BEGIN
     INSERT INTO _wf_ready (id)
     SELECT id
     FROM %s
-    WHERE update_status = 'ready'
+    WHERE processing_status = 'ready'
   $q$, staging_table);
 
   IF NOT EXISTS (SELECT 1 FROM _wf_ready) THEN
@@ -139,11 +139,11 @@ BEGIN
   EXECUTE format($q$
     UPDATE %s
     SET
-      update_status = 'blocked',
+      processing_status = 'blocked',
       blocked_reason = 'missing data source in cabd.data_source',
       blocked_at = now()
     WHERE id IN (SELECT id FROM _wf_ready)
-      AND update_status = 'ready'
+      AND processing_status = 'ready'
       AND data_source IS NULL
   $q$, staging_table);
 
@@ -154,7 +154,7 @@ BEGIN
     SELECT u.id
     FROM %s u
     JOIN _wf_ready r ON r.id = u.id
-    WHERE u.update_status = 'ready'
+    WHERE u.processing_status = 'ready'
       AND u.data_source IS NOT NULL
   $q$, staging_table);
 
