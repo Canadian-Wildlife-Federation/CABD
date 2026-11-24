@@ -79,13 +79,13 @@ BEGIN
     RETURN 0;
   END IF;
 
-  -- Resolve data sources for this batch only
+  -- Resolve data sources for this batch only (case-insensitive name match)
   EXECUTE format($q$
     UPDATE %s u
     SET data_source = ds.id
     FROM cabd.data_source ds
     WHERE u.id IN (SELECT id FROM _dam_ready)
-      AND ds.name = u.data_source_short_name
+      AND lower(ds.name) = lower(btrim(u.data_source_short_name))
   $q$, staging_table);
 
   ---------------------------------------------------------------------------
