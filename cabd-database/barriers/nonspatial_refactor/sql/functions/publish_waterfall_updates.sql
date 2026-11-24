@@ -30,31 +30,87 @@ BEGIN
     NULL;
   END;
 
+  -- Retry rows blocked only because their data source was previously missing.
+  EXECUTE format($q$
+    UPDATE %s
+    SET update_status = 'ready',
+        blocked_reason = NULL,
+        blocked_at = NULL
+    WHERE update_status = 'blocked'
+      AND blocked_reason = 'missing data source in cabd.data_source'
+  $q$, staging_table);
+
+  -- Retry timestamp blocks after a missing submitted_on value is corrected.
+  EXECUTE format($q$
+    UPDATE %s
+    SET update_status = 'ready',
+        blocked_reason = NULL,
+        blocked_at = NULL
+    WHERE update_status = 'blocked'
+      AND blocked_reason = 'submitted_on is required to determine update ordering.'
+      AND submitted_on IS NOT NULL
+  $q$, staging_table);
+
+  -- A missing timestamp prevents safe ordering; also block its paired action.
+  EXECUTE format($q$
+    UPDATE %1$s u
+    SET update_status = 'blocked',
+        blocked_reason = 'submitted_on is required to determine update ordering.',
+        blocked_at = now()
+    WHERE u.update_status IS DISTINCT FROM 'blocked'
+      AND (
+        u.submitted_on IS NULL
+        OR (
+          u.entry_classification = 'delete feature'
+          AND EXISTS (
+            SELECT 1
+            FROM %1$s m
+            WHERE m.cabd_id = u.cabd_id
+              AND m.entry_classification = 'modify feature'
+              AND m.submitted_on IS NULL
+          )
+        )
+        OR (
+          u.entry_classification = 'modify feature'
+          AND EXISTS (
+            SELECT 1
+            FROM %1$s d
+            WHERE d.cabd_id = u.cabd_id
+              AND d.entry_classification = 'delete feature'
+              AND d.submitted_on IS NULL
+          )
+        )
+      )
+  $q$, staging_table);
+
   -- A later modification makes both the delete and modification unsafe to publish.
   EXECUTE format($q$
     UPDATE %1$s u
     SET update_status = 'blocked',
         blocked_reason = 'A feature is marked for deletion but has been modified by a subsequent update.',
         blocked_at = now()
-    WHERE (
-      u.entry_classification = 'delete feature'
-      AND EXISTS (
-        SELECT 1
-        FROM %1$s m
-        WHERE m.cabd_id = u.cabd_id
-          AND m.entry_classification = 'modify feature'
-          AND m.submitted_on > u.submitted_on
+    WHERE u.update_status IS DISTINCT FROM 'blocked'
+      AND (
+        (
+          u.entry_classification = 'delete feature'
+          AND EXISTS (
+            SELECT 1
+            FROM %1$s m
+            WHERE m.cabd_id = u.cabd_id
+              AND m.entry_classification = 'modify feature'
+              AND m.submitted_on > u.submitted_on
+          )
+        ) OR (
+          u.entry_classification = 'modify feature'
+          AND EXISTS (
+            SELECT 1
+            FROM %1$s d
+            WHERE d.cabd_id = u.cabd_id
+              AND d.entry_classification = 'delete feature'
+              AND u.submitted_on > d.submitted_on
+          )
+        )
       )
-    ) OR (
-      u.entry_classification = 'modify feature'
-      AND EXISTS (
-        SELECT 1
-        FROM %1$s d
-        WHERE d.cabd_id = u.cabd_id
-          AND d.entry_classification = 'delete feature'
-          AND u.submitted_on > d.submitted_on
-      )
-    )
   $q$, staging_table);
 
   -- Snapshot "ready" rows at start of run
@@ -80,16 +136,16 @@ BEGIN
   $q$, staging_table);
 
   -- BLOCK rows that have a missing referenced data source
-  BEGIN
   EXECUTE format($q$
     UPDATE %s
     SET
       update_status = 'blocked',
       blocked_reason = 'missing data source in cabd.data_source',
       blocked_at = now()
-    WHERE data_source is null
+    WHERE id IN (SELECT id FROM _wf_ready)
+      AND update_status = 'ready'
+      AND data_source IS NULL
   $q$, staging_table);
-  END;
 
   -- Identify publishable rows: still ready AND data_source resolved
   CREATE TEMP TABLE _wf_publishable (id integer PRIMARY KEY) ON COMMIT DROP;

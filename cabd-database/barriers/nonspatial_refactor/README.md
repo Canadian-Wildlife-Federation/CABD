@@ -67,7 +67,12 @@ Nothing catastrophic happens:
 Fishway rows with valid/NULL dam_id still publish (assuming data_source is resolved).
 Fishway rows referencing missing dams become blocked and remain in staging.
 After publishing dams, you just re-run fishway publish to pick up the previously blocked rows.
+Rows blocked because their data source is missing are automatically retried on
+the next publish; add the source and rerun publish.
 
 If a feature has a delete update followed by a later modify update (by
 `submitted_on`), both rows are blocked with a conflict reason and neither is
 published until the conflict is resolved.
+Updates without `submitted_on` are blocked because their order cannot be
+determined. For dams, ready modify/delete actions for the same feature are
+published one at a time in `submitted_on` order.
