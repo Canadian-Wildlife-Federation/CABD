@@ -7,10 +7,11 @@ from pathlib import Path
 from cabd_updates.config import load_config
 from cabd_updates.db.connect import connect
 from cabd_updates.ingest.validate import validate_updates_csv_basic
-from cabd_updates.staging.stage_updates import stage_updates_csv_to_table
-from cabd_updates.staging.stage_data_sources import stage_data_sources_csv_to_table
-from cabd_updates.publish.publish import publish_feature, publish_data_sources
+from cabd_updates.publish.publish import publish_data_sources, publish_feature
 from cabd_updates.reporting.report import report_feature
+from cabd_updates.staging.stage_data_sources import stage_data_sources_csv_to_table
+from cabd_updates.staging.stage_updates import stage_updates_csv_to_table
+
 
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="cabd-updates")
@@ -64,7 +65,7 @@ def main() -> None:
             staging_table = args.staging_table or cfg["staging_table"]
             column_types = cfg.get("column_types") or {}
             coded_values = cfg.get("coded_values") or {}
-            stage_updates_csv_to_table(
+            result = stage_updates_csv_to_table(
                 conn,
                 Path(args.updates),
                 staging_table=staging_table,
@@ -72,13 +73,24 @@ def main() -> None:
                 coded_values=coded_values,
             )
             print(f"stage: loaded {args.feature} updates into {staging_table}")
+            if result["duplicate_rows"]:
+                print(f"stage: skipped {result['duplicate_rows']} repeated new-feature row(s)")
+            if result["skipped_blank_rows"]:
+                print(f"stage: skipped {result['skipped_blank_rows']} blank CSV row(s)")
             return
 
         if args.cmd == "stage-data-sources":
             cfg = load_config("data_sources")
             staging_table = args.staging_table or cfg["staging_table"]
-            stage_data_sources_csv_to_table(conn, Path(args.sources), staging_table=staging_table)
+            result = stage_data_sources_csv_to_table(
+                conn, Path(args.sources), staging_table=staging_table
+            )
             print(f"stage-data-sources: loaded data sources into {staging_table}")
+            if result["skipped_blank_rows"]:
+                print(
+                    f"stage-data-sources: skipped "
+                    f"{result['skipped_blank_rows']} blank CSV row(s)"
+                )
             return
 
         if args.cmd == "publish":

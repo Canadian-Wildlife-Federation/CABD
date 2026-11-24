@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-from pathlib import Path
-from io import StringIO
-from datetime import datetime
 import csv
 import re
+from datetime import datetime
+from io import StringIO
+from pathlib import Path
 
 from cabd_updates.db.call import call_scalar
-
+from cabd_updates.staging.csv_utils import is_blank_csv_row
 
 # CSV column name -> staging table column name
 COLUMN_RENAMES = {
@@ -292,6 +292,7 @@ def stage_data_sources_csv_to_table(
     unparsed_dates: list[tuple[int, str]] = []
     unparsed_submitted: list[tuple[int, str]] = []
     dropped_status_count = 0
+    skipped_blank_rows = 0
 
     # ---- Pass 1: read + clean rows (drop by status, parse dates) ----
     cleaned_rows: list[tuple[int, list[str]]] = []
@@ -299,6 +300,9 @@ def stage_data_sources_csv_to_table(
         reader = csv.reader(f)
         next(reader)  # skip original header
         for line_no, row in enumerate(reader, start=2):
+            if is_blank_csv_row(row):
+                skipped_blank_rows += 1
+                continue
             # keep only the desired columns, using ORIGINAL CSV positions
             row = [row[i] if i < len(row) else "" for i in keep_indices]
 
@@ -468,6 +472,7 @@ def stage_data_sources_csv_to_table(
         "staging_table": staging_table,
         "row_count": int(row_count or 0),
         "dropped_status_rows": dropped_status_count,
+        "skipped_blank_rows": skipped_blank_rows,
         "already_existing_removed": already_existing_count,
         "unparsed_version_dates": unparsed_dates,
         "unparsed_submitted_on": unparsed_submitted,

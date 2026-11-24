@@ -1,11 +1,14 @@
 from __future__ import annotations
 
-from pathlib import Path
 import csv
+import hashlib
+import json
 import re
+from collections.abc import Iterable, Sequence
 from io import StringIO
-from typing import Iterable, Sequence
+from pathlib import Path
 
+from cabd_updates.staging.csv_utils import is_blank_csv_row
 
 _NUMERIC_TYPE_HINTS = ("double precision", "numeric", "real", "int", "smallint", "bigint")
 _THOUSANDS_RE = re.compile(r"^-?\d{1,3}(,\d{3})+$")
@@ -46,6 +49,22 @@ def _strip_thousands(value: str) -> str:
 def _canonical_sql(expr: str) -> str:
     """SQL: lowercase + strip all non-alphanumeric characters (for matching)."""
     return f"lower(regexp_replace({expr}, '[^a-zA-Z0-9]', '', 'g'))"
+
+
+def _new_feature_fingerprint(header: Sequence[str], row: Sequence[str]) -> str:
+    # CABD IDs can be generated during staging, so they are not a stable import key.
+    submitted_values = {
+        column.lower(): row[index].strip() if index < len(row) else ""
+        for index, column in enumerate(header)
+        if column.lower() != "cabd_id"
+    }
+    canonical_row = json.dumps(
+        submitted_values,
+        sort_keys=True,
+        ensure_ascii=False,
+        separators=(",", ":"),
+    )
+    return hashlib.sha256(canonical_row.encode("utf-8")).hexdigest()
 
 
 def stage_updates_csv_to_table(
@@ -100,9 +119,20 @@ def stage_updates_csv_to_table(
         raise ValueError(f"{csv_path}: missing required columns for staging: {missing}")
 
     raw_table = _raw_table_name(staging_table)
+    fingerprint_table = _fingerprint_table_name(staging_table)
 
     with conn.cursor() as cur:
         _ensure_raw_table(conn, raw_table, header)
+        cur.execute(
+            f"""
+            CREATE TABLE IF NOT EXISTS {fingerprint_table} (
+                fingerprint text PRIMARY KEY,
+                source_file text,
+                csv_line_no integer,
+                recorded_at timestamptz NOT NULL DEFAULT now()
+            );
+            """
+        )
         # Single active batch: drop already-loaded rows, and reset any prior
         # errors back to pending so they are re-validated (auto-retry) this run.
         cur.execute(f"DELETE FROM {raw_table} WHERE load_status = 'loaded';")
@@ -119,7 +149,8 @@ def stage_updates_csv_to_table(
         )
 
         clean_indices = _thousands_clean_indices(header, column_types)
-        copy_header = [*header, "source_file", "csv_line_no"]
+        copy_header = [*header, "source_file", "csv_line_no", "import_fingerprint"]
+        skipped_blank_rows = 0
         with StringIO() as buffer:
             writer = csv.writer(buffer, lineterminator="\n")
             writer.writerow(copy_header)
@@ -127,11 +158,21 @@ def stage_updates_csv_to_table(
                 reader = csv.reader(f2)
                 next(reader)
                 for line_no, row in enumerate(reader, start=2):
+                    if is_blank_csv_row(row):
+                        skipped_blank_rows += 1
+                        continue
                     cleaned = [
                         _strip_thousands(val) if i in clean_indices else val
                         for i, val in enumerate(row)
                     ]
-                    writer.writerow([*cleaned, str(csv_path), line_no])
+                    writer.writerow(
+                        [
+                            *cleaned,
+                            str(csv_path),
+                            line_no,
+                            _new_feature_fingerprint(header, row),
+                        ]
+                    )
             buffer.seek(0)
             copy_sql = (
                 f"COPY {raw_table} "
@@ -167,12 +208,14 @@ def stage_updates_csv_to_table(
         conn=conn,
         raw_table=raw_table,
         staging_table=staging_table,
+        fingerprint_table=fingerprint_table,
         required_columns=required_columns,
         header_lc=header_lc,
         cast_map=cast_map,
     )
 
     result["raw_table"] = raw_table
+    result["skipped_blank_rows"] = skipped_blank_rows
     return result
 
 
@@ -361,6 +404,15 @@ def _raw_table_name(staging_table: str) -> str:
     return quote_ident(f"{staging_table}_raw")
 
 
+def _fingerprint_table_name(staging_table: str) -> str:
+    if "." in staging_table:
+        schema, table = staging_table.split(".", 1)
+        schema = schema.strip('"')
+        table = table.strip('"')
+        return f"{quote_ident(schema)}.{quote_ident(f'{table}_import_fingerprints')}"
+    return quote_ident(f"{staging_table}_import_fingerprints")
+
+
 def _ensure_raw_table(conn, raw_table: str, header: list[str]) -> None:
     with conn.cursor() as cur:
         cur.execute(
@@ -386,6 +438,7 @@ def _ensure_raw_table(conn, raw_table: str, header: list[str]) -> None:
             "error_column": "text",
             "loaded_at": "timestamptz",
             "updated_at": "timestamptz",
+            "import_fingerprint": "text",
         }
         for col_name, col_type in control_columns.items():
             cur.execute(f"ALTER TABLE {raw_table} ADD COLUMN IF NOT EXISTS {quote_ident(col_name)} {col_type};")
@@ -421,23 +474,18 @@ def _promote_raw_rows_to_staging(
     conn,
     raw_table: str,
     staging_table: str,
+    fingerprint_table: str,
     *,
     required_columns: Sequence[str],
     header_lc: dict[str, str],
     cast_map: dict | None,
 ) -> dict[str, object]:
-    insert_cols_sql = ", ".join([quote_ident(c) for c in required_columns])
-    insert_value_sql = ", ".join(
-        _value_expression(
-            header_lc[required_col.lower()],
-            cast_map,
-            cast_map.get(required_col.lower()) if cast_map else None,
-        )
-        for required_col in required_columns
-    )
-    insert_sql = (
-        f"INSERT INTO {staging_table} ({insert_cols_sql}) "
-        f"SELECT {insert_value_sql} FROM {raw_table} WHERE raw_id = %s;"
+    insert_sql = _build_promotion_insert_sql(
+        raw_table,
+        staging_table,
+        required_columns,
+        header_lc,
+        cast_map,
     )
     success_update_sql = (
         f"UPDATE {raw_table} "
@@ -450,6 +498,7 @@ def _promote_raw_rows_to_staging(
         f"WHERE raw_id = %s;"
     )
     inserted_rows = 0
+    duplicate_rows = 0
     error_rows = 0
     with conn.cursor() as cur:
         # Only promote 'pending' rows. Rows already flagged 'error' (e.g. by the
@@ -459,10 +508,42 @@ def _promote_raw_rows_to_staging(
         for (raw_id,) in cur.fetchall():
             cur.execute("SAVEPOINT promote_row")
             try:
+                cur.execute(
+                    f"""
+                    SELECT entry_classification = 'new feature'
+                    FROM {raw_table}
+                    WHERE raw_id = %s
+                    """,
+                    (raw_id,),
+                )
+                is_new_feature = cur.fetchone()[0]
+                if is_new_feature:
+                    cur.execute(
+                        f"""
+                        INSERT INTO {fingerprint_table} (
+                            fingerprint, source_file, csv_line_no
+                        )
+                        SELECT import_fingerprint, source_file, csv_line_no
+                        FROM {raw_table}
+                        WHERE raw_id = %s
+                        ON CONFLICT (fingerprint) DO NOTHING
+                        """,
+                        (raw_id,),
+                    )
+                    if cur.rowcount == 0:
+                        duplicate_rows += 1
+                        cur.execute(success_update_sql, (raw_id,))
+                        cur.execute("RELEASE SAVEPOINT promote_row")
+                        continue
+
                 cur.execute(insert_sql, (raw_id,))
+                inserted = cur.rowcount != 0
+                if not inserted:
+                    duplicate_rows += 1
                 cur.execute(success_update_sql, (raw_id,))
                 cur.execute("RELEASE SAVEPOINT promote_row")
-                inserted_rows += 1
+                if inserted:
+                    inserted_rows += 1
             except Exception as exc:
                 cur.execute("ROLLBACK TO SAVEPOINT promote_row")
                 cur.execute("RELEASE SAVEPOINT promote_row")
@@ -470,9 +551,72 @@ def _promote_raw_rows_to_staging(
                 error_rows += 1
     return {
         "inserted_rows": int(inserted_rows),
+        "duplicate_rows": int(duplicate_rows),
         "error_rows": int(error_rows),
         "raw_table": raw_table,
     }
+
+
+def _build_promotion_insert_sql(
+    raw_table: str,
+    staging_table: str,
+    required_columns: Sequence[str],
+    header_lc: dict[str, str],
+    cast_map: dict | None,
+) -> str:
+    required_columns_lc = {column.lower() for column in required_columns}
+    if "entry_classification" in required_columns_lc and not {
+        "latitude",
+        "longitude",
+    }.issubset(required_columns_lc):
+        raise ValueError(
+            "Feature update staging requires latitude and longitude columns "
+            "to deduplicate new-feature rows"
+        )
+
+    insert_cols_sql = ", ".join([quote_ident(c) for c in required_columns])
+    incoming_expressions = []
+    for column in required_columns:
+        target_type = cast_map.get(column.lower()) if cast_map else None
+        expression = _value_expression(
+            header_lc[column.lower()],
+            cast_map,
+            target_type,
+        )
+        incoming_expressions.append(f"{expression} AS {quote_ident(column)}")
+    incoming_select_sql = ", ".join(incoming_expressions)
+    incoming_columns_sql = ", ".join(
+        f"incoming.{quote_ident(column)}" for column in required_columns
+    )
+    insert_sql = (
+        f"WITH incoming AS ("
+        f"SELECT {incoming_select_sql} FROM {raw_table} WHERE raw_id = %s"
+        f") "
+        f"INSERT INTO {staging_table} ({insert_cols_sql}) "
+        f"SELECT {incoming_columns_sql} FROM incoming "
+    )
+    if "entry_classification" in required_columns_lc:
+        workflow_columns = {"cabd_id", "status"}
+        comparison_columns = [
+            column
+            for column in required_columns
+            if column.lower() not in workflow_columns
+        ]
+        duplicate_predicate = " AND ".join(
+            f"existing.{quote_ident(column)} "
+            f"IS NOT DISTINCT FROM incoming.{quote_ident(column)}"
+            for column in comparison_columns
+        )
+        insert_sql += (
+            "WHERE incoming.\"entry_classification\" "
+            "IS DISTINCT FROM 'new feature' "
+            "OR NOT EXISTS ("
+            f"SELECT 1 FROM {staging_table} existing "
+            "WHERE existing.\"entry_classification\" = 'new feature' "
+            f"AND {duplicate_predicate}"
+            ")"
+        )
+    return insert_sql + ";"
 
 
 def _get_table_columns(conn, table_name: str) -> set[str]:

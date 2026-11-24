@@ -32,6 +32,40 @@ BEGIN
   EXECUTE format('ALTER TABLE %s ADD COLUMN IF NOT EXISTS blocked_reason text', staging_table);
   EXECUTE format('ALTER TABLE %s ADD COLUMN IF NOT EXISTS blocked_at timestamptz', staging_table);
 
+  -- Normalize submission timestamps before checking for ordered conflicts.
+  BEGIN
+    EXECUTE format('ALTER TABLE %s ALTER COLUMN submitted_on TYPE timestamptz USING submitted_on::timestamptz', staging_table);
+  EXCEPTION WHEN others THEN
+    NULL;
+  END;
+
+  -- A later modification makes both the delete and modification unsafe to publish.
+  EXECUTE format($q$
+    UPDATE %1$s u
+    SET update_status = 'blocked',
+        blocked_reason = 'A feature is marked for deletion but has been modified by a subsequent update.',
+        blocked_at = now()
+    WHERE (
+      u.entry_classification = 'delete feature'
+      AND EXISTS (
+        SELECT 1
+        FROM %1$s m
+        WHERE m.cabd_id = u.cabd_id
+          AND m.entry_classification = 'modify feature'
+          AND m.submitted_on > u.submitted_on
+      )
+    ) OR (
+      u.entry_classification = 'modify feature'
+      AND EXISTS (
+        SELECT 1
+        FROM %1$s d
+        WHERE d.cabd_id = u.cabd_id
+          AND d.entry_classification = 'delete feature'
+          AND u.submitted_on > d.submitted_on
+      )
+    )
+  $q$, staging_table);
+
   -- Snapshot ready rows at start of run
   CREATE TEMP TABLE _dam_ready (id integer PRIMARY KEY) ON COMMIT DROP;
   EXECUTE format($q$
@@ -53,13 +87,6 @@ BEGIN
     WHERE u.id IN (SELECT id FROM _dam_ready)
       AND ds.name = u.data_source_short_name
   $q$, staging_table);
-
-  -- Best-effort normalize submitted_on (ignore failures)
-  BEGIN
-    EXECUTE format('ALTER TABLE %s ALTER COLUMN submitted_on TYPE timestamptz USING submitted_on::timestamptz', staging_table);
-  EXCEPTION WHEN others THEN
-    NULL;
-  END;
 
   ---------------------------------------------------------------------------
   -- PROCESS 1: one update at a time per feature.

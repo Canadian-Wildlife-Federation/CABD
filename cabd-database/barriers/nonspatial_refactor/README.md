@@ -44,6 +44,12 @@ You can stage in any order:
     stage --feature fishways (into cabd.fishway_updates)
     stage --feature waterfalls (into cabd.waterfall_updates)
 The staging tables are independent; staging fishways first won’t break anything.
+Repeated new-feature rows are skipped when the same source and submitted feature
+details (including coordinates) have already been imported, even after the
+original update has been published. Blank rows in updates and data-source CSV
+files are skipped. The per-feature `*_import_fingerprints` table retains these
+keys; remove a row from it only when intentionally re-importing that exact
+feature update.
 2) Publish order (staging → live tables)
 Here’s the recommended order:
 Upsert data sources
@@ -61,3 +67,7 @@ Nothing catastrophic happens:
 Fishway rows with valid/NULL dam_id still publish (assuming data_source is resolved).
 Fishway rows referencing missing dams become blocked and remain in staging.
 After publishing dams, you just re-run fishway publish to pick up the previously blocked rows.
+
+If a feature has a delete update followed by a later modify update (by
+`submitted_on`), both rows are blocked with a conflict reason and neither is
+published until the conflict is resolved.
