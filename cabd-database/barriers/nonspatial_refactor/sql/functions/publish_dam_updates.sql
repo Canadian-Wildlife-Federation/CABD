@@ -3,6 +3,7 @@
 -- To be called using the publish.py script rather than directly from SQL.
 --
 -- Column-driven publish: the mapped attribute list (attr_columns) and the
+-- provenance list (ds_columns) are derived from the dams YAML column_types in
 -- Python and passed in as text[]. The function assembles the dynamic
 -- attribute UPDATE and the dams_attribute_source (_dsid) provenance UPDATE from
 -- those arrays.
@@ -10,8 +11,11 @@
 --   attr_columns : all publishable attribute columns (INCLUDES use_analysis)
 --   ds_columns   : attr_columns minus use_analysis (team-determined, no _dsid)
 --
+-- Blocking rules live in cabd.check_dam_updates (shared with the
+-- `cabd-updates check` command). Apply that function before this one.
+--
 -- Deletes ONLY successfully published rows from staging.
--- Keeps unresolved rows (e.g., missing data_source -> blocked) in staging.
+-- Keeps blocked rows in staging; their blocks are recomputed on every run.
 
 DROP FUNCTION IF EXISTS cabd.publish_dam_updates(regclass, text[], text[]);
 
@@ -32,6 +36,8 @@ BEGIN
   EXECUTE format('ALTER TABLE %s ADD COLUMN IF NOT EXISTS data_source uuid', staging_table);
   EXECUTE format('ALTER TABLE %s ADD COLUMN IF NOT EXISTS blocked_reason text', staging_table);
   EXECUTE format('ALTER TABLE %s ADD COLUMN IF NOT EXISTS blocked_at timestamptz', staging_table);
+  -- Issue codes from cabd.check_dam_updates; marks blocks set by this function.
+  EXECUTE format('ALTER TABLE %s ADD COLUMN IF NOT EXISTS blocked_check text', staging_table);
 
   -- Normalize submission timestamps before checking for ordered conflicts.
   BEGIN
@@ -40,87 +46,47 @@ BEGIN
     NULL;
   END;
 
-  -- Retry rows blocked only because their data source was previously missing.
+  ---------------------------------------------------------------------------
+  -- RETRY: clear blocks set by earlier publish runs so every row is checked
+  -- again. Rows that still have a problem are re-blocked below. Only ready
+  -- rows are ever blocked, so resetting to 'ready' restores the prior status.
+  -- The blocked_reason match handles rows blocked before blocked_check existed.
+  ---------------------------------------------------------------------------
   EXECUTE format($q$
     UPDATE %s
     SET processing_status = 'ready',
         blocked_reason = NULL,
-        blocked_at = NULL
+        blocked_at = NULL,
+        blocked_check = NULL
     WHERE processing_status = 'blocked'
-      AND blocked_reason = 'missing data source in cabd.data_source'
-  $q$, staging_table);
-
-  -- Retry timestamp blocks after a missing submitted_on value is corrected.
-  EXECUTE format($q$
-    UPDATE %s
-    SET processing_status = 'ready',
-        blocked_reason = NULL,
-        blocked_at = NULL
-    WHERE processing_status = 'blocked'
-      AND blocked_reason = 'submitted_on is required to determine update ordering.'
-      AND submitted_on IS NOT NULL
-  $q$, staging_table);
-
-  -- A missing timestamp prevents safe ordering; also block its paired action.
-  EXECUTE format($q$
-    UPDATE %1$s u
-    SET processing_status = 'blocked',
-        blocked_reason = 'submitted_on is required to determine update ordering.',
-        blocked_at = now()
-    WHERE u.processing_status IS DISTINCT FROM 'blocked'
       AND (
-        u.submitted_on IS NULL
-        OR (
-          u.entry_classification = 'delete feature'
-          AND EXISTS (
-            SELECT 1
-            FROM %1$s m
-            WHERE m.cabd_id = u.cabd_id
-              AND m.entry_classification = 'modify feature'
-              AND m.submitted_on IS NULL
-          )
-        )
-        OR (
-          u.entry_classification = 'modify feature'
-          AND EXISTS (
-            SELECT 1
-            FROM %1$s d
-            WHERE d.cabd_id = u.cabd_id
-              AND d.entry_classification = 'delete feature'
-              AND d.submitted_on IS NULL
-          )
-        )
+        blocked_check IS NOT NULL
+        OR blocked_reason = 'missing data source in cabd.data_source'
       )
   $q$, staging_table);
 
-  -- A later modification makes both the delete and modification unsafe to publish.
+  ---------------------------------------------------------------------------
+  -- BLOCK ready rows that fail any check in cabd.check_dam_updates.
+  -- Data sources were upserted before this function runs, so only
+  -- cabd.data_source counts (include_staged_sources = false).
+  ---------------------------------------------------------------------------
   EXECUTE format($q$
     UPDATE %1$s u
     SET processing_status = 'blocked',
-        blocked_reason = 'A feature is marked for deletion but has been modified by a subsequent update.',
-        blocked_at = now()
-    WHERE u.processing_status IS DISTINCT FROM 'blocked'
-      AND (
-        (
-          u.entry_classification = 'delete feature'
-          AND EXISTS (
-            SELECT 1
-            FROM %1$s m
-            WHERE m.cabd_id = u.cabd_id
-              AND m.entry_classification = 'modify feature'
-              AND m.submitted_on > u.submitted_on
-          )
-        ) OR (
-          u.entry_classification = 'modify feature'
-          AND EXISTS (
-            SELECT 1
-            FROM %1$s d
-            WHERE d.cabd_id = u.cabd_id
-              AND d.entry_classification = 'delete feature'
-              AND u.submitted_on > d.submitted_on
-          )
-        )
-      )
+        blocked_reason    = c.reasons,
+        blocked_check     = c.codes,
+        blocked_at        = now()
+    FROM (
+      SELECT
+        id,
+        string_agg(issue, '; ' ORDER BY issue_code)      AS reasons,
+        string_agg(issue_code, ',' ORDER BY issue_code) AS codes
+      FROM cabd.check_dam_updates(%1$L::regclass, false)
+      WHERE severity = 'block'
+      GROUP BY id
+    ) c
+    WHERE u.id = c.id
+      AND u.processing_status = 'ready'
   $q$, staging_table);
 
   -- Snapshot ready rows at start of run
@@ -150,6 +116,7 @@ BEGIN
   -- Keep the earliest (by submitted_on); defer the rest to 'wait' so later
   -- updates run after the current change. Deferred rows are excluded from
   -- _dam_publishable and restored to 'ready' at the end of the run.
+  -- (cabd.check_dam_updates reports these as 'deferred' info rows.)
   ---------------------------------------------------------------------------
   EXECUTE format($q$
     WITH cte AS (
@@ -164,19 +131,9 @@ BEGIN
     WHERE id IN (SELECT id FROM cte WHERE rn > 1)
   $q$, staging_table, staging_table);
 
-  -- BLOCK rows that have a missing referenced data source
-  EXECUTE format($q$
-    UPDATE %s
-    SET
-      processing_status = 'blocked',
-      blocked_reason = 'missing data source in cabd.data_source',
-      blocked_at = now()
-    WHERE id IN (SELECT id FROM _dam_ready)
-      AND processing_status = 'ready'
-      AND data_source IS NULL
-  $q$, staging_table);
-
-  -- Publishable = ready AND data_source resolved (deferred 'wait' rows excluded)
+  -- Publishable = ready, plus a resolved data source for new/modify rows.
+  -- Deletes write no source records, so they don't need one. The NOT NULL
+  -- guard is a safety net; the checks above already block these rows.
   CREATE TEMP TABLE _dam_publishable (id integer PRIMARY KEY) ON COMMIT DROP;
   EXECUTE format($q$
     INSERT INTO _dam_publishable (id)
@@ -184,7 +141,10 @@ BEGIN
     FROM %s u
     JOIN _dam_ready r ON r.id = u.id
     WHERE u.processing_status = 'ready'
-      AND u.data_source IS NOT NULL
+      AND (
+        u.entry_classification = 'delete feature'
+        OR u.data_source IS NOT NULL
+      )
   $q$, staging_table);
 
   IF NOT EXISTS (SELECT 1 FROM _dam_publishable) THEN

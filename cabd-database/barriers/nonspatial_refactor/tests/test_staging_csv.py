@@ -9,6 +9,7 @@ from cabd_updates.staging.csv_utils import (
     has_sharepoint_status,
     is_blank_csv_row,
 )
+from cabd_updates.ingest.validate import validate_updates_csv_basic
 from cabd_updates.staging.stage_data_sources import stage_data_sources_csv_to_table
 from cabd_updates.staging.stage_updates import (
     _build_promotion_insert_sql,
@@ -111,6 +112,31 @@ class SharePointStatusTests(unittest.TestCase):
         )
         self.assertEqual(attributes, ["dam_name_en"])
         self.assertEqual(provenance, ["dam_name_en"])
+
+
+class CsvValidationTests(unittest.TestCase):
+    def test_validation_matches_staging_entry_classification_exactly(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = Path(temp_dir) / "updates.csv"
+            path.write_text(
+                "CABD_ID,Entry_Classification,data_source_short_name,submitted_on\n"
+                "id,New Feature,source,2026-01-01\n",
+                encoding="utf-8",
+            )
+            problems = validate_updates_csv_basic(path, "dams")
+        self.assertTrue(any("invalid entry_classification" in p for p in problems))
+
+    def test_validation_skips_blank_rows_and_completed_status_rows(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = Path(temp_dir) / "updates.csv"
+            path.write_text(
+                "cabd_id,entry_classification,data_source_short_name,submitted_on,status\n"
+                "id,modify feature,source,2026-01-01,complete\n"
+                ",,,,\n",
+                encoding="utf-8",
+            )
+            problems = validate_updates_csv_basic(path, "dams")
+        self.assertEqual(problems, [])
 
 
 class NewFeatureDeduplicationSqlTests(unittest.TestCase):

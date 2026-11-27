@@ -7,6 +7,7 @@ from pathlib import Path
 from cabd_updates.config import load_config
 from cabd_updates.db.connect import connect
 from cabd_updates.ingest.validate import validate_updates_csv_basic
+from cabd_updates.publish.check import check_feature, print_check_report, write_check_csv
 from cabd_updates.publish.publish import publish_data_sources, publish_feature
 from cabd_updates.reporting.report import report_feature
 from cabd_updates.staging.stage_data_sources import stage_data_sources_csv_to_table
@@ -19,7 +20,7 @@ def build_parser() -> argparse.ArgumentParser:
     sub = p.add_subparsers(dest="cmd", required=True)
 
     # validate
-    pv = sub.add_parser("validate", help="Validate an updates CSV.")
+    pv = sub.add_parser("validate", help="Validate an updates CSV before staging (no database needed).")
     pv.add_argument("--feature", required=True, choices=["dams", "fishways", "waterfalls"])
     pv.add_argument("--updates", required=True, help="Path to updates CSV")
 
@@ -34,6 +35,12 @@ def build_parser() -> argparse.ArgumentParser:
     pds.add_argument("--sources", required=True, help="Path to data sources CSV")
     pds.add_argument("--staging-table", default=None, help="Override staging table (schema.table)")
 
+    # check staged updates before publishing
+    pc = sub.add_parser("check", help="Check staged updates for problems that would block publishing (read-only).")
+    pc.add_argument("--feature", required=True, choices=["dams"])
+    pc.add_argument("--staging-table", default=None, help="Override staging table (schema.table)")
+    pc.add_argument("--output", default=None, help="Optional CSV path to write every issue")
+
     # publish
     pp = sub.add_parser("publish", help="Publish staged updates into live tables via DB functions.")
     pp.add_argument("--feature", required=True, choices=["dams", "fishways", "waterfalls"])
@@ -46,15 +53,21 @@ def build_parser() -> argparse.ArgumentParser:
 
     return p
 
+
 def main() -> None:
     p = build_parser()
     args = p.parse_args()
 
-    if not args.dsn and args.cmd in ("stage", "stage-data-sources", "publish", "report"):
+    if not args.dsn and args.cmd in ("stage", "stage-data-sources", "check", "publish", "report"):
         raise SystemExit("Missing DSN. Pass --dsn or set CABD_DSN.")
 
     if args.cmd == "validate":
-        validate_updates_csv_basic(Path(args.updates), feature=args.feature)
+        problems = validate_updates_csv_basic(Path(args.updates), feature=args.feature)
+        if problems:
+            print(f"validate: {len(problems)} problem(s) found in {args.updates}")
+            for problem in problems:
+                print(f"  {problem}")
+            raise SystemExit(1)
         print("validate: OK")
         return
 
@@ -104,6 +117,16 @@ def main() -> None:
                 )
             return
 
+        if args.cmd == "check":
+            cfg = load_config(args.feature)
+            staging_table = args.staging_table or cfg["staging_table"]
+            issues = check_feature(conn, args.feature, staging_table)
+            print_check_report(staging_table, issues)
+            if args.output:
+                write_check_csv(Path(args.output), issues)
+                print(f"check: wrote {len(issues)} issue(s) to {args.output}")
+            return
+
         if args.cmd == "publish":
             cfg = load_config(args.feature)
             staging_table = args.staging_table or cfg["staging_table"]
@@ -119,6 +142,6 @@ def main() -> None:
             report_feature(conn, feature=args.feature, staging_table=staging_table)
             return
 
+
 if __name__ == "__main__":
     main()
-    

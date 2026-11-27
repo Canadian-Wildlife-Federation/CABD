@@ -61,7 +61,8 @@ either. Back up the staging tables first.
 
 1. Run `sql/migrations/separate_update_status_columns.sql`.
 2. Apply the relevant files in `sql/constraints/`.
-3. Apply the functions in `sql/functions/`.
+3. Apply the functions in `sql/functions/`. Apply `check_dam_updates.sql`
+   before `publish_dam_updates.sql`, because publish calls the check function.
 
 The migration can safely be run more than once and runs as a single
 transaction. Review its output for notices or errors. It does the following:
@@ -94,13 +95,19 @@ as soon as the script finishes.
 cabd-updates validate --feature dams --updates path\to\updates.csv
 cabd-updates stage --feature dams --updates path\to\updates.csv
 cabd-updates stage-data-sources --sources path\to\data_sources.csv
+cabd-updates check --feature dams
 cabd-updates publish --feature dams
 cabd-updates report --feature dams
 ```
 
+- `validate` checks the CSV file before staging (required columns and
+  `entry_classification` values).
+- `check` checks the staged rows before publishing. It's read-only and uses
+  the same rules publish uses to block rows. Add `--output path\to\issues.csv`
+  to save every issue to a file. Currently available for dams only.
 - `--feature` accepts `dams`, `fishways` or `waterfalls`.
 - `publish` publishes the staged data sources first, then the feature updates.
-- `stage`, `stage-data-sources`, `publish` and `report` accept
+- `stage`, `stage-data-sources`, `check`, `publish` and `report` accept
   `--staging-table schema.table` to override the table set in the YAML config.
 - To run a single command against another database (for example, dev), pass
   `--dsn` before the command name:
@@ -131,7 +138,8 @@ staging table.
 
 ### Publish order
 
-If you are publishing updates to multiple feature types, publish in this order: **dams → fishways → waterfalls**.
+If you are publishing updates to multiple feature types, publish in this order:
+**dams → fishways → waterfalls**.
 
 - **Dams before fishways.** Fishways reference dams through `dam_id`, so any
   new dams must exist first.
@@ -142,17 +150,29 @@ If fishways are published before dams, nothing breaks. Fishways with a valid or
 NULL `dam_id` still publish. Those that reference a dam not yet published are
 blocked and stay in staging. Publish dams, then rerun the fishway publish.
 
-### Blocked and deferred rows
+### Blocked and deferred rows (dams)
 
-- **Missing data source:** the row is blocked and automatically retried on the
-  next publish. Add the source, then rerun publish.
-- **Delete followed by a later modify** (by `submitted_on`) for the same
-  feature: both rows are blocked with a conflict reason, and neither publishes
-  until you resolve the conflict.
-- **No `submitted_on`:** the row is blocked, because its order can't be
-  determined.
-- **Several ready modify/delete updates for one dam:** these publish one at a
-  time, in `submitted_on` order, over successive runs.
+Each publish run clears the blocks it set previously, then checks every `ready`
+row again. Rows that still have a problem are blocked again, so you only need
+to fix the data and rerun publish. `blocked_reason` explains the problem and
+`blocked_check` holds the issue code(s). Only `ready` rows are blocked;
+`needs review` rows are reported by `check` but keep their status.
+
+A row is blocked when:
+
+| Issue code | Problem |
+|---|---|
+| `missing_submitted_on` | No `submitted_on`, so its order can't be determined. |
+| `paired_missing_submitted_on` | A delete/modify for the same feature has no `submitted_on`. |
+| `delete_then_modify` | A delete is followed by a later modify for the same feature. Both rows are blocked until you resolve the conflict. |
+| `missing_data_source` | A new or modified feature's data source isn't in `cabd.data_source`. Deletes don't need a data source. |
+| `feature_not_found` | A modify or delete targets a `cabd_id` that isn't in `dams.dams`. A modify for a dam that's still being added as a new feature publishes on the run after the new dam does. |
+| `new_feature_exists` | A new feature's `cabd_id` already exists in `dams.dams`, so publishing would overwrite it. |
+| `new_feature_missing_coordinates` | A new feature has no latitude or longitude. |
+
+Deferred rows aren't errors. When several ready modify/delete updates exist for
+one dam, the earliest (by `submitted_on`) publishes and the rest wait for later
+runs. `check` lists these with the `deferred` code.
 
 ## Maintenance
 
