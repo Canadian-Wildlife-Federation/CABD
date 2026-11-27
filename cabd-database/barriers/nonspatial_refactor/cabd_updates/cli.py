@@ -38,7 +38,6 @@ def build_parser() -> argparse.ArgumentParser:
     pp = sub.add_parser("publish", help="Publish staged updates into live tables via DB functions.")
     pp.add_argument("--feature", required=True, choices=["dams", "fishways", "waterfalls"])
     pp.add_argument("--staging-table", default=None, help="Override staging table (schema.table)")
-    pp.add_argument("--data-sources-staging-table", default=None, help="Override data source staging table (schema.table)")
 
     # report
     pr = sub.add_parser("report", help="Report on staging table status counts.")
@@ -108,10 +107,8 @@ def main() -> None:
         if args.cmd == "publish":
             cfg = load_config(args.feature)
             staging_table = args.staging_table or cfg["staging_table"]
-            ds_cfg = load_config("data_sources")
-            ds_staging = args.data_sources_staging_table or ds_cfg["staging_table"]
 
-            publish_data_sources(conn, ds_staging_table=ds_staging)
+            publish_data_sources(conn)
             publish_feature(conn, feature=args.feature, staging_table=staging_table)
             print("publish: OK")
             return

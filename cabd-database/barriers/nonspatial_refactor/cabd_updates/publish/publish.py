@@ -90,8 +90,8 @@ def _derive_publish_columns(
 # Publish entry points
 # ---------------------------------------------------------------------------
 
-def publish_data_sources(conn, ds_staging_table: str) -> None:
-    call_scalar(conn, "SELECT cabd.upsert_data_sources(%s::regclass)", [ds_staging_table])
+def publish_data_sources(conn) -> None:
+    call_scalar(conn, "SELECT cabd.upsert_data_sources()")
 
 
 def publish_feature(conn, feature: str, staging_table: str) -> None:
