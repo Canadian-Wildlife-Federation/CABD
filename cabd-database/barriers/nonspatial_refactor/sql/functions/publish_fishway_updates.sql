@@ -6,6 +6,8 @@
 -- Blocks rows that reference a missing dam (dam_id not present in dams.dams),
 -- leaving them in staging (not deleted).
 
+DROP FUNCTION IF EXISTS cabd.publish_fishway_updates(regclass);
+
 CREATE OR REPLACE FUNCTION cabd.publish_fishway_updates(staging_table regclass)
 RETURNS integer
 LANGUAGE plpgsql

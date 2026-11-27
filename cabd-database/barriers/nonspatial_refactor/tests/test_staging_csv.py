@@ -12,8 +12,8 @@ from cabd_updates.staging.csv_utils import (
 from cabd_updates.staging.stage_data_sources import stage_data_sources_csv_to_table
 from cabd_updates.staging.stage_updates import (
     _build_promotion_insert_sql,
-    _new_feature_fingerprint,
     _promote_raw_rows_to_staging,
+    _truncate_staging_tables,
 )
 from cabd_updates.publish.publish import _derive_publish_columns
 
@@ -93,6 +93,12 @@ class SharePointStatusTests(unittest.TestCase):
             {row["processing_status"] for row in copied_rows},
             {"ready"},
         )
+        self.assertTrue(
+            any(
+                "TRUNCATE TABLE cabd.data_source_updates" in query
+                for query, _ in connection.executed
+            )
+        )
 
     def test_status_columns_are_not_published_as_feature_attributes(self):
         attributes, provenance = _derive_publish_columns(
@@ -108,36 +114,7 @@ class SharePointStatusTests(unittest.TestCase):
 
 
 class NewFeatureDeduplicationSqlTests(unittest.TestCase):
-    def test_fingerprint_ignores_generated_id_but_changes_with_submitted_data(self):
-        header = [
-            "cabd_id",
-            "entry_classification",
-            "latitude",
-            "longitude",
-            "data_source_short_name",
-            "dam_name_en",
-        ]
-        first = ["generated-id-1", "new feature", "45.0", "-75.0", "source", "Dam"]
-        repeat = ["generated-id-2", "new feature", "45.0", "-75.0", "source", "Dam"]
-        changed_location = [
-            "generated-id-3",
-            "new feature",
-            "46.0",
-            "-75.0",
-            "source",
-            "Dam",
-        ]
-
-        self.assertEqual(
-            _new_feature_fingerprint(header, first),
-            _new_feature_fingerprint(header, repeat),
-        )
-        self.assertNotEqual(
-            _new_feature_fingerprint(header, first),
-            _new_feature_fingerprint(header, changed_location),
-        )
-
-    def test_new_feature_fingerprint_uses_coordinates_and_submitted_fields(self):
+    def test_new_feature_deduplication_uses_coordinates_and_submitted_fields(self):
         columns = [
             "cabd_id",
             "entry_classification",
@@ -205,13 +182,6 @@ class _PromotionCursor:
         normalized_query = query.lstrip()
         if normalized_query.startswith("SELECT raw_id"):
             self.rowcount = -1
-        elif "SELECT entry_classification = 'new feature'" in normalized_query:
-            self.rowcount = 1
-        elif normalized_query.startswith(
-            "INSERT INTO cabd.dam_updates_import_fingerprints"
-        ):
-            self._ledger_inserts += 1
-            self.rowcount = 1 if self._ledger_inserts == 1 else 0
         elif normalized_query.startswith("WITH incoming AS"):
             self.rowcount = 1
         else:
@@ -233,38 +203,19 @@ class _PromotionConnection:
 
 
 class PersistentNewFeatureDeduplicationTests(unittest.TestCase):
-    def test_existing_fingerprint_skips_promotion_but_marks_raw_row_loaded(self):
+    def test_staging_tables_are_truncated_in_order(self):
         connection = _PromotionConnection()
-        columns = [
-            "cabd_id",
-            "entry_classification",
-            "latitude",
-            "longitude",
-            "data_source_short_name",
-            "dam_name_en",
-        ]
-
-        result = _promote_raw_rows_to_staging(
+        _truncate_staging_tables(
             connection,
-            "cabd.dam_updates_raw",
             "cabd.dam_updates",
-            "cabd.dam_updates_import_fingerprints",
-            required_columns=columns,
-            header_lc={column.lower(): column for column in columns},
-            cast_map=None,
+            "cabd.dam_updates_raw",
         )
-
-        self.assertEqual(result["inserted_rows"], 1)
-        self.assertEqual(result["duplicate_rows"], 1)
-        self.assertEqual(result["error_rows"], 0)
-        self.assertTrue(
-            any(
-                query.lstrip().startswith(
-                    "INSERT INTO cabd.dam_updates_import_fingerprints"
-                )
-                and "ON CONFLICT (fingerprint) DO NOTHING" in query
-                for query in connection.test_cursor.queries
-            )
+        self.assertEqual(
+            connection.test_cursor.queries,
+            [
+                "TRUNCATE TABLE cabd.dam_updates;",
+                "TRUNCATE TABLE cabd.dam_updates_raw;",
+            ],
         )
 
 

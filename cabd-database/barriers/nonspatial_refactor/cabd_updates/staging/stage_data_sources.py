@@ -282,6 +282,7 @@ def stage_data_sources_csv_to_table(
             $$;
             """
         )
+        cur.execute(f"TRUNCATE TABLE {staging_table};")
 
     # Locate the relevant columns in the FILTERED header
     name_idx = copy_header.index("name") if "name" in copy_header else None

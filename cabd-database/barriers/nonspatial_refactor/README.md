@@ -128,15 +128,10 @@ Staging order doesn't matter. Each feature and the data sources have their own
 staging table.
 
 - Blank rows in update and data-source CSVs are skipped.
-- A new-feature row is skipped if the same source and feature details
-  (including coordinates) were imported before. This applies even if the
-  earlier update has since been published. These keys are kept in each
-  feature's `*_import_fingerprints` table. Delete a row there only to
-  deliberately re-import that exact update.
 
 ### Publish order
 
-Publish in this order: **dams → fishways → waterfalls**.
+If you are publishing updates to multiple feature types, publish in this order: **dams → fishways → waterfalls**.
 
 - **Dams before fishways.** Fishways reference dams through `dam_id`, so any
   new dams must exist first.

@@ -3,16 +3,17 @@
 -- To be called using the publish.py script rather than directly from SQL.
 --
 -- Column-driven publish: the mapped attribute list (attr_columns) and the
--- provenance list (ds_columns) are derived from the dams YAML column_types in
 -- Python and passed in as text[]. The function assembles the dynamic
--- attribute UPDATE and the dams_attribute_source (_ds) provenance UPDATE from
+-- attribute UPDATE and the dams_attribute_source (_dsid) provenance UPDATE from
 -- those arrays.
 --
 --   attr_columns : all publishable attribute columns (INCLUDES use_analysis)
---   ds_columns   : attr_columns minus use_analysis (team-determined, no _ds)
+--   ds_columns   : attr_columns minus use_analysis (team-determined, no _dsid)
 --
 -- Deletes ONLY successfully published rows from staging.
 -- Keeps unresolved rows (e.g., missing data_source -> blocked) in staging.
+
+DROP FUNCTION IF EXISTS cabd.publish_dam_updates(regclass, text[], text[]);
 
 CREATE OR REPLACE FUNCTION cabd.publish_dam_updates(
   staging_table  regclass,
@@ -296,8 +297,8 @@ BEGIN
   $q$, staging_table);
 
   ---------------------------------------------------------------------------
-  -- PROCESS 2: attribute-source provenance (_ds columns).
-  -- MUST run BEFORE the live attribute overwrite (Process 3): each <col>_ds is
+  -- PROCESS 2: attribute-source provenance (_dsid columns).
+  -- MUST run BEFORE the live attribute overwrite (Process 3): each <col>_dsid is
   -- decided by comparing the incoming value to the CURRENT (old) live value.
   -- Iterates ds_columns (excludes use_analysis). Populates the bare
   -- dams_attribute_source rows created above.
@@ -305,7 +306,7 @@ BEGIN
   SELECT string_agg(
            format(
              '%I = CASE WHEN (u.%I IS NOT NULL AND u.%I IS DISTINCT FROM d.%I) THEN u.data_source ELSE s.%I END',
-             col || '_ds', col, col, col, col || '_ds'
+             col || '_dsid', col, col, col, col || '_dsid'
            ),
            ', '
          )

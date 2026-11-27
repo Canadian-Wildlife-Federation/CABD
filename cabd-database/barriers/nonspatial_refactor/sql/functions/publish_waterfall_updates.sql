@@ -11,6 +11,8 @@
 -- NOTE: This is a "minimal mapping" publish (geometry + source tables + deletes).
 --       Extend it with attribute/provenance mapping as you port over logic from map_waterfall_updates.py.
 
+DROP FUNCTION IF EXISTS cabd.publish_waterfall_updates(regclass);
+
 CREATE OR REPLACE FUNCTION cabd.publish_waterfall_updates(staging_table regclass)
 RETURNS integer
 LANGUAGE plpgsql

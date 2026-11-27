@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 import csv
-import hashlib
-import json
 import re
 from collections.abc import Iterable, Sequence
 from io import StringIO
@@ -52,22 +50,6 @@ def _strip_thousands(value: str) -> str:
 def _canonical_sql(expr: str) -> str:
     """SQL: lowercase + strip all non-alphanumeric characters (for matching)."""
     return f"lower(regexp_replace({expr}, '[^a-zA-Z0-9]', '', 'g'))"
-
-
-def _new_feature_fingerprint(header: Sequence[str], row: Sequence[str]) -> str:
-    # CABD IDs can be generated during staging, so they are not a stable import key.
-    submitted_values = {
-        column.lower(): row[index].strip() if index < len(row) else ""
-        for index, column in enumerate(header)
-        if column.lower() != "cabd_id"
-    }
-    canonical_row = json.dumps(
-        submitted_values,
-        sort_keys=True,
-        ensure_ascii=False,
-        separators=(",", ":"),
-    )
-    return hashlib.sha256(canonical_row.encode("utf-8")).hexdigest()
 
 
 def stage_updates_csv_to_table(
@@ -148,7 +130,6 @@ def stage_updates_csv_to_table(
         raise ValueError(f"{csv_path}: missing required columns for staging: {missing}")
 
     raw_table = _raw_table_name(staging_table)
-    fingerprint_table = _fingerprint_table_name(staging_table)
     sharepoint_status_column = header_lc.get("sharepoint_status")
     sharepoint_status_index = (
         raw_header.index(sharepoint_status_column)
@@ -158,37 +139,13 @@ def stage_updates_csv_to_table(
 
     with conn.cursor() as cur:
         _ensure_raw_table(conn, raw_table, raw_header)
-        cur.execute(
-            f"""
-            CREATE TABLE IF NOT EXISTS {fingerprint_table} (
-                fingerprint text PRIMARY KEY,
-                source_file text,
-                csv_line_no integer,
-                recorded_at timestamptz NOT NULL DEFAULT now()
-            );
-            """
-        )
-        # Single active batch: drop already-loaded rows, and reset any prior
-        # errors back to pending so they are re-validated (auto-retry) this run.
-        cur.execute(f"DELETE FROM {raw_table} WHERE load_status = 'loaded';")
-        cur.execute(
-            f"""
-            UPDATE {raw_table}
-            SET load_status = 'pending',
-                error_message = NULL,
-                error_column = NULL,
-                loaded_at = NULL,
-                updated_at = now()
-            WHERE load_status = 'error';
-            """
-        )
+        _truncate_staging_tables(conn, staging_table, raw_table)
 
         clean_indices = _thousands_clean_indices(raw_header, column_types)
         copy_header = [
             *raw_header,
             "source_file",
             "csv_line_no",
-            "import_fingerprint",
         ]
         skipped_blank_rows = 0
         dropped_sharepoint_status_rows = 0
@@ -221,7 +178,6 @@ def stage_updates_csv_to_table(
                             *cleaned,
                             str(csv_path),
                             line_no,
-                            _new_feature_fingerprint(csv_header, row),
                         ]
                     )
             buffer.seek(0)
@@ -259,7 +215,6 @@ def stage_updates_csv_to_table(
         conn=conn,
         raw_table=raw_table,
         staging_table=staging_table,
-        fingerprint_table=fingerprint_table,
         required_columns=required_columns,
         header_lc=header_lc,
         cast_map=cast_map,
@@ -459,13 +414,14 @@ def _raw_table_name(staging_table: str) -> str:
     return quote_ident(f"{staging_table}_raw")
 
 
-def _fingerprint_table_name(staging_table: str) -> str:
-    if "." in staging_table:
-        schema, table = staging_table.split(".", 1)
-        schema = schema.strip('"')
-        table = table.strip('"')
-        return f"{quote_ident(schema)}.{quote_ident(f'{table}_import_fingerprints')}"
-    return quote_ident(f"{staging_table}_import_fingerprints")
+def _truncate_staging_tables(
+    conn,
+    staging_table: str,
+    raw_table: str,
+) -> None:
+    with conn.cursor() as cur:
+        cur.execute(f"TRUNCATE TABLE {staging_table};")
+        cur.execute(f"TRUNCATE TABLE {raw_table};")
 
 
 def _ensure_raw_table(conn, raw_table: str, header: list[str]) -> None:
@@ -493,7 +449,6 @@ def _ensure_raw_table(conn, raw_table: str, header: list[str]) -> None:
             "error_column": "text",
             "loaded_at": "timestamptz",
             "updated_at": "timestamptz",
-            "import_fingerprint": "text",
             "processing_status": "text",
         }
         for col_name, col_type in control_columns.items():
@@ -530,7 +485,6 @@ def _promote_raw_rows_to_staging(
     conn,
     raw_table: str,
     staging_table: str,
-    fingerprint_table: str,
     *,
     required_columns: Sequence[str],
     header_lc: dict[str, str],
@@ -564,34 +518,6 @@ def _promote_raw_rows_to_staging(
         for (raw_id,) in cur.fetchall():
             cur.execute("SAVEPOINT promote_row")
             try:
-                cur.execute(
-                    f"""
-                    SELECT entry_classification = 'new feature'
-                    FROM {raw_table}
-                    WHERE raw_id = %s
-                    """,
-                    (raw_id,),
-                )
-                is_new_feature = cur.fetchone()[0]
-                if is_new_feature:
-                    cur.execute(
-                        f"""
-                        INSERT INTO {fingerprint_table} (
-                            fingerprint, source_file, csv_line_no
-                        )
-                        SELECT import_fingerprint, source_file, csv_line_no
-                        FROM {raw_table}
-                        WHERE raw_id = %s
-                        ON CONFLICT (fingerprint) DO NOTHING
-                        """,
-                        (raw_id,),
-                    )
-                    if cur.rowcount == 0:
-                        duplicate_rows += 1
-                        cur.execute(success_update_sql, (raw_id,))
-                        cur.execute("RELEASE SAVEPOINT promote_row")
-                        continue
-
                 cur.execute(insert_sql, (raw_id,))
                 inserted = cur.rowcount != 0
                 if not inserted:
